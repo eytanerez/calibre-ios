@@ -1,0 +1,213 @@
+{
+    "ok": true,
+    "data": {
+        "results": [
+            {
+                "id": "49e52179-1035-46f9-abe0-443d915d8c3b",
+                "listing_number": 3099,
+                "seller_id": "0063c484-4f59-4239-8865-903447b34b4e",
+                "seller": {
+                    "id": "0063c484-4f59-4239-8865-903447b34b4e",
+                    "username": "johon",
+                    "reputation": {
+                        "sales_count": 4,
+                        "rating_count": 1,
+                        "average_rating": 5.0
+                    }
+                },
+                "variant_id": null,
+                "title": "Tudor Black Bay Pro M79470-0001",
+                "brand": "Tudor",
+                "model": "Black Bay Pro",
+                "reference_number": "M79470-0001",
+                "description": "Brand: Tudor\nModel: Black Bay Pro\nReference Number: M79470-0001\nCondition: Like New\nCrystal Condition: Like New\nBezel Condition: Like New\nBracelet Condition: Like New\nClasp Condition: Like New\nCaseback Condition: Like New\nOverall Condition: Like New\nYear of Manufacture: 2024\nMarketplace Status: Pending admin approval",
+                "price": "4400.00",
+                "currency": "USD",
+                "condition": {
+                    "overall": "Like New",
+                    "crystal": "Like New",
+                    "bezel": "Like New",
+                    "bracelet": "Like New",
+                    "clasp": "Like New",
+                    "caseback": "Like New",
+                    "case": "Like New",
+                    "dial": "Like New"
+                },
+                "box_papers": false,
+                "production_year": 2024,
+                "status": "active",
+                "review_status": "active",
+                "seller_status": "live",
+                "review_events": [],
+                "images": [
+                    "http://localhost:5173/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/80464fd84ef543fbb7a460d973637daa.jpg",
+                    "http://localhost:5173/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/966165b4fcad4a09912ef5f9eeef3d87.jpg",
+                    "http://localhost:5173/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/b518f704b0fe4d678faa8617f6f07d75.jpg",
+                    "http://localhost:5173/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/595dd5e23626441980b0acec612295f9.jpg",
+                    "http://localhost:5173/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/69b82883ea814a699188220969e28aae.jpg",
+                    "http://localhost:5173/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/c15dc6ac034c437ab25397d2953b79bb.jpg"
+                ],
+                "estimated_shipping": null,
+                "metrics": {
+                    "views": 0,
+                    "watchers": 0
+                },
+                "created_at": "2026-07-06T06:17:18.845296+00:00",
+                "updated_at": "2026-07-06T06:19:39.434228+00:00"
+            },
+            {
+                "id": "dc288e6d-3576-437d-9ec2-ea7ef2a75b75",
+                "listing_number": 3091,
+                "seller_id": "0063c484-4f59-4239-8865-903447b34b4e",
+                "seller": {
+                    "id": "0063c484-4f59-4239-8865-903447b34b4e",
+                    "username": "johon",
+                    "reputation": {
+                        "sales_count": 4,
+                        "rating_count": 1,
+                        "average_rating": 5.0
+                    }
+                },
+                "variant_id": null,
+                "title": "Grand Seiko Snowflake SBGA211-04",
+                "brand": "Grand Seiko",
+                "model": "Snowflake",
+                "reference_number": "SBGA211-04",
+                "description": "Complete set from original owner.",
+                "price": "5728.00",
+                "currency": "USD",
+                "condition": {
+                    "overall": "New",
+                    "crystal": "New",
+                    "bezel": "New",
+                    "bracelet": "New",
+                    "clasp": "New",
+                    "caseback": "New",
+                    "case": "New",
+                    "dial": "New"
+                },
+                "box_papers": false,
+                "production_year": 2023,
+                "status": "active",
+                "review_status": "active",
+                "seller_status": "live",
+                "review_events": [],
+                "images": [
+                    "https://picsum.photos/seed/watch93a/900/900"
+                ],
+                "estimated_shipping": null,
+                "metrics": {
+                    "views": 0,
+                    "watchers": 0
+                },
+                "created_at": "2026-07-06T04:04:54.279419+00:00",
+                "updated_at": "2026-07-06T06:13:42.343809+00:00"
+            },
+            {
+                "id": "40a75220-06da-4cb7-a570-9ee49252faad",
+                "listing_number": 3092,
+                "seller_id": "0063c484-4f59-4239-8865-903447b34b4e",
+                "seller": {
+                    "id": "0063c484-4f59-4239-8865-903447b34b4e",
+                    "username": "johon",
+                    "reputation": {
+                        "sales_count": 4,
+                        "rating_count": 1,
+                        "average_rating": 5.0
+                    }
+                },
+                "variant_id": null,
+                "title": "Breitling Navitimer B01 AB0138241G1P1-04",
+                "brand": "Breitling",
+                "model": "Navitimer B01",
+                "reference_number": "AB0138241G1P1-04",
+                "description": "Complete set from original owner.",
+                "price": "7176.00",
+                "currency": "USD",
+                "condition": {
+                    "overall": "Good",
+                    "crystal": "Good",
+                    "bezel": "Good",
+                    "bracelet": "Good",
+                    "clasp": "Good",
+                    "caseback": "Good",
+                    "case": "Good",
+                    "dial": "Good"
+                },
+                "box_papers": true,
+                "production_year": 2017,
+                "status": "active",
+                "review_status": "active",
+                "seller_status": "live",
+                "review_events": [],
+                "images": [
+                    "https://picsum.photos/seed/watch94a/900/900",
+                    "https://picsum.photos/seed/watch94b/900/900",
+                    "https://picsum.photos/seed/watch94c/900/900"
+                ],
+                "estimated_shipping": null,
+                "metrics": {
+                    "views": 0,
+                    "watchers": 0
+                },
+                "created_at": "2026-07-06T04:04:54.279419+00:00",
+                "updated_at": "2026-07-06T06:06:40.281305+00:00"
+            },
+            {
+                "id": "afca43dc-c770-4b83-960c-3af2b34f0ae2",
+                "listing_number": 3094,
+                "seller_id": "0063c484-4f59-4239-8865-903447b34b4e",
+                "seller": {
+                    "id": "0063c484-4f59-4239-8865-903447b34b4e",
+                    "username": "johon",
+                    "reputation": {
+                        "sales_count": 4,
+                        "rating_count": 1,
+                        "average_rating": 5.0
+                    }
+                },
+                "variant_id": null,
+                "title": "Panerai Luminor Marina PAM01312-04",
+                "brand": "Panerai",
+                "model": "Luminor Marina",
+                "reference_number": "PAM01312-04",
+                "description": "Excellent original condition, unpolished case.",
+                "price": "7489.00",
+                "currency": "USD",
+                "condition": {
+                    "overall": "New",
+                    "crystal": "New",
+                    "bezel": "New",
+                    "bracelet": "New",
+                    "clasp": "New",
+                    "caseback": "New",
+                    "case": "New",
+                    "dial": "New"
+                },
+                "box_papers": false,
+                "production_year": 2022,
+                "status": "active",
+                "review_status": "active",
+                "seller_status": "live",
+                "review_events": [],
+                "images": [
+                    "https://picsum.photos/seed/watch96a/900/900",
+                    "https://picsum.photos/seed/watch96b/900/900",
+                    "https://picsum.photos/seed/watch96c/900/900"
+                ],
+                "estimated_shipping": null,
+                "metrics": {
+                    "views": 0,
+                    "watchers": 0
+                },
+                "created_at": "2026-07-06T04:04:54.279419+00:00",
+                "updated_at": "2026-07-06T04:08:24.384701+00:00"
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 4,
+            "total": 2522
+        }
+    }
+}

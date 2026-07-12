@@ -1,0 +1,8 @@
+# Xcode project is generated — `xcodegen generate` after checkout.
+Calibre.xcodeproj/
+DerivedData/
+.DS_Store
+*.xcuserstate
+xcuserdata/
+.build/
+.swiftpm/

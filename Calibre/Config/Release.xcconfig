@@ -1,0 +1,3 @@
+// TestFlight / App Store — talks to the deployed Calibre API.
+// Routes are served at the origin root (no /api prefix).
+API_BASE_URL = https:/$()/dev.api.buycalibre.com

@@ -1,0 +1,4 @@
+// Local development — talks to the docker backend on this Mac.
+// Routes are served at the origin root (no /api prefix).
+API_BASE_URL = http:/$()/localhost:8000
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
