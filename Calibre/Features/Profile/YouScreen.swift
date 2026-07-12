@@ -19,24 +19,44 @@ struct YouScreen: View {
             VStack(alignment: .leading, spacing: Space.xxl) {
                 header
 
-                section(title: "Account", rows: [
-                    ("person.text.rectangle", "Profile"),
-                    ("heart", "Saved"),
-                    ("sparkle.magnifyingglass", "Requests"),
-                    ("mappin.and.ellipse", "Addresses"),
-                    ("creditcard", "Payment method"),
-                ])
+                if session.isAuthenticated {
+                    linkedSection(title: "Account") {
+                        row(icon: "person.text.rectangle", label: "Profile", destination: .profile)
+                        divider
+                        NavigationLink { SavedScreen() } label: {
+                            rowLabel(icon: "heart", label: "Saved")
+                        }.buttonStyle(PressableStyle())
+                        divider
+                        NavigationLink { RequestsScreen() } label: {
+                            rowLabel(icon: "sparkle.magnifyingglass", label: "Requests")
+                        }.buttonStyle(PressableStyle())
+                        divider
+                        row(icon: "mappin.and.ellipse", label: "Addresses", destination: .addresses)
+                        divider
+                        row(icon: "creditcard", label: "Payment method", destination: .paymentMethod)
+                    }
 
-                section(title: "Preferences", rows: [
-                    ("bell.badge", "Notifications"),
-                ])
+                    linkedSection(title: "Preferences") {
+                        row(icon: "bell.badge", label: "Notifications", destination: .notifications)
+                        divider
+                        row(icon: "lock", label: "Change password", destination: .changePassword)
+                    }
+                }
 
-                section(title: "Help", rows: [
-                    ("bubble.left.and.bubble.right", "Support"),
-                    ("info.circle", "About Calibre"),
-                ])
+                linkedSection(title: "Help") {
+                    NavigationLink { SupportChatScreen() } label: {
+                        rowLabel(icon: "bubble.left.and.bubble.right", label: "Support")
+                    }.buttonStyle(PressableStyle())
+                    divider
+                    NavigationLink { AboutScreen() } label: {
+                        rowLabel(icon: "info.circle", label: "About Calibre")
+                    }.buttonStyle(PressableStyle())
+                }
 
                 if session.isAuthenticated {
+                    linkedSection(title: nil) {
+                        row(icon: "trash", label: "Delete account", destination: .deleteAccount, tint: Color.calibre.destructive)
+                    }
                     signOutSection
                 }
 
@@ -51,6 +71,16 @@ struct YouScreen: View {
         .background(Color.calibre.background.ignoresSafeArea())
         .navigationTitle("You")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(for: ProfileDestination.self) { destination in
+            switch destination {
+            case .profile: ProfileScreen()
+            case .addresses: AddressesScreen()
+            case .paymentMethod: PaymentMethodScreen()
+            case .notifications: NotificationSettingsScreen()
+            case .changePassword: ChangePasswordScreen()
+            case .deleteAccount: DeleteAccountScreen()
+            }
+        }
         .fullScreenCover(isPresented: $showLogin) {
             NavigationStack {
                 LoginScreen(context: .modal)
@@ -114,45 +144,45 @@ struct YouScreen: View {
 
     // MARK: - Sections
 
-    private func section(title: String, rows: [(icon: String, label: String)]) -> some View {
+    private var divider: some View { Divider().overlay(Color.calibre.border) }
+
+    @ViewBuilder
+    private func linkedSection(title: String?, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Eyebrow(title)
-            VStack(spacing: 0) {
-                ForEach(rows.indices, id: \.self) { index in
-                    placeholderRow(icon: rows[index].icon, label: rows[index].label)
-                    if index < rows.count - 1 {
-                        Divider().overlay(Color.calibre.border)
-                    }
-                }
-            }
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
-            )
+            if let title { Eyebrow(title) }
+            VStack(spacing: 0) { content() }
+                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        .strokeBorder(Color.calibre.border, lineWidth: 1)
+                )
         }
     }
 
-    /// A quiet disabled row — its feature arrives with a later build.
-    private func placeholderRow(icon: String, label: String) -> some View {
+    private func row(icon: String, label: String, destination: ProfileDestination, tint: Color? = nil) -> some View {
+        NavigationLink(value: destination) {
+            rowLabel(icon: icon, label: label, tint: tint)
+        }
+        .buttonStyle(PressableStyle())
+    }
+
+    private func rowLabel(icon: String, label: String, tint: Color? = nil) -> some View {
         HStack(spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground.opacity(0.6))
+                .foregroundStyle(tint ?? Color.calibre.secondaryForeground)
                 .frame(width: 24)
             Text(label)
                 .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(tint ?? Color.calibre.foreground)
             Spacer()
-            Text("Soon")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.placeholder)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.calibre.mutedForeground)
         }
         .padding(.horizontal, Space.l)
         .frame(minHeight: Space.touchTarget + 8)
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Available in a later release")
     }
 
     private var signOutSection: some View {

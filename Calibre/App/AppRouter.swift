@@ -20,6 +20,14 @@ enum Route: Hashable {
     case checkout(String, offerID: String?)
 }
 
+/// A checkout the app is presenting as a full-screen cover. Checkout owns its
+/// own navigation stack, so it rides above the tabs rather than pushing.
+struct CheckoutRequest: Identifiable, Hashable {
+    let listingID: String
+    let offerID: String?
+    var id: String { "\(listingID)|\(offerID ?? "")" }
+}
+
 /// Owns tab selection and one navigation path per tab. `open(_:)` selects the
 /// tab a route belongs to and pushes it; `handle(url:)` decodes deep links.
 @MainActor
@@ -37,8 +45,22 @@ final class AppRouter {
     /// presents the reset-password screen.
     var passwordResetToken: String?
 
-    /// Selects the tab that owns `route` and pushes it there.
+    /// The checkout cover currently presented, if any.
+    var checkoutRequest: CheckoutRequest?
+
+    /// Presents checkout for a listing (optionally an accepted offer) as a
+    /// full-screen cover above the tab shell.
+    func presentCheckout(listingID: String, offerID: String? = nil) {
+        checkoutRequest = CheckoutRequest(listingID: listingID, offerID: offerID)
+    }
+
+    /// Selects the tab that owns `route` and pushes it there. `.checkout` is
+    /// special — it presents as a cover rather than a stack push.
     func open(_ route: Route) {
+        if case let .checkout(listingID, offerID) = route {
+            presentCheckout(listingID: listingID, offerID: offerID)
+            return
+        }
         let tab = homeTab(for: route)
         selectedTab = tab
         switch tab {

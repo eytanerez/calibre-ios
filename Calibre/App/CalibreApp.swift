@@ -4,6 +4,8 @@ import SwiftUI
 
 @main
 struct CalibreApp: App {
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var appDelegate
+
     init() {
         CalibreFonts.register()
         #if DEBUG
@@ -111,6 +113,12 @@ struct RootView: View {
         .onOpenURL { url in
             services.router.handle(url: url)
         }
+        .onAppear {
+            // Hand the live coordinator to the UIKit app delegate and let it
+            // route pushes into the shell.
+            PushAppDelegate.coordinator = services.push
+            services.push.attach(router: services.router, alerts: services.alerts)
+        }
         // Environment injection stays OUTERMOST so sheet content (presented
         // from a node above the injection point otherwise) inherits it too.
         .environment(services)
@@ -120,6 +128,10 @@ struct RootView: View {
         .task {
             await services.auth.bootstrap()
             bootstrapped = true
+            if services.auth.isAuthenticated {
+                services.push.refreshRegistration()
+            }
+            services.push.drainPendingRoute()
             #if DEBUG
             // UI-test/screenshot hook: raise the guest gate on launch.
             if ProcessInfo.processInfo.arguments.contains("-openGate") {
@@ -172,9 +184,13 @@ final class AppServices {
     let catalog: CatalogStore
     let commerce: CommerceStore
     let seller: SellerStore
+    let account: AccountStore
+    let support: SupportStore
     let signals: LocalSignals
+    let alerts = AlertsInbox()
     let router = AppRouter()
     let toasts = ToastCenter()
+    let push: PushCoordinator
 
     init() {
         let configuration = APIConfiguration.fromInfoPlist()
@@ -185,6 +201,10 @@ final class AppServices {
         self.catalog = CatalogStore(client: client)
         self.commerce = CommerceStore(client: client)
         self.seller = SellerStore(client: client)
+        let account = AccountStore(client: client)
+        self.account = account
+        self.support = SupportStore(client: client)
         self.signals = LocalSignals()
+        self.push = PushCoordinator(account: account)
     }
 }

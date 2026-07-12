@@ -1,0 +1,24 @@
+{
+  "originHash" : "ec794fb621f018a516a6ce3884c77fd2df1ae7d9e0e8bfc61c6d31fa90b2b3f0",
+  "pins" : [
+    {
+      "identity" : "nuke",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kean/Nuke",
+      "state" : {
+        "revision" : "63a8fcbd6621340a2410bc3e9575ac97058615f4",
+        "version" : "13.0.6"
+      }
+    },
+    {
+      "identity" : "stripe-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stripe/stripe-ios",
+      "state" : {
+        "revision" : "5d05ae7505a291046094f5cd728be8a50bb8485b",
+        "version" : "26.2.0"
+      }
+    }
+  ],
+  "version" : 3
+}

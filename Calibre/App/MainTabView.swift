@@ -47,100 +47,68 @@ struct MainTabView: View {
             .tag(AppTab.you)
         }
         .tint(Color.calibre.primary)
+        // Checkout owns its own navigation stack, so it rides above the tabs
+        // as a cover rather than pushing into one.
+        .fullScreenCover(item: $router.checkoutRequest) { request in
+            CheckoutFlow(listingID: request.listingID, offerID: request.offerID)
+        }
     }
 }
 
-/// Placeholder destinations for routed pushes. The P3–P7 feature tracks
-/// replace these cases with the real screens.
+/// Resolves a shared `Route` — cross-tab pushes, deep links, and push
+/// notifications — to its real screen. Within-tab browse navigation uses the
+/// browse track's own `browsePush` mechanism; this handles the rest.
 struct RouteDestinationView: View {
+    @Environment(AppServices.self) private var services
     let route: Route
 
     var body: some View {
-        Group {
-            switch route {
-            case .listing(let id):
-                placeholder(
-                    icon: "clock",
-                    title: "Listing detail",
-                    message: "The listing page arrives with the Browse build.",
-                    detail: id
-                )
-            case .seller(let id):
-                placeholder(
-                    icon: "person.crop.square",
-                    title: "Seller profile",
-                    message: "Seller profiles arrive with the Browse build.",
-                    detail: id
-                )
-            case .brand(let id):
-                placeholder(
-                    icon: "crown",
-                    title: "Brand",
-                    message: "Brand pages arrive with the Browse build.",
-                    detail: id
-                )
-            case .order(let id):
-                placeholder(
-                    icon: "shippingbox",
-                    title: "Order",
-                    message: "Order tracking arrives with the Activity build.",
-                    detail: id
-                )
-            case .offer(let id):
-                placeholder(
-                    icon: "arrow.left.arrow.right",
-                    title: "Offer",
-                    message: "Negotiations arrive with the Offers build.",
-                    detail: id
-                )
-            case .journalArticle(let id):
-                placeholder(
-                    icon: "text.book.closed",
-                    title: "Journal",
-                    message: "The Journal reader arrives with a later build.",
-                    detail: id
-                )
-            case .supportChat:
-                placeholder(
-                    icon: "bubble.left.and.bubble.right",
-                    title: "Support",
-                    message: "Support chat arrives with the Activity build.",
-                    detail: nil
-                )
-            case .alerts:
-                // P5 TEMP WIRING — revert before landing: calibre://alerts
-                // opens the money-track verification harness in DEBUG builds.
-                #if DEBUG
-                P5DebugHarness()
-                #else
-                placeholder(
-                    icon: "bell",
-                    title: "Alerts",
-                    message: "Your alerts inbox arrives with the Activity build.",
-                    detail: nil
-                )
-                #endif
-            case .checkout(let listingID, _):
-                placeholder(
-                    icon: "creditcard",
-                    title: "Checkout",
-                    message: "Checkout arrives with the Checkout and Offers build.",
-                    detail: listingID
-                )
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        destination
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.calibre.background)
     }
 
-    private func placeholder(icon: String, title: String, message: String, detail: String?) -> some View {
-        VStack(spacing: Space.l) {
-            EmptyState(icon: icon, title: title, message: message)
-            if let detail {
-                Eyebrow(detail)
-            }
+    @ViewBuilder
+    private var destination: some View {
+        switch route {
+        case .listing(let id):
+            ListingDetailScreen(listingID: id)
+        case .seller(let username):
+            SellerStorefrontScreen(username: username)
+                .browseStackNode()
+        case .brand(let brand):
+            BrandScreen(brand: brand)
+                .browseStackNode()
+        case .journalArticle(let id):
+            JournalArticleScreen(articleID: id)
+                .browseStackNode()
+        case .order(let id):
+            OrderDetailScreen(orderID: id)
+        case .offer(let id):
+            OfferDetailScreen(offerID: id)
+        case .supportChat:
+            SupportChatScreen()
+        case .alerts:
+            AlertsInboxScreen()
+        case .checkout(let listingID, let offerID):
+            // Reached only if something pushes .checkout directly; the router
+            // normally presents it as a cover. Present-on-appear.
+            CheckoutRedirect(listingID: listingID, offerID: offerID)
         }
-        .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Safety net: if a `.checkout` route ever lands on a stack, bounce it up to
+/// the cover the router owns.
+private struct CheckoutRedirect: View {
+    @Environment(AppServices.self) private var services
+    let listingID: String
+    let offerID: String?
+
+    var body: some View {
+        Color.calibre.background
+            .onAppear {
+                services.router.presentCheckout(listingID: listingID, offerID: offerID)
+            }
     }
 }

@@ -256,20 +256,3 @@ struct AuthenticationInfoSheet: View {
         }
     }
 }
-
-// MARK: - Make Offer stub
-
-/// The Route enum has no `.makeOffer` case yet, and offer UI belongs to the
-/// Checkout & Offers track — this quiet stub holds the door until the
-/// orchestrator wires the real route.
-struct MakeOfferStub: View {
-    var body: some View {
-        SheetScaffold(title: "Make an offer", detents: [.medium]) {
-            EmptyState(
-                icon: "arrow.left.arrow.right",
-                title: "Negotiation is on its way",
-                message: "Offers arrive with the Checkout & Offers build. This button will take you straight there."
-            )
-        }
-    }
-}

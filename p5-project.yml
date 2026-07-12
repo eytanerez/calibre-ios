@@ -1,0 +1,86 @@
+# P5 TEMPORARY verification project — deleted before landing.
+# Builds the app shell + Checkout/Offers with P2 placeholder roots for the
+# other in-flight tracks (their working files are mid-edit and don't compile),
+# so the money-track E2E can run without touching shared config.
+name: CalibreP5
+options:
+  bundleIdPrefix: com.buycalibre
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+packages:
+  CalibreKit:
+    path: Packages/CalibreKit
+  CalibreDesign:
+    path: Packages/CalibreDesign
+  StripeiOS:
+    url: https://github.com/stripe/stripe-ios
+    from: 26.2.0
+  Nuke:
+    url: https://github.com/kean/Nuke
+    from: 13.0.6
+
+configFiles:
+  Debug: Calibre/Config/Debug.xcconfig
+  Release: Calibre/Config/Release.xcconfig
+
+targets:
+  CalibreP5:
+    type: application
+    platform: iOS
+    sources:
+      - path: Calibre/App
+      - path: Calibre/Resources
+      - path: Calibre/Features/Auth
+      - path: Calibre/Features/Onboarding
+      - path: Calibre/Features/DebugConsole
+      - path: Calibre/Features/Activity
+      - path: Calibre/Features/Profile
+      - path: Calibre/Features/Checkout
+      - path: Calibre/Features/Offers
+      - path: .p5shim
+    dependencies:
+      - package: CalibreKit
+      - package: CalibreDesign
+      - package: StripeiOS
+        products:
+          - StripePaymentSheet
+          - StripeConnect
+      - package: Nuke
+        products:
+          - Nuke
+          - NukeUI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.buycalibre.calibre
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 1
+        TARGETED_DEVICE_FAMILY: 1
+        SWIFT_VERSION: 6.0
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        CODE_SIGN_ENTITLEMENTS: Calibre/Config/Calibre.entitlements
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+    info:
+      path: .p5shim/Info.plist
+      properties:
+        CFBundleDisplayName: Calibre
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
+        NSPhotoLibraryUsageDescription: Calibre lets you choose existing photos of your watch when creating a listing.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - calibre
+        CalibreAPIBaseURL: $(API_BASE_URL)
+
+schemes:
+  CalibreP5:
+    build:
+      targets:
+        CalibreP5: all
+    run:
+      config: Debug

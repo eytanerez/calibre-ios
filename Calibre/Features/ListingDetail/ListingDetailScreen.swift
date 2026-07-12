@@ -67,9 +67,7 @@ struct ListingDetailScreen: View {
         .sheet(isPresented: $showAuthenticationInfo) {
             AuthenticationInfoSheet()
         }
-        .sheet(isPresented: $showMakeOfferStub) {
-            MakeOfferStub()
-        }
+        .sheet(isPresented: $showMakeOfferStub) { makeOfferSheet }
         .confirmationDialog(
             "Your bag holds one watch at a time.",
             isPresented: swapDialogPresented,
@@ -83,6 +81,10 @@ struct ListingDetailScreen: View {
         } message: { existing in
             Text("We'll tuck \(existing.listing?.title ?? "your current watch") into Saved and put this one in your bag.")
         }
+    }
+
+    private var makeOfferSheet: some View {
+        MakeOfferSheet(listingID: listingID)
     }
 
     // MARK: - Content
