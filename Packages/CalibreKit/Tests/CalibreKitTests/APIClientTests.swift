@@ -101,10 +101,13 @@ final class SingleFlightAuthStub: AuthProviding {
 
 final class APIClientTests: XCTestCase {
 
-    /// The recorded auth-me capture is a real `{ok:false}` error body — it
-    /// must surface as APIError.server with the backend's message.
+    /// A real `{ok:false}` error body (as /auth/me returns unauthenticated)
+    /// must surface as APIError.server with the backend's message. Inlined —
+    /// the auth-me fixture is now recorded signed-in, so it's a success body.
     func testEnvelopeErrorDecodesFromRecordedFixture() async throws {
-        let errorBody = try fixtureData("auth-me")
+        let errorBody = Data("""
+        {"ok": false, "error": "Authentication credentials were not provided"}
+        """.utf8)
         MockURLProtocol.setHandler { _ in (401, errorBody) }
 
         let client = APIClient(configuration: mockConfiguration(), auth: nil)
