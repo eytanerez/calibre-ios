@@ -1,3 +1,13 @@
 {
-    "detail": "Not Found"
+    "ok": true,
+    "data": {
+        "user_id": "fafc2903-6bd7-4f90-a0b0-e3965fe10e96",
+        "offer_updates": true,
+        "order_updates": true,
+        "tracking_updates": true,
+        "message_updates": true,
+        "watchlist_alerts": true,
+        "market_updates": true,
+        "security_alerts": true
+    }
 }

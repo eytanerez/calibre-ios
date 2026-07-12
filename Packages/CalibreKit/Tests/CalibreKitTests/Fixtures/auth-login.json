@@ -1,4 +1,16 @@
 {
-    "ok": false,
-    "error": "Internal server error"
+    "ok": true,
+    "data": {
+        "user": {
+            "id": "fafc2903-6bd7-4f90-a0b0-e3965fe10e96",
+            "email": "iosbuyer.calibre@gmail.com",
+            "username": "iosbuyer",
+            "roles": [
+                "member"
+            ]
+        },
+        "tokens": {
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmYWZjMjkwMy02YmQ3LTRmOTAtYTBiMC1lMzk2NWZlMTBlOTYiLCJyb2xlcyI6WyJtZW1iZXIiXSwidG9rZW5fdHlwZSI6ImFjY2VzcyIsImp0aSI6IjEzMGU0ZTE0MWQzOTRkM2RhYWEwZGMzOTdiNjEzMTc3IiwiaWF0IjoxNzgzODM0MjExLCJleHAiOjE3ODM4MzYwMTF9.rb8OuN8i4Z7eqmOFxnUXETnWpKEu4Hk8u9Re9l1T3-0"
+        }
+    }
 }

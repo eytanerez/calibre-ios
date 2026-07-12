@@ -1,5 +1,22 @@
 {
-    "ok": false,
-    "error": "Authentication credentials were not provided",
-    "details": "Authentication credentials were not provided"
+    "ok": true,
+    "data": {
+        "id": "fafc2903-6bd7-4f90-a0b0-e3965fe10e96",
+        "email": "iosbuyer.calibre@gmail.com",
+        "username": "iosbuyer",
+        "first_name": "Ios",
+        "last_name": "Buyer",
+        "phone": "+12025550142",
+        "created_at": "2026-07-12T05:27:05.452319+00:00",
+        "updated_at": "2026-07-12T05:27:05.452319+00:00",
+        "seller_profile": null,
+        "stats": {
+            "orders": 0,
+            "listings": 0,
+            "live_listings": 0,
+            "cart": 0,
+            "watchlist": 0,
+            "addresses": 1
+        }
+    }
 }

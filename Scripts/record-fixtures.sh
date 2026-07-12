@@ -6,8 +6,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 FIXTURES=Packages/CalibreKit/Tests/CalibreKitTests/Fixtures
 BASE=http://localhost:8000
-BUYER_EMAIL="buyer@demo.calibre.local"
-BUYER_PASSWORD="CalibreDemo123!"
+# Test account registered against the local dev DB (register-or-login).
+BUYER_EMAIL="iosbuyer.calibre@gmail.com"
+BUYER_PASSWORD="CalibreiOS123!"
 mkdir -p "$FIXTURES"
 
 jar=$(mktemp)

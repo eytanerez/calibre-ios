@@ -1,5 +1,12 @@
 {
-    "ok": false,
-    "error": "Authentication credentials were not provided",
-    "details": "Authentication credentials were not provided"
+    "ok": true,
+    "data": {
+        "results": [],
+        "pagination": {
+            "page": 1,
+            "page_size": 5,
+            "total": 0,
+            "total_pages": 0
+        }
+    }
 }

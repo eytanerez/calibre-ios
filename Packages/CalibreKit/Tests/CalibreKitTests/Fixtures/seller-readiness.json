@@ -1,5 +1,16 @@
 {
-    "ok": false,
-    "error": "Authentication credentials were not provided",
-    "details": "Authentication credentials were not provided"
+    "ok": true,
+    "data": {
+        "connect": {
+            "account_id": null,
+            "onboarding_complete": false,
+            "details_submitted": false,
+            "charges_enabled": false,
+            "payouts_enabled": false,
+            "last_checked_at": null,
+            "requirements_currently_due": [],
+            "requirements_eventually_due": []
+        },
+        "can_list": false
+    }
 }

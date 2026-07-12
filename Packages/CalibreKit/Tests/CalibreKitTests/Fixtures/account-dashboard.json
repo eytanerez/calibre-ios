@@ -1,5 +1,88 @@
 {
-    "ok": false,
-    "error": "Authentication credentials were not provided",
-    "details": "Authentication credentials were not provided"
+    "ok": true,
+    "data": {
+        "dealer": {
+            "status": "not_unlocked",
+            "is_active": false,
+            "active_until": null,
+            "live_listing_count": 0,
+            "threshold": 10,
+            "remaining_to_unlock": 10,
+            "next_month_unlocked": false,
+            "current_fee_percent": "8.00",
+            "member_fee_percent": "8.00",
+            "dealer_fee_percent": "5.00",
+            "current_month_label": "July 2026",
+            "next_month_label": "August 2026"
+        },
+        "metrics": {
+            "active_listings": 0,
+            "pending_review_listings": 0,
+            "draft_listings": 0,
+            "rejected_listings": 0,
+            "archived_listings": 0,
+            "sold_listings": 0,
+            "total_views": 0,
+            "total_watchers": 0,
+            "orders_total": 0,
+            "conversion_rate_percent": null,
+            "gross_sales": "0.00",
+            "net_sales": "0.00",
+            "pending_payout_total": "0.00",
+            "pending_actions_total": 0,
+            "offers_waiting": 0,
+            "sold_awaiting_label": 0
+        },
+        "action_queue": [],
+        "offers": [],
+        "what_to_list": [
+            {
+                "brand": "Tudor",
+                "model": "Black Bay Pro",
+                "reference_number": "M79470-0001",
+                "reason": "Low supply",
+                "active_supply": 1,
+                "views": 4,
+                "watchers": 0
+            },
+            {
+                "brand": "Panerai",
+                "model": "Luminor Marina",
+                "reference_number": "PAM01312-04",
+                "reason": "Low supply",
+                "active_supply": 1,
+                "views": 3,
+                "watchers": 0
+            },
+            {
+                "brand": "Breitling",
+                "model": "Navitimer B01",
+                "reference_number": "AB0138241G1P1-04",
+                "reason": "Low supply",
+                "active_supply": 1,
+                "views": 0,
+                "watchers": 0
+            },
+            {
+                "brand": "Zenith",
+                "model": "Chronomaster Sport",
+                "reference_number": "03.3100.3600/69.M3100-04",
+                "reason": "Low supply",
+                "active_supply": 1,
+                "views": 0,
+                "watchers": 0
+            },
+            {
+                "brand": "Grand Seiko",
+                "model": "Snowflake",
+                "reference_number": "SBGA211-04",
+                "reason": "Low supply",
+                "active_supply": 1,
+                "views": 0,
+                "watchers": 0
+            }
+        ],
+        "recent_orders": [],
+        "recent_listings": []
+    }
 }

@@ -1,5 +1,24 @@
 {
-    "ok": false,
-    "error": "Authentication credentials were not provided",
-    "details": "Authentication credentials were not provided"
+    "ok": true,
+    "data": [
+        {
+            "id": "513a326b-31e6-4fb0-b116-ef73b338054e",
+            "user_id": "fafc2903-6bd7-4f90-a0b0-e3965fe10e96",
+            "label": "Primary",
+            "first_name": "Ios",
+            "last_name": "Buyer",
+            "full_name": "Ios Buyer",
+            "phone": "+12025550142",
+            "line1": "1 Test Way",
+            "line2": null,
+            "city": "Baltimore",
+            "region": "MD",
+            "postal_code": "21201",
+            "country": "US",
+            "is_default_shipping": true,
+            "is_default_billing": true,
+            "created_at": "2026-07-12T05:27:05.452319+00:00",
+            "updated_at": "2026-07-12T05:27:05.452319+00:00"
+        }
+    ]
 }
