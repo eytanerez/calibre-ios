@@ -211,6 +211,8 @@ struct YouScreen: View {
     }
 
     private func signOut() async {
+        // Stop APNs delivery to this device before dropping the session.
+        services.push.unregisterOnSignOut()
         await session.logout()
         // Keep the shell open — the visitor continues as a guest.
         guestChosen = true

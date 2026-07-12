@@ -326,7 +326,11 @@ struct OrderDetailScreen: View {
             guard !Task.isCancelled else { return }
             let inTransit = order?.status == .toAuth || order?.status == .toBuyer
             guard inTransit else { continue }
-            order = try? await services.commerce.order(id: orderID)
+            // Only replace on success — a transient failure must not wipe the
+            // rendered order and strand the screen on a spinner.
+            if let refreshed = try? await services.commerce.order(id: orderID) {
+                order = refreshed
+            }
         }
     }
 
@@ -334,7 +338,9 @@ struct OrderDetailScreen: View {
 
     private func showsTracker(_ order: Order) -> Bool {
         switch order.status {
-        case .awaitingWire, .cancelled, .refunded, .unknown: false
+        // authFail diverges from the happy path — the auth-result card tells
+        // that story instead of lighting the "Authenticated" checkpoint.
+        case .awaitingWire, .authFail, .cancelled, .refunded, .unknown: false
         default: true
         }
     }
@@ -342,7 +348,7 @@ struct OrderDetailScreen: View {
     private func trackerIndex(_ order: Order) -> Int {
         switch order.status {
         case .purchased, .toAuth: 0
-        case .authPass, .authFail: 2
+        case .authPass: 2
         case .toBuyer: 3
         case .delivered: 5
         default: 0

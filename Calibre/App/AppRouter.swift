@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 /// The five root tabs.
 enum AppTab: Hashable {
@@ -39,7 +40,10 @@ final class AppRouter {
     var discoverPath: [Route] = []
     var sellPath: [Route] = []
     var activityPath: [Route] = []
-    var youPath: [Route] = []
+    /// Type-erased: the You tab pushes both `Route` (support, from deep links)
+    /// and `ProfileDestination` (profile/addresses/…), so a homogeneous
+    /// `[Route]` would silently drop the profile pushes and desync the stack.
+    var youPath = NavigationPath()
 
     /// Set when a calibre://auth/reset?token= link arrives; the root view
     /// presents the reset-password screen.
@@ -68,7 +72,7 @@ final class AppRouter {
         case .discover: discoverPath.append(route)
         case .sell: sellPath.append(route)
         case .activity: activityPath.append(route)
-        case .you: youPath.append(route)
+        case .you: youPath.append(route)  // NavigationPath.append accepts any Hashable
         }
     }
 

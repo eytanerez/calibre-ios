@@ -28,7 +28,12 @@ public final class SupportStore {
     @discardableResult
     public func loadThread(authenticated: Bool) async throws -> SupportConversation? {
         var query: [URLQueryItem] = []
-        if !authenticated, let token = guestToken {
+        if authenticated {
+            // Once signed in, the account thread is authoritative — drop any
+            // lingering guest token so a shared device can't resurface the
+            // previous guest's conversation later.
+            forgetGuestToken()
+        } else if let token = guestToken {
             query.append(URLQueryItem(name: "token", value: token))
         }
         // The endpoint answers for guests too; only send auth when we have it.

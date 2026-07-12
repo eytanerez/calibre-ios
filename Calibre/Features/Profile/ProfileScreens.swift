@@ -83,6 +83,7 @@ struct ProfileScreen: View {
     @Environment(AuthSession.self) private var session
 
     @State private var profile: Profile?
+    @State private var failed = false
 
     var body: some View {
         ScrollView {
@@ -95,6 +96,14 @@ struct ProfileScreen: View {
                         ("Phone", profile.phone ?? "—"),
                         ("Member since", profile.createdAt?.formatted(date: .abbreviated, time: .omitted) ?? "—"),
                     ])
+                } else if failed {
+                    EmptyState(
+                        icon: "person.crop.circle.badge.exclamationmark",
+                        title: "Couldn't load your profile",
+                        message: "Check your connection and try again.",
+                        actionTitle: "Try again"
+                    ) { Task { await load() } }
+                    .padding(.top, Space.xxl)
                 } else {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, Space.xxl)
                 }
@@ -104,8 +113,15 @@ struct ProfileScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-            profile = try? await services.client.accountProfile()
+        .task { await load() }
+    }
+
+    private func load() async {
+        failed = false
+        do {
+            profile = try await services.client.accountProfile()
+        } catch {
+            if profile == nil { failed = true }
         }
     }
 
@@ -228,7 +244,12 @@ private struct AddressForm: View {
                         CalibreTextField("State", text: $region)
                         CalibreTextField("ZIP", text: $postalCode).keyboardType(.numbersAndPunctuation)
                     }
-                    CalibreTextField("Country", text: $country)
+                    CalibreTextField(
+                        "Country code",
+                        text: $country,
+                        placeholder: "2-letter, e.g. US",
+                        error: country.count == 2 || country.isEmpty ? nil : "Use a 2-letter code like US or CA"
+                    )
                     CalibreTextField("Phone", text: $phone).keyboardType(.phonePad)
                     Toggle("Set as default shipping address", isOn: $makeDefault)
                         .font(CalibreType.body).tint(Color.calibre.primary)
@@ -383,10 +404,16 @@ struct NotificationSettingsScreen: View {
     @Environment(ToastCenter.self) private var toasts
 
     @State private var prefs: NotificationPreferences?
+    @State private var pushEnabled = false
+    @State private var pushDenied = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s) {
+                if !pushEnabled {
+                    pushPrimer
+                        .padding(.bottom, Space.m)
+                }
                 if let prefs {
                     toggle("Offers", "Counters, accepts, and declines on your offers", prefs.offerUpdates) {
                         NotificationPreferencesPatch(offerUpdates: $0)
@@ -418,7 +445,49 @@ struct NotificationSettingsScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
-        .task { prefs = try? await services.account.loadPreferences() }
+        .task {
+            prefs = try? await services.account.loadPreferences()
+            await refreshPushStatus()
+        }
+    }
+
+    /// Prompt to turn on system notifications — the category toggles below only
+    /// matter once push delivery is authorized.
+    private var pushPrimer: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text(pushDenied ? "Notifications are off" : "Turn on notifications")
+                .font(CalibreType.bodySemiBold)
+                .foregroundStyle(Color.calibre.foreground)
+            Text(pushDenied
+                 ? "Enable notifications for Calibre in Settings to know the moment a seller responds or an order moves."
+                 : "Know the second a seller responds, an order ships, or a saved watch drops in price.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+            Button(pushDenied ? "Open Settings" : "Enable notifications") {
+                Task { await enablePush() }
+            }
+            .buttonStyle(.calibre(.primary))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Space.l)
+        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+    }
+
+    private func refreshPushStatus() async {
+        let status = await services.push.authorizationStatus()
+        pushEnabled = status == .authorized || status == .provisional
+        pushDenied = status == .denied
+    }
+
+    private func enablePush() async {
+        if pushDenied {
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                await UIApplication.shared.open(url)
+            }
+            return
+        }
+        _ = await services.push.requestAuthorization()
+        await refreshPushStatus()
     }
 
     @ViewBuilder
@@ -443,7 +512,11 @@ struct NotificationSettingsScreen: View {
             Haptics.shared.play(.selection)
         } catch {
             toasts.show(title: "Couldn't update", message: error.orderMessage, tone: .error)
-            prefs = try? await services.account.loadPreferences()
+            // Re-sync from the server, but never wipe the loaded prefs on a
+            // failed reload — that would strand the screen on a spinner.
+            if let fresh = try? await services.account.loadPreferences() {
+                prefs = fresh
+            }
         }
     }
 }

@@ -53,7 +53,8 @@ struct OrdersListScreen: View {
             ) { Task { await load() } }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         default:
-            if orders.isEmpty {
+            if orders.isEmpty && search.isEmpty {
+                // A genuinely empty account — no search bar needed.
                 EmptyState(
                     icon: "shippingbox",
                     title: "No orders yet",
@@ -61,18 +62,29 @@ struct OrdersListScreen: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                // Keep the search field mounted even when a query returns no
+                // matches, so the user can always clear or edit it.
                 ScrollView {
-                    LazyVStack(spacing: Space.m) {
-                        ForEach(orders) { order in
-                            Button {
-                                services.router.open(.order(order.id))
-                            } label: {
-                                OrderRow(order: order)
+                    if orders.isEmpty {
+                        EmptyState(
+                            icon: "magnifyingglass",
+                            title: "No matches",
+                            message: "No orders match \u{201C}\(search)\u{201D}. Try a different order number or watch name."
+                        )
+                        .padding(.top, Space.xxl)
+                    } else {
+                        LazyVStack(spacing: Space.m) {
+                            ForEach(orders) { order in
+                                Button {
+                                    services.router.open(.order(order.id))
+                                } label: {
+                                    OrderRow(order: order)
+                                }
+                                .buttonStyle(PressableStyle())
                             }
-                            .buttonStyle(PressableStyle())
                         }
+                        .padding(Space.margin)
                     }
-                    .padding(Space.margin)
                 }
                 .searchable(text: $search, prompt: "Search orders")
                 .onChange(of: search) { _, _ in

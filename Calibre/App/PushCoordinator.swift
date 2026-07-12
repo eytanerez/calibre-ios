@@ -6,6 +6,9 @@ import UserNotifications
 
 /// The Sendable fields lifted out of a raw APNs payload.
 struct DecodedPush: Sendable {
+    /// The notification's request identifier — stable across the foreground
+    /// present and a later tap, so the inbox can dedupe.
+    let id: String
     let title: String
     let body: String
     let route: String?
@@ -43,7 +46,9 @@ final class AlertsInbox {
         }
     }
 
-    func record(category: String, title: String, body: String, route: String?, id: String = UUID().uuidString, at: Date) {
+    func record(id: String = UUID().uuidString, category: String, title: String, body: String, route: String?, at: Date) {
+        // Dedupe: the same push arrives twice (foreground present, then tap).
+        guard !items.contains(where: { $0.id == id }) else { return }
         items.insert(
             AlertItem(id: id, category: category, title: title, body: body, route: route, receivedAt: at, read: false),
             at: 0
@@ -150,9 +155,9 @@ final class PushCoordinator: NSObject {
         Task { try? await account.unregisterDevice(token: token) }
     }
 
-    /// Records a decoded push and, on a tap (not foreground), navigates.
+    /// Records a decoded push (deduped by id) and, on a tap, navigates.
     func handle(_ push: DecodedPush, receivedAt: Date, foreground: Bool) {
-        alerts?.record(category: push.category, title: push.title, body: push.body, route: push.route, at: receivedAt)
+        alerts?.record(id: push.id, category: push.category, title: push.title, body: push.body, route: push.route, at: receivedAt)
         // A foreground push surfaces as a banner (via the delegate); a tap
         // navigates.
         if !foreground, let route = push.route { open(route: route) }
@@ -160,14 +165,14 @@ final class PushCoordinator: NSObject {
 
     /// Extracts the Sendable fields we need from a raw APNs payload. Runs in
     /// the nonisolated delegate so nothing non-Sendable crosses to the actor.
-    nonisolated static func decode(userInfo: [AnyHashable: Any]) -> DecodedPush {
+    nonisolated static func decode(userInfo: [AnyHashable: Any], id: String) -> DecodedPush {
         let route = userInfo["route"] as? String
         let aps = userInfo["aps"] as? [AnyHashable: Any]
         let alert = aps?["alert"] as? [AnyHashable: Any]
         let title = (alert?["title"] as? String) ?? "Calibre"
         let body = (alert?["body"] as? String) ?? ""
         let category = (userInfo["category"] as? String) ?? categoryFor(route: route)
-        return DecodedPush(title: title, body: body, route: route, category: category)
+        return DecodedPush(id: id, title: title, body: body, route: route, category: category)
     }
 
     nonisolated static func categoryFor(route: String?) -> String {
@@ -205,6 +210,8 @@ final class PushCoordinator: NSObject {
         case "offer": return id.map { .offer($0) }
         case "listing": return id.map { .listing($0) }
         case "seller": return id.map { .seller($0) }
+        case "brand": return id.map { .brand($0) }
+        case "journal": return id.map { .journalArticle($0) }
         case "support": return .supportChat
         case "alerts": return .alerts
         default: return nil
@@ -220,7 +227,7 @@ extension PushCoordinator: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        let decoded = PushCoordinator.decode(userInfo: notification.request.content.userInfo)
+        let decoded = PushCoordinator.decode(userInfo: notification.request.content.userInfo, id: notification.request.identifier)
         Task { @MainActor in
             handle(decoded, receivedAt: .now, foreground: true)
         }
@@ -233,7 +240,7 @@ extension PushCoordinator: UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let decoded = PushCoordinator.decode(userInfo: response.notification.request.content.userInfo)
+        let decoded = PushCoordinator.decode(userInfo: response.notification.request.content.userInfo, id: response.notification.request.identifier)
         Task { @MainActor in
             handle(decoded, receivedAt: .now, foreground: false)
         }
