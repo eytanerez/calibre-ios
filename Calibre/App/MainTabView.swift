@@ -108,12 +108,18 @@ struct RouteDestinationView: View {
                     detail: nil
                 )
             case .alerts:
+                // P5 TEMP WIRING — revert before landing: calibre://alerts
+                // opens the money-track verification harness in DEBUG builds.
+                #if DEBUG
+                P5DebugHarness()
+                #else
                 placeholder(
                     icon: "bell",
                     title: "Alerts",
                     message: "Your alerts inbox arrives with the Activity build.",
                     detail: nil
                 )
+                #endif
             case .checkout(let listingID, _):
                 placeholder(
                     icon: "creditcard",

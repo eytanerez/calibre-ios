@@ -1,0 +1,34 @@
+{
+  "$schema": "https://github.com/SideStore/sidestore-source-types/raw/main/schema.json",
+  "name": "Calibre (Personal)",
+  "description": "Self-hosted sideload source for the Calibre iOS app.",
+  "apps": [
+    {
+      "name": "Calibre",
+      "bundleIdentifier": "com.buycalibre.calibre",
+      "developerName": "Eytan Erez",
+      "localizedDescription": "A native iOS marketplace for discovering, buying, and selling watches.",
+      "iconURL": "https://raw.githubusercontent.com/eytanerez/calibre-ios/main/icon.png",
+      "appPermissions": {
+        "entitlements": [
+          "aps-environment"
+        ],
+        "privacy": {
+          "NSCameraUsageDescription": "Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.",
+          "NSPhotoLibraryUsageDescription": "Calibre lets you choose existing photos of your watch when creating a listing."
+        }
+      },
+      "versions": [
+        {
+          "version": "1.0",
+          "buildVersion": "1",
+          "date": "2026-07-12",
+          "localizedDescription": "Initial SideStore release.",
+          "downloadURL": "https://github.com/eytanerez/calibre-ios/releases/download/v1.0-b1/Calibre.ipa",
+          "size": 13818075
+        }
+      ]
+    }
+  ],
+  "news": []
+}
