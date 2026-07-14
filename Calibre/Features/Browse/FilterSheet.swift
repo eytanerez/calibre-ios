@@ -20,6 +20,7 @@ struct FilterSheet: View {
     @State private var priceUpper: Double
     @State private var liveCount: Int?
     @State private var countTask: Task<Void, Never>?
+    @State private var tutorial: TutorialController
 
     private let priceBounds: ClosedRange<Double>
 
@@ -47,6 +48,45 @@ struct FilterSheet: View {
         _priceUpper = State(
             initialValue: (filters.priceMax as NSDecimalNumber?)?.doubleValue ?? bounds.upperBound
         )
+        _tutorial = State(initialValue: TutorialController(
+            id: "browse.filters",
+            steps: FilterSheet.tutorialSteps(locked: lockedBrand != nil)
+        ))
+    }
+
+    /// The cascade beat only exists when the brand isn't locked (BrandScreen
+    /// hides that section); the price and live-count beats always apply.
+    private static func tutorialSteps(locked: Bool) -> [TutorialStep] {
+        var steps: [TutorialStep] = []
+        if !locked {
+            steps.append(TutorialStep(
+                id: "cascade",
+                anchor: "filters.watch",
+                title: "It narrows as you go",
+                message: "Choose a brand and a Model field appears; choose a model and Reference follows. Each pick sharpens the next.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card)
+            ))
+        }
+        steps.append(TutorialStep(
+            id: "price",
+            anchor: "filters.price",
+            title: "Set your price",
+            message: "Drag either handle to bracket a range — a low end and a high end move independently.",
+            advance: .perform(event: "price"),
+            hint: .drag(.right),
+            cutout: .roundedRect(Radius.card),
+            actionPrompt: "Drag a price handle"
+        ))
+        steps.append(TutorialStep(
+            id: "apply",
+            anchor: "filters.apply",
+            title: "Always a live count",
+            message: "This button keeps a running tally of matches as you refine. And tapping a chosen condition again clears it back to Any.",
+            advance: .tapToContinue,
+            cutout: .roundedRect(Radius.control)
+        ))
+        return steps
     }
 
     var body: some View {
@@ -69,11 +109,13 @@ struct FilterSheet: View {
                 footer
             }
         }
+        .tutorialOverlay(tutorial)
         .onChange(of: draft) {
             scheduleCount()
         }
         .task {
             scheduleCount(immediately: true)
+            tutorial.startIfNeeded()
         }
     }
 
@@ -90,6 +132,7 @@ struct FilterSheet: View {
                 FacetSelect(label: "Reference", options: referenceOptions, selection: referenceBinding)
             }
         }
+        .tutorialAnchor("filters.watch")
     }
 
     private var conditionSection: some View {
@@ -121,6 +164,7 @@ struct FilterSheet: View {
             .onChange(of: priceLower) { syncPriceIntoDraft() }
             .onChange(of: priceUpper) { syncPriceIntoDraft() }
         }
+        .tutorialAnchor("filters.price")
     }
 
     private var yearAndPapersSection: some View {
@@ -191,6 +235,7 @@ struct FilterSheet: View {
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
             .disabled(yearError != nil)
+            .tutorialAnchor("filters.apply")
 
             Button("Clear all") {
                 draft = draft.cleared(keepBrand: lockedBrand != nil)
@@ -295,6 +340,8 @@ struct FilterSheet: View {
     private func syncPriceIntoDraft() {
         draft.priceMin = priceLower > priceBounds.lowerBound ? Decimal(Int(priceLower)) : nil
         draft.priceMax = priceUpper < priceBounds.upperBound ? Decimal(Int(priceUpper)) : nil
+        // A real drag of either handle advances the hands-on price step.
+        tutorial.fire("price")
     }
 }
 

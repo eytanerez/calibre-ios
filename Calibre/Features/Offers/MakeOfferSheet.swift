@@ -15,6 +15,19 @@ struct MakeOfferSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var model: MakeOfferModel?
+    @State private var tutorial = TutorialController(
+        id: "offers.make",
+        steps: [
+            TutorialStep(
+                id: "hold",
+                anchor: "offer.hold",
+                title: "A hold, not a charge",
+                message: "Offers are backed by a refundable $250 hold on your card — never a charge. It's released once you pay, and only kept if the seller accepts and you then walk away.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card)
+            )
+        ]
+    )
 
     var body: some View {
         Group {
@@ -79,6 +92,7 @@ struct MakeOfferSheet: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
+            .tutorialOverlay(tutorial)
             .background(paymentSheetHost(model))
         }
     }
@@ -179,6 +193,7 @@ struct MakeOfferSheet: View {
             }
 
             consentRow(model)
+                .tutorialAnchor("offer.hold")
 
             if let error = model.error {
                 InlineErrorLine(message: error)
@@ -194,6 +209,7 @@ struct MakeOfferSheet: View {
             .disabled(!model.canSubmit || model.creating)
         }
         .animation(Motion.easeFast, value: model.error)
+        .onAppear { tutorial.startIfNeeded() }
     }
 
     private func consentRow(_ model: MakeOfferModel) -> some View {

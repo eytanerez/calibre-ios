@@ -10,6 +10,7 @@ final class DiscoverAndInfoUITests: XCTestCase {
         app.launchArguments = [
             "-hasSeenIntro", "YES",
             "-guestChosen", "YES",
+            "-disableTutorials",
         ]
         return app
     }

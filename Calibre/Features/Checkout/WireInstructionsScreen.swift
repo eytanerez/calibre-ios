@@ -10,6 +10,29 @@ struct WireInstructionsScreen: View {
 
     @Environment(ToastCenter.self) private var toasts
     @State private var confirmingSent = false
+    @State private var tutorial = TutorialController(
+        id: "checkout.wire",
+        steps: [
+            TutorialStep(
+                id: "copy",
+                anchor: "wire.details",
+                title: "Tap to copy",
+                message: "Every field has a copy button — tap one to drop it straight onto your clipboard for your bank's transfer form.",
+                advance: .perform(event: "copy"),
+                hint: .tap,
+                cutout: .roundedRect(Radius.card),
+                actionPrompt: "Tap a copy button"
+            ),
+            TutorialStep(
+                id: "reference",
+                anchor: "wire.reference",
+                title: "Two things that matter",
+                message: "Include the reference or your transfer can't be matched to this order. And “I've sent the wire” only tells us to expect it — tap that after you've actually sent the money from your bank.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card)
+            ),
+        ]
+    )
 
     var body: some View {
         ScrollView {
@@ -19,12 +42,14 @@ struct WireInstructionsScreen: View {
 
                     if let instructions = checkout.wire.instructions {
                         detailRows(instructions, breakdown: checkout.breakdown)
+                            .tutorialAnchor("wire.details")
 
                         CalloutBand(
                             icon: "number",
                             title: "The reference matters",
                             message: "Include the reference or your transfer can't be matched to this order."
                         )
+                        .tutorialAnchor("wire.reference")
                     } else {
                         EmptyState(
                             icon: "building.columns",
@@ -43,8 +68,15 @@ struct WireInstructionsScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .background(Color.calibre.background.ignoresSafeArea())
+        .tutorialOverlay(tutorial)
         .navigationTitle("Wire transfer")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if model.wireCheckout?.wire.instructions != nil { tutorial.startIfNeeded() }
+        }
+        .onChange(of: model.wireCheckout?.wire.instructions != nil) { _, hasInstructions in
+            if hasInstructions { tutorial.startIfNeeded() }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { CheckoutCloseButton() }
         }
@@ -145,6 +177,8 @@ struct WireInstructionsScreen: View {
                     UIPasteboard.general.string = rows[index].value
                     Haptics.shared.play(.selection)
                     toasts.show(title: "Copied", message: "\(rows[index].label) is on your clipboard.")
+                    // A real copy advances the hands-on step.
+                    tutorial.fire("copy")
                 }
                 if index < rows.count - 1 {
                     Rectangle()

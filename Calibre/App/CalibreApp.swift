@@ -31,6 +31,12 @@ struct CalibreApp: App {
             UserDefaults.standard.set(false, forKey: "hasSeenIntro")
             UserDefaults.standard.set(false, forKey: "guestChosen")
             KeychainTokenStore().clear()
+            TutorialLedger.shared.resetAll()
+        }
+        // Independent hook so a run can replay first-run tutorials without
+        // wiping auth/intro state.
+        if ProcessInfo.processInfo.arguments.contains("-resetTutorials") {
+            TutorialLedger.shared.resetAll()
         }
         #endif
     }

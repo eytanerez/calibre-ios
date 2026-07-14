@@ -17,6 +17,19 @@ struct CartSheet: View {
     @State private var isLoading = true
     @State private var confirmRemove = false
     @State private var swapCandidate: WatchlistItem?
+    @State private var tutorial = TutorialController(
+        id: "cart.bag",
+        steps: [
+            TutorialStep(
+                id: "one-at-a-time",
+                anchor: "cart.bagItem",
+                title: "One watch at a time",
+                message: "Your bag carries a single watch, so every purchase gets our full attention. Add another and we'll tuck this one into Saved — nothing is lost.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card)
+            )
+        ]
+    )
 
     private var bagItem: CartItem? { services.commerce.cart.first }
 
@@ -42,8 +55,15 @@ struct CartSheet: View {
                 .padding(.bottom, Space.xxl)
             }
         }
+        .tutorialOverlay(tutorial)
         .task {
             await loadEverything()
+            if bagItem != nil { tutorial.startIfNeeded() }
+        }
+        // Teach the one-watch rule at the moment there's actually a watch to
+        // point at — not over an empty bag.
+        .onChange(of: bagItem?.listingId) { _, id in
+            if id != nil { tutorial.startIfNeeded() }
         }
         .confirmationDialog(
             "Take this watch out of your bag?",
@@ -77,6 +97,7 @@ struct CartSheet: View {
         if let item = bagItem {
             VStack(alignment: .leading, spacing: Space.m) {
                 bagCard(item)
+                    .tutorialAnchor("cart.bagItem")
 
                 Button("Checkout") {
                     Haptics.shared.play(.press)

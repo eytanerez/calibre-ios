@@ -157,6 +157,29 @@ private struct GradeGuideSheet: View {
 struct PhotosStep: View {
     @Bindable var model: WizardModel
     @State private var captureTarget: CaptureTarget?
+    @State private var tutorial = TutorialController(
+        id: "sell.wizard.photos",
+        steps: [
+            TutorialStep(
+                id: "angles",
+                anchor: "wizard.photos.header",
+                title: "Six angles, one story",
+                message: "All six shots are required. Each uploads the instant you take it, and your Front photo becomes the listing's hero. You can submit once every shot finishes uploading.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card)
+            ),
+            TutorialStep(
+                id: "capture",
+                anchor: "wizard.photos.grid",
+                title: "Fill a slot",
+                message: "Tap any slot to open the camera and capture that angle. Do the Front first — that's your hero.",
+                advance: .perform(event: "photo"),
+                hint: .tap,
+                cutout: .roundedRect(Radius.card),
+                actionPrompt: "Tap a slot to add a photo"
+            ),
+        ]
+    )
 
     private let columns = [
         GridItem(.flexible(), spacing: Space.l),
@@ -175,12 +198,14 @@ struct PhotosStep: View {
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .tutorialAnchor("wizard.photos.header")
 
             LazyVGrid(columns: columns, spacing: Space.xl) {
                 ForEach(ListingImageCategory.allCases, id: \.self) { category in
                     slotCell(category)
                 }
             }
+            .tutorialAnchor("wizard.photos.grid")
 
             morePhotos
 
@@ -195,9 +220,13 @@ struct PhotosStep: View {
             .buttonStyle(.calibre(.secondary, fullWidth: true))
             #endif
         }
+        .tutorialOverlay(tutorial)
+        .onAppear { tutorial.startIfNeeded() }
         .fullScreenCover(item: $captureTarget) { target in
             CaptureScreen(target: target) { image in
                 Task { await model.attach(image: image, to: target.category) }
+                // A real captured photo advances the hands-on step.
+                tutorial.fire("photo")
             }
         }
     }

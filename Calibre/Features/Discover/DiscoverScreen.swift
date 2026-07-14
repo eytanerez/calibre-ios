@@ -19,8 +19,12 @@ struct DiscoverScreen: View {
     @State private var undoable: UndoRecord?
     @State private var undoExpiry: Task<Void, Never>?
     @State private var showSaved = false
-    @AppStorage("hasSeenDiscoverIntro") private var hasSeenDiscoverIntro = false
-    @State private var showIntro = false
+    /// The first-run, hands-on deck lesson: the user actually swipes a real
+    /// card left and right to finish it. Replaces the old centered popup.
+    @State private var tutorial = TutorialController(
+        id: "discover.deck",
+        steps: DiscoverScreen.tutorialSteps
+    )
     /// Zoom-transition anchor for the PDP push (P3 wires the destination).
     @Namespace private var deckNamespace
 
@@ -29,12 +33,15 @@ struct DiscoverScreen: View {
             header
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .tutorialAnchor("discover.deck")
             controls
+                .tutorialAnchor("discover.controls")
         }
         .padding(.horizontal, Space.margin)
         .padding(.bottom, Space.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.calibre.background)
+        .tutorialOverlay(tutorial)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $showSaved) {
             SavedScreen()
@@ -44,20 +51,16 @@ struct DiscoverScreen: View {
         .onDisappear { feed?.stopPrefetching() }
         .onAppear {
             feed?.updatePrefetch()
-            if !hasSeenDiscoverIntro {
-                showIntro = true
-            }
+            if deckIsActive { tutorial.startIfNeeded() }
+        }
+        // Only start teaching once a real card is on the deck — the hands-on
+        // steps need something to swipe.
+        .onChange(of: deckIsActive) { _, active in
+            if active { tutorial.startIfNeeded() }
         }
         .onChange(of: session.isAuthenticated) { _, isAuthenticated in
             guard isAuthenticated else { return }
             Task { await feed?.handleAuthChange() }
-        }
-        .fullScreenCover(isPresented: $showIntro) {
-            DiscoverIntroOverlay {
-                hasSeenDiscoverIntro = true
-                showIntro = false
-            }
-            .presentationBackground(.clear)
         }
     }
 
@@ -247,6 +250,8 @@ struct DiscoverScreen: View {
     // MARK: - Semantics
 
     private func handleCommit(_ listing: Listing, _ direction: SwipeDirection) {
+        // A real swipe is how the hands-on lesson advances.
+        tutorial.fire(direction == .save ? "save" : "pass")
         switch direction {
         case .pass:
             services.signals.recordDiscoverPass(listing.id)
@@ -329,6 +334,53 @@ struct DiscoverScreen: View {
     }
 
     // MARK: - Lifecycle
+
+    // MARK: - Tutorial
+
+    /// The one-time, hands-on deck lesson: set up the buttons and the Undo
+    /// safety net first, then have the user actually swipe a real card left
+    /// (pass) and right (save). Completion is remembered forever.
+    private static var tutorialSteps: [TutorialStep] {
+        [
+            TutorialStep(
+                id: "deck-intro",
+                title: "This is your deck",
+                message: "A curated stack of watches, dealt one at a time. Tap any card for its full listing — or use the two swipes below.",
+                advance: .tapToContinue
+            ),
+            TutorialStep(
+                id: "deck-controls",
+                anchor: "discover.controls",
+                title: "Buttons and a safety net",
+                message: "Prefer tapping? ✕ passes, ♥ saves. Change your mind and an Undo appears right here for five seconds.",
+                advance: .tapToContinue,
+                cutout: .capsule,
+                cutoutPadding: Space.m
+            ),
+            TutorialStep(
+                id: "deck-pass",
+                anchor: "discover.deck",
+                title: "Swipe left to pass",
+                message: "Not the one? Flick the card to the left and the next slides up.",
+                advance: .perform(event: "pass"),
+                hint: .swipe(.left),
+                cutout: .roundedRect(Radius.overlay),
+                cutoutPadding: Space.xs,
+                actionPrompt: "Swipe left to pass"
+            ),
+            TutorialStep(
+                id: "deck-save",
+                anchor: "discover.deck",
+                title: "Swipe right to save",
+                message: "Love it? Send the card right and it lands in your Saved list.",
+                advance: .perform(event: "save"),
+                hint: .swipe(.right),
+                cutout: .roundedRect(Radius.overlay),
+                cutoutPadding: Space.xs,
+                actionPrompt: "Swipe right to save"
+            ),
+        ]
+    }
 
     private func bootstrapFeed() async {
         guard feed == nil else { return }

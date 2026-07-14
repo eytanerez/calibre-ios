@@ -28,6 +28,7 @@ final class AuthFlowUITests: XCTestCase {
         app.launchArguments = [
             "-hasSeenIntro", hasSeenIntro ? "YES" : "NO",
             "-guestChosen", guest ? "YES" : "NO",
+            "-disableTutorials",
         ]
         return app
     }

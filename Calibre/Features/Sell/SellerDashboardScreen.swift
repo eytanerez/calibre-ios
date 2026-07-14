@@ -35,6 +35,26 @@ struct SellerDashboardScreen: View {
     @State private var confirmArchive: Listing?
     @State private var confirmDelete: Listing?
     @State private var showAllInventory = false
+    @State private var tutorial = TutorialController(
+        id: "sell.dashboard",
+        steps: [
+            TutorialStep(
+                id: "menu",
+                anchor: "sell.menu",
+                title: "Bulk import lives here",
+                message: "Listing many watches at once? This ⋯ menu opens your bulk-import status, where CSV drafts you started on the web get finished.",
+                advance: .tapToContinue,
+                hint: .tap,
+                cutout: .circle
+            ),
+            TutorialStep(
+                id: "shop",
+                title: "Running your shop",
+                message: "Swipe any inventory row left for its quick actions — Edit, Submit for review, or Archive. And the queue up top always surfaces whatever needs you next: an offer to answer, a sale to ship, a draft to finish.",
+                advance: .tapToContinue
+            ),
+        ]
+    )
 
     var body: some View {
         List {
@@ -71,6 +91,7 @@ struct SellerDashboardScreen: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Color.calibre.background.ignoresSafeArea())
+        .tutorialOverlay(tutorial)
         .environment(\.defaultMinListRowHeight, 1)
         .refreshable {
             await load()
@@ -79,6 +100,7 @@ struct SellerDashboardScreen: View {
             if dashboard == nil {
                 await load()
             }
+            tutorial.startIfNeeded()
         }
         .fullScreenCover(item: $wizardContext) { context in
             ListingWizardScreen(context: context) {
@@ -242,6 +264,7 @@ struct SellerDashboardScreen: View {
                         .frame(width: Space.touchTarget, height: Space.touchTarget, alignment: .trailing)
                 }
                 .accessibilityLabel("More options")
+                .tutorialAnchor("sell.menu")
             }
 
             Button {

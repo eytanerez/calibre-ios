@@ -7,6 +7,19 @@ import SwiftUI
 /// shown in dollars once the server has priced the order.
 struct CheckoutMethodStep: View {
     @Bindable var model: CheckoutModel
+    @State private var tutorial = TutorialController(
+        id: "checkout.method",
+        steps: [
+            TutorialStep(
+                id: "methods",
+                anchor: "checkout.methods",
+                title: "Two ways to pay",
+                message: "Card or Apple Pay clears instantly but adds about 3%. A wire transfer skips that cost — your watch is held for 24 hours while the transfer lands.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card)
+            )
+        ]
+    )
 
     var body: some View {
         ScrollView {
@@ -42,6 +55,7 @@ struct CheckoutMethodStep: View {
                         model.method = .wire
                     }
                 }
+                .tutorialAnchor("checkout.methods")
 
                 if let error = model.pricingError {
                     VStack(alignment: .leading, spacing: Space.s) {
@@ -58,8 +72,10 @@ struct CheckoutMethodStep: View {
             .padding(.bottom, Space.xxl)
         }
         .background(Color.calibre.background.ignoresSafeArea())
+        .tutorialOverlay(tutorial)
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { tutorial.startIfNeeded() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { CheckoutCloseButton() }
         }

@@ -12,6 +12,30 @@ struct OffersListScreen: View {
 
     @State private var model: OffersListModel?
     @State private var segment: OffersSegment = .sent
+    @State private var tutorial = TutorialController(
+        id: "offers.list",
+        steps: [
+            TutorialStep(
+                id: "swipe",
+                anchor: "offers.list",
+                title: "Swipe for the quick answer",
+                message: "Swipe any offer row: Accept or Decline the ones waiting on you, or Cancel one you sent. Each offer expires 24 hours after the last move.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card),
+                cutoutPadding: Space.xs
+            ),
+            TutorialStep(
+                id: "segments",
+                anchor: "offers.segments",
+                title: "Two sides to every deal",
+                message: "Sent holds what you've offered; Received holds what buyers have offered you. Tap across to see the other side.",
+                advance: .perform(event: "segment"),
+                hint: .tap,
+                cutout: .roundedRect(Radius.control),
+                actionPrompt: "Tap a segment"
+            ),
+        ]
+    )
 
     var body: some View {
         Group {
@@ -31,8 +55,10 @@ struct OffersListScreen: View {
             }
         }
         .background(Color.calibre.background.ignoresSafeArea())
+        .tutorialOverlay(tutorial)
         .navigationTitle("Offers")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: segment) { _, _ in tutorial.fire("segment") }
         .task {
             guard session.isAuthenticated, model == nil else { return }
             let created = OffersListModel(
@@ -54,6 +80,7 @@ struct OffersListScreen: View {
                 items: [(.sent, "Sent"), (.received, "Received")]
             )
             .padding(.horizontal, Space.margin)
+            .tutorialAnchor("offers.segments")
 
             switch model.phase {
             case .loading:
@@ -122,6 +149,8 @@ struct OffersListScreen: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .tutorialAnchor("offers.list")
+        .onAppear { tutorial.startIfNeeded() }
         .refreshable { await model.load(quiet: true) }
         .confirmationDialog(
             model.pendingAction?.title ?? "",

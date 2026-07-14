@@ -12,6 +12,20 @@ struct HomeScreen: View {
     @State private var pushed: BrowseDestination?
     @State private var showCart = false
     @Namespace private var zoomNamespace
+    @State private var tutorial = TutorialController(
+        id: "home.journal",
+        steps: [
+            TutorialStep(
+                id: "journal",
+                anchor: "home.journal",
+                title: "Read The Journal",
+                message: "This newspaper icon opens The Journal — our stories on the watches and the market. It's always one tap away, right here.",
+                advance: .tapToContinue,
+                hint: .tap,
+                cutout: .circle
+            )
+        ]
+    )
 
     var body: some View {
         ScrollView {
@@ -29,11 +43,13 @@ struct HomeScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .background(Color.calibre.background)
+        .tutorialOverlay(tutorial)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $pushed) { destination in
             BrowseDestinationView(destination: destination)
         }
         .environment(\.browsePush) { pushed = $0 }
+        .onAppear { tutorial.startIfNeeded() }
         .refreshable {
             await model?.load(refresh: true)
         }
@@ -79,6 +95,7 @@ struct HomeScreen: View {
             }
             .buttonStyle(PressableStyle())
             .accessibilityLabel("The Journal")
+            .tutorialAnchor("home.journal")
 
             Button {
                 Haptics.shared.play(.press)

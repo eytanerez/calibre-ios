@@ -56,6 +56,19 @@ struct OfferDetailScreen: View {
 private struct OfferDetailContent: View {
     @Bindable var model: OfferDetailModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var tutorial = TutorialController(
+        id: "offers.detail",
+        steps: [
+            TutorialStep(
+                id: "actions",
+                anchor: "offer.actions",
+                title: "The ball's in someone's court",
+                message: "These buttons follow the negotiation: Accept, Counter, or Decline when it's your move — Counter opens an inline form. Once an offer is accepted, “Pay now” takes you straight to checkout at the agreed price.",
+                advance: .tapToContinue,
+                cutout: .roundedRect(Radius.card)
+            )
+        ]
+    )
 
     var body: some View {
         ScrollView {
@@ -83,6 +96,10 @@ private struct OfferDetailContent: View {
             }
         }
         .background(Color.calibre.background.ignoresSafeArea())
+        .tutorialOverlay(tutorial)
+        .onChange(of: model.offer?.id) { _, id in
+            if id != nil { tutorial.startIfNeeded() }
+        }
         .refreshable { await model.load(quiet: true) }
     }
 
@@ -261,6 +278,7 @@ private struct OfferDetailContent: View {
         } message: {
             Text("You agreed to buy this watch. If you back out now, Calibre may charge the $250 hold on your card.")
         }
+        .tutorialAnchor("offer.actions")
     }
 
     private func acceptButton(_ offer: Offer, title: String) -> some View {
