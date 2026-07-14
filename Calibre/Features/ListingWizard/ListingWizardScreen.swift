@@ -17,6 +17,7 @@ struct ListingWizardScreen: View {
 
     @State private var model: WizardModel?
     @State private var showSuccess = false
+    @State private var creatingDraft = false
 
     var body: some View {
         NavigationStack {
@@ -128,18 +129,28 @@ struct ListingWizardScreen: View {
     @ViewBuilder
     private func stepBar(_ model: WizardModel) -> some View {
         if model.step < 3 {
-            HStack(spacing: Space.m) {
-                if model.step > 0 {
-                    Button("Back") {
-                        advance(model, to: model.step - 1)
+            VStack(spacing: Space.s) {
+                if !canContinue(model), !missingFields(model).isEmpty {
+                    Text("Missing: \(missingFields(model).joined(separator: ", "))")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.destructive)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                HStack(spacing: Space.m) {
+                    if model.step > 0 {
+                        Button("Back") {
+                            advance(model, to: model.step - 1)
+                        }
+                        .buttonStyle(.calibreGhost)
                     }
-                    .buttonStyle(.calibreGhost)
+                    Button {
+                        continueTapped(model)
+                    } label: {
+                        BusyLabel(title: "Continue", busy: creatingDraft)
+                    }
+                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .disabled(!canContinue(model) || creatingDraft)
                 }
-                Button("Continue") {
-                    advance(model, to: model.step + 1)
-                }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
-                .disabled(!canContinue(model))
             }
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.m)
@@ -147,6 +158,7 @@ struct ListingWizardScreen: View {
             .overlay(alignment: .top) {
                 Rectangle().fill(Color.calibre.border).frame(height: 1)
             }
+            .animation(Motion.easeFast, value: canContinue(model))
         } else {
             HStack(spacing: Space.m) {
                 Button("Back") {
@@ -165,6 +177,31 @@ struct ListingWizardScreen: View {
         case 0: model.detailsComplete
         case 2: model.priceDetailsComplete
         default: true
+        }
+    }
+
+    /// The specific fields blocking Continue — a disabled button with no
+    /// explanation reads as "nothing happens" when tapped.
+    private func missingFields(_ model: WizardModel) -> [String] {
+        switch model.step {
+        case 0: model.detailsMissing
+        case 2: model.priceMissing
+        default: []
+        }
+    }
+
+    private func continueTapped(_ model: WizardModel) {
+        guard model.step == 0 else {
+            advance(model, to: model.step + 1)
+            return
+        }
+        // Step 0 → 1 is where the server draft is actually created — see
+        // `createDraftIfNeeded()`.
+        Task {
+            creatingDraft = true
+            defer { creatingDraft = false }
+            guard await model.createDraftIfNeeded() else { return }
+            advance(model, to: 1)
         }
     }
 
@@ -191,8 +228,11 @@ struct ListingWizardScreen: View {
 
     private func closeKeepingDraft() {
         model?.persistSnapshot()
+        // Nothing to save yet if Details was never completed — no server
+        // draft exists until `createDraftIfNeeded()` runs on step 0 → 1.
+        let hasDraft = model?.listing != nil
         dismiss()
-        if model?.submitted != true, model?.isEdit != true {
+        if hasDraft, model?.submitted != true, model?.isEdit != true {
             toasts.show(
                 title: "Draft saved",
                 message: "Pick it back up any time from your shop."

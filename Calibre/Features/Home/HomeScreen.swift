@@ -65,6 +65,21 @@ struct HomeScreen: View {
 
             Spacer()
 
+            // A persistent header icon so the Journal reads as its own
+            // section — reachable in one tap, not something you have to
+            // scroll past a wall of listings to discover.
+            Button {
+                Haptics.shared.play(.press)
+                pushed = .journalIndex
+            } label: {
+                Image(systemName: "newspaper")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(Color.calibre.foreground)
+                    .frame(width: Space.touchTarget, height: Space.touchTarget)
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel("The Journal")
+
             Button {
                 Haptics.shared.play(.press)
                 openBag()

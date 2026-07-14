@@ -31,8 +31,18 @@ struct ReviewStep: View {
 
             photoChecklist
 
+            // A disabled Submit never calls `onSubmit()`, so `submitError`
+            // (set only inside the model's `submit()`) would otherwise never
+            // populate — show what's missing directly instead of leaving a
+            // silently inert button.
             if let error = model.submitError {
                 Text(error)
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.destructive)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity)
+            } else if !canSubmit {
+                Text("Missing: \(canSubmitMissing.joined(separator: ", "))")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.destructive)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -84,6 +94,12 @@ struct ReviewStep: View {
 
     private var canSubmit: Bool {
         model.detailsComplete && model.allRequiredPhotosDone && model.priceDetailsComplete
+    }
+
+    private var canSubmitMissing: [String] {
+        var missing = model.detailsMissing + model.priceMissing
+        if !model.allRequiredPhotosDone { missing.append("All six photos") }
+        return missing
     }
 
     // MARK: Hero

@@ -159,6 +159,19 @@ struct RootView: View {
                     )
                 }
             }
+            // Screenshot hook: `-selectTab home|discover|sell|activity|you`
+            // jumps straight to a tab without scripted touch input.
+            if let index = ProcessInfo.processInfo.arguments.firstIndex(of: "-selectTab"),
+               ProcessInfo.processInfo.arguments.indices.contains(index + 1) {
+                switch ProcessInfo.processInfo.arguments[index + 1] {
+                case "home": services.router.selectedTab = .home
+                case "discover": services.router.selectedTab = .discover
+                case "sell": services.router.selectedTab = .sell
+                case "activity": services.router.selectedTab = .activity
+                case "you": services.router.selectedTab = .you
+                default: break
+                }
+            }
             #endif
         }
     }

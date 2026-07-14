@@ -244,6 +244,27 @@ final class WizardModel {
             && ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
     }
 
+    /// What's still missing before Details can advance — shown under the
+    /// disabled Continue button so a seller never hits an inert control with
+    /// no explanation.
+    var detailsMissing: [String] {
+        var missing: [String] = []
+        if !InputValidation.isNonBlank(brand) { missing.append("Brand") }
+        if !yearUnknown, InputValidation.productionYear(yearText) == nil { missing.append("Year") }
+        for part in ConditionPart.allCases where conditions[part] == nil {
+            missing.append(part.label)
+        }
+        return missing
+    }
+
+    /// What's still missing before Price can advance.
+    var priceMissing: [String] {
+        var missing: [String] = []
+        if price == nil { missing.append("Price") }
+        if !InputValidation.isNonBlank(notes) { missing.append("Notes for buyers") }
+        return missing
+    }
+
     // MARK: Bootstrap
 
     func start() async {
@@ -260,21 +281,11 @@ final class WizardModel {
                 }
                 fulfillRequestID = prefill.id
             }
-            do {
-                // Draft-first: the listing exists before the first photo.
-                let created = try await seller.createListing(ListingDraftPayload(
-                    title: composedTitle,
-                    brand: brand.isEmpty ? nil : brand,
-                    model: model.isEmpty ? nil : model,
-                    reference: reference.isEmpty ? nil : reference,
-                    status: .draft
-                ))
-                listing = created
-                persistSnapshot()
-                bootstrap = .ready
-            } catch {
-                bootstrap = .failed(sellErrorMessage(error))
-            }
+            // No server draft yet — one is created only once Details is
+            // complete (see `createDraftIfNeeded()`), so glancing at the
+            // wizard and backing out never leaves an "Untitled watch"
+            // behind on the dashboard.
+            bootstrap = .ready
         case .finishDraft(let existing), .edit(let existing):
             listing = existing
             populate(from: existing)
@@ -283,6 +294,31 @@ final class WizardModel {
             }
             bootstrap = .ready
             await loadServerImages()
+        }
+    }
+
+    /// Creates the server draft the moment Details is complete — called when
+    /// advancing past step 0. A no-op if the draft already exists (resume,
+    /// edit, or a second call after the first succeeded). The draft is named
+    /// from the real title from the very first write, since by now brand,
+    /// model, and reference are already known.
+    func createDraftIfNeeded() async -> Bool {
+        guard listing == nil else { return true }
+        guard detailsComplete else {
+            submitError = "Add \(detailsMissing.joined(separator: ", ")) to continue."
+            return false
+        }
+        var payload = currentPayload
+        payload.status = ListingStatus.draft.rawValue
+        do {
+            let created = try await seller.createListing(payload)
+            listing = created
+            submitError = nil
+            persistSnapshot()
+            return true
+        } catch {
+            submitError = sellErrorMessage(error)
+            return false
         }
     }
 

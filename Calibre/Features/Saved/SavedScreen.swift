@@ -91,42 +91,25 @@ struct SavedScreen: View {
         }
     }
 
+    /// Same `ListingCard` every other grid in the app uses — the unavailable
+    /// badge is the one addition, laid over the image corner.
     private func savedCell(_ item: WatchlistItem) -> some View {
         Button {
             guard !isEditing else { return }
             push(.listing(item.listingId, zoom: nil))
         } label: {
             ZStack(alignment: .topTrailing) {
-                VStack(alignment: .leading, spacing: Space.s) {
-                    ZStack(alignment: .bottomLeading) {
-                        ListingImageWell(url: item.listing?.image?.url)
-                            .aspectRatio(1, contentMode: .fill)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.calibre.secondary.opacity(0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-
-                        if let badge = item.listing?.unavailableBadge {
-                            StatusBadge(badge.text, tone: badge.tone)
-                                .padding(Space.s)
-                        }
+                ListingCard(model: cardModel(for: item)) { url in
+                    ListingImageWell(url: url)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    // Bottom-left so it never collides with the condition
+                    // pill (top-left, inside ListingCard) or the edit button
+                    // (top-right, below).
+                    if let badge = item.listing?.unavailableBadge {
+                        StatusBadge(badge.text, tone: badge.tone)
+                            .padding(Space.s)
                     }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        if let year = item.listing?.productionYear {
-                            Eyebrow(String(year))
-                        }
-                        Text(item.listing?.title ?? "Listing")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                        if let listing = item.listing {
-                            Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
-                                .font(CalibreType.price)
-                                .foregroundStyle(Color.calibre.foreground)
-                        }
-                    }
-                    .padding(.horizontal, 2)
                 }
 
                 if isEditing {
@@ -154,6 +137,18 @@ struct SavedScreen: View {
                 Label("Remove from Saved", systemImage: "heart.slash")
             }
         }
+    }
+
+    /// The watchlist payload only ever omits `listing` for a row whose watch
+    /// was deleted outright — vanishingly rare, so a plain placeholder card
+    /// is fine.
+    private func cardModel(for item: WatchlistItem) -> ListingCardModel {
+        item.listing?.cardModel ?? ListingCardModel(
+            id: item.listingId,
+            brand: " ",
+            title: "Listing",
+            priceText: "—"
+        )
     }
 
     private var skeleton: some View {

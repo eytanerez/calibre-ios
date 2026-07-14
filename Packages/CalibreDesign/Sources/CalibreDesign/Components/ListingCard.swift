@@ -49,19 +49,28 @@ public struct ListingCard<ImageContent: View>: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            ZStack(alignment: .topLeading) {
-                image(model.imageURL)
-                    .aspectRatio(1, contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.calibre.secondary.opacity(0.5))
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            // `.aspectRatio(1, contentMode: .fill)` alone can't guarantee a
+            // square when the proposed height is ambiguous (a flexible-height
+            // ancestor, e.g. a LazyVGrid cell) — it can size well past the
+            // proposed width and bleed into neighboring cards. Reserving the
+            // footprint with `.fit` against a GeometryReader, then forcing the
+            // content to that exact square, is square in every context.
+            GeometryReader { proxy in
+                let side = proxy.size.width
+                ZStack(alignment: .topLeading) {
+                    image(model.imageURL)
+                        .frame(width: side, height: side)
+                        .background(Color.calibre.secondary.opacity(0.5))
+                        .clipped()
 
-                if let condition = model.condition {
-                    ConditionPill(condition)
-                        .padding(Space.s)
+                    if let condition = model.condition {
+                        ConditionPill(condition)
+                            .padding(Space.s)
+                    }
                 }
             }
+            .aspectRatio(1, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Eyebrow([model.brand, model.year].compactMap(\.self).joined(separator: " · "))

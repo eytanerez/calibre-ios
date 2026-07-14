@@ -9,6 +9,7 @@ struct WireInstructionsScreen: View {
     let onReserved: (Order) -> Void
 
     @Environment(ToastCenter.self) private var toasts
+    @State private var confirmingSent = false
 
     var body: some View {
         ScrollView {
@@ -51,12 +52,7 @@ struct WireInstructionsScreen: View {
             if model.wireCheckout?.wire.instructions != nil {
                 Button {
                     Haptics.shared.play(.press)
-                    Task {
-                        if let order = await model.confirmWireSent() {
-                            Haptics.shared.play(.success)
-                            onReserved(order)
-                        }
-                    }
+                    confirmingSent = true
                 } label: {
                     BusyLabel(title: "I've sent the wire", busy: model.sendingWireReservation)
                 }
@@ -68,6 +64,23 @@ struct WireInstructionsScreen: View {
             }
         }
         .animation(Motion.easeFast, value: model.pricingError)
+        .confirmationDialog(
+            "Confirm your wire transfer",
+            isPresented: $confirmingSent,
+            titleVisibility: .visible
+        ) {
+            Button("Yes, I've sent it") {
+                Task {
+                    if let order = await model.confirmWireSent() {
+                        Haptics.shared.play(.success)
+                        onReserved(order)
+                    }
+                }
+            }
+            Button("Not yet", role: .cancel) {}
+        } message: {
+            Text("Once you continue, this order is marked as sent and we'll wait for the transfer to arrive. Only confirm once you've actually completed the wire with your bank.")
+        }
     }
 
     // MARK: - Pieces

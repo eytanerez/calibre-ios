@@ -19,6 +19,8 @@ struct DiscoverScreen: View {
     @State private var undoable: UndoRecord?
     @State private var undoExpiry: Task<Void, Never>?
     @State private var showSaved = false
+    @AppStorage("hasSeenDiscoverIntro") private var hasSeenDiscoverIntro = false
+    @State private var showIntro = false
     /// Zoom-transition anchor for the PDP push (P3 wires the destination).
     @Namespace private var deckNamespace
 
@@ -40,10 +42,22 @@ struct DiscoverScreen: View {
         .animation(Motion.easeMedium, value: feed?.phase)
         .task { await bootstrapFeed() }
         .onDisappear { feed?.stopPrefetching() }
-        .onAppear { feed?.updatePrefetch() }
+        .onAppear {
+            feed?.updatePrefetch()
+            if !hasSeenDiscoverIntro {
+                showIntro = true
+            }
+        }
         .onChange(of: session.isAuthenticated) { _, isAuthenticated in
             guard isAuthenticated else { return }
             Task { await feed?.handleAuthChange() }
+        }
+        .fullScreenCover(isPresented: $showIntro) {
+            DiscoverIntroOverlay {
+                hasSeenDiscoverIntro = true
+                showIntro = false
+            }
+            .presentationBackground(.clear)
         }
     }
 

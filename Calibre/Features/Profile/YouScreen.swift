@@ -23,6 +23,10 @@ struct YouScreen: View {
                     linkedSection(title: "Account") {
                         row(icon: "person.text.rectangle", label: "Profile", destination: .profile)
                         divider
+                        NavigationLink { OrdersListScreen() } label: {
+                            rowLabel(icon: "shippingbox", label: "Orders")
+                        }.buttonStyle(PressableStyle())
+                        divider
                         NavigationLink { SavedScreen() } label: {
                             rowLabel(icon: "heart", label: "Saved")
                         }.buttonStyle(PressableStyle())

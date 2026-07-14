@@ -11,10 +11,24 @@ private enum DeckDragAxis {
     case horizontal, vertical
 }
 
+/// A card that has committed and is flying off — purely cosmetic, detached
+/// from `cards` so it never blocks the next gesture.
+private struct DepartingCard: Identifiable {
+    let listing: Listing
+    let direction: SwipeDirection
+    /// The drag offset at the instant of commit — the flight continues along
+    /// this vector rather than snapping to a straight line.
+    let startTranslation: CGSize
+    var id: String { listing.id }
+}
+
 /// The interactive stack: the top three cards, a finger-following drag with
 /// clamped rotation, SAVE/PASS affordances past 40% of the commit threshold,
-/// and an ease-out fly-off (crossfade under Reduce Motion). Pure gesture
-/// physics — what a swipe *means* lives in DiscoverScreen.
+/// and an ease-out fly-off (crossfade under Reduce Motion). A commit advances
+/// the stack immediately — the departing card animates away as a detached
+/// overlay so the next card is live from the very next touch, in one
+/// continuous motion with no dead window. Pure gesture physics — what a
+/// swipe *means* lives in DiscoverScreen.
 struct DeckView: View {
     let cards: [Listing]
     /// Set by the control-row buttons to trigger a programmatic swipe;
@@ -23,7 +37,8 @@ struct DeckView: View {
     let namespace: Namespace.ID
     /// Fired the moment a swipe commits (flight start) — semantics happen now.
     let onCommit: (Listing, SwipeDirection) -> Void
-    /// Fired when the flight lands — pop the top card here.
+    /// Fired the moment a swipe commits — pop the top card here, synchronously,
+    /// so the next card is interactive immediately.
     let onAdvance: () -> Void
     let onTap: (Listing) -> Void
 
@@ -32,14 +47,17 @@ struct DeckView: View {
     @State private var translation: CGSize = .zero
     /// The armed haptic fires exactly once per drag.
     @State private var armed = false
-    @State private var flying: SwipeDirection?
-    /// Reduce Motion commits crossfade instead of flying.
-    @State private var topOpacity: Double = 1
     /// 0→1 as the drag nears commit; under-cards scale/lift in sync.
     @State private var progress: CGFloat = 0
     /// Lock the gesture to one axis after the first deliberate movement so a
     /// diagonal thumb path cannot make a card jump or accidentally commit.
     @State private var dragAxis: DeckDragAxis?
+
+    /// The card currently flying off, animating independently of the live
+    /// stack below it. Never blocks input.
+    @State private var departing: DepartingCard?
+    @State private var departingOffset: CGSize = .zero
+    @State private var departingOpacity: Double = 1
 
     var body: some View {
         GeometryReader { geo in
@@ -57,16 +75,30 @@ struct DeckView: View {
                         underCard(listing, depth: depth, cardSize: cardSize)
                     }
                 }
+
+                if let departing {
+                    DeckCard(listing: departing.listing)
+                        .frame(width: cardSize.width, height: cardSize.height)
+                        .calibreShadow(.lifted)
+                        .rotationEffect(.degrees(rotation(for: departingOffset)), anchor: .bottom)
+                        .offset(departingOffset)
+                        .opacity(departingOpacity)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                        .zIndex(10)
+                        .id(departing.id)
+                }
             }
             .frame(width: size.width, height: size.height, alignment: .top)
             .onChange(of: command) { _, direction in
                 guard let direction else { return }
                 command = nil
-                guard flying == nil else { return }
-                fly(direction, from: .zero, size: size)
+                commit(direction, dragOffset: .zero, size: size)
             }
             .onChange(of: cards.first?.id) {
-                guard flying == nil else { return }
+                // Defensive reset for external mutations (Undo reinstates a
+                // card, a feed refill/reset swaps the stack) — a commit we
+                // triggered ourselves already reset this state synchronously.
                 resetDrag(animated: false)
             }
         }
@@ -84,14 +116,13 @@ struct DeckView: View {
             .overlay(alignment: .top) { affordances(commitDistance: commitDistance) }
             .matchedTransitionSource(id: listing.id, in: namespace)
             .calibreShadow(translation == .zero ? .resting : .lifted)
-            .rotationEffect(.degrees(rotationDegrees), anchor: .bottom)
+            .rotationEffect(.degrees(rotation(for: translation)), anchor: .bottom)
             .offset(translation)
-            .opacity(topOpacity)
             .onTapGesture {
-                guard flying == nil, translation == .zero else { return }
+                guard translation == .zero else { return }
                 onTap(listing)
             }
-            .highPriorityGesture(dragGesture(size: cardSize, commitDistance: commitDistance))
+            .highPriorityGesture(dragGesture(listing: listing, size: cardSize, commitDistance: commitDistance))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilitySummary(for: listing))
             .accessibilityHint("Opens the listing. Use the pass and save buttons below to swipe.")
@@ -118,20 +149,24 @@ struct DeckView: View {
     // MARK: - Physics
 
     /// Rotation follows the drag: width/20, clamped to ±8°.
-    private var rotationDegrees: Double {
-        Double(max(-8, min(8, translation.width / 20)))
+    private func rotation(for offset: CGSize) -> Double {
+        Double(max(-8, min(8, offset.width / 20)))
     }
 
-    private func dragGesture(size: CGSize, commitDistance: CGFloat) -> some Gesture {
+    private func dragGesture(listing: Listing, size: CGSize, commitDistance: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 8, coordinateSpace: .local)
             .onChanged { value in
-                guard flying == nil else { return }
-
                 if dragAxis == nil {
                     let horizontal = abs(value.translation.width)
                     let vertical = abs(value.translation.height)
-                    guard max(horizontal, vertical) >= 10 else { return }
-                    dragAxis = horizontal >= vertical ? .horizontal : .vertical
+                    // Wait for a more deliberate sample and bias toward
+                    // horizontal — swiping is the primary gesture here, and a
+                    // natural thumb path drifts vertically enough at the
+                    // first ~10pt that an even split too easily mis-locked
+                    // to vertical, silently ignoring the rest of a genuine
+                    // horizontal swipe.
+                    guard max(horizontal, vertical) >= 18 else { return }
+                    dragAxis = vertical > horizontal * 1.4 ? .vertical : .horizontal
                 }
 
                 guard dragAxis == .horizontal else { return }
@@ -148,7 +183,6 @@ struct DeckView: View {
                 }
             }
             .onEnded { value in
-                guard flying == nil else { return }
                 guard dragAxis == .horizontal else {
                     resetDrag(animated: false)
                     return
@@ -169,11 +203,7 @@ struct DeckView: View {
                     let decidingWidth = overDistance ? width : predictedWidth
                     let direction: SwipeDirection = decidingWidth > 0 ? .save : .pass
                     let dampedY = max(-44, min(44, value.translation.height * 0.22))
-                    fly(
-                        direction,
-                        from: CGSize(width: value.translation.width, height: dampedY),
-                        size: size
-                    )
+                    commit(direction, dragOffset: CGSize(width: value.translation.width, height: dampedY), size: size)
                 } else if reduceMotion {
                     resetDrag(animated: false)
                 } else {
@@ -196,21 +226,37 @@ struct DeckView: View {
         }
     }
 
-    /// Commit: haptic + semantics fire now; the card flies off along the drag
-    /// vector over 420ms of ease-out (a crossfade under Reduce Motion), the
-    /// next card scaling up in sync.
-    private func fly(_ direction: SwipeDirection, from current: CGSize, size: CGSize) {
+    /// Commit: haptic + semantics fire now, the stack advances in the very
+    /// same call (so the next card is interactive before this function
+    /// returns), and the departing card peels off as a detached overlay that
+    /// can never block the next gesture.
+    private func commit(_ direction: SwipeDirection, dragOffset: CGSize, size: CGSize) {
         guard let top = cards.first else { return }
-        flying = direction
         Haptics.shared.play(direction == .save ? .save : .pass)
+
+        // Reset the interactive state instantly — the promoted card was
+        // never dragged and must render at rest, not mid-animation.
+        translation = .zero
+        progress = 0
+        armed = false
+        dragAxis = nil
+
+        // Advance first: `cards` (owned by the parent) drops its head now,
+        // so the next card is already promoted and gesture-ready by the time
+        // this function returns — one continuous motion, no dead window.
         onCommit(top, direction)
+        onAdvance()
+
+        // The departing card is a snapshot, fully decoupled from `cards`.
+        departing = DepartingCard(listing: top, direction: direction, startTranslation: dragOffset)
+        departingOffset = dragOffset
+        departingOpacity = 1
 
         if reduceMotion {
             withAnimation(Motion.easeMedium) {
-                topOpacity = 0
-                progress = 1
+                departingOpacity = 0
             } completion: {
-                land()
+                departing = nil
             }
             return
         }
@@ -218,28 +264,12 @@ struct DeckView: View {
         let sign: CGFloat = direction == .save ? 1 : -1
         let targetX = sign * size.width * 1.35
         // Continue along the drag's own slope; straight out from a button.
-        let slope = current.width == 0 ? 0 : current.height / abs(current.width)
+        let slope = dragOffset.width == 0 ? 0 : dragOffset.height / abs(dragOffset.width)
         let targetY = slope * abs(targetX)
         withAnimation(Motion.easeSlow) {
-            translation = CGSize(width: targetX, height: targetY)
-            progress = 1
+            departingOffset = CGSize(width: targetX, height: targetY)
         } completion: {
-            land()
-        }
-    }
-
-    /// Flight over: pop the card and reset — instantly, so the under-card's
-    /// promotion to top produces no second animation.
-    private func land() {
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
-            onAdvance()
-            translation = .zero
-            progress = 0
-            topOpacity = 1
-            flying = nil
-            dragAxis = nil
+            departing = nil
         }
     }
 

@@ -74,13 +74,18 @@ struct QuickSpecRow: View {
             Text(label)
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
+                .lineLimit(1)
+            // Two-word values ("Very Good", "Like New") need room to wrap —
+            // a single line with only an 0.8 scale factor was clipping them.
             Text(value)
                 .font(CalibreType.bodyMedium)
                 .foregroundStyle(Color.calibre.foreground)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal, Space.xs)
         .padding(.vertical, Space.m)
         .background(
             Color.calibre.secondary.opacity(0.6),

@@ -30,6 +30,7 @@ struct SellerDashboardScreen: View {
     @State private var wizardContext: WizardContext?
     @State private var saleDetailOrderID: String?
     @State private var showBulkImports = false
+    @State private var showOpenRequests = false
     @State private var confirmSubmit: Listing?
     @State private var confirmArchive: Listing?
     @State private var resumeSnapshot: WizardSnapshot?
@@ -91,6 +92,11 @@ struct SellerDashboardScreen: View {
         }
         .sheet(isPresented: $showBulkImports) {
             BulkImportStatusScreen()
+        }
+        .sheet(isPresented: $showOpenRequests) {
+            OpenBuyerRequestsScreen(requests: requests) { request in
+                openWizard(.new(prefill: request))
+            }
         }
         .confirmationDialog(
             "Submit for review?",
@@ -416,58 +422,36 @@ struct SellerDashboardScreen: View {
 
     // MARK: - Buyer requests
 
+    /// A single summary row rather than the requests themselves — the shop's
+    /// front page stays scannable; the full list lives one tap away.
     private var buyerRequests: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("Buyers are looking for")
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Space.m) {
-                    ForEach(requests.prefix(10)) { request in
-                        requestCard(request)
-                    }
+        Button {
+            showOpenRequests = true
+        } label: {
+            HStack(spacing: Space.m) {
+                IconTile(systemName: "sparkle.magnifyingglass")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Buyers are looking for \(requests.count) watch\(requests.count == 1 ? "" : "es")")
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.foreground)
+                    Text("List against an open request")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
                 }
-                .padding(.vertical, 2)
-            }
-        }
-    }
-
-    private func requestCard(_ request: WatchRequest) -> some View {
-        VStack(alignment: .leading, spacing: Space.s) {
-            Eyebrow(request.brand)
-            Text(request.model ?? "Any model")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
-                .lineLimit(1)
-            if let reference = request.reference, !reference.isEmpty {
-                Text("Ref. \(reference)")
-                    .font(CalibreType.caption)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.calibre.mutedForeground)
-                    .lineLimit(1)
             }
-            if let budget = request.maxBudget {
-                Text("Up to \(PriceFormatter.format(budget.value))")
-                    .font(CalibreType.priceSmall)
-                    .foregroundStyle(Color.calibre.foreground)
-            }
-            if let notes = request.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .lineLimit(2)
-            }
-            Spacer(minLength: 0)
-            Button("List this watch") {
-                openWizard(.new(prefill: request))
-            }
-            .buttonStyle(.calibreSecondary)
+            .padding(Space.l)
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+            )
         }
-        .padding(Space.l)
-        .frame(width: 230, height: 190, alignment: .topLeading)
-        .background(Color.calibre.card)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
-        )
+        .buttonStyle(PressableStyle())
+        .accessibilityHint("Shows every open buyer request")
     }
 
     // MARK: - Inventory

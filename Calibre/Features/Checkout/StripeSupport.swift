@@ -28,6 +28,13 @@ enum CalibreStripe {
         configuration.returnURL = returnURL
         configuration.style = .automatic
         configuration.appearance = appearance()
+        // The SDK's automatic layout defaults to a vertical list that
+        // pre-selects Apple Pay whenever there's no saved card yet — a
+        // first-time buyer never sees an actual card form without an extra
+        // tap. Horizontal puts Card and Apple Pay side by side as equally
+        // prominent tabs, with the card form visible as soon as Card is
+        // selected.
+        configuration.paymentMethodLayout = .horizontal
 
         if let customerID, let customerSessionClientSecret {
             configuration.customer = PaymentSheet.CustomerConfiguration(
