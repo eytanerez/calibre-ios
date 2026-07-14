@@ -4,10 +4,10 @@ import SwiftUI
 /// Current marketplace rates used by seller education and pre-listing payout
 /// estimates. Completed orders keep their server-provided historical snapshot.
 enum MarketplaceFees {
-    static let privateSellerPercent = Decimal(6)
-    static let dealerPercent = Decimal(4)
-    static let privateSellerKeepPercent = 94
-    static let dealerKeepPercent = 96
+    static let privateSellerPercent = Decimal(8)
+    static let dealerPercent = Decimal(5)
+    static let privateSellerKeepPercent = 92
+    static let dealerKeepPercent = 95
 
     static func sellerPercent(isVerifiedDealer: Bool) -> Decimal {
         isVerifiedDealer ? dealerPercent : privateSellerPercent
@@ -158,14 +158,14 @@ struct FeeBreakdownScreen: View {
                 feeSection("Selling on Calibre") {
                     feeRateRow(
                         title: "Private seller",
-                        rate: "6% seller fee",
-                        detail: "You keep 94% of the agreed watch price before shipping."
+                        rate: "8% seller fee",
+                        detail: "You keep 92% of the agreed watch price before shipping."
                     )
                     divider
                     feeRateRow(
                         title: "Verified dealer",
-                        rate: "4% seller fee",
-                        detail: "You keep 96% of the agreed watch price before shipping."
+                        rate: "5% seller fee",
+                        detail: "You keep 95% of the agreed watch price before shipping."
                     )
                 }
 
