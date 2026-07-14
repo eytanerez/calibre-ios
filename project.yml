@@ -56,6 +56,7 @@ targets:
           UIColorName: LaunchBackground
         ITSAppUsesNonExemptEncryption: false
         NSCameraUsageDescription: Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
+        NSLocalNetworkUsageDescription: Calibre connects to your local development server while you test the app.
         NSPhotoLibraryUsageDescription: Calibre lets you choose existing photos of your watch when creating a listing.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
