@@ -33,7 +33,8 @@ struct SellerDashboardScreen: View {
     @State private var showOpenRequests = false
     @State private var confirmSubmit: Listing?
     @State private var confirmArchive: Listing?
-    @State private var resumeSnapshot: WizardSnapshot?
+    @State private var confirmDelete: Listing?
+    @State private var showAllInventory = false
 
     var body: some View {
         List {
@@ -51,9 +52,6 @@ struct SellerDashboardScreen: View {
             } else if loading && dashboard == nil {
                 loadingRows
             } else {
-                if let resumeSnapshot, listing(for: resumeSnapshot.listingID) != nil {
-                    resumeBand(resumeSnapshot).sellRow()
-                }
                 if let dealer = dashboard?.dealer {
                     dealerCard(dealer).sellRow()
                 }
@@ -124,6 +122,19 @@ struct SellerDashboardScreen: View {
         } message: { _ in
             Text("It leaves the market right away. You can restore and resubmit it any time.")
         }
+        .confirmationDialog(
+            "Delete this draft?",
+            isPresented: deleteBinding,
+            titleVisibility: .visible,
+            presenting: confirmDelete
+        ) { listing in
+            Button("Delete draft", role: .destructive) {
+                Task { await deleteDraft(listing) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { listing in
+            Text("\"\(listing.title)\" and its photos are removed for good. This can't be undone.")
+        }
     }
 
     private var dashboard: SellerDashboard? {
@@ -162,6 +173,10 @@ struct SellerDashboardScreen: View {
         Binding(get: { confirmArchive != nil }, set: { if !$0 { confirmArchive = nil } })
     }
 
+    private var deleteBinding: Binding<Bool> {
+        Binding(get: { confirmDelete != nil }, set: { if !$0 { confirmDelete = nil } })
+    }
+
     // MARK: - Loading
 
     private func load() async {
@@ -172,7 +187,6 @@ struct SellerDashboardScreen: View {
         async let requestsTask: Void = loadRequests()
         async let salesTask: Void = loadSales()
         _ = await (dashboardTask, listingsTask, requestsTask, salesTask)
-        resumeSnapshot = DraftStore.activeSnapshot()
         loading = false
     }
 
@@ -238,21 +252,6 @@ struct SellerDashboardScreen: View {
             .buttonStyle(.calibre(.primary, fullWidth: true))
         }
         .sellRow(top: Space.l)
-    }
-
-    // MARK: - Resume draft
-
-    private func resumeBand(_ snapshot: WizardSnapshot) -> some View {
-        CalloutBand(
-            icon: "square.and.pencil",
-            title: "Pick up where you left off",
-            message: "Your draft is saved — photos, price, everything.",
-            action: {
-                if let draft = listing(for: snapshot.listingID) {
-                    openWizard(.finishDraft(draft))
-                }
-            }
-        )
     }
 
     // MARK: - Dealer progress
@@ -366,11 +365,11 @@ struct SellerDashboardScreen: View {
                         in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                     )
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(action.title)
+                    Text(actionTitle(action))
                         .font(CalibreType.bodyMedium)
                         .foregroundStyle(Color.calibre.foreground)
                         .lineLimit(1)
-                    Text(action.description)
+                    Text(actionSubtitle(action))
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
                         .lineLimit(2)
@@ -385,6 +384,23 @@ struct SellerDashboardScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
+    }
+
+    /// Drafts are named by their listing title — a seller can hold several at
+    /// once, so a generic "Finish your draft" wouldn't tell them apart.
+    private func actionTitle(_ action: DashboardAction) -> String {
+        if action.kind == "draft", let id = action.listingId, let draft = listing(for: id) {
+            let name = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            return name.isEmpty ? "Untitled draft" : name
+        }
+        return action.title
+    }
+
+    private func actionSubtitle(_ action: DashboardAction) -> String {
+        if action.kind == "draft" {
+            return "Draft — finish and submit"
+        }
+        return action.description
     }
 
     private func actionIcon(_ kind: String) -> String {
@@ -468,31 +484,87 @@ struct SellerDashboardScreen: View {
         }
     }
 
+    /// Only the first few rows show until the seller taps "Show all" — a busy
+    /// shop otherwise buries recent sales and offers under a long inventory.
+    private static let inventoryPreviewCount = 5
+
+    private var visibleListings: [Listing] {
+        if showAllInventory { return filteredListings }
+        return Array(filteredListings.prefix(Self.inventoryPreviewCount))
+    }
+
     @ViewBuilder
     private var inventorySection: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             SellSectionHeader("Inventory")
+            // A trailing fade + chevron makes it obvious the filter bar scrolls
+            // to more tabs than fit the screen.
             ScrollView(.horizontal, showsIndicators: false) {
                 SegmentedTabs(
                     selection: $inventoryTab,
                     items: InventoryTab.allCases.map { ($0, $0.rawValue) }
                 )
                 .frame(width: 660)
+                .padding(.trailing, Space.xl)
             }
+            .overlay(alignment: .trailing) {
+                HStack(spacing: 0) {
+                    LinearGradient(
+                        colors: [Color.calibre.background.opacity(0), Color.calibre.background],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: 28)
+                    Image(systemName: "chevron.compact.right")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .padding(.trailing, 2)
+                        .background(Color.calibre.background)
+                }
+                .allowsHitTesting(false)
+            }
+            .onChange(of: inventoryTab) { showAllInventory = false }
         }
         .sellRow(bottom: Space.s)
 
         if filteredListings.isEmpty {
             emptyInventory.sellRow()
         } else {
-            ForEach(filteredListings) { listing in
+            ForEach(visibleListings) { listing in
                 inventoryRow(listing)
                     .sellRow(bottom: Space.m)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         swipeButtons(listing)
                     }
             }
+            if filteredListings.count > Self.inventoryPreviewCount {
+                inventoryToggle.sellRow(bottom: Space.m)
+            }
         }
+    }
+
+    private var inventoryToggle: some View {
+        Button {
+            withAnimation(Motion.easeMedium) { showAllInventory.toggle() }
+        } label: {
+            HStack(spacing: Space.s) {
+                Text(showAllInventory
+                    ? "Show less"
+                    : "Show all \(filteredListings.count)")
+                    .font(CalibreType.bodyMedium)
+                Image(systemName: showAllInventory ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .foregroundStyle(Color.calibre.primary)
+            .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
     }
 
     private var emptyInventory: some View {
@@ -599,6 +671,13 @@ struct SellerDashboardScreen: View {
                 Label("Submit", systemImage: "paperplane")
             }
             .tint(Color.calibre.success)
+
+            Button(role: .destructive) {
+                confirmDelete = listing
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .tint(Color.calibre.destructive)
         }
 
         if listing.status != .archived && listing.status != .sold {
@@ -650,6 +729,20 @@ struct SellerDashboardScreen: View {
             await load()
         } catch {
             toasts.show(title: "Couldn't archive", message: sellErrorMessage(error), tone: .error)
+        }
+    }
+
+    private func deleteDraft(_ listing: Listing) async {
+        do {
+            try await services.seller.deleteListing(id: listing.id)
+            // Clear any saved local snapshot so it doesn't try to resume a
+            // draft that no longer exists on the server.
+            DraftStore.clear(listingID: listing.id)
+            Haptics.shared.play(.press)
+            toasts.show(title: "Draft deleted", message: "\(listing.title) is gone.")
+            await load()
+        } catch {
+            toasts.show(title: "Couldn't delete", message: sellErrorMessage(error), tone: .error)
         }
     }
 

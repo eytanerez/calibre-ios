@@ -7,10 +7,6 @@ enum SwipeDirection: Equatable {
     case save, pass
 }
 
-private enum DeckDragAxis {
-    case horizontal, vertical
-}
-
 /// A card that has committed and is flying off — purely cosmetic, detached
 /// from `cards` so it never blocks the next gesture.
 private struct DepartingCard: Identifiable {
@@ -49,9 +45,6 @@ struct DeckView: View {
     @State private var armed = false
     /// 0→1 as the drag nears commit; under-cards scale/lift in sync.
     @State private var progress: CGFloat = 0
-    /// Lock the gesture to one axis after the first deliberate movement so a
-    /// diagonal thumb path cannot make a card jump or accidentally commit.
-    @State private var dragAxis: DeckDragAxis?
 
     /// The card currently flying off, animating independently of the live
     /// stack below it. Never blocks input.
@@ -154,26 +147,20 @@ struct DeckView: View {
     }
 
     private func dragGesture(listing: Listing, size: CGSize, commitDistance: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 8, coordinateSpace: .local)
+        // The translation is read in the GLOBAL coordinate space, not the
+        // card's own. The card is moved with `.offset(translation)`, and a
+        // local-space drag measures against that same moving frame — so the
+        // reported delta shrinks as the card follows the finger and the card
+        // stalls partway ("swipe a little, then nothing"). Global space is
+        // fixed to the screen, immune to the offset, so the card tracks the
+        // finger one-to-one through the whole gesture. There is also no axis
+        // lock: nothing scrolls behind the deck, horizontal is the only
+        // committing axis, and any lock risked swallowing a genuine swipe.
+        DragGesture(minimumDistance: 8, coordinateSpace: .global)
             .onChanged { value in
-                if dragAxis == nil {
-                    let horizontal = abs(value.translation.width)
-                    let vertical = abs(value.translation.height)
-                    // Wait for a more deliberate sample and bias toward
-                    // horizontal — swiping is the primary gesture here, and a
-                    // natural thumb path drifts vertically enough at the
-                    // first ~10pt that an even split too easily mis-locked
-                    // to vertical, silently ignoring the rest of a genuine
-                    // horizontal swipe.
-                    guard max(horizontal, vertical) >= 18 else { return }
-                    dragAxis = vertical > horizontal * 1.4 ? .vertical : .horizontal
-                }
-
-                guard dragAxis == .horizontal else { return }
-
-                // Horizontal movement stays one-to-one with the finger. A
-                // small damped vertical component keeps the card tactile
-                // without letting diagonal drags throw it around the screen.
+                // Horizontal follows the finger exactly; a small damped
+                // vertical component keeps the card tactile without letting
+                // it fling around the screen.
                 let dampedY = max(-44, min(44, value.translation.height * 0.22))
                 translation = CGSize(width: value.translation.width, height: dampedY)
                 progress = min(abs(value.translation.width) / commitDistance, 1)
@@ -183,11 +170,6 @@ struct DeckView: View {
                 }
             }
             .onEnded { value in
-                guard dragAxis == .horizontal else {
-                    resetDrag(animated: false)
-                    return
-                }
-
                 let width = value.translation.width
                 let overDistance = abs(width) > commitDistance
                 let predictedWidth = value.predictedEndTranslation.width
@@ -217,7 +199,6 @@ struct DeckView: View {
             translation = .zero
             progress = 0
             armed = false
-            dragAxis = nil
         }
         if animated {
             withAnimation(Motion.easeMedium, changes)
@@ -239,7 +220,6 @@ struct DeckView: View {
         translation = .zero
         progress = 0
         armed = false
-        dragAxis = nil
 
         // Advance first: `cards` (owned by the parent) drops its head now,
         // so the next card is already promoted and gesture-ready by the time

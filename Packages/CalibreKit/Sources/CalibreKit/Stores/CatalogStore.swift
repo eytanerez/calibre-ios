@@ -160,6 +160,31 @@ public final class CatalogStore {
         return fresh
     }
 
+    // MARK: - Recommendations
+
+    /// Personalized listings from the backend recommendation engine. `forYou`
+    /// powers the home shelf; `discover` powers the swipe deck (paged). When
+    /// the caller is signed in the ranking blends their brand/price affinity,
+    /// popularity and freshness; guests get a popularity/freshness blend.
+    public func recommendations(
+        surface: RecommendationSurface,
+        page: Int = 1,
+        limit: Int = 24,
+        recentlyViewedLimit: Int = 0,
+        excluding excludeIDs: [String] = []
+    ) async throws -> RecommendationFeed {
+        var query: [URLQueryItem] = [
+            URLQueryItem(name: "surface", value: surface.rawValue),
+            URLQueryItem(name: "page", value: String(page)),
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "recently_viewed_limit", value: String(recentlyViewedLimit)),
+        ]
+        if !excludeIDs.isEmpty {
+            query.append(URLQueryItem(name: "exclude", value: excludeIDs.joined(separator: ",")))
+        }
+        return try await client.send(Endpoint(path: "/listings/recommendations", query: query))
+    }
+
     // MARK: - Detail / storefront / similar
 
     /// Full listing detail. `includeShipping` adds a buyer shipping estimate
@@ -194,5 +219,38 @@ public final class CatalogStore {
             results = try await browse(query).results.filter { $0.id != listing.id }
         }
         return Array(results.prefix(limit))
+    }
+}
+
+// MARK: - Recommendation types
+
+/// Which recommendation surface to fetch. Matches the backend `surface` param.
+public enum RecommendationSurface: String, Sendable {
+    /// The home "For you" shelf — a single ranked page.
+    case forYou = "for_you"
+    /// The Discover deck — a ranked, paged stream.
+    case discover
+}
+
+/// The recommendation payload: a ranked set plus the member's recent views.
+public struct RecommendationFeed: Decodable, Sendable {
+    public let recommended: [Listing]
+    public let recentlyViewed: [Listing]
+
+    public init(recommended: [Listing], recentlyViewed: [Listing]) {
+        self.recommended = recommended
+        self.recentlyViewed = recentlyViewed
+    }
+
+    // Tolerate either key being absent (e.g. discover omits recently viewed).
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        recommended = try container.decodeIfPresent([Listing].self, forKey: .recommended) ?? []
+        recentlyViewed = try container.decodeIfPresent([Listing].self, forKey: .recentlyViewed) ?? []
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case recommended
+        case recentlyViewed
     }
 }

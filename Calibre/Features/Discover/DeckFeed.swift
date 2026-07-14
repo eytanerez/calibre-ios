@@ -43,6 +43,10 @@ final class DeckFeed {
 
     @ObservationIgnored private var nextPage = 1
     @ObservationIgnored private var pagesExhausted = false
+    /// Flips permanently to true if the recommendation endpoint errors (e.g.
+    /// the deployed backend predates it), after which the deck falls back to
+    /// the popular browse feed for the rest of the session.
+    @ObservationIgnored private var recommendationsUnavailable = false
     /// Every id ever enqueued this session — the popular ordering drifts
     /// while we swipe, so later pages can resurface earlier watches.
     @ObservationIgnored private var enqueuedIDs: Set<String> = []
@@ -102,6 +106,7 @@ final class DeckFeed {
         enqueuedIDs = []
         nextPage = 1
         pagesExhausted = false
+        recommendationsUnavailable = false
         stopPrefetching()
         phase = .loading
         await start()
@@ -159,24 +164,25 @@ final class DeckFeed {
 
     private func fill() async {
         do {
+            // Stop after a few pages that add nothing new so a backend that
+            // ignores paging can't spin us in a tight fetch loop.
+            var emptyStreak = 0
             while !pagesExhausted, cards.count <= Self.refillThreshold {
-                let query = ListingQuery(
-                    sort: .popular,
-                    page: nextPage,
-                    pageSize: Self.pageSize,
-                    view: .card
-                )
-                let page = try await catalog.browse(query)
+                let (listings, reachedEnd) = try await fetchDeckPage(nextPage)
                 nextPage += 1
 
-                let served = page.pagination.page * page.pagination.pageSize
-                if page.results.isEmpty || page.pagination.total.map({ served >= $0 }) == true {
-                    pagesExhausted = true
-                }
-
-                let fresh = page.results.filter(isEligible)
+                let fresh = listings.filter(isEligible)
                 enqueuedIDs.formUnion(fresh.map(\.id))
                 cards.append(contentsOf: fresh)
+
+                if reachedEnd || listings.isEmpty {
+                    pagesExhausted = true
+                } else if fresh.isEmpty {
+                    emptyStreak += 1
+                    if emptyStreak >= 3 { pagesExhausted = true }
+                } else {
+                    emptyStreak = 0
+                }
             }
             settlePhase()
         } catch is CancellationError {
@@ -190,6 +196,32 @@ final class DeckFeed {
             }
         }
         updatePrefetch()
+    }
+
+    /// One page of deck candidates. Prefers the personalized recommendation
+    /// stream; if that endpoint errors once, falls back to the popular browse
+    /// feed for the rest of the session so Discover always has cards.
+    private func fetchDeckPage(_ page: Int) async throws -> (listings: [Listing], reachedEnd: Bool) {
+        if !recommendationsUnavailable {
+            do {
+                let feed = try await catalog.recommendations(
+                    surface: .discover,
+                    page: page,
+                    limit: Self.pageSize
+                )
+                return (feed.recommended, feed.recommended.count < Self.pageSize)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                recommendationsUnavailable = true
+            }
+        }
+
+        let query = ListingQuery(sort: .popular, page: page, pageSize: Self.pageSize, view: .card)
+        let response = try await catalog.browse(query)
+        let served = response.pagination.page * response.pagination.pageSize
+        let reachedEnd = response.results.isEmpty || (response.pagination.total.map { served >= $0 } ?? false)
+        return (response.results, reachedEnd)
     }
 
     private func isEligible(_ listing: Listing) -> Bool {
