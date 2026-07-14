@@ -125,13 +125,18 @@ struct FilterSheet: View {
 
     private var yearAndPapersSection: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            CalibreTextField("Year", text: $yearText, placeholder: "Any year") {
+            CalibreTextField(
+                "Year",
+                text: $yearText,
+                placeholder: "Any year",
+                error: yearError
+            ) {
                 EmptyView()
             }
             .onChange(of: yearText) {
-                let digits = yearText.filter(\.isNumber)
+                let digits = String(yearText.filter { $0.isASCII && $0.isNumber }.prefix(4))
                 if digits != yearText { yearText = digits }
-                draft.year = digits.count == 4 ? Int(digits) : nil
+                draft.year = InputValidation.productionYear(digits)
             }
 
             Toggle(isOn: boxPapersBinding) {
@@ -175,6 +180,7 @@ struct FilterSheet: View {
     private var footer: some View {
         VStack(spacing: Space.s) {
             Button {
+                guard yearError == nil else { return }
                 Haptics.shared.play(.press)
                 onApply(draft)
                 dismiss()
@@ -184,6 +190,7 @@ struct FilterSheet: View {
                     .animation(Motion.easeMedium, value: liveCount)
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
+            .disabled(yearError != nil)
 
             Button("Clear all") {
                 draft = draft.cleared(keepBrand: lockedBrand != nil)
@@ -203,6 +210,13 @@ struct FilterSheet: View {
     private var showTitle: String {
         guard let liveCount else { return "Show the watches" }
         return liveCount == 1 ? "Show 1 watch" : "Show \(liveCount.formatted()) watches"
+    }
+
+    private var yearError: String? {
+        guard InputValidation.isNonBlank(yearText) else { return nil }
+        return InputValidation.productionYear(yearText) == nil
+            ? "Enter a valid 4-digit year."
+            : nil
     }
 
     private func scheduleCount(immediately: Bool = false) {

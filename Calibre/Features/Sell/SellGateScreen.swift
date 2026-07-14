@@ -34,9 +34,18 @@ struct SellGateScreen: View {
                         .font(CalibreType.body)
                         .foregroundStyle(Color.calibre.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Private sellers keep 92%. Dealers keep 95%.")
+                    Text("Private sellers keep 94%. Verified dealers keep 96%.")
                         .font(CalibreType.bodyMedium)
                         .foregroundStyle(Color.calibre.foreground)
+
+                    NavigationLink {
+                        FeeBreakdownScreen()
+                    } label: {
+                        Label("See the fee breakdown", systemImage: "percent")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.primary)
+                    }
+                    .buttonStyle(PressableStyle())
                 }
 
                 stepsRow

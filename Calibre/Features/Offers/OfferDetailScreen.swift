@@ -321,6 +321,11 @@ private struct OfferDetailContent: View {
                 text: $model.counterMessage,
                 placeholder: "Add a note with your number"
             )
+            .onChange(of: model.counterMessage) { _, value in
+                if value.count > 1_000 {
+                    model.counterMessage = String(value.prefix(1_000))
+                }
+            }
 
             HStack(spacing: Space.m) {
                 Button {
@@ -499,22 +504,17 @@ final class OfferDetailModel {
     }
 
     var parsedCounterAmount: Decimal? {
-        let cleaned = counterAmountText
-            .replacingOccurrences(of: ",", with: "")
-            .replacingOccurrences(of: "$", with: "")
-            .trimmingCharacters(in: .whitespaces)
-        guard !cleaned.isEmpty,
-              let value = Decimal(string: cleaned, locale: Locale(identifier: "en_US_POSIX")),
-              value > 0 else { return nil }
-        return value
+        InputValidation.positiveMoney(counterAmountText)
     }
 
     var counterAmountError: String? {
-        counterAmountText.isEmpty || parsedCounterAmount != nil ? nil : "Enter a valid amount."
+        !InputValidation.isNonBlank(counterAmountText) || parsedCounterAmount != nil
+            ? nil
+            : "Enter an amount greater than zero with no more than two decimal places."
     }
 
     func sendCounter() async {
-        guard let amount = parsedCounterAmount else { return }
+        guard let amount = parsedCounterAmount, !acting else { return }
         let trimmed = counterMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         await respond(.counter(amount: amount, message: trimmed.isEmpty ? nil : trimmed))
     }

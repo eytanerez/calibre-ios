@@ -7,6 +7,10 @@ enum SwipeDirection: Equatable {
     case save, pass
 }
 
+private enum DeckDragAxis {
+    case horizontal, vertical
+}
+
 /// The interactive stack: the top three cards, a finger-following drag with
 /// clamped rotation, SAVE/PASS affordances past 40% of the commit threshold,
 /// and an ease-out fly-off (crossfade under Reduce Motion). Pure gesture
@@ -33,6 +37,9 @@ struct DeckView: View {
     @State private var topOpacity: Double = 1
     /// 0→1 as the drag nears commit; under-cards scale/lift in sync.
     @State private var progress: CGFloat = 0
+    /// Lock the gesture to one axis after the first deliberate movement so a
+    /// diagonal thumb path cannot make a card jump or accidentally commit.
+    @State private var dragAxis: DeckDragAxis?
 
     var body: some View {
         GeometryReader { geo in
@@ -58,6 +65,10 @@ struct DeckView: View {
                 guard flying == nil else { return }
                 fly(direction, from: .zero, size: size)
             }
+            .onChange(of: cards.first?.id) {
+                guard flying == nil else { return }
+                resetDrag(animated: false)
+            }
         }
     }
 
@@ -80,7 +91,7 @@ struct DeckView: View {
                 guard flying == nil, translation == .zero else { return }
                 onTap(listing)
             }
-            .gesture(dragGesture(size: cardSize, commitDistance: commitDistance))
+            .highPriorityGesture(dragGesture(size: cardSize, commitDistance: commitDistance))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilitySummary(for: listing))
             .accessibilityHint("Opens the listing. Use the pass and save buttons below to swipe.")
@@ -112,38 +123,77 @@ struct DeckView: View {
     }
 
     private func dragGesture(size: CGSize, commitDistance: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 10)
+        DragGesture(minimumDistance: 8, coordinateSpace: .local)
             .onChanged { value in
                 guard flying == nil else { return }
-                translation = value.translation
+
+                if dragAxis == nil {
+                    let horizontal = abs(value.translation.width)
+                    let vertical = abs(value.translation.height)
+                    guard max(horizontal, vertical) >= 10 else { return }
+                    dragAxis = horizontal >= vertical ? .horizontal : .vertical
+                }
+
+                guard dragAxis == .horizontal else { return }
+
+                // Horizontal movement stays one-to-one with the finger. A
+                // small damped vertical component keeps the card tactile
+                // without letting diagonal drags throw it around the screen.
+                let dampedY = max(-44, min(44, value.translation.height * 0.22))
+                translation = CGSize(width: value.translation.width, height: dampedY)
                 progress = min(abs(value.translation.width) / commitDistance, 1)
-                if !armed, abs(value.translation.width) > commitDistance {
+                if !armed, abs(value.translation.width) >= commitDistance {
                     armed = true
                     Haptics.shared.play(.armed)
                 }
             }
             .onEnded { value in
                 guard flying == nil else { return }
+                guard dragAxis == .horizontal else {
+                    resetDrag(animated: false)
+                    return
+                }
+
                 let width = value.translation.width
                 let overDistance = abs(width) > commitDistance
-                let overVelocity = abs(value.velocity.width) > 800
+                let predictedWidth = value.predictedEndTranslation.width
+                // Prediction is useful for a quick flick, but require a real
+                // horizontal start so a tiny tap or vertical gesture never
+                // dismisses the card.
+                let intentionalFlick = abs(width) >= 36
+                    && abs(predictedWidth) > commitDistance
+                    && abs(predictedWidth) > abs(value.predictedEndTranslation.height)
                 armed = false
 
-                if overDistance || overVelocity {
-                    let direction: SwipeDirection = overDistance
-                        ? (width > 0 ? .save : .pass)
-                        : (value.velocity.width > 0 ? .save : .pass)
-                    fly(direction, from: value.translation, size: size)
+                if overDistance || intentionalFlick {
+                    let decidingWidth = overDistance ? width : predictedWidth
+                    let direction: SwipeDirection = decidingWidth > 0 ? .save : .pass
+                    let dampedY = max(-44, min(44, value.translation.height * 0.22))
+                    fly(
+                        direction,
+                        from: CGSize(width: value.translation.width, height: dampedY),
+                        size: size
+                    )
                 } else if reduceMotion {
-                    translation = .zero
-                    progress = 0
+                    resetDrag(animated: false)
                 } else {
-                    withAnimation(Motion.easeMedium) {
-                        translation = .zero
-                        progress = 0
-                    }
+                    resetDrag(animated: true)
                 }
             }
+    }
+
+    private func resetDrag(animated: Bool) {
+        let changes = {
+            translation = .zero
+            progress = 0
+            armed = false
+            dragAxis = nil
+        }
+        if animated {
+            withAnimation(Motion.easeMedium, changes)
+        } else {
+            changes()
+        }
     }
 
     /// Commit: haptic + semantics fire now; the card flies off along the drag
@@ -189,6 +239,7 @@ struct DeckView: View {
             progress = 0
             topOpacity = 1
             flying = nil
+            dragAxis = nil
         }
     }
 

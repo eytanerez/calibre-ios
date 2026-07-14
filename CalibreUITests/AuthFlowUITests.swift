@@ -68,6 +68,37 @@ final class AuthFlowUITests: XCTestCase {
 
     // MARK: - Guest flows (light appearance)
 
+    func testCredentialFormsRejectBlankAndMalformedInput() throws {
+        let app = returningApp(hasSeenIntro: true)
+        app.launch()
+
+        let signIn = app.buttons["Sign In"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 10))
+        XCTAssertFalse(signIn.isEnabled, "Blank credentials must never submit")
+
+        let identifier = app.textFields["you@example.com"]
+        identifier.tap()
+        identifier.typeText("   ")
+        let password = app.secureTextFields.firstMatch
+        password.tap()
+        password.typeText("Calibre1")
+        XCTAssertFalse(signIn.isEnabled, "Whitespace-only identifiers must never submit")
+
+        app.buttons["Forgot password?"].tap()
+        let send = app.buttons["Send reset link"]
+        XCTAssertTrue(send.waitForExistence(timeout: 5))
+        XCTAssertFalse(send.isEnabled)
+
+        let email = app.textFields["you@example.com"]
+        email.tap()
+        email.typeText("buyer@example")
+        XCTAssertFalse(send.isEnabled, "An incomplete email host must be rejected")
+
+        for _ in 0..<13 { email.typeText(XCUIKeyboardKey.delete.rawValue) }
+        email.typeText("buyer@example.com")
+        XCTAssertTrue(send.isEnabled, "A complete email should enable reset submission")
+    }
+
     func testGuestFlows() throws {
         let app = firstLaunchApp()
         app.launch()
@@ -142,6 +173,10 @@ final class AuthFlowUITests: XCTestCase {
         continueRegister.tap()
         let streetField = app.textFields["123 Meridian Ave"]
         XCTAssertTrue(streetField.waitForExistence(timeout: 5))
+        XCTAssertFalse(
+            app.buttons["Create account"].isEnabled,
+            "A registration with blank required address fields must not submit"
+        )
         snap("07-register-step2-address")
 
         // Back out to the login gate and continue as a guest.
@@ -262,7 +297,8 @@ final class AuthFlowUITests: XCTestCase {
             openButton.tap()
         }
 
-        XCTAssertTrue(app.navigationBars["Listing detail"].waitForExistence(timeout: 8))
+        let detailScreen = app.descendants(matching: .any)["listing-detail-screen"]
+        XCTAssertTrue(detailScreen.waitForExistence(timeout: 8))
         sleep(1)
         snap("20-deeplink-listing-route")
     }

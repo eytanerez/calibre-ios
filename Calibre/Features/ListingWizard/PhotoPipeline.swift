@@ -6,10 +6,12 @@ import UIKit
 import UniformTypeIdentifiers
 
 /// Capture → upload-ready file: normalize orientation, downscale the longest
-/// side to 3024px, encode HEIC at 0.8 (JPEG fallback), write into the
+/// side to 2048px, encode efficiently (JPEG fallback), write into the
 /// listing's photo folder.
 enum PhotoPipeline {
-    static let maxDimension: CGFloat = 3024
+    // 2048 px preserves useful detail for the full-screen gallery while
+    // avoiding multi-megabyte originals on every cold card/image request.
+    static let maxDimension: CGFloat = 2048
 
     @MainActor
     static func store(_ image: UIImage, listingID: String, label: String) -> URL? {
@@ -18,12 +20,12 @@ enum PhotoPipeline {
         let stamp = Int(Date.now.timeIntervalSince1970)
 
         let heicURL = directory.appending(path: "\(label)-\(stamp).heic")
-        if write(scaled, to: heicURL, type: UTType.heic, quality: 0.8) {
+        if write(scaled, to: heicURL, type: UTType.heic, quality: 0.72) {
             return heicURL
         }
         // Simulators (and some devices) have no HEIC encoder — fall back.
         let jpegURL = directory.appending(path: "\(label)-\(stamp).jpg")
-        if write(scaled, to: jpegURL, type: UTType.jpeg, quality: 0.85) {
+        if write(scaled, to: jpegURL, type: UTType.jpeg, quality: 0.76) {
             return jpegURL
         }
         return nil

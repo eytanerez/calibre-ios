@@ -32,7 +32,10 @@ public final class AuthSession {
     /// Set when a gated action needs sign-in; the app presents the auth sheet.
     public var pendingIntent: AuthIntent?
 
-    public var isAuthenticated: Bool { user != nil }
+    /// A persisted token pair represents a signed-in session even while the
+    /// launch-time `/auth/me` validation is temporarily offline. A definitive
+    /// 401 + rejected refresh clears the tokens and flips this back to false.
+    public private(set) var isAuthenticated = false
 
     @ObservationIgnored private let tokenStore: TokenStoring
     @ObservationIgnored private let configuration: APIConfiguration
@@ -46,6 +49,7 @@ public final class AuthSession {
         self.configuration = configuration
         self.tokenStore = tokenStore
         self.tokens = tokenStore.load()
+        self.isAuthenticated = self.tokens != nil
         let config = URLSessionConfiguration.ephemeral
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
@@ -59,18 +63,28 @@ public final class AuthSession {
     // MARK: - Bootstrap
 
     /// Restores the session on launch: if tokens exist, validate via /auth/me
-    /// (refreshing if needed). Failure lands in guest mode silently.
+    /// and refresh only after a real 401. Transient network/server failures keep
+    /// the Keychain session so closing the app while the API is unavailable
+    /// never signs the user out.
     public func bootstrap() async {
         guard tokens != nil else { return }
         do {
             user = try await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me"))
-        } catch {
-            if await refreshAfterUnauthorized() {
-                user = try? await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me"))
-            }
-            if user == nil {
+        } catch APIError.sessionExpired {
+            guard await refreshAfterUnauthorized() else { return }
+            do {
+                user = try await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me"))
+            } catch APIError.sessionExpired {
+                // A freshly issued access token was rejected. This is a
+                // definitive invalid session, not a connectivity problem.
                 clearSession()
+            } catch {
+                // The refresh succeeded, so retain it through a transient
+                // validation failure and let the next request retry normally.
             }
+        } catch {
+            // Offline, timeout, decoding, rate-limit, and 5xx failures are not
+            // evidence that the persisted credentials are invalid.
         }
     }
 
@@ -170,6 +184,7 @@ public final class AuthSession {
     private func applySession(user: CurrentUser, tokens: TokenPair) {
         self.user = user
         self.tokens = tokens
+        isAuthenticated = true
         tokenStore.save(tokens)
         let hadPendingIntent = pendingIntent != nil
         if hadPendingIntent {
@@ -180,6 +195,7 @@ public final class AuthSession {
     private func clearSession() {
         user = nil
         tokens = nil
+        isAuthenticated = false
         tokenStore.clear()
     }
 
@@ -197,9 +213,33 @@ public final class AuthSession {
         if let header = await authHeader() {
             request.setValue(header.value, forHTTPHeaderField: header.name)
         }
-        let (data, response) = try await urlSession.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await urlSession.data(for: request)
+        } catch {
+            throw APIError.network(underlying: error)
+        }
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        if http.statusCode == 401 {
             throw APIError.sessionExpired
+        }
+        if http.statusCode == 429 {
+            let retryAfter = http.value(forHTTPHeaderField: "Retry-After").flatMap(TimeInterval.init)
+            throw APIError.rateLimited(retryAfter: retryAfter)
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            let raw = try? decoder.decode(AuthErrorEnvelope.self, from: data)
+            throw APIError.server(
+                message: raw?.error ?? "Something went wrong.",
+                code: nil,
+                status: http.statusCode,
+                details: nil
+            )
         }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -216,11 +256,11 @@ private struct DataWrap<V: Decodable>: Decodable {
 // MARK: - AuthProviding
 
 extension AuthSession: AuthProviding {
-    /// Cookie header today; flips to `Authorization: Bearer` once the backend
-    /// Bearer path is deployed everywhere.
+    /// Native clients use the backend's documented Bearer-token path. Cookie
+    /// storage remains disabled, avoiding stale browser-cookie behavior.
     public func authHeader() async -> (name: String, value: String)? {
         guard let tokens else { return nil }
-        return ("Cookie", "calibre_access_token=\(tokens.accessToken)")
+        return ("Authorization", "Bearer \(tokens.accessToken)")
     }
 
     /// Single-flight: concurrent 401s await one refresh.
@@ -239,7 +279,11 @@ extension AuthSession: AuthProviding {
     }
 
     private func performRefresh() async -> Bool {
-        guard let refreshToken = tokens?.refreshToken else { return false }
+        guard let refreshToken = tokens?.refreshToken else {
+            // A 401 with no refresh credential cannot recover.
+            clearSession()
+            return false
+        }
         struct RefreshResponse: Decodable, Sendable {
             let accessToken: String
         }
@@ -255,8 +299,12 @@ extension AuthSession: AuthProviding {
             tokens = updated
             tokenStore.save(updated)
             return true
-        } catch {
+        } catch let APIError.server(_, _, status, _) where status == 401 || status == 403 {
+            // Only an explicit auth rejection proves the persisted refresh
+            // token is no longer usable. Never erase it for a timeout or 5xx.
             clearSession()
+            return false
+        } catch {
             return false
         }
     }

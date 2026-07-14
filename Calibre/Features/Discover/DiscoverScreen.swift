@@ -18,6 +18,7 @@ struct DiscoverScreen: View {
     @State private var swipeCommand: SwipeDirection?
     @State private var undoable: UndoRecord?
     @State private var undoExpiry: Task<Void, Never>?
+    @State private var showSaved = false
     /// Zoom-transition anchor for the PDP push (P3 wires the destination).
     @Namespace private var deckNamespace
 
@@ -33,6 +34,9 @@ struct DiscoverScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.calibre.background)
         .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(isPresented: $showSaved) {
+            SavedScreen()
+        }
         .animation(Motion.easeMedium, value: feed?.phase)
         .task { await bootstrapFeed() }
         .onDisappear { feed?.stopPrefetching() }
@@ -45,37 +49,51 @@ struct DiscoverScreen: View {
 
     // MARK: - Header
 
-    /// Minimal: a small serif wordline and, once signed in, a saved-count
-    /// ticker whose number rolls via `numericText`.
+    /// A compact explanation makes the deck understandable before the first
+    /// gesture. Saved is a real destination rather than a decorative counter.
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("Discover")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
-            Spacer()
-            if session.isAuthenticated {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Discover")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+                Spacer()
                 savedTicker
             }
+
+            Text("Swipe right to save, left to pass. Tap a watch for its details.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, Space.s)
     }
 
     private var savedTicker: some View {
         let count = services.commerce.watchedListingIDs.count
-        return HStack(spacing: Space.xs) {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 10, weight: .medium))
-            Text("\(count) saved")
-                .font(CalibreType.label)
-                .monospacedDigit()
-                .contentTransition(.numericText())
+        return Button {
+            openSaved()
+        } label: {
+            HStack(spacing: Space.xs) {
+                Image(systemName: session.isAuthenticated ? "heart.fill" : "heart")
+                    .font(.system(size: 10, weight: .medium))
+                Text(session.isAuthenticated ? "\(count) saved" : "Saved")
+                    .font(CalibreType.label)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .semibold))
+            }
+            .foregroundStyle(Color.calibre.accentForeground)
+            .padding(.horizontal, Space.m)
+            .frame(minHeight: 36)
+            .background(Color.calibre.accent, in: Capsule())
         }
-        .foregroundStyle(Color.calibre.accentForeground)
-        .padding(.horizontal, Space.m)
-        .padding(.vertical, 6)
-        .background(Color.calibre.accent, in: Capsule())
+        .buttonStyle(PressableStyle())
         .animation(Motion.easeMedium, value: count)
-        .accessibilityLabel("\(count) watches saved")
+        .accessibilityLabel("View all saved watches")
+        .accessibilityValue(session.isAuthenticated ? "\(count) saved" : "Sign in required")
+        .accessibilityHint("Opens your saved watches")
     }
 
     // MARK: - Content
@@ -287,6 +305,13 @@ struct DiscoverScreen: View {
 
     private func openListing(_ listing: Listing) {
         router.discoverPath.append(.listing(listing.id))
+    }
+
+    private func openSaved() {
+        let presented = $showSaved
+        session.requireThenPresent("Sign in to see your saved watches") {
+            presented.wrappedValue = true
+        }
     }
 
     // MARK: - Lifecycle

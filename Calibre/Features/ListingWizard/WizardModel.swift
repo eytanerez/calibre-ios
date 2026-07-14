@@ -225,10 +225,23 @@ final class WizardModel {
     /// "{Brand} {Model} {Reference}" — the serif title everywhere.
     var composedTitle: String {
         let joined = [brand, model, reference]
-            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .map(InputValidation.trimmed)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         return joined.isEmpty ? "Untitled watch" : joined
+    }
+
+    var yearError: String? {
+        guard !yearUnknown else { return nil }
+        return InputValidation.productionYear(yearText) == nil
+            ? "Enter a 4-digit year, or choose Year unknown."
+            : nil
+    }
+
+    var detailsComplete: Bool {
+        InputValidation.isNonBlank(brand)
+            && (yearUnknown || InputValidation.productionYear(yearText) != nil)
+            && ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
     }
 
     // MARK: Bootstrap
@@ -364,18 +377,22 @@ final class WizardModel {
     private var currentPayload: ListingDraftPayload {
         ListingDraftPayload(
             title: composedTitle,
-            description: notes.isEmpty ? nil : String(notes.prefix(2000)),
-            brand: brand.isEmpty ? nil : brand,
-            model: model.isEmpty ? nil : model,
-            reference: reference.isEmpty ? nil : reference,
+            description: InputValidation.isNonBlank(notes)
+                ? String(InputValidation.trimmed(notes).prefix(2000))
+                : nil,
+            brand: InputValidation.isNonBlank(brand) ? InputValidation.trimmed(brand) : nil,
+            model: InputValidation.isNonBlank(model) ? InputValidation.trimmed(model) : nil,
+            reference: InputValidation.isNonBlank(reference) ? InputValidation.trimmed(reference) : nil,
             price: price,
             conditionOverall: conditions[.overall],
+            conditionCase: conditions[.caseback],
             conditionBracelet: conditions[.bracelet],
+            conditionDial: conditions[.crystal],
             conditionBezel: conditions[.bezel],
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
             conditionCaseback: conditions[.caseback],
-            productionYear: yearUnknown ? nil : Int(yearText.trimmingCharacters(in: .whitespaces))
+            productionYear: yearUnknown ? nil : InputValidation.productionYear(yearText)
         )
     }
 
@@ -488,7 +505,7 @@ final class WizardModel {
     // MARK: Price & payout
 
     var price: Decimal? {
-        Decimal.fromMoneyText(priceText)
+        InputValidation.positiveMoney(priceText)
     }
 
     var commission: Decimal? {
@@ -502,6 +519,10 @@ final class WizardModel {
     var payout: Decimal? {
         guard let price, let commission else { return nil }
         return price - commission - (estimate?.amount.value ?? 0)
+    }
+
+    var priceDetailsComplete: Bool {
+        price != nil && InputValidation.isNonBlank(notes)
     }
 
     /// Debounced shipping estimate — fires as the price settles.
@@ -533,8 +554,21 @@ final class WizardModel {
 
     /// Flushes fields, then flips the draft to pending review.
     func submit() async -> Bool {
-        guard let listing, !submitting else { return false }
+        guard !submitting else { return false }
         submitError = nil
+        guard detailsComplete else {
+            submitError = "Add the brand, a valid year (or mark it unknown), and grade every condition item."
+            return false
+        }
+        guard priceDetailsComplete else {
+            submitError = "Enter an asking price greater than zero and add notes for buyers."
+            return false
+        }
+        guard allRequiredPhotosDone else {
+            submitError = "All six photos need to finish uploading before review."
+            return false
+        }
+        guard let listing else { return false }
         submitting = true
         defer { submitting = false }
 

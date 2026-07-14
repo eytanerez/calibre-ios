@@ -110,6 +110,9 @@ struct LabelPurchaseFlow: View {
             .onChange(of: weightText) { _, _ in revalidateAndQuote() }
 
             CalibreTextField("Notes for the carrier (optional)", text: $notes, placeholder: "Leave at the front desk")
+                .onChange(of: notes) { _, value in
+                    if value.count > 500 { notes = String(value.prefix(500)) }
+                }
         }
     }
 
@@ -138,7 +141,7 @@ struct LabelPurchaseFlow: View {
             boxWidthIn: width,
             boxHeightIn: height,
             weightLb: weight,
-            notes: notes.isEmpty ? nil : notes
+            notes: InputValidation.isNonBlank(notes) ? InputValidation.trimmed(notes) : nil
         )
     }
 
@@ -289,7 +292,10 @@ struct LabelPurchaseFlow: View {
     }
 
     private func finalize() {
-        guard let pendingIntent, let paymentIntent = pendingIntent.paymentIntent, let package else { return }
+        guard !finalizing,
+              let pendingIntent,
+              let paymentIntent = pendingIntent.paymentIntent,
+              let package else { return }
         finalizing = true
         Task {
             defer { finalizing = false }

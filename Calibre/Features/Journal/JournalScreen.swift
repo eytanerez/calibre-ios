@@ -14,6 +14,7 @@ struct JournalScreen: View {
                     Text("The Journal")
                         .font(CalibreType.title)
                         .foregroundStyle(Color.calibre.foreground)
+                        .accessibilityAddTraits(.isHeader)
                     Text("Stories from the world of watches, written by the Calibre desk.")
                         .font(CalibreType.body)
                         .foregroundStyle(Color.calibre.mutedForeground)

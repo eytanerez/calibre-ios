@@ -76,6 +76,16 @@ final class DeckFeed {
             phase = .exhausted
             return
         }
+        // Critical-path UI tests must be able to exercise the real deck and
+        // guest save gate even when the development API is offline. These
+        // decoded card models use no remote images and never ship in Release.
+        if ProcessInfo.processInfo.arguments.contains("-uiTesting") {
+            cards = Self.uiTestCards
+            enqueuedIDs = Set(cards.map(\.id))
+            pagesExhausted = true
+            phase = cards.isEmpty ? .failed("The UI test deck could not be prepared.") : .ready
+            return
+        }
         #endif
         if session.isAuthenticated {
             _ = try? await commerce.loadWatchlist()
@@ -214,4 +224,66 @@ final class DeckFeed {
         prefetcher.stopPrefetching()
         prefetchedURLs.removeAll()
     }
+
+    #if DEBUG
+    /// Using the production `Listing` decoder keeps this fixture aligned with
+    /// the card model without adding test-only initializers to CalibreKit.
+    private static var uiTestCards: [Listing] {
+        let json = """
+        [
+          {
+            "id": "ui-test-discover-1",
+            "listing_number": 9001,
+            "seller_id": "ui-test-seller",
+            "title": "Black Bay Fifty-Eight",
+            "brand": "Tudor",
+            "model": "Black Bay Fifty-Eight",
+            "reference_number": "M79030N",
+            "price": "4200.00",
+            "currency": "USD",
+            "condition": { "overall": "Like New" },
+            "box_papers": true,
+            "production_year": 2023,
+            "status": "active",
+            "images": []
+          },
+          {
+            "id": "ui-test-discover-2",
+            "listing_number": 9002,
+            "seller_id": "ui-test-seller",
+            "title": "Speedmaster Moonwatch",
+            "brand": "Omega",
+            "model": "Speedmaster Moonwatch",
+            "reference_number": "310.30.42.50.01.002",
+            "price": "6850.00",
+            "currency": "USD",
+            "condition": { "overall": "Very Good" },
+            "box_papers": true,
+            "production_year": 2022,
+            "status": "active",
+            "images": []
+          },
+          {
+            "id": "ui-test-discover-3",
+            "listing_number": 9003,
+            "seller_id": "ui-test-seller",
+            "title": "Santos de Cartier",
+            "brand": "Cartier",
+            "model": "Santos de Cartier",
+            "reference_number": "WSSA0029",
+            "price": "7450.00",
+            "currency": "USD",
+            "condition": { "overall": "Excellent" },
+            "box_papers": true,
+            "production_year": 2024,
+            "status": "active",
+            "images": []
+          }
+        ]
+        """
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return (try? decoder.decode([Listing].self, from: Data(json.utf8))) ?? []
+    }
+    #endif
 }

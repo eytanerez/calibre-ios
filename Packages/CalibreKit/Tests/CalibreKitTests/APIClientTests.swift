@@ -210,6 +210,77 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(store.load()?.accessToken, "fresh-token")
         XCTAssertEqual(store.load()?.refreshToken, "refresh-1", "refresh token is not rotated")
     }
+
+    /// Launch-time API outages must not be interpreted as a logout. The app
+    /// can continue with its persisted credentials and retry on the next call.
+    @MainActor
+    func testAuthBootstrapKeepsSessionOnServerFailure() async {
+        MockURLProtocol.setHandler { request in
+            XCTAssertEqual(request.url?.path, "/auth/me")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-1")
+            return (503, Data("{\"ok\": false, \"error\": \"temporarily unavailable\"}".utf8))
+        }
+
+        let pair = TokenPair(accessToken: "access-1", refreshToken: "refresh-1")
+        let store = MemoryTokenStore(tokens: pair)
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+
+        await session.bootstrap()
+
+        XCTAssertTrue(session.isAuthenticated)
+        XCTAssertNil(session.user)
+        XCTAssertEqual(store.load(), pair)
+    }
+
+    /// A 401 is recoverable when the persisted refresh token is still valid.
+    /// The retried `/auth/me` must use the newly issued Bearer token.
+    @MainActor
+    func testAuthBootstrapRefreshesExpiredAccessToken() async {
+        let refreshHits = HitCounter()
+        MockURLProtocol.setHandler { request in
+            switch request.url?.path {
+            case "/auth/refresh":
+                refreshHits.increment()
+                return (200, Data("{\"ok\": true, \"data\": {\"access_token\": \"fresh\"}}".utf8))
+            case "/auth/me":
+                if request.value(forHTTPHeaderField: "Authorization") == "Bearer fresh" {
+                    return (200, Data("{\"data\": {\"id\": \"u1\", \"email\": \"a@b.c\", \"username\": \"tester\", \"roles\": [\"member\"]}}".utf8))
+                }
+                return (401, Data("{\"ok\": false, \"error\": \"expired\"}".utf8))
+            default:
+                return (404, Data("{\"ok\": false, \"error\": \"not found\"}".utf8))
+            }
+        }
+
+        let store = MemoryTokenStore(tokens: TokenPair(accessToken: "stale", refreshToken: "refresh-1"))
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+
+        await session.bootstrap()
+
+        XCTAssertTrue(session.isAuthenticated)
+        XCTAssertEqual(session.user?.username, "tester")
+        XCTAssertEqual(refreshHits.value, 1)
+        XCTAssertEqual(store.load()?.accessToken, "fresh")
+    }
+
+    /// Only a definitive refresh-token rejection erases the Keychain session.
+    @MainActor
+    func testAuthBootstrapClearsSessionWhenRefreshIsRejected() async {
+        MockURLProtocol.setHandler { request in
+            if request.url?.path == "/auth/refresh" {
+                return (401, Data("{\"ok\": false, \"error\": \"Invalid refresh token\"}".utf8))
+            }
+            return (401, Data("{\"ok\": false, \"error\": \"expired\"}".utf8))
+        }
+
+        let store = MemoryTokenStore(tokens: TokenPair(accessToken: "stale", refreshToken: "invalid"))
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+
+        await session.bootstrap()
+
+        XCTAssertFalse(session.isAuthenticated)
+        XCTAssertNil(store.load())
+    }
 }
 
 /// Thread-safe test counter (the URLProtocol handler runs off-main).

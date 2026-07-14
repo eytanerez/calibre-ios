@@ -164,31 +164,64 @@ private struct NewRequestSheet: View {
                     CalibreTextField("Brand (required)", text: $brand)
                     CalibreTextField("Model", text: $model)
                     CalibreTextField("Reference", text: $reference)
-                    CalibreTextField("Year", text: $year).keyboardType(.numberPad)
-                    CalibreTextField("Max budget (USD)", text: $budget).keyboardType(.numberPad)
+                    CalibreTextField(
+                        "Year",
+                        text: $year,
+                        error: yearError
+                    )
+                    .keyboardType(.numberPad)
+                    CalibreTextField(
+                        "Max budget (USD)",
+                        text: $budget,
+                        error: budgetError
+                    )
+                    .keyboardType(.decimalPad)
                     CalibreTextField("Notes", text: $notes)
+                        .onChange(of: notes) { _, value in
+                            if value.count > 2_000 { notes = String(value.prefix(2_000)) }
+                        }
                     Button(saving ? "Posting…" : "Post request") {
                         Task { await submit() }
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
-                    .disabled(brand.trimmingCharacters(in: .whitespaces).isEmpty || saving)
+                    .disabled(!canSubmit)
                 }
                 .padding(Space.margin)
             }
         }
     }
 
+    private var yearError: String? {
+        InputValidation.isNonBlank(year) && InputValidation.productionYear(year) == nil
+            ? "Enter a 4-digit year, or leave it blank."
+            : nil
+    }
+
+    private var budgetError: String? {
+        InputValidation.isNonBlank(budget) && InputValidation.positiveMoney(budget) == nil
+            ? "Enter an amount greater than zero, or leave it blank."
+            : nil
+    }
+
+    private var canSubmit: Bool {
+        InputValidation.isNonBlank(brand)
+            && yearError == nil
+            && budgetError == nil
+            && !saving
+    }
+
     private func submit() async {
+        guard canSubmit else { return }
         saving = true
         defer { saving = false }
         do {
             let created = try await services.seller.createWatchRequest(
-                brand: brand.trimmingCharacters(in: .whitespaces),
-                model: model.isEmpty ? nil : model,
-                reference: reference.isEmpty ? nil : reference,
-                productionYear: Int(year),
-                maxBudget: Decimal(string: budget),
-                notes: notes.isEmpty ? nil : notes
+                brand: InputValidation.trimmed(brand),
+                model: InputValidation.isNonBlank(model) ? InputValidation.trimmed(model) : nil,
+                reference: InputValidation.isNonBlank(reference) ? InputValidation.trimmed(reference) : nil,
+                productionYear: InputValidation.productionYear(year),
+                maxBudget: InputValidation.positiveMoney(budget),
+                notes: InputValidation.isNonBlank(notes) ? InputValidation.trimmed(notes) : nil
             )
             onCreate(created)
             Haptics.shared.play(.success)

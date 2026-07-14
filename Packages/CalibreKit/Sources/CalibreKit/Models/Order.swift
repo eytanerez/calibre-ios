@@ -45,7 +45,7 @@ public struct Order: Codable, Sendable, Identifiable {
     // Money breakdown (all Decimal-safe).
     public let subtotal: APIDecimal
     public let feesTotal: APIDecimal
-    /// 8%/5% seller fee snapshot at purchase time.
+    /// Historical seller fee snapshot captured at purchase time.
     public let sellerFeePercentApplied: APIDecimal?
     public let sellerFeeAmount: APIDecimal?
     public let taxTotal: APIDecimal?

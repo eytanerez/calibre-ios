@@ -58,6 +58,18 @@ struct ReviewStep: View {
                         .foregroundStyle(Color.calibre.mutedForeground)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
+                } else if !model.detailsComplete {
+                    Text("Finish the watch details and grade each condition item before review.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                } else if !model.priceDetailsComplete {
+                    Text("Add an asking price and notes for buyers before review.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
                 } else if !model.allRequiredPhotosDone {
                     Text("All six photos need to finish uploading before review.")
                         .font(CalibreType.caption)
@@ -71,7 +83,7 @@ struct ReviewStep: View {
     }
 
     private var canSubmit: Bool {
-        model.allRequiredPhotosDone && model.price != nil
+        model.detailsComplete && model.allRequiredPhotosDone && model.priceDetailsComplete
     }
 
     // MARK: Hero

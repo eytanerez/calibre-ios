@@ -252,8 +252,10 @@ struct SellerDashboardScreen: View {
     // MARK: - Dealer progress
 
     private func dealerCard(_ dealer: DealerUnlock) -> some View {
-        let keepNow = 100 - dealer.currentFeePercent.value
-        let keepDealer = 100 - dealer.dealerFeePercent.value
+        let keepNow = Decimal(
+            dealer.isActive ? MarketplaceFees.dealerKeepPercent : MarketplaceFees.privateSellerKeepPercent
+        )
+        let keepDealer = Decimal(MarketplaceFees.dealerKeepPercent)
         return SellCard {
             VStack(alignment: .leading, spacing: Space.m) {
                 HStack {

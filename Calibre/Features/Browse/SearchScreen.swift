@@ -49,7 +49,7 @@ struct SearchScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
         .task {
-            try? await services.catalog.loadMetadata()
+            _ = try? await services.catalog.loadMetadata()
         }
         .onChange(of: query) {
             scheduleListingSearch()

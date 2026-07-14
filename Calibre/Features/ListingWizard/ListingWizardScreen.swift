@@ -64,7 +64,8 @@ struct ListingWizardScreen: View {
     }
 
     private func createModel() {
-        let feePercent = services.seller.dashboard?.dealer?.currentFeePercent.value ?? Decimal(8)
+        let isVerifiedDealer = services.seller.dashboard?.dealer?.isActive == true
+        let feePercent = MarketplaceFees.sellerPercent(isVerifiedDealer: isVerifiedDealer)
         let created = WizardModel(
             kind: context.kind,
             seller: services.seller,
@@ -138,7 +139,7 @@ struct ListingWizardScreen: View {
                     advance(model, to: model.step + 1)
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
-                .disabled(model.step == 0 && model.brand.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(!canContinue(model))
             }
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.m)
@@ -156,6 +157,14 @@ struct ListingWizardScreen: View {
             }
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.s)
+        }
+    }
+
+    private func canContinue(_ model: WizardModel) -> Bool {
+        switch model.step {
+        case 0: model.detailsComplete
+        case 2: model.priceDetailsComplete
+        default: true
         }
     }
 

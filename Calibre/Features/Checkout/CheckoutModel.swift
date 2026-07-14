@@ -123,6 +123,7 @@ final class CheckoutModel {
     // MARK: - Shipping step
 
     func createAddress(_ payload: AddressPayload) async {
+        guard !savingAddress else { return }
         savingAddress = true
         addressFormError = nil
         defer { savingAddress = false }

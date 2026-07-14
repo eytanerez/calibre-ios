@@ -26,7 +26,7 @@ public struct SellerProfileSummary: Codable, Sendable {
     public let unlock: DealerUnlock?
 }
 
-/// Dealer-tier unlock progress (10 live listings → 5% fee next month).
+/// Dealer-tier unlock progress (10 live listings → dealer pricing next month).
 public struct DealerUnlock: Codable, Sendable {
     public let status: String
     public let isActive: Bool

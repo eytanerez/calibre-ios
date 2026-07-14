@@ -208,16 +208,59 @@ struct HomeScreen: View {
 
     private func brandRail(_ brands: [BrandGroup]) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Eyebrow("Browse by brand")
-                .padding(.horizontal, Space.margin)
-            ChipRail {
-                ForEach(brands, id: \.brand) { group in
-                    FilterChip(group.brand, isSelected: false) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Browse by brand")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+                Spacer()
+                Button("View all") {
+                    pushed = .brands
+                }
+                .font(CalibreType.label)
+                .foregroundStyle(Color.calibre.primary)
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("View all watch brands")
+            }
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: Space.m),
+                    GridItem(.flexible(), spacing: Space.m),
+                ],
+                spacing: Space.m
+            ) {
+                ForEach(brands.prefix(6), id: \.brand) { group in
+                    Button {
                         pushed = .brand(group.brand)
+                    } label: {
+                        HStack(spacing: Space.s) {
+                            Text(group.brand)
+                                .font(CalibreType.bodyMedium)
+                                .foregroundStyle(Color.calibre.foreground)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                        }
+                        .padding(.horizontal, Space.m)
+                        .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
+                        .background(
+                            Color.calibre.card,
+                            in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                        )
                     }
+                    .buttonStyle(PressableStyle())
+                    .accessibilityHint("Shows watches from \(group.brand)")
                 }
             }
         }
+        .padding(.horizontal, Space.margin)
     }
 
     @ViewBuilder

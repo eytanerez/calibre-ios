@@ -16,6 +16,7 @@ import SwiftUI
 enum BrowseDestination: Hashable {
     case search
     case results(BrowseFilters, title: String)
+    case brands
     case brand(String)
     case listing(String, zoom: ListingZoomSource?)
     case seller(String)
@@ -70,6 +71,8 @@ struct BrowseDestinationView: View {
                 SearchScreen()
             case .results(let filters, let title):
                 ResultsScreen(filters: filters, title: title)
+            case .brands:
+                AllBrandsScreen()
             case .brand(let brand):
                 BrandScreen(brand: brand)
             case .listing(let id, let zoom):
@@ -227,23 +230,45 @@ extension ListingSummary {
 // MARK: - Images
 
 /// The one way browse loads listing imagery: NukeUI with downsampling sized
-/// to the container, resting on the warm secondary well.
+/// to the container, resting on a stable warm secondary well. Loading, missing,
+/// and failed images keep the exact same proposed frame as the final image so
+/// cards and rows never jump when decoding finishes.
 struct ListingImageWell: View {
     let url: URL?
     var targetWidth: CGFloat = 400
 
     var body: some View {
-        LazyImage(
-            request: url.map {
-                ImageRequest(url: $0, processors: [.resize(width: targetWidth)])
-            }
-        ) { state in
-            if let image = state.image {
-                image.resizable().scaledToFill()
+        ZStack {
+            Color.calibre.secondary.opacity(0.5)
+
+            if let request {
+                LazyImage(request: request) { state in
+                    if let image = state.image {
+                        image.resizable().scaledToFill()
+                    } else if state.error != nil {
+                        fallbackGlyph
+                    } else {
+                        Rectangle().shimmer()
+                    }
+                }
             } else {
-                Color.calibre.secondary.opacity(0.5)
+                fallbackGlyph
             }
         }
+        .clipped()
+    }
+
+    private var request: ImageRequest? {
+        url.map {
+            ImageRequest(url: $0, processors: [.resize(width: targetWidth, upscale: false)])
+        }
+    }
+
+    private var fallbackGlyph: some View {
+        Image(systemName: "clock")
+            .font(.system(size: min(40, max(18, targetWidth * 0.1)), weight: .light))
+            .foregroundStyle(Color.calibre.placeholder)
+            .accessibilityHidden(true)
     }
 }
 

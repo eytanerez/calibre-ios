@@ -43,6 +43,20 @@ struct YouScreen: View {
                     }
                 }
 
+                linkedSection(title: "Explore") {
+                    NavigationLink { JournalScreen() } label: {
+                        rowLabel(icon: "text.book.closed", label: "The Journal")
+                    }.buttonStyle(PressableStyle())
+                    divider
+                    NavigationLink { MarketplaceGuideScreen() } label: {
+                        rowLabel(icon: "map", label: "How Calibre works")
+                    }.buttonStyle(PressableStyle())
+                    divider
+                    NavigationLink { FeeBreakdownScreen() } label: {
+                        rowLabel(icon: "percent", label: "Fees and payments")
+                    }.buttonStyle(PressableStyle())
+                }
+
                 linkedSection(title: "Help") {
                     NavigationLink { SupportChatScreen() } label: {
                         rowLabel(icon: "bubble.left.and.bubble.right", label: "Support")

@@ -13,19 +13,26 @@ struct SquareThumb: View {
     var side: CGFloat
 
     var body: some View {
-        LazyImage(request: request) { state in
-            if let image = state.image {
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
+        ZStack {
+            Color.calibre.secondary.opacity(0.5)
+            if let request {
+                LazyImage(request: request) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else if state.error != nil {
+                        fallbackGlyph
+                    } else {
+                        Rectangle().shimmer()
+                    }
+                }
             } else {
-                Image(systemName: "clock")
-                    .font(.system(size: side * 0.3, weight: .light))
-                    .foregroundStyle(Color.calibre.placeholder)
+                fallbackGlyph
             }
         }
         .frame(width: side, height: side)
-        .background(Color.calibre.secondary.opacity(0.5))
+        .clipped()
         .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 
@@ -36,6 +43,13 @@ struct SquareThumb: View {
             url: url,
             processors: [.resize(size: CGSize(width: pixels, height: pixels), unit: .pixels, crop: true)]
         )
+    }
+
+    private var fallbackGlyph: some View {
+        Image(systemName: "clock")
+            .font(.system(size: side * 0.3, weight: .light))
+            .foregroundStyle(Color.calibre.placeholder)
+            .accessibilityHidden(true)
     }
 }
 

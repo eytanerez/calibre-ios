@@ -378,14 +378,7 @@ final class MakeOfferModel {
     // MARK: Amount
 
     var parsedAmount: Decimal? {
-        let cleaned = amountText
-            .replacingOccurrences(of: ",", with: "")
-            .replacingOccurrences(of: "$", with: "")
-            .trimmingCharacters(in: .whitespaces)
-        guard !cleaned.isEmpty,
-              let value = Decimal(string: cleaned, locale: Locale(identifier: "en_US_POSIX")),
-              value > 0 else { return nil }
-        return value
+        InputValidation.positiveMoney(amountText)
     }
 
     var displayAmountText: String {
@@ -394,11 +387,13 @@ final class MakeOfferModel {
     }
 
     var amountError: String? {
-        amountText.isEmpty || parsedAmount != nil ? nil : "Enter a valid amount."
+        !InputValidation.isNonBlank(amountText) || parsedAmount != nil
+            ? nil
+            : "Enter an amount greater than zero with no more than two decimal places."
     }
 
     var canSubmit: Bool {
-        parsedAmount != nil && consented
+        parsedAmount != nil && consented && !creating
     }
 
     // MARK: Create + hold

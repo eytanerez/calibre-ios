@@ -102,12 +102,15 @@ struct SupportChatScreen: View {
 
     private var canSend: Bool {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && (!needsGuestEmail || guestEmail.contains("@"))
+            && (!needsGuestEmail || InputValidation.isValidEmail(guestEmail))
+            && !sending
     }
 
     private func send() async {
         let body = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !body.isEmpty else { return }
+        guard !body.isEmpty,
+              !sending,
+              !needsGuestEmail || InputValidation.isValidEmail(guestEmail) else { return }
         sending = true
         errorText = nil
         defer { sending = false }
@@ -115,7 +118,7 @@ struct SupportChatScreen: View {
             _ = try await services.support.send(
                 body,
                 authenticated: session.isAuthenticated,
-                guestEmail: needsGuestEmail ? guestEmail : nil
+                guestEmail: needsGuestEmail ? InputValidation.trimmed(guestEmail).lowercased() : nil
             )
             draft = ""
             Haptics.shared.play(.selection)

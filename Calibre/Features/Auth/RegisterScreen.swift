@@ -314,28 +314,26 @@ struct RegisterScreen: View {
     }
 
     private var passwordSatisfiesRules: Bool {
-        password.count >= 8
-            && password.contains(where: \.isUppercase)
-            && password.contains(where: \.isNumber)
+        InputValidation.passwordMeetsRules(password)
     }
 
     private var stepOneComplete: Bool {
-        !firstName.trimmingCharacters(in: .whitespaces).isEmpty
-            && !lastName.trimmingCharacters(in: .whitespaces).isEmpty
-            && email.contains("@") && email.contains(".")
-            && phone.trimmingCharacters(in: .whitespaces).count >= 7
+        InputValidation.isNonBlank(firstName)
+            && InputValidation.isNonBlank(lastName)
+            && InputValidation.isValidEmail(email)
+            && InputValidation.isValidPhone(phone)
             && usernameState.isAvailable
             && passwordSatisfiesRules
             && passwordsMatch
     }
 
     private var stepTwoComplete: Bool {
-        !addressFullName.trimmingCharacters(in: .whitespaces).isEmpty
-            && !street.trimmingCharacters(in: .whitespaces).isEmpty
-            && !city.trimmingCharacters(in: .whitespaces).isEmpty
-            && !zip.trimmingCharacters(in: .whitespaces).isEmpty
-            && !state.trimmingCharacters(in: .whitespaces).isEmpty
-            && country.trimmingCharacters(in: .whitespaces).count == 2
+        InputValidation.isNonBlank(addressFullName)
+            && InputValidation.isNonBlank(street)
+            && InputValidation.isNonBlank(city)
+            && InputValidation.isNonBlank(zip)
+            && InputValidation.isNonBlank(state)
+            && InputValidation.isISO2CountryCode(country)
     }
 
     private func advanceToAddress() {
@@ -391,7 +389,12 @@ struct RegisterScreen: View {
     // MARK: - Submit
 
     private func submit() async {
-        guard stepTwoComplete, !busy else { return }
+        guard stepOneComplete, stepTwoComplete, !busy else {
+            if !stepOneComplete {
+                errorMessage = "Some account details changed or still need attention. Go back and check them."
+            }
+            return
+        }
         errorMessage = nil
         busy = true
         defer { busy = false }

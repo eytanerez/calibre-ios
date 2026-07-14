@@ -54,6 +54,7 @@ public struct ListingCard<ImageContent: View>: View {
                     .aspectRatio(1, contentMode: .fill)
                     .frame(maxWidth: .infinity)
                     .background(Color.calibre.secondary.opacity(0.5))
+                    .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
 
                 if let condition = model.condition {

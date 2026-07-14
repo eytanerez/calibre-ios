@@ -24,7 +24,12 @@ struct DetailsStep: View {
             }
 
             VStack(alignment: .leading, spacing: Space.m) {
-                CalibreTextField("Year", text: $model.yearText, placeholder: "2019")
+                CalibreTextField(
+                    "Year",
+                    text: $model.yearText,
+                    placeholder: "2019",
+                    error: model.yearText.isEmpty ? nil : model.yearError
+                )
                     .keyboardType(.numberPad)
                     .disabled(model.yearUnknown)
                     .opacity(model.yearUnknown ? 0.5 : 1)
@@ -314,6 +319,12 @@ struct PriceStep: View {
             .keyboardType(.decimalPad)
             .onChange(of: model.priceText) { _, _ in model.priceChanged() }
 
+            if InputValidation.isNonBlank(model.priceText), model.price == nil {
+                Text("Enter an amount greater than zero with no more than two decimal places.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.destructive)
+            }
+
             payoutCard
 
             VStack(alignment: .leading, spacing: Space.s) {
@@ -340,9 +351,17 @@ struct PriceStep: View {
                         }
                         model.fieldChanged()
                     }
-                Text("\(model.notes.count)/2000")
+                Text(
+                    InputValidation.isNonBlank(model.notes)
+                        ? "\(model.notes.count)/2000"
+                        : "Required · 0/2000"
+                )
                     .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(
+                        InputValidation.isNonBlank(model.notes)
+                            ? Color.calibre.mutedForeground
+                            : Color.calibre.destructive
+                    )
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }

@@ -65,11 +65,12 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(seller.reputation?.salesCount, 4)
         XCTAssertEqual(seller.reputation?.averageRating, 5.0)
 
-        // Absolute image URLs must pass through untouched.
+        // Internal media URLs are rewritten to the configured API origin so the
+        // simulator/device never tries to reach the web frontend's localhost.
         XCTAssertEqual(first.images.count, 6)
         XCTAssertEqual(
             first.images.first?.url?.absoluteString,
-            "http://localhost:5173/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/80464fd84ef543fbb7a460d973637daa.jpg"
+            "https://api.test/media/listing_images/49e52179-1035-46f9-abe0-443d915d8c3b/80464fd84ef543fbb7a460d973637daa.jpg"
         )
     }
 

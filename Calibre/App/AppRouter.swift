@@ -15,6 +15,7 @@ enum Route: Hashable {
     case brand(String)
     case order(String)
     case offer(String)
+    case journal
     case journalArticle(String)
     case supportChat
     case alerts
@@ -79,7 +80,7 @@ final class AppRouter {
     /// Which tab a route naturally lives in.
     private func homeTab(for route: Route) -> AppTab {
         switch route {
-        case .listing, .seller, .brand, .journalArticle, .checkout:
+        case .listing, .seller, .brand, .journal, .journalArticle, .checkout:
             .home
         case .order, .offer, .alerts:
             .activity
@@ -128,8 +129,11 @@ final class AppRouter {
             guard let id = segments.first else { return false }
             open(.offer(id))
         case "journal":
-            guard let id = segments.first else { return false }
-            open(.journalArticle(id))
+            if let id = segments.first {
+                open(.journalArticle(id))
+            } else {
+                open(.journal)
+            }
         case "support":
             open(.supportChat)
         case "alerts":
@@ -166,8 +170,11 @@ final class AppRouter {
             guard segments.count > 1 else { return false }
             open(.offer(segments[1]))
         case "journal":
-            guard segments.count > 1 else { return false }
-            open(.journalArticle(segments[1]))
+            if segments.count > 1 {
+                open(.journalArticle(segments[1]))
+            } else {
+                open(.journal)
+            }
         case "support":
             open(.supportChat)
         case "auth":

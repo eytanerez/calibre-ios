@@ -174,13 +174,7 @@ private struct ZoomableRemoteImage: UIViewRepresentable {
         doubleTap.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTap)
 
-        if let url {
-            ImagePipeline.shared.loadImage(with: ImageRequest(url: url)) { [weak view] result in
-                if case .success(let response) = result {
-                    view?.imageView.image = response.image
-                }
-            }
-        }
+        context.coordinator.load(url, into: view)
         return view
     }
 
@@ -190,15 +184,46 @@ private struct ZoomableRemoteImage: UIViewRepresentable {
                 isZoomed = zoomed
             }
         }
+        context.coordinator.load(url, into: view)
+    }
+
+    static func dismantleUIView(_ uiView: ZoomScrollView, coordinator: Coordinator) {
+        coordinator.cancelImageLoad()
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
 
+    @MainActor
     final class Coordinator: NSObject, UIScrollViewDelegate {
         weak var scrollView: ZoomScrollView?
         var onZoomChange: ((Bool) -> Void)?
+        private var imageTask: ImageTask?
+        private var loadedURL: URL?
+
+        func load(_ url: URL?, into view: ZoomScrollView) {
+            guard loadedURL != url else { return }
+            imageTask?.cancel()
+            imageTask = nil
+            loadedURL = url
+            view.imageView.image = nil
+
+            guard let url else { return }
+            imageTask = ImagePipeline.shared.loadImage(with: ImageRequest(url: url)) { [weak self, weak view] result in
+                guard let self, self.loadedURL == url else { return }
+                self.imageTask = nil
+                if case .success(let response) = result {
+                    view?.imageView.image = response.image
+                }
+            }
+        }
+
+        func cancelImageLoad() {
+            imageTask?.cancel()
+            imageTask = nil
+            loadedURL = nil
+        }
 
         func viewForZooming(in scrollView: UIScrollView) -> UIView? {
             (scrollView as? ZoomScrollView)?.imageView

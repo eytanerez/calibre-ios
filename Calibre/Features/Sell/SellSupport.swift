@@ -97,17 +97,24 @@ struct SellThumb: View {
     var size: CGFloat = 56
 
     var body: some View {
-        LazyImage(request: request) { state in
-            if let image = state.image {
-                image.resizable().scaledToFill()
+        ZStack {
+            Color.calibre.secondary.opacity(0.5)
+            if let request {
+                LazyImage(request: request) { state in
+                    if let image = state.image {
+                        image.resizable().scaledToFill()
+                    } else if state.error != nil {
+                        fallbackGlyph
+                    } else {
+                        Rectangle().shimmer()
+                    }
+                }
             } else {
-                Image(systemName: "clock")
-                    .font(.system(size: size * 0.32))
-                    .foregroundStyle(Color.calibre.placeholder)
+                fallbackGlyph
             }
         }
         .frame(width: size, height: size)
-        .background(Color.calibre.secondary.opacity(0.5))
+        .clipped()
         .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 
@@ -117,6 +124,13 @@ struct SellThumb: View {
             url: url,
             processors: [ImageProcessors.Resize(size: CGSize(width: size, height: size), crop: true)]
         )
+    }
+
+    private var fallbackGlyph: some View {
+        Image(systemName: "clock")
+            .font(.system(size: size * 0.32, weight: .light))
+            .foregroundStyle(Color.calibre.placeholder)
+            .accessibilityHidden(true)
     }
 }
 

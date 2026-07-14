@@ -43,6 +43,7 @@ struct ListingDetailScreen: View {
             }
         }
         .background(Color.calibre.background)
+        .accessibilityIdentifier("listing-detail-screen")
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()

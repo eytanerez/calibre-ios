@@ -44,12 +44,21 @@ public struct ListingCardSkeleton: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            Rectangle()
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .aspectRatio(1, contentMode: .fit)
                 .shimmer()
-            Rectangle().frame(width: 70, height: 10).shimmer()
-            Rectangle().frame(width: 120, height: 14).shimmer()
-            Rectangle().frame(width: 60, height: 18).shimmer()
+            VStack(alignment: .leading, spacing: 3) {
+                Rectangle().frame(width: 70, height: 10).shimmer()
+                Rectangle().frame(width: 120, height: 14).shimmer()
+                Rectangle().frame(width: 86, height: 10).shimmer()
+                HStack {
+                    Rectangle().frame(width: 60, height: 18).shimmer()
+                    Spacer(minLength: 0)
+                    Rectangle().frame(width: 28, height: 10).shimmer()
+                }
+                .padding(.top, 1)
+            }
+            .padding(.horizontal, 2)
         }
     }
 }

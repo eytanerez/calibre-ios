@@ -151,7 +151,14 @@ struct DraftFinishingQueueScreen: View {
                 }
 
                 if item.missing.contains("production_year") {
-                    CalibreTextField("Year", text: $yearText, placeholder: "2019")
+                    CalibreTextField(
+                        "Year",
+                        text: $yearText,
+                        placeholder: "2019",
+                        error: yearText.isEmpty || InputValidation.productionYear(yearText) != nil
+                            ? nil
+                            : "Enter a valid 4-digit year."
+                    )
                         .keyboardType(.numberPad)
                 }
 
@@ -174,7 +181,18 @@ struct DraftFinishingQueueScreen: View {
                                 RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                                     .strokeBorder(Color.calibre.border, lineWidth: 1)
                             )
+                            .onChange(of: descriptionText) { _, value in
+                                if value.count > 2_000 {
+                                    descriptionText = String(value.prefix(2_000))
+                                }
+                            }
                     }
+                }
+
+                if let message = incompleteMessage(item) {
+                    Text(message)
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
                 }
 
                 HStack(spacing: Space.m) {
@@ -193,7 +211,7 @@ struct DraftFinishingQueueScreen: View {
                         }
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
-                    .disabled(saving)
+                    .disabled(saving || !canSave(item))
                 }
             }
             .padding(.horizontal, Space.margin)
@@ -306,18 +324,49 @@ struct DraftFinishingQueueScreen: View {
 
     // MARK: Save & advance
 
+    private func canSave(_ item: ImportCompletionItem) -> Bool {
+        if item.missing.contains("production_year"), InputValidation.productionYear(yearText) == nil {
+            return false
+        }
+        if item.missing.contains("description"), !InputValidation.isNonBlank(descriptionText) {
+            return false
+        }
+        if missingConditionParts(item).contains(where: { conditions[$0] == nil }) {
+            return false
+        }
+        if item.missing.contains("photos") {
+            let completedUploads = photoJobs.values.reduce(into: 0) { count, jobID in
+                if sell.board.entry(for: jobID)?.state == .done { count += 1 }
+            }
+            if item.imageCount + completedUploads < ListingImageCategory.allCases.count {
+                return false
+            }
+        }
+        return true
+    }
+
+    private func incompleteMessage(_ item: ImportCompletionItem) -> String? {
+        guard !canSave(item) else { return nil }
+        return "Complete the highlighted year, description, condition, and photo requirements — or choose Skip for now."
+    }
+
     private func saveAndNext(_ item: ImportCompletionItem) async {
+        guard canSave(item), !saving else { return }
         saving = true
         defer { saving = false }
         let payload = ListingDraftPayload(
-            description: descriptionText.isEmpty ? nil : descriptionText,
+            description: InputValidation.isNonBlank(descriptionText)
+                ? InputValidation.trimmed(descriptionText)
+                : nil,
             conditionOverall: conditions[.overall],
+            conditionCase: conditions[.caseback],
             conditionBracelet: conditions[.bracelet],
+            conditionDial: conditions[.crystal],
             conditionBezel: conditions[.bezel],
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
             conditionCaseback: conditions[.caseback],
-            productionYear: Int(yearText.trimmingCharacters(in: .whitespaces))
+            productionYear: InputValidation.productionYear(yearText)
         )
         do {
             _ = try await services.seller.updateListing(id: item.id, payload)

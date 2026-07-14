@@ -182,7 +182,7 @@ struct ResultsContent: View {
         }
         .task {
             // The sheet's cascading pickers need metadata; usually warm.
-            try? await services.catalog.loadMetadata()
+            _ = try? await services.catalog.loadMetadata()
         }
     }
 

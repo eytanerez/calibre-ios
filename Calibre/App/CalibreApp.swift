@@ -1,5 +1,6 @@
 import CalibreDesign
 import CalibreKit
+import Nuke
 import SwiftUI
 
 @main
@@ -8,13 +9,28 @@ struct CalibreApp: App {
 
     init() {
         CalibreFonts.register()
+
+        // Keep original image bytes in an app-owned disk cache so the same
+        // watch is not downloaded again for card, row, and gallery sizes.
+        // Progressive decoding makes large JPEGs useful before the full body
+        // arrives; background preparation keeps final display off the main
+        // thread. LazyImage still owns visibility-based request cancellation.
+        var imageConfiguration = ImagePipeline.Configuration.withDataCache(
+            name: "com.buycalibre.calibre.images",
+            sizeLimit: 250 * 1_024 * 1_024
+        )
+        imageConfiguration.isProgressiveDecodingEnabled = true
+        imageConfiguration.isUsingPrepareForDisplay = true
+        ImagePipeline.shared = ImagePipeline(configuration: imageConfiguration)
+
         #if DEBUG
         // UI-test hook: wipe onboarding state so a launch starts at the
         // intro. (Argument-domain defaults can't work here — they shadow
         // the app's own writes, freezing the phase machine.)
         if ProcessInfo.processInfo.arguments.contains("-resetAppState") {
-            UserDefaults.standard.removeObject(forKey: "hasSeenIntro")
-            UserDefaults.standard.removeObject(forKey: "guestChosen")
+            UserDefaults.standard.set(false, forKey: "hasSeenIntro")
+            UserDefaults.standard.set(false, forKey: "guestChosen")
+            KeychainTokenStore().clear()
         }
         #endif
     }

@@ -79,6 +79,9 @@ struct RouteDestinationView: View {
         case .brand(let brand):
             BrandScreen(brand: brand)
                 .browseStackNode()
+        case .journal:
+            JournalScreen()
+                .browseStackNode()
         case .journalArticle(let id):
             JournalArticleScreen(articleID: id)
                 .browseStackNode()

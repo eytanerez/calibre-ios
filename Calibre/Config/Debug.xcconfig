@@ -1,4 +1,6 @@
-// Local development — talks to the docker backend on this Mac.
+// Local simulator development — talks to the Docker backend on this Mac.
+// For a physical device, set CALIBRE_API_BASE_URL in the launch environment
+// to the current reachable LAN or tunnel origin; don't commit ephemeral URLs.
 // Routes are served at the origin root (no /api prefix).
 API_BASE_URL = http:/$()/localhost:8000
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG

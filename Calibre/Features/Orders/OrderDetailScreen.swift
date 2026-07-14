@@ -279,6 +279,11 @@ struct OrderDetailScreen: View {
                         "Anything you'd like to add? (optional)",
                         text: $reviewComment
                     )
+                    .onChange(of: reviewComment) { _, value in
+                        if value.count > 2_000 {
+                            reviewComment = String(value.prefix(2_000))
+                        }
+                    }
                     Button(submittingReview ? "Sending…" : "Submit review") {
                         Task { await submitReview(order) }
                     }
@@ -292,13 +297,16 @@ struct OrderDetailScreen: View {
     }
 
     private func submitReview(_ order: Order) async {
+        guard (1...5).contains(reviewRating), !submittingReview else { return }
         submittingReview = true
         defer { submittingReview = false }
         do {
             let saved = try await services.commerce.submitReview(
                 orderID: order.id,
                 rating: reviewRating,
-                comment: reviewComment.isEmpty ? nil : reviewComment
+                comment: InputValidation.isNonBlank(reviewComment)
+                    ? InputValidation.trimmed(reviewComment)
+                    : nil
             )
             review = saved
             Haptics.shared.play(.success)

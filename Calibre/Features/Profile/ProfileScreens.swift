@@ -36,9 +36,12 @@ struct AboutScreen: View {
                 }
 
                 VStack(spacing: 0) {
-                    Link(destination: URL(string: "https://buycalibre.com/how-it-works")!) {
+                    NavigationLink {
+                        MarketplaceGuideScreen()
+                    } label: {
                         aboutRow("How it works")
                     }
+                    .buttonStyle(PressableStyle())
                     Divider().overlay(Color.calibre.border)
                     Link(destination: URL(string: "https://buycalibre.com/terms")!) {
                         aboutRow("Terms of Service")
@@ -248,9 +251,16 @@ private struct AddressForm: View {
                         "Country code",
                         text: $country,
                         placeholder: "2-letter, e.g. US",
-                        error: country.count == 2 || country.isEmpty ? nil : "Use a 2-letter code like US or CA"
+                        error: InputValidation.isISO2CountryCode(country) || country.isEmpty ? nil : "Use a 2-letter code like US or CA"
                     )
-                    CalibreTextField("Phone", text: $phone).keyboardType(.phonePad)
+                    CalibreTextField(
+                        "Phone",
+                        text: $phone,
+                        error: InputValidation.isValidPhone(phone, required: false)
+                            ? nil
+                            : "Enter a valid phone number, or leave it blank."
+                    )
+                    .keyboardType(.phonePad)
                     Toggle("Set as default shipping address", isOn: $makeDefault)
                         .font(CalibreType.body).tint(Color.calibre.primary)
                     Button(saving ? "Saving…" : "Save address") { Task { await save() } }
@@ -262,6 +272,7 @@ private struct AddressForm: View {
                         }
                         .buttonStyle(.calibre(.ghost, fullWidth: true))
                         .foregroundStyle(Color.calibre.destructive)
+                        .disabled(saving)
                     }
                 }
                 .padding(Space.margin)
@@ -271,7 +282,12 @@ private struct AddressForm: View {
     }
 
     private var isValid: Bool {
-        !fullName.isEmpty && !line1.isEmpty && !city.isEmpty && !postalCode.isEmpty && country.count == 2
+        InputValidation.isNonBlank(fullName)
+            && InputValidation.isNonBlank(line1)
+            && InputValidation.isNonBlank(city)
+            && InputValidation.isNonBlank(postalCode)
+            && InputValidation.isISO2CountryCode(country)
+            && InputValidation.isValidPhone(phone, required: false)
     }
 
     private func prefill() {
@@ -288,17 +304,18 @@ private struct AddressForm: View {
     }
 
     private func save() async {
+        guard isValid, !saving else { return }
         saving = true
         defer { saving = false }
         let payload = AddressPayload(
-            fullName: fullName,
-            phone: phone.isEmpty ? nil : phone,
-            line1: line1,
-            line2: line2.isEmpty ? nil : line2,
-            city: city,
-            region: region.isEmpty ? nil : region,
-            postalCode: postalCode,
-            country: country.uppercased(),
+            fullName: InputValidation.trimmed(fullName),
+            phone: InputValidation.isNonBlank(phone) ? InputValidation.trimmed(phone) : nil,
+            line1: InputValidation.trimmed(line1),
+            line2: InputValidation.isNonBlank(line2) ? InputValidation.trimmed(line2) : nil,
+            city: InputValidation.trimmed(city),
+            region: InputValidation.isNonBlank(region) ? InputValidation.trimmed(region) : nil,
+            postalCode: InputValidation.trimmed(postalCode),
+            country: InputValidation.trimmed(country).uppercased(),
             isDefaultShipping: makeDefault
         )
         do {
@@ -316,6 +333,9 @@ private struct AddressForm: View {
     }
 
     private func delete(_ address: Address) async {
+        guard !saving else { return }
+        saving = true
+        defer { saving = false }
         do {
             try await services.commerce.deleteAddress(id: address.id)
             await onSave()
@@ -538,7 +558,14 @@ struct ChangePasswordScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
                 CalibreTextField("Current password", text: $current, isSecure: true)
-                CalibreTextField("New password", text: $newPassword, isSecure: true)
+                CalibreTextField(
+                    "New password",
+                    text: $newPassword,
+                    error: newPassword.isEmpty || InputValidation.passwordMeetsRules(newPassword)
+                        ? nil
+                        : "Use 8+ characters with a capital letter and a number.",
+                    isSecure: true
+                )
                 CalibreTextField("Confirm new password", text: $confirm, error: mismatch ? "Passwords don't match" : nil, isSecure: true)
                 if let errorText {
                     Text(errorText).font(CalibreType.caption).foregroundStyle(Color.calibre.destructive)
@@ -555,9 +582,14 @@ struct ChangePasswordScreen: View {
     }
 
     private var mismatch: Bool { !confirm.isEmpty && confirm != newPassword }
-    private var isValid: Bool { !current.isEmpty && newPassword.count >= 8 && newPassword == confirm }
+    private var isValid: Bool {
+        !current.isEmpty
+            && InputValidation.passwordMeetsRules(newPassword)
+            && newPassword == confirm
+    }
 
     private func save() async {
+        guard isValid, !saving else { return }
         saving = true
         errorText = nil
         defer { saving = false }
@@ -613,6 +645,7 @@ struct DeleteAccountScreen: View {
     }
 
     private func requestDeletion() async {
+        guard !working else { return }
         working = true
         defer { working = false }
         do {

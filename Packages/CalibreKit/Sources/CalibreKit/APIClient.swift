@@ -23,6 +23,22 @@ public struct APIConfiguration: Sendable {
 
     /// Resolves the app's configured backend from Info.plist (CalibreAPIBaseURL).
     public static func fromInfoPlist() -> APIConfiguration {
+        #if DEBUG
+        // UI tests and physical-device development can point at a fixture
+        // server or current tunnel without editing a tracked xcconfig. XCUITest
+        // forwards `launchEnvironment` into ProcessInfo for this purpose.
+        if let override = ProcessInfo.processInfo.environment["CALIBRE_API_BASE_URL"],
+           !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let raw = override.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let url = URL(string: raw),
+                  ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+                  url.host != nil else {
+                preconditionFailure("CALIBRE_API_BASE_URL must be an absolute HTTP(S) URL")
+            }
+            return APIConfiguration(baseURL: url)
+        }
+        #endif
+
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "CalibreAPIBaseURL") as? String,
               let url = URL(string: raw) else {
             preconditionFailure("CalibreAPIBaseURL missing from Info.plist")

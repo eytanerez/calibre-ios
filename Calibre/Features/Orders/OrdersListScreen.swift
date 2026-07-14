@@ -39,7 +39,7 @@ struct OrdersListScreen: View {
 
     @ViewBuilder private var content: some View {
         switch phase {
-        case .idle, .loading where orders.isEmpty:
+        case .idle where orders.isEmpty, .loading where orders.isEmpty:
             VStack(spacing: Space.m) {
                 ForEach(0..<4, id: \.self) { _ in OrderRowSkeleton() }
             }

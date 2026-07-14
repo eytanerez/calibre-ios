@@ -19,6 +19,39 @@ final class MediaURLTests: XCTestCase {
         XCTAssertEqual(media.url?.absoluteString, "https://picsum.photos/seed/watch93a/900/900")
     }
 
+    func testLaptopMediaURLRebasesToDeviceReachableAPIOrigin() throws {
+        let media = try apiDecoder(origin: "https://dev.api.buycalibre.com").decode(
+            MediaURL.self,
+            from: Data("\"http://localhost:5173/media/listing_images/watch/photo.jpg?version=2\"".utf8)
+        )
+        XCTAssertEqual(
+            media.url?.absoluteString,
+            "https://dev.api.buycalibre.com/media/listing_images/watch/photo.jpg?version=2"
+        )
+    }
+
+    func testInternalHTTPSMediaURLRebasesToAPIOrigin() throws {
+        let media = try apiDecoder(origin: "https://dev.api.buycalibre.com").decode(
+            MediaURL.self,
+            from: Data("\"https://backend.internal/media/listing_images/watch/photo.jpg\"".utf8)
+        )
+        XCTAssertEqual(
+            media.url?.absoluteString,
+            "https://dev.api.buycalibre.com/media/listing_images/watch/photo.jpg"
+        )
+    }
+
+    func testPublicHTTPSMediaURLPassesThroughUntouched() throws {
+        let media = try apiDecoder(origin: "https://dev.api.buycalibre.com").decode(
+            MediaURL.self,
+            from: Data("\"https://images.buycalibre.com/media/listing_images/watch/photo.jpg\"".utf8)
+        )
+        XCTAssertEqual(
+            media.url?.absoluteString,
+            "https://images.buycalibre.com/media/listing_images/watch/photo.jpg"
+        )
+    }
+
     func testRelativePathWithoutOriginStaysRelative() throws {
         let decoder = JSONDecoder() // no apiOrigin in userInfo
         let media = try decoder.decode(MediaURL.self, from: Data("\"/media/x.jpg\"".utf8))
@@ -58,6 +91,65 @@ final class PriceFormatterTests: XCTestCase {
 
     func testWholeDecimalStringDropsCents() {
         XCTAssertEqual(PriceFormatter.format(Decimal(string: "4400.00")!), "$4,400")
+    }
+}
+
+final class InputValidationTests: XCTestCase {
+    func testBlankAndWhitespaceAreNotContent() {
+        XCTAssertFalse(InputValidation.isNonBlank(""))
+        XCTAssertFalse(InputValidation.isNonBlank(" \n\t "))
+        XCTAssertTrue(InputValidation.isNonBlank("  Rolex  "))
+    }
+
+    func testEmailRejectsIncompleteWhitespaceAndMalformedHosts() {
+        for email in [
+            "", "   ", "buyer", "buyer@", "@example.com", "buyer@example",
+            "buyer @example.com", "buyer@example..com", ".buyer@example.com",
+            "buyer.@example.com", "buyer@@example.com", "buyer@-example.com",
+        ] {
+            XCTAssertFalse(InputValidation.isValidEmail(email), email)
+        }
+        XCTAssertTrue(InputValidation.isValidEmail(" buyer+ios@example.co.uk "))
+    }
+
+    func testPhoneUsesE164BoundariesAndRejectsLetters() {
+        XCTAssertFalse(InputValidation.isValidPhone("123456"))
+        XCTAssertTrue(InputValidation.isValidPhone("+1 (202) 555-0143"))
+        XCTAssertTrue(InputValidation.isValidPhone(String(repeating: "1", count: 15)))
+        XCTAssertFalse(InputValidation.isValidPhone(String(repeating: "1", count: 16)))
+        XCTAssertFalse(InputValidation.isValidPhone("202-CALIBRE"))
+        XCTAssertTrue(InputValidation.isValidPhone(" ", required: false))
+    }
+
+    func testCountryCodeRequiresTwoASCIILetters() {
+        XCTAssertTrue(InputValidation.isISO2CountryCode(" us "))
+        XCTAssertFalse(InputValidation.isISO2CountryCode("U"))
+        XCTAssertFalse(InputValidation.isISO2CountryCode("USA"))
+        XCTAssertFalse(InputValidation.isISO2CountryCode("1S"))
+        XCTAssertFalse(InputValidation.isISO2CountryCode("éS"))
+    }
+
+    func testPositiveMoneyRejectsZeroNegativeGarbageAndExcessPrecision() {
+        XCTAssertEqual(InputValidation.positiveMoney(" $12,400.50 "), Decimal(string: "12400.50"))
+        XCTAssertEqual(InputValidation.positiveMoney("0.01"), Decimal(string: "0.01"))
+        for value in ["", "0", "-1", "+1", "1e3", "1.2.3", "12.345", "twelve"] {
+            XCTAssertNil(InputValidation.positiveMoney(value), value)
+        }
+    }
+
+    func testProductionYearBoundaries() {
+        XCTAssertEqual(InputValidation.productionYear("1600", currentYear: 2026), 1600)
+        XCTAssertEqual(InputValidation.productionYear(" 2027 ", currentYear: 2026), 2027)
+        for value in ["", "999", "1599", "2028", "20A6", "0000"] {
+            XCTAssertNil(InputValidation.productionYear(value, currentYear: 2026), value)
+        }
+    }
+
+    func testPasswordRulesMatchRegistrationAndReset() {
+        XCTAssertTrue(InputValidation.passwordMeetsRules("Calibre1"))
+        XCTAssertFalse(InputValidation.passwordMeetsRules("calibre1"))
+        XCTAssertFalse(InputValidation.passwordMeetsRules("Calibree"))
+        XCTAssertFalse(InputValidation.passwordMeetsRules("Cal1"))
     }
 }
 

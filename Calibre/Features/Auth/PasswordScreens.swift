@@ -13,7 +13,7 @@ struct ForgotPasswordScreen: View {
     @State private var errorMessage: String?
 
     private var canSubmit: Bool {
-        email.contains("@") && email.contains(".") && !busy
+        InputValidation.isValidEmail(email) && !busy
     }
 
     var body: some View {
@@ -128,9 +128,7 @@ struct ResetPasswordScreen: View {
     }
 
     private var passwordSatisfiesRules: Bool {
-        password.count >= 8
-            && password.contains(where: \.isUppercase)
-            && password.contains(where: \.isNumber)
+        InputValidation.passwordMeetsRules(password)
     }
 
     private var canSubmit: Bool {

@@ -16,14 +16,6 @@ struct BrandScreen: View {
         services.catalog.metadata?.options.byBrand.first { $0.brand == brand }
     }
 
-    private var otherBrands: [BrandGroup] {
-        (services.catalog.metadata?.options.byBrand ?? [])
-            .filter { $0.brand != brand }
-            .sorted { ($0.liveTotal ?? 0) > ($1.liveTotal ?? 0) }
-            .prefix(10)
-            .map { $0 }
-    }
-
     var body: some View {
         Group {
             if let model {
@@ -67,23 +59,32 @@ struct BrandScreen: View {
 
     @ViewBuilder
     private var exploreRail: some View {
-        if !otherBrands.isEmpty {
-            VStack(alignment: .leading, spacing: Space.s) {
-                Eyebrow("Explore other brands")
-                    .padding(.horizontal, Space.margin)
-                ChipRail {
-                    ForEach(otherBrands, id: \.brand) { group in
-                        FilterChip(group.brand, isSelected: false) {
-                            push(.brand(group.brand))
-                        }
-                    }
+        if (services.catalog.metadata?.options.byBrand.count ?? 0) > 1 {
+            Button {
+                push(.brands)
+            } label: {
+                HStack(spacing: Space.m) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.calibre.primary)
+                    Text("Browse all brands")
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.foreground)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.calibre.mutedForeground)
                 }
+                .padding(.horizontal, Space.margin)
+                .frame(minHeight: Space.touchTarget + 8)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, Space.m)
-            .background(.ultraThinMaterial)
+            .buttonStyle(PressableStyle())
+            .background(Color.calibre.background.opacity(0.97))
             .overlay(alignment: .top) {
                 Rectangle().fill(Color.calibre.border).frame(height: 1)
             }
+            .accessibilityHint("Opens the complete brand directory")
         }
     }
 }

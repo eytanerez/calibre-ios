@@ -243,11 +243,16 @@ private struct AddressForm: View {
             CalibreTextField(
                 "Country",
                 text: $country,
-                error: fieldError(country, "Required.")
+                error: countryError
             )
             .textContentType(.countryName)
 
-            CalibreTextField("Phone (optional)", text: $phone, placeholder: "For delivery questions")
+            CalibreTextField(
+                "Phone (optional)",
+                text: $phone,
+                placeholder: "For delivery questions",
+                error: phoneError
+            )
                 .textContentType(.telephoneNumber)
                 .keyboardType(.phonePad)
 
@@ -276,7 +281,20 @@ private struct AddressForm: View {
     }
 
     private var isValid: Bool {
-        ![fullName, street, city, state, zip, country].contains { trimmed($0).isEmpty }
+        ![fullName, street, city, state, zip].contains { trimmed($0).isEmpty }
+            && InputValidation.isISO2CountryCode(country)
+            && InputValidation.isValidPhone(phone, required: false)
+    }
+
+    private var countryError: String? {
+        guard attempted || InputValidation.isNonBlank(country) else { return nil }
+        return InputValidation.isISO2CountryCode(country) ? nil : "Use a 2-letter code like US."
+    }
+
+    private var phoneError: String? {
+        InputValidation.isValidPhone(phone, required: false)
+            ? nil
+            : "Enter a valid phone number, or leave it blank."
     }
 
     private func fieldError(_ value: String, _ message: String) -> String? {
@@ -288,6 +306,7 @@ private struct AddressForm: View {
     }
 
     private func save() async {
+        guard isValid, !model.savingAddress else { return }
         let payload = AddressPayload(
             fullName: trimmed(fullName),
             phone: trimmed(phone).isEmpty ? nil : trimmed(phone),
