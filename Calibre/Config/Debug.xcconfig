@@ -1,6 +1,6 @@
 // Local development — the simulator shares the Mac's loopback interface,
-// while a physical device reaches the same backend over Bonjour on Wi-Fi.
+// while a physical device reaches the same backend through Cloudflare Tunnel.
 // Routes are served at the origin root (no /api prefix).
 API_BASE_URL[sdk=iphonesimulator*] = http:/$()/localhost:8000
-API_BASE_URL[sdk=iphoneos*] = http:/$()/MacBook-Air.local:8000
+API_BASE_URL[sdk=iphoneos*] = https:/$()/actual-feels-backed-this.trycloudflare.com
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
