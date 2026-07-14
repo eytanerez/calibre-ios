@@ -10,6 +10,9 @@ struct YouScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(ToastCenter.self) private var toasts
     @AppStorage("guestChosen") private var guestChosen = false
+    // Same key the app root reads to apply `.preferredColorScheme` — the two
+    // `@AppStorage` instances stay in sync automatically.
+    @AppStorage("appearancePreference") private var appearancePreference: AppearancePreference = .system
 
     @State private var showLogin = false
     @State private var confirmSignOut = false
@@ -39,8 +42,14 @@ struct YouScreen: View {
                         divider
                         row(icon: "creditcard", label: "Payment method", destination: .paymentMethod)
                     }
+                }
 
-                    linkedSection(title: "Preferences") {
+                // Always visible — appearance is a device preference, not an
+                // account one, so guests can set it too.
+                linkedSection(title: "Preferences") {
+                    appearanceRow
+                    if session.isAuthenticated {
+                        divider
                         row(icon: "bell.badge", label: "Notifications", destination: .notifications)
                         divider
                         row(icon: "lock", label: "Change password", destination: .changePassword)
@@ -163,6 +172,31 @@ struct YouScreen: View {
     // MARK: - Sections
 
     private var divider: some View { Divider().overlay(Color.calibre.border) }
+
+    /// System / Light / Dark — a device preference, so it lives inline
+    /// rather than behind its own screen; changes apply immediately via the
+    /// `@AppStorage` binding the app root also reads.
+    private var appearanceRow: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            HStack(spacing: Space.m) {
+                Image(systemName: "circle.lefthalf.filled")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .frame(width: 24)
+                Text("Appearance")
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                Spacer(minLength: 0)
+            }
+            SegmentedTabs(
+                selection: $appearancePreference,
+                items: AppearancePreference.allCases.map { ($0, $0.label) }
+            )
+        }
+        .padding(.horizontal, Space.l)
+        .padding(.top, Space.m)
+        .padding(.bottom, Space.s)
+    }
 
     @ViewBuilder
     private func linkedSection(title: String?, @ViewBuilder content: () -> some View) -> some View {
