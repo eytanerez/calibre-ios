@@ -37,6 +37,16 @@ public final class AuthSession {
     /// 401 + rejected refresh clears the tokens and flips this back to false.
     public private(set) var isAuthenticated = false
 
+    /// Fired every time `clearSession()` runs — manual sign-out, a definitive
+    /// refresh-token rejection, or a bootstrap validation failure alike.
+    /// `AppServices` wires this to reset per-account stores (e.g.
+    /// `CommerceStore`) so their cached cart/watchlist/addresses can't
+    /// outlive the session that loaded them, and so an in-flight request
+    /// from the old session can't repopulate them after the fact. Kept as a
+    /// generic hook rather than a direct reference so this store doesn't
+    /// need to know about the stores built on top of it.
+    public var onSessionCleared: (@MainActor () -> Void)?
+
     @ObservationIgnored private let tokenStore: TokenStoring
     @ObservationIgnored private let configuration: APIConfiguration
     /// Bare transport for auth endpoints only (no auth provider — no recursion).
@@ -197,6 +207,7 @@ public final class AuthSession {
         tokens = nil
         isAuthenticated = false
         tokenStore.clear()
+        onSessionCleared?()
     }
 
     private func harvestCookie(named name: String, from response: HTTPURLResponse) -> String? {

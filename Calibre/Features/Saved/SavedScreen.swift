@@ -15,7 +15,13 @@ struct SavedScreen: View {
     @Environment(\.browsePush) private var push
 
     @State private var isLoading = true
+    @State private var loadFailed = false
     @State private var isEditing = false
+    @Namespace private var zoomNamespace
+    /// Guards `load()`'s commit: a pull to refresh landing while the initial
+    /// `.task` load (or a "Try again" retry) is still in flight must not let
+    /// the slower call win.
+    @State private var loadGeneration = 0
 
     private var items: [WatchlistItem] { services.commerce.watchlist }
 
@@ -32,6 +38,15 @@ struct SavedScreen: View {
                 }
             } else if isLoading, items.isEmpty {
                 skeleton
+            } else if items.isEmpty, loadFailed {
+                EmptyState(
+                    icon: "wifi.slash",
+                    title: "Couldn't load your saved watches",
+                    message: "Check your connection and try again.",
+                    actionTitle: "Try again"
+                ) {
+                    Task { await load() }
+                }
             } else if items.isEmpty {
                 EmptyState(
                     icon: "heart",
@@ -61,16 +76,35 @@ struct SavedScreen: View {
             }
         }
         .task {
-            guard session.isAuthenticated else {
-                isLoading = false
-                return
-            }
-            _ = try? await services.commerce.loadWatchlist()
-            isLoading = false
+            await load()
         }
         .refreshable {
-            _ = try? await services.commerce.loadWatchlist()
+            await load()
         }
+    }
+
+    private func load() async {
+        loadGeneration += 1
+        let generation = loadGeneration
+        guard session.isAuthenticated else {
+            isLoading = false
+            return
+        }
+        isLoading = true
+        do {
+            // CommerceStore itself guards `watchlist` against a stale
+            // response landing after a session reset; this generation check
+            // additionally protects this screen's own loading/error state
+            // against two overlapping `load()` calls (retry vs. refresh).
+            _ = try await services.commerce.loadWatchlist()
+            guard generation == loadGeneration, !Task.isCancelled else { return }
+            loadFailed = false
+        } catch {
+            guard generation == loadGeneration, !Task.isCancelled else { return }
+            loadFailed = true
+        }
+        guard generation == loadGeneration, !Task.isCancelled else { return }
+        isLoading = false
     }
 
     private var grid: some View {
@@ -92,11 +126,14 @@ struct SavedScreen: View {
     }
 
     /// Same `ListingCard` every other grid in the app uses — the unavailable
-    /// badge is the one addition, laid over the image corner.
+    /// badge is the one addition, laid over the image corner. The zoom
+    /// transition and Share action mirror `ListingGridCard` so a saved watch
+    /// opens and behaves the same as it does from Home or Browse.
     private func savedCell(_ item: WatchlistItem) -> some View {
-        Button {
+        let sourceID = "saved-\(item.id)"
+        return Button {
             guard !isEditing else { return }
-            push(.listing(item.listingId, zoom: nil))
+            push(.listing(item.listingId, zoom: ListingZoomSource(id: sourceID, namespace: zoomNamespace)))
         } label: {
             ZStack(alignment: .topTrailing) {
                 ListingCard(model: cardModel(for: item)) { url in
@@ -130,13 +167,18 @@ struct SavedScreen: View {
             }
         }
         .buttonStyle(PressableStyle())
+        .matchedTransitionSource(id: sourceID, in: zoomNamespace)
         .contextMenu {
             Button(role: .destructive) {
                 Task { await remove(item) }
             } label: {
                 Label("Remove from Saved", systemImage: "heart.slash")
             }
+            ShareLink(item: item.webURL) {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
         }
+        .accessibilityLabel("\(item.listing?.title ?? "Listing"), \(cardModel(for: item).priceText)")
     }
 
     /// The watchlist payload only ever omits `listing` for a row whose watch

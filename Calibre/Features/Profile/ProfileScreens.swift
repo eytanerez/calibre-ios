@@ -1,5 +1,6 @@
 import CalibreDesign
 import CalibreKit
+import StripePaymentSheet
 import SwiftUI
 
 /// Destinations reachable from the You tab's account list. Kept local to the
@@ -353,7 +354,20 @@ struct PaymentMethodScreen: View {
     @Environment(ToastCenter.self) private var toasts
 
     @State private var method: SavedPaymentMethod?
+    @State private var canRemove = true
+    @State private var removeBlockedReason: String?
     @State private var loaded = false
+    @State private var loadFailed = false
+    @State private var isPreparingSetup = false
+    @State private var isSyncingAfterSetup = false
+    @State private var paymentSheet: PaymentSheet?
+    @State private var presentingPaymentSheet = false
+    /// Bumped by every operation that ends up writing `method`/`canRemove`/
+    /// `removeBlockedReason` — a late result from a superseded load, poll, or
+    /// removal checks this before committing so it can never clobber a newer
+    /// one (e.g. a slow post-setup poll finishing after the user already hit
+    /// Remove).
+    @State private var stateGeneration = 0
 
     var body: some View {
         ScrollView {
@@ -376,18 +390,54 @@ struct PaymentMethodScreen: View {
                         .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
 
-                        Button(role: .destructive) { Task { await removeCard() } } label: {
-                            Text("Remove card").frame(maxWidth: .infinity)
+                        Button {
+                            Task { await startAddOrReplaceCard() }
+                        } label: {
+                            HStack(spacing: Space.s) {
+                                Text("Replace card")
+                                if isPreparingSetup || isSyncingAfterSetup {
+                                    ProgressView().tint(Color.calibre.foreground)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.calibre(.ghost, fullWidth: true))
-                        .foregroundStyle(Color.calibre.destructive)
+                        .buttonStyle(.calibre(.secondary, fullWidth: true))
+                        .disabled(isPreparingSetup || isSyncingAfterSetup)
+
+                        if canRemove {
+                            Button(role: .destructive) { Task { await removeCard() } } label: {
+                                Text("Remove card").frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.calibre(.ghost, fullWidth: true))
+                            .foregroundStyle(Color.calibre.destructive)
+                            .disabled(isPreparingSetup || isSyncingAfterSetup)
+                        } else if let removeBlockedReason {
+                            Text(removeBlockedReason)
+                                .font(CalibreType.caption)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                        }
+                    }
+                } else if loadFailed {
+                    // Distinct from "no card on file" — a failed fetch used to
+                    // render identically to a genuinely empty account, with no
+                    // way to retry short of leaving and re-entering the screen.
+                    EmptyState(
+                        icon: "wifi.slash",
+                        title: "Couldn't load your payment method",
+                        message: "Check your connection and try again.",
+                        actionTitle: "Try again"
+                    ) {
+                        Task { await loadMethod() }
                     }
                 } else if loaded {
                     EmptyState(
                         icon: "creditcard",
                         title: "No card on file",
-                        message: "Add a card at checkout, or before making an offer — Calibre places a $250 hold to confirm you're serious."
-                    )
+                        message: "Add a card here, at checkout, or before making an offer — Calibre places a $250 hold to confirm you're serious.",
+                        actionTitle: isPreparingSetup || isSyncingAfterSetup ? nil : "Add card"
+                    ) {
+                        Task { await startAddOrReplaceCard() }
+                    }
                 }
                 CalloutBand(
                     icon: "lock.shield",
@@ -396,22 +446,148 @@ struct PaymentMethodScreen: View {
             }
             .padding(Space.margin)
         }
+        .refreshable {
+            // While the post-setup poll owns the authoritative "did the
+            // webhook land yet" answer, a manual refresh must not race it —
+            // sharing `stateGeneration` would let a fast refresh silently
+            // invalidate a later `.ready` result and drop the "Card saved"
+            // confirmation. The poll is short (bounded backoff, seconds),
+            // and this screen already shows a spinner on the Replace/Add
+            // button while it runs, so ignoring a pull here isn't a dead end
+            // — refresh works again the moment the poll settles.
+            guard !isSyncingAfterSetup else { return }
+            await loadMethod()
+        }
         .background(Color.calibre.background)
+        .background {
+            // Invisible leaf so creating the sheet doesn't re-identify the
+            // screen's content — same pattern as Checkout's payment sheet host.
+            if let paymentSheet {
+                Color.clear
+                    .paymentSheet(isPresented: $presentingPaymentSheet, paymentSheet: paymentSheet) { result in
+                        handleSetupResult(result)
+                    }
+            }
+        }
         .navigationTitle("Payment method")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            method = try? await services.commerce.paymentMethod()
-            loaded = true
+            await loadMethod()
+        }
+    }
+
+    private func loadMethod() async {
+        stateGeneration += 1
+        let generation = stateGeneration
+        loadFailed = false
+        do {
+            let info = try await services.commerce.paymentMethod()
+            guard generation == stateGeneration else { return }
+            apply(info)
+        } catch {
+            guard generation == stateGeneration else { return }
+            loadFailed = true
+        }
+        guard generation == stateGeneration else { return }
+        loaded = true
+    }
+
+    private func apply(_ info: PaymentMethodInfo) {
+        method = info.paymentMethod
+        canRemove = info.canRemove
+        removeBlockedReason = info.removeBlockedReason
+        loadFailed = false
+    }
+
+    /// Real Add/Replace: a SetupIntent from the same `/billing/setup-intent`
+    /// endpoint Checkout's PaymentIntent flow rides alongside, confirmed with
+    /// PaymentSheet's setup mode using the *mobile* CustomerSession — not a
+    /// locally fabricated card.
+    private func startAddOrReplaceCard() async {
+        guard !isPreparingSetup, !isSyncingAfterSetup else { return }
+        isPreparingSetup = true
+        defer { isPreparingSetup = false }
+        do {
+            let intent = try await services.commerce.setupIntent()
+            STPAPIClient.shared.publishableKey = intent.publishableKey
+            let configuration = CalibreStripe.configuration(
+                customerID: intent.customerId,
+                customerSessionClientSecret: intent.customerSessionMobile?.clientSecret
+            )
+            paymentSheet = PaymentSheet(
+                setupIntentClientSecret: intent.setupIntent.clientSecret,
+                configuration: configuration
+            )
+            presentingPaymentSheet = true
+        } catch {
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't start adding a card", message: error.orderMessage, tone: .error)
+        }
+    }
+
+    private func handleSetupResult(_ result: PaymentSheetResult) {
+        switch result {
+        case .completed:
+            Task { await pollForConfirmedCard() }
+        case .canceled:
+            break
+        case .failed(let error):
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't add card", message: CalibreStripe.failureMessage(for: error), tone: .error)
+        }
+    }
+
+    /// PaymentSheet reporting `.completed` only means Stripe accepted the
+    /// card — the backend's webhook that actually records it as the buyer's
+    /// default lands asynchronously afterward. Poll with backoff for the
+    /// card to change rather than trusting an immediate re-fetch, which would
+    /// often still show the old (or no) card and falsely announce success.
+    private func pollForConfirmedCard() async {
+        stateGeneration += 1
+        let generation = stateGeneration
+        let previousID = method?.id
+        isSyncingAfterSetup = true
+        defer { isSyncingAfterSetup = false }
+
+        let outcome = await poll(
+            maxAttempts: 6,
+            delay: { attempt in .seconds(min(1 << attempt, 8)) },
+            fetch: { try await services.commerce.paymentMethod() },
+            isReady: { info in
+                guard let newMethod = info.paymentMethod else { return false }
+                return newMethod.id != previousID
+            }
+        )
+
+        guard generation == stateGeneration else { return }
+        switch outcome {
+        case .ready(let info):
+            apply(info)
+            Haptics.shared.play(.save)
+            toasts.show(title: "Card saved", tone: .success)
+        case .timedOut(let info):
+            if let info { apply(info) }
+            toasts.show(
+                title: "Card submitted",
+                message: "It's still syncing on our end — pull to refresh in a moment, or check back shortly.",
+                tone: .neutral
+            )
         }
     }
 
     private func removeCard() async {
+        stateGeneration += 1
+        let generation = stateGeneration
         do {
             try await services.commerce.deletePaymentMethod()
+            guard generation == stateGeneration else { return }
             method = nil
+            canRemove = true
+            removeBlockedReason = nil
             Haptics.shared.play(.selection)
             toasts.show(title: "Card removed")
         } catch {
+            guard generation == stateGeneration else { return }
             toasts.show(title: "Couldn't remove card", message: error.orderMessage, tone: .error)
         }
     }

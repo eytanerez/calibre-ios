@@ -25,6 +25,11 @@ struct SellerDashboardScreen: View {
 
     @State private var loading = true
     @State private var loadError: String?
+    @State private var loadGeneration = 0
+    /// Flips true the first time a load actually surfaces `dashboard`
+    /// content; stays true afterward so a later refresh/retry updates
+    /// content in place rather than hiding it behind the skeleton again.
+    @State private var hasRevealedContent = false
     @State private var requests: [WatchRequest] = []
     @State private var inventoryTab: InventoryTab = .all
     @State private var wizardContext: WizardContext?
@@ -60,7 +65,7 @@ struct SellerDashboardScreen: View {
         List {
             header
 
-            if let loadError, dashboard == nil {
+            if let loadError, !hasRevealedContent {
                 EmptyState(
                     icon: "wifi.slash",
                     title: "Your shop didn't load",
@@ -69,14 +74,26 @@ struct SellerDashboardScreen: View {
                     action: { Task { await load() } }
                 )
                 .sellRow()
-            } else if loading && dashboard == nil {
+            } else if loading, !hasRevealedContent {
                 loadingRows
             } else {
                 if let dealer = dashboard?.dealer {
                     dealerCard(dealer).sellRow()
                 }
                 if let queue = dashboard?.actionQueue, !queue.isEmpty {
-                    actionQueue(queue).sellRow()
+                    actionQueueHeader.sellRow(bottom: Space.s)
+                    ForEach(Array(queue.prefix(6).enumerated()), id: \.element.stableID) { index, action in
+                        actionRow(action)
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                            )
+                            .sellRow(bottom: index == min(queue.count, 6) - 1 ? Space.xl : Space.s)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                actionRowSwipeActions(action)
+                            }
+                    }
                 }
                 if !requests.isEmpty {
                     buyerRequests.sellRow()
@@ -97,9 +114,14 @@ struct SellerDashboardScreen: View {
             await load()
         }
         .task {
-            if dashboard == nil {
-                await load()
-            }
+            // Always run the generation-safe aggregate load, even if
+            // `services.seller.dashboard` is already populated from an
+            // earlier view instance (e.g. re-pushed after onboarding) — this
+            // screen's own `requests`/`hasRevealedContent`/`loading` are
+            // fresh `@State` on every new instance regardless, so skipping
+            // `load()` here left them stuck at their initial values and the
+            // skeleton never resolved.
+            await load()
             tutorial.startIfNeeded()
         }
         .fullScreenCover(item: $wizardContext) { context in
@@ -201,21 +223,39 @@ struct SellerDashboardScreen: View {
 
     // MARK: - Loading
 
+    /// Runs every section's fetch concurrently and reveals the dashboard once
+    /// they've all settled — dealer/queue/requests/inventory/sales used to
+    /// pop in independently as each raced ahead of the others. `loadGeneration`
+    /// guards every write this function (and its children) make to view
+    /// state: a `load()` superseded by a newer one (double-tapped "Try
+    /// again", a refresh landing mid-retry) can still finish, but its result
+    /// is dropped instead of clobbering the newer call's state.
     private func load() async {
+        loadGeneration += 1
+        let generation = loadGeneration
         loading = true
         loadError = nil
-        async let dashboardTask: Void = loadDashboard()
+        async let dashboardTask: Void = loadDashboard(generation: generation)
         async let listingsTask: Void = loadListings()
-        async let requestsTask: Void = loadRequests()
+        async let requestsTask: Void = loadRequests(generation: generation)
         async let salesTask: Void = loadSales()
         _ = await (dashboardTask, listingsTask, requestsTask, salesTask)
+        guard generation == loadGeneration else { return }
         loading = false
+        // Only the first load to actually surface content flips this — once
+        // true, the skeleton/error gate steps aside for good and a later
+        // refresh or retry updates the same visible content in place instead
+        // of hiding it behind a skeleton again.
+        if dashboard != nil {
+            hasRevealedContent = true
+        }
     }
 
-    private func loadDashboard() async {
+    private func loadDashboard(generation: Int) async {
         do {
             _ = try await services.seller.loadDashboard()
         } catch {
+            guard generation == loadGeneration else { return }
             loadError = sellErrorMessage(error)
         }
     }
@@ -224,8 +264,10 @@ struct SellerDashboardScreen: View {
         _ = try? await services.seller.loadMyListings()
     }
 
-    private func loadRequests() async {
-        requests = (try? await services.seller.openDealerRequests()) ?? requests
+    private func loadRequests(generation: Int) async {
+        let result = (try? await services.seller.openDealerRequests()) ?? requests
+        guard generation == loadGeneration else { return }
+        requests = result
     }
 
     private func loadSales() async {
@@ -358,20 +400,12 @@ struct SellerDashboardScreen: View {
 
     // MARK: - Action queue
 
-    private func actionQueue(_ queue: [DashboardAction]) -> some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("Waiting on you")
-            SellCard {
-                VStack(spacing: 0) {
-                    ForEach(Array(queue.prefix(6).enumerated()), id: \.offset) { index, action in
-                        actionRow(action)
-                        if index < min(queue.count, 6) - 1 {
-                            Rectangle().fill(Color.calibre.border).frame(height: 1)
-                        }
-                    }
-                }
-            }
-        }
+    /// Each queued action is its own `List` row (rather than one merged card
+    /// of stacked rows) so a draft entry here can carry the same native
+    /// swipe-to-delete as an inventory row — the only way a seller who never
+    /// scrolls to Inventory can still delete a draft.
+    private var actionQueueHeader: some View {
+        SellSectionHeader("Waiting on you")
     }
 
     private func actionRow(_ action: DashboardAction) -> some View {
@@ -407,6 +441,22 @@ struct SellerDashboardScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
+        .background(Color.calibre.card)
+    }
+
+    /// A draft queue row can be deleted with the same swipe, confirmation
+    /// dialog, and `deleteDraft(_:)` call as an inventory row — no
+    /// duplicated deletion path.
+    @ViewBuilder
+    private func actionRowSwipeActions(_ action: DashboardAction) -> some View {
+        if action.kind == "draft", let listingId = action.listingId, let draft = listing(for: listingId) {
+            Button(role: .destructive) {
+                confirmDelete = draft
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .tint(Color.calibre.destructive)
+        }
     }
 
     /// Drafts are named by their listing title — a seller can hold several at
@@ -897,6 +947,17 @@ struct SellerDashboardScreen: View {
 /// Identity wrapper for the sale-detail cover.
 private struct SaleDetailItem: Identifiable {
     let id: String
+}
+
+private extension DashboardAction {
+    /// `DashboardAction` has no single id field, but `kind` plus whichever
+    /// entity id it actually carries is stable across queue re-fetches —
+    /// unlike the array offset `ForEach` used to key on, which reassigns a
+    /// row's identity (and therefore its swipe/animation state) whenever the
+    /// queue's order or count changes between loads.
+    var stableID: String {
+        kind + "-" + (listingId ?? orderId ?? offerId ?? href ?? title)
+    }
 }
 
 // MARK: - List row plumbing

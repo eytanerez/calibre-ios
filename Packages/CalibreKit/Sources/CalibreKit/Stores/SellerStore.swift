@@ -12,6 +12,14 @@ public final class SellerStore {
     public private(set) var dashboard: SellerDashboard?
     public private(set) var myListings: [Listing] = []
 
+    /// Bumped by `loadDashboard()`/`loadMyListings()` respectively, guarding
+    /// their writes to `dashboard`/`myListings` — the seller dashboard runs
+    /// both concurrently and may retry/refresh while an earlier call for the
+    /// same data is still in flight; the older response must not overwrite a
+    /// newer one that already landed.
+    @ObservationIgnored private var dashboardGeneration = 0
+    @ObservationIgnored private var listingsGeneration = 0
+
     public init(client: APIClient) {
         self.client = client
     }
@@ -28,8 +36,12 @@ public final class SellerStore {
 
     @discardableResult
     public func loadDashboard() async throws -> SellerDashboard {
+        dashboardGeneration += 1
+        let generation = dashboardGeneration
         let value: SellerDashboard = try await client.send(Endpoint(path: "/account/dashboard"))
-        dashboard = value
+        if generation == dashboardGeneration {
+            dashboard = value
+        }
         return value
     }
 
@@ -37,8 +49,12 @@ public final class SellerStore {
 
     @discardableResult
     public func loadMyListings() async throws -> [Listing] {
+        listingsGeneration += 1
+        let generation = listingsGeneration
         let rows: [Listing] = try await client.send(Endpoint(path: "/account/listings"))
-        myListings = rows
+        if generation == listingsGeneration {
+            myListings = rows
+        }
         return rows
     }
 

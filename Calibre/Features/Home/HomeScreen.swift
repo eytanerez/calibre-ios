@@ -11,6 +11,10 @@ struct HomeScreen: View {
     @State private var model: HomeModel?
     @State private var pushed: BrowseDestination?
     @State private var showCart = false
+    /// Set by a `CartSheet` callback (which has already called its own
+    /// `dismiss()`); consumed by `.sheet(onDismiss:)` once SwiftUI reports
+    /// the dismissal animation actually finished — no fixed delay to guess.
+    @State private var pendingPushAfterCartDismiss: BrowseDestination?
     @Namespace private var zoomNamespace
     @State private var tutorial = TutorialController(
         id: "home.journal",
@@ -65,10 +69,15 @@ struct HomeScreen: View {
         .onChange(of: services.signals.recentlyViewed) {
             Task { await model?.loadRecentlyViewed() }
         }
-        .sheet(isPresented: $showCart) {
+        .sheet(isPresented: $showCart, onDismiss: {
+            if let destination = pendingPushAfterCartDismiss {
+                pendingPushAfterCartDismiss = nil
+                pushed = destination
+            }
+        }) {
             CartSheet(
-                openListing: { id in pushAfterDismiss(.listing(id, zoom: nil)) },
-                openSaved: { pushAfterDismiss(.saved) }
+                openListing: { id in pendingPushAfterCartDismiss = .listing(id, zoom: nil) },
+                openSaved: { pendingPushAfterCartDismiss = .saved }
             )
         }
     }
@@ -183,6 +192,8 @@ struct HomeScreen: View {
         case .loaded:
             if let model {
                 loadedShelves(model)
+                browseAllButton
+                    .fadeUpEntrance(index: 6)
             }
         }
     }
@@ -194,7 +205,8 @@ struct HomeScreen: View {
                 title: "For you",
                 listings: model.forYou,
                 laneKey: "forYou",
-                zoomNamespace: zoomNamespace
+                zoomNamespace: zoomNamespace,
+                onViewAll: { pushed = .results(BrowseFilters(sort: .popular), title: "For You") }
             )
             .fadeUpEntrance(index: 0)
         }
@@ -209,7 +221,8 @@ struct HomeScreen: View {
                 title: "Fresh arrivals",
                 listings: model.fresh,
                 laneKey: "fresh",
-                zoomNamespace: zoomNamespace
+                zoomNamespace: zoomNamespace,
+                onViewAll: { pushed = .results(BrowseFilters(sort: .createdDesc), title: "Fresh Arrivals") }
             )
             .fadeUpEntrance(index: 2)
         }
@@ -219,7 +232,8 @@ struct HomeScreen: View {
                 title: "Popular right now",
                 listings: model.popular,
                 laneKey: "popular",
-                zoomNamespace: zoomNamespace
+                zoomNamespace: zoomNamespace,
+                onViewAll: { pushed = .results(BrowseFilters(sort: .mostViewed), title: "Popular Right Now") }
             )
             .fadeUpEntrance(index: 3)
         }
@@ -232,10 +246,28 @@ struct HomeScreen: View {
                 title: "Recently viewed",
                 listings: model.recentlyViewed,
                 laneKey: "recent",
-                zoomNamespace: zoomNamespace
+                zoomNamespace: zoomNamespace,
+                onViewAll: { pushed = .recentlyViewed }
             )
             .fadeUpEntrance(index: 5)
         }
+    }
+
+    /// The catalog's front door, always reachable from the bottom of a
+    /// loaded home feed — not just from a shelf's "view all".
+    private var browseAllButton: some View {
+        Button {
+            Haptics.shared.play(.press)
+            pushed = .results(BrowseFilters(), title: "All Watches")
+        } label: {
+            Text("Browse all watches")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.calibre(.primary, fullWidth: true))
+        .padding(.horizontal, Space.margin)
+        .padding(.top, Space.s)
+        .accessibilityLabel("Browse all watches")
+        .accessibilityHint("Opens the full watch catalog")
     }
 
     private func brandRail(_ brands: [BrandGroup]) -> some View {
@@ -326,14 +358,6 @@ struct HomeScreen: View {
         let cartPresented = $showCart
         session.requireThenPresent("Sign in to see your bag") {
             cartPresented.wrappedValue = true
-        }
-    }
-
-    /// Sheet callbacks land here: let the sheet slide away, then push.
-    private func pushAfterDismiss(_ destination: BrowseDestination) {
-        Task {
-            try? await Task.sleep(for: .milliseconds(380))
-            pushed = destination
         }
     }
 }

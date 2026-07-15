@@ -21,6 +21,7 @@ enum BrowseDestination: Hashable {
     case listing(String, zoom: ListingZoomSource?)
     case seller(String)
     case saved
+    case recentlyViewed
     case journalIndex
     case journalArticle(String)
 }
@@ -86,6 +87,8 @@ struct BrowseDestinationView: View {
                 SellerStorefrontScreen(username: username)
             case .saved:
                 SavedScreen()
+            case .recentlyViewed:
+                RecentlyViewedScreen()
             case .journalIndex:
                 JournalScreen()
             case .journalArticle(let id):
@@ -198,6 +201,14 @@ extension Listing {
     /// The listing's page on the web marketplace — used for sharing.
     var webURL: URL {
         URL(string: "https://buycalibre.com/listings/\(id)")!
+    }
+}
+
+extension WatchlistItem {
+    /// The listing's page on the web marketplace — used for sharing a saved
+    /// watch, same as a full `Listing`'s `webURL`.
+    var webURL: URL {
+        URL(string: "https://buycalibre.com/listings/\(listingId)")!
     }
 }
 
@@ -337,12 +348,21 @@ struct ListingGridCard: View {
 }
 
 /// A horizontally scrolling lane of listing cards under a serif header.
-/// Shared by the home rows and the PDP's "Similar watches".
+/// Shared by the home rows and the PDP's "Similar watches". Passing
+/// `onViewAll` appends a trailing card, in the same footprint as every other
+/// card in the lane, that opens the shelf's full browse destination.
 struct ListingLaneRow: View {
     let title: String
     let listings: [Listing]
     let laneKey: String
     let zoomNamespace: Namespace.ID
+    var onViewAll: (() -> Void)?
+
+    /// Some listings have a reference number and some don't, so cards in the
+    /// same lane aren't naturally the same height — measured (not
+    /// hardcoded) so it scales with Dynamic Type and stays correct if the
+    /// card's content ever changes shape.
+    @State private var cardHeight: CGFloat?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
@@ -356,12 +376,93 @@ struct ListingLaneRow: View {
                     ForEach(listings) { listing in
                         ListingGridCard(listing: listing, laneKey: laneKey, zoomNamespace: zoomNamespace)
                             .frame(width: 168)
+                            .measureLaneCardHeight()
+                            .frame(height: cardHeight, alignment: .top)
+                    }
+                    if let onViewAll {
+                        ListingLaneViewAllCard(title: title, action: onViewAll)
+                            .frame(width: 168)
+                            .measureLaneCardHeight()
+                            .frame(height: cardHeight, alignment: .top)
                     }
                 }
                 .padding(.horizontal, Space.margin)
                 .padding(.vertical, 2)
             }
         }
+        .onPreferenceChange(LaneCardHeightKey.self) { cardHeight = $0 }
+    }
+}
+
+/// Reports the max natural (unconstrained) height across every card in a
+/// `ListingLaneRow`, so every card — including the trailing "view all" card
+/// — can be pinned to the same total footprint regardless of which optional
+/// lines any individual card happens to show.
+private struct LaneCardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat { 0 }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private extension View {
+    /// Reads this view's natural height via a background `GeometryReader`
+    /// (measured before any later `.frame(height:)` is applied, so it isn't
+    /// self-referential) and reports it up to `ListingLaneRow`.
+    func measureLaneCardHeight() -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear.preference(key: LaneCardHeightKey.self, value: proxy.size.height)
+            }
+        )
+    }
+}
+
+/// The lane's own trailing "view all" card. Mirrors `ListingCard`'s image
+/// square + eyebrow/title/price-row layout; `ListingLaneRow` measures every
+/// card's natural height (this one included) and pins them all to the
+/// tallest, so it's never shorter or taller than what its actual content
+/// happens to need — no hardcoded/reserved lines here.
+struct ListingLaneViewAllCard: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: Space.s) {
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(Color.calibre.secondary.opacity(0.5))
+                    .aspectRatio(1, contentMode: .fit)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    )
+                    .overlay {
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Color.calibre.primary)
+                    }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Eyebrow(title)
+                    Text("See the full shelf")
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.foreground)
+                        .lineLimit(1)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("View all")
+                            .font(CalibreType.price)
+                            .foregroundStyle(Color.calibre.primary)
+                        Spacer()
+                    }
+                    .padding(.top, 1)
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("View all \(title)")
+        .accessibilityHint("Shows the full list")
     }
 }
 

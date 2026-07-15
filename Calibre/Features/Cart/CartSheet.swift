@@ -40,20 +40,28 @@ struct CartSheet: View {
 
     var body: some View {
         SheetScaffold(title: "Your bag", detents: [.large]) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Space.xl) {
-                    if isLoading, services.commerce.cart.isEmpty, services.commerce.watchlist.isEmpty {
-                        loadingRows
-                    } else {
-                        bagSection
+            List {
+                if isLoading, services.commerce.cart.isEmpty, services.commerce.watchlist.isEmpty {
+                    loadingRows.cartRow(bottom: Space.xxl)
+                } else {
+                    bagSection.cartRow(bottom: savedItems.isEmpty ? Space.xxl : Space.xl)
 
-                        if !savedItems.isEmpty {
-                            savedSection
+                    if !savedItems.isEmpty {
+                        savedHeader.cartRow(bottom: Space.s)
+
+                        ForEach(Array(savedItems.enumerated()), id: \.element.id) { index, item in
+                            savedRow(item)
+                                .cartRow(top: 0, bottom: index == savedItems.count - 1 ? Space.xxl : Space.s)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    savedSwipeActions(item)
+                                }
                         }
                     }
                 }
-                .padding(.bottom, Space.xxl)
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListRowHeight, 1)
         }
         .tutorialOverlay(tutorial)
         .task {
@@ -177,62 +185,60 @@ struct CartSheet: View {
 
     // MARK: - Saved for later
 
-    private var savedSection: some View {
-        VStack(alignment: .leading, spacing: Space.s) {
-            HStack {
-                Eyebrow("Saved for later")
-                Spacer()
-                Button("View all") {
-                    dismiss()
-                    openSaved()
-                }
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.primary)
-                .buttonStyle(PressableStyle())
+    private var savedHeader: some View {
+        HStack {
+            Eyebrow("Saved for later")
+            Spacer()
+            Button("View all") {
+                dismiss()
+                openSaved()
             }
-
-            VStack(spacing: 0) {
-                ForEach(Array(savedItems.enumerated()), id: \.element.id) { index, item in
-                    savedRow(item)
-                    if index < savedItems.count - 1 {
-                        Rectangle().fill(Color.calibre.border).frame(height: 1)
-                    }
-                }
-            }
-            .background(Color.calibre.card)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
-            )
+            .font(CalibreType.label)
+            .foregroundStyle(Color.calibre.primary)
+            .buttonStyle(PressableStyle())
         }
     }
 
+    /// The image/title/price area is its own `Button` (tap opens the
+    /// listing, matching `bagCard`); the overflow `Menu` is a sibling, not
+    /// nested inside that button's label, so the two controls never fight
+    /// over the same tap.
     private func savedRow(_ item: WatchlistItem) -> some View {
         HStack(spacing: Space.m) {
-            ListingImageWell(url: item.listing?.image?.url, targetWidth: 120)
-                .frame(width: 56, height: 56)
-                .background(Color.calibre.secondary.opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+            Button {
+                dismiss()
+                openListing(item.listingId)
+            } label: {
+                HStack(spacing: Space.m) {
+                    ListingImageWell(url: item.listing?.image?.url, targetWidth: 120)
+                        .frame(width: 56, height: 56)
+                        .background(Color.calibre.secondary.opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.listing?.title ?? "Listing")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .lineLimit(1)
-                HStack(spacing: Space.s) {
-                    if let listing = item.listing {
-                        Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
-                            .font(CalibreType.priceSmall)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.listing?.title ?? "Listing")
+                            .font(CalibreType.bodyMedium)
                             .foregroundStyle(Color.calibre.foreground)
-                        if let badge = listing.unavailableBadge {
-                            StatusBadge(badge.text, tone: badge.tone)
+                            .lineLimit(1)
+                        HStack(spacing: Space.s) {
+                            if let listing = item.listing {
+                                Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                                    .font(CalibreType.priceSmall)
+                                    .foregroundStyle(Color.calibre.foreground)
+                                if let badge = listing.unavailableBadge {
+                                    StatusBadge(badge.text, tone: badge.tone)
+                                }
+                            }
                         }
                     }
-                }
-            }
 
-            Spacer()
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel(item.listing.map { "\($0.title), \(PriceFormatter.format($0.price.value, currency: $0.currency))" } ?? "Listing")
+            .accessibilityHint("Opens this listing")
 
             Menu {
                 if item.listing?.isAvailable ?? false {
@@ -241,12 +247,6 @@ struct CartSheet: View {
                     } label: {
                         Label("Move to bag", systemImage: "bag")
                     }
-                }
-                Button {
-                    dismiss()
-                    openListing(item.listingId)
-                } label: {
-                    Label("View", systemImage: "eye")
                 }
                 Button(role: .destructive) {
                     Task { await removeSaved(item) }
@@ -263,6 +263,32 @@ struct CartSheet: View {
             .accessibilityLabel("Options for \(item.listing?.title ?? "saved watch")")
         }
         .padding(Space.m)
+        .background(Color.calibre.card)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(Color.calibre.border, lineWidth: 1)
+        )
+    }
+
+    /// Native swipe actions mirror the overflow menu: Move to bag when the
+    /// watch is still available, Remove always — same underlying calls, no
+    /// duplicated logic.
+    @ViewBuilder
+    private func savedSwipeActions(_ item: WatchlistItem) -> some View {
+        if item.listing?.isAvailable ?? false {
+            Button {
+                moveToBag(item)
+            } label: {
+                Label("Move to bag", systemImage: "bag")
+            }
+            .tint(Color.calibre.primary)
+        }
+        Button(role: .destructive) {
+            Task { await removeSaved(item) }
+        } label: {
+            Label("Remove", systemImage: "heart.slash")
+        }
     }
 
     private var loadingRows: some View {
@@ -387,5 +413,18 @@ struct CartSheet: View {
             Haptics.shared.play(.error)
             toasts.show(title: "Couldn't swap your bag", message: error.browseMessage, tone: .error)
         }
+    }
+}
+
+// MARK: - List row plumbing
+
+private extension View {
+    /// Plain-list row chrome: no separators, quiet background, and no extra
+    /// horizontal inset — `SheetScaffold` already applies `Space.margin`.
+    func cartRow(top: CGFloat = 0, bottom: CGFloat = Space.xl) -> some View {
+        self
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: top, leading: 0, bottom: bottom, trailing: 0))
     }
 }

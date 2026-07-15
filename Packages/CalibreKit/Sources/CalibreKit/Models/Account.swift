@@ -147,9 +147,9 @@ public struct WatchlistItem: Codable, Sendable, Identifiable {
     public let updatedAt: Date?
 }
 
-// FIXTURE-PENDING: shape from `saved_payment_method_payload` in
-// app/services/offers.py.
-/// `/account/payment-method` — the saved default card, nil when none.
+/// `saved_payment_method_payload` in app/services/offers.py — the buyer's
+/// current default card. Appears both bare (nested inside
+/// `BillingSetupIntent`/`PaymentMethodInfo`) and standalone.
 public struct SavedPaymentMethod: Codable, Sendable, Identifiable {
     public let id: String
     public let brand: String?
@@ -157,6 +157,50 @@ public struct SavedPaymentMethod: Codable, Sendable, Identifiable {
     public let expMonth: Int?
     public let expYear: Int?
     public let addedAt: Date?
+}
+
+/// `GET /account/payment-method` — confirmed against
+/// `AccountPaymentMethodView.get` in Backend/app/api/views/offers.py. A
+/// wrapper envelope, not a bare `SavedPaymentMethod?`: it also carries
+/// whether removal is currently allowed (an active hold or an
+/// accepted-unpaid offer locks it) and, when blocked, the backend's own
+/// explanation.
+public struct PaymentMethodInfo: Decodable, Sendable {
+    public let stripeCustomerId: String?
+    public let paymentMethod: SavedPaymentMethod?
+    public let canRemove: Bool
+    public let removeBlockedReason: String?
+}
+
+/// A mobile-only Stripe CustomerSession secret. Distinct from the flat
+/// `customer_session` the backend also returns for the web `payment_element`
+/// component — that one does not work with PaymentSheet.
+public struct CustomerSessionHandle: Decodable, Sendable {
+    public let clientSecret: String
+    public let expiresAt: Int?
+}
+
+/// `POST /billing/setup-intent` — confirmed against
+/// Backend/docs/mobile-api.md §"POST /billing/setup-intent (response
+/// extended)" and `AccountBillingSetupIntentView` in
+/// Backend/app/api/views/offers.py. A SetupIntent for the account Payment
+/// Method page's Add/Replace card flow. Confirm `setupIntent.clientSecret`
+/// with PaymentSheet's setup mode using `customerSessionMobile`, same as
+/// checkout confirms a PaymentIntent with its own CustomerSession.
+public struct BillingSetupIntent: Decodable, Sendable {
+    public let setupIntent: PaymentIntentHandle
+    public let publishableKey: String
+    public let customerId: String?
+    /// PaymentSheet needs the *mobile* CustomerSession specifically — the
+    /// backend's flat `customer_session` only enables the web
+    /// `payment_element` component. Nil when Stripe hiccuped; PaymentSheet
+    /// still works without it, just without saved-payment-method UI polish.
+    public let customerSessionMobile: CustomerSessionHandle?
+    /// The buyer's card as of this call — stale until the async webhook
+    /// that confirms the SetupIntent updates it, which is why the caller
+    /// must poll `paymentMethod()` after PaymentSheet reports `.completed`
+    /// rather than trust this snapshot.
+    public let paymentMethod: SavedPaymentMethod?
 }
 
 // FIXTURE-PENDING: the endpoint 404s until the other agent's notification

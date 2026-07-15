@@ -245,5 +245,17 @@ final class AppServices {
         self.support = SupportStore(client: client)
         self.signals = LocalSignals()
         self.push = PushCoordinator(account: account)
+
+        // A cleared session (manual sign-out, a rejected refresh token, or a
+        // failed bootstrap validation) must not leave the previous account's
+        // cart/watchlist/addresses cached — and an in-flight request from
+        // that account must not repopulate them afterward. `CommerceStore`
+        // enforces the latter itself; this just triggers it at the one real
+        // moment a session actually ends, store-level rather than tied to
+        // whichever view happens to be on screen.
+        let commerce = self.commerce
+        auth.onSessionCleared = { [weak commerce] in
+            commerce?.reset()
+        }
     }
 }

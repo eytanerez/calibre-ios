@@ -13,6 +13,11 @@ public final class SellerOpsStore {
     /// The seller's sales (orders on their listings), newest first.
     public private(set) var sales: [Order] = []
 
+    /// Bumped by a first-page `loadSales()` call, guarding its write to
+    /// `sales` — same overlapping-retry risk as `SellerStore`'s dashboard and
+    /// listings loads.
+    @ObservationIgnored private var salesGeneration = 0
+
     public init(client: APIClient) {
         self.client = client
     }
@@ -50,6 +55,10 @@ public final class SellerOpsStore {
     /// `GET /account/sales` — orders on the seller's listings, paginated.
     @discardableResult
     public func loadSales(page: Int = 1, pageSize: Int = 20, status: OrderStatus? = nil) async throws -> PageResponse<Order> {
+        if page == 1 {
+            salesGeneration += 1
+        }
+        let generation = salesGeneration
         var query = [
             URLQueryItem(name: "page", value: String(page)),
             URLQueryItem(name: "page_size", value: String(pageSize)),
@@ -58,7 +67,7 @@ public final class SellerOpsStore {
             query.append(URLQueryItem(name: "status", value: status.rawValue))
         }
         let response: PageResponse<Order> = try await client.send(Endpoint(path: "/account/sales", query: query))
-        if page == 1 {
+        if page == 1, generation == salesGeneration {
             sales = response.results
         }
         return response

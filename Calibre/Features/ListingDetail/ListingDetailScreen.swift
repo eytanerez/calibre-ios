@@ -22,6 +22,10 @@ struct ListingDetailScreen: View {
     @State private var showMakeOfferStub = false
     @State private var swapCandidate: CartItem?
     @Namespace private var similarNamespace
+    /// Guards `load()`'s commit: `.task(id:)` cancels the in-flight load when
+    /// `listingID` changes, but a manual "Try again" tap can still overlap
+    /// with it — this keeps the slower of the two from winning.
+    @State private var loadGeneration = 0
 
     var body: some View {
         Group {
@@ -323,20 +327,29 @@ struct ListingDetailScreen: View {
 
     // MARK: - Loading
 
+    /// The similar-watches lane and the open-offer state used to arrive
+    /// after `listing` was already on screen, so "Similar watches" would pop
+    /// in beneath already-read content and shift the notes section down.
+    /// Both now resolve concurrently before the page reveals anything.
     private func load() async {
+        loadGeneration += 1
+        let generation = loadGeneration
         let catalog = services.catalog
         do {
             let loaded = try await catalog.listing(id: listingID)
-            listing = loaded
-            services.signals.recordViewed(listingID)
-            failed = false
 
             async let similarLoad: [Listing] = (try? catalog.similarListings(to: loaded, limit: 8)) ?? []
-            if session.isAuthenticated {
-                await refreshOpenOffer()
-            }
-            similar = await similarLoad
+            async let offerLoad: Offer? = session.isAuthenticated ? loadOpenOffer() : nil
+            let (resolvedSimilar, resolvedOffer) = await (similarLoad, offerLoad)
+
+            guard generation == loadGeneration else { return }
+            listing = loaded
+            similar = resolvedSimilar
+            openOffer = resolvedOffer
+            services.signals.recordViewed(listingID)
+            failed = false
         } catch {
+            guard generation == loadGeneration, !(error is CancellationError) else { return }
             if listing == nil {
                 failed = true
             } else {
@@ -345,12 +358,12 @@ struct ListingDetailScreen: View {
         }
     }
 
-    private func refreshOpenOffer() async {
+    private func loadOpenOffer() async -> Offer? {
         let waitingStatuses: Set<OfferStatus> = [
             .holdPending, .pendingSeller, .countered, .acceptedPendingPayment,
         ]
         let offers = (try? await services.client.offers(onListing: listingID)) ?? []
-        openOffer = offers.first { waitingStatuses.contains($0.status) }
+        return offers.first { waitingStatuses.contains($0.status) }
     }
 
     // MARK: - Actions
