@@ -7,6 +7,7 @@ import SwiftUI
 /// live "Show N watches" count debounced against the backend.
 struct FilterSheet: View {
     @Environment(AppServices.self) private var services
+    @Environment(AuthSession.self) private var session
     @Environment(\.dismiss) private var dismiss
 
     let metadata: MarketMetadata?
@@ -20,6 +21,8 @@ struct FilterSheet: View {
     @State private var priceUpper: Double
     @State private var liveCount: Int?
     @State private var countTask: Task<Void, Never>?
+    @State private var savingSearch = false
+    @State private var savedSearch = false
     @State private var tutorial: TutorialController
 
     private let priceBounds: ClosedRange<Double>
@@ -237,6 +240,16 @@ struct FilterSheet: View {
             .disabled(yearError != nil)
             .tutorialAnchor("filters.apply")
 
+            if draft.activeCount() > 0 {
+                Button {
+                    saveSearch()
+                } label: {
+                    Text(savedSearch ? "Search saved — we'll alert you" : "Save this search")
+                }
+                .buttonStyle(.calibre(.ghost, fullWidth: true))
+                .disabled(savingSearch || savedSearch)
+            }
+
             Button("Clear all") {
                 draft = draft.cleared(keepBrand: lockedBrand != nil)
                 yearText = ""
@@ -248,6 +261,38 @@ struct FilterSheet: View {
         .padding(.top, Space.m)
         .padding(.bottom, Space.s)
         .background(Color.calibre.card)
+    }
+
+    /// Persists the draft as a saved search: the backend replays it against
+    /// every newly active listing and notifies on matches.
+    private func saveSearch() {
+        guard session.isAuthenticated else {
+            services.auth.require("Sign in to save this search and get alerts") {}
+            return
+        }
+        var filters: [String: String] = [:]
+        if let search = draft.search, !search.isEmpty { filters["search"] = search }
+        if let brand = draft.brand { filters["brand"] = brand }
+        if let model = draft.model { filters["model"] = model }
+        if let reference = draft.reference { filters["reference"] = reference }
+        if let condition = draft.condition { filters["condition"] = condition }
+        if let year = draft.year { filters["year"] = String(year) }
+        if let priceMin = draft.priceMin { filters["price_min"] = "\(priceMin)" }
+        if let priceMax = draft.priceMax { filters["price_max"] = "\(priceMax)" }
+        if let boxPapers = draft.boxPapers, boxPapers { filters["box_papers"] = "true" }
+        guard !filters.isEmpty else { return }
+
+        savingSearch = true
+        Task {
+            defer { savingSearch = false }
+            do {
+                _ = try await services.serverAlerts.createSavedSearch(filters: filters)
+                Haptics.shared.play(.success)
+                savedSearch = true
+            } catch {
+                services.toasts.show(title: "Couldn't save this search", message: "Please try again.")
+            }
+        }
     }
 
     // MARK: Live count

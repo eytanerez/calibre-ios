@@ -17,13 +17,13 @@ struct HomeScreen: View {
     @State private var pendingPushAfterCartDismiss: BrowseDestination?
     @Namespace private var zoomNamespace
     @State private var tutorial = TutorialController(
-        id: "home.journal",
+        id: "home.deck",
         steps: [
             TutorialStep(
-                id: "journal",
-                anchor: "home.journal",
-                title: "Read The Journal",
-                message: "This newspaper icon opens The Journal — our stories on the watches and the market. It's always one tap away, right here.",
+                id: "deck",
+                anchor: "home.deck",
+                title: "Swipe the deck",
+                message: "This opens the deck — watches picked for you, one card at a time. Swipe right to save, left to pass.",
                 advance: .tapToContinue,
                 hint: .tap,
                 cutout: .circle
@@ -90,21 +90,21 @@ struct HomeScreen: View {
 
             Spacer()
 
-            // A persistent header icon so the Journal reads as its own
-            // section — reachable in one tap, not something you have to
-            // scroll past a wall of listings to discover.
+            // The deck lives one tap from Home — the Journal moved to the
+            // Community tab, and its old header slot now opens the swipe deck.
             Button {
                 Haptics.shared.play(.press)
-                pushed = .journalIndex
+                services.router.deckPresented = true
             } label: {
-                Image(systemName: "newspaper")
+                Image(systemName: "rectangle.stack")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(Color.calibre.foreground)
                     .frame(width: Space.touchTarget, height: Space.touchTarget)
             }
             .buttonStyle(PressableStyle())
-            .accessibilityLabel("The Journal")
-            .tutorialAnchor("home.journal")
+            .accessibilityLabel("Open the deck")
+            .accessibilityIdentifier("home.deck.button")
+            .tutorialAnchor("home.deck")
 
             Button {
                 Haptics.shared.play(.press)

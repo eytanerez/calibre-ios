@@ -18,12 +18,12 @@ struct MainTabView: View {
             .tabItem { Label("Home", systemImage: "house") }
             .tag(AppTab.home)
 
-            NavigationStack(path: $router.discoverPath) {
-                DiscoverScreen()
+            NavigationStack(path: $router.communityPath) {
+                CommunityScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .tabItem { Label("Discover", systemImage: "rectangle.stack") }
-            .tag(AppTab.discover)
+            .tabItem { Label("Community", systemImage: "bubble.left.and.bubble.right") }
+            .tag(AppTab.community)
 
             NavigationStack(path: $router.sellPath) {
                 SellScreen()
@@ -32,18 +32,18 @@ struct MainTabView: View {
             .tabItem { Label("Sell", systemImage: "plus.circle.fill") }
             .tag(AppTab.sell)
 
-            NavigationStack(path: $router.activityPath) {
-                ActivityScreen()
+            NavigationStack(path: $router.collectionPath) {
+                CollectionScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .tabItem { Label("Activity", systemImage: "bell") }
-            .tag(AppTab.activity)
+            .tabItem { Label("Collection", systemImage: "square.grid.2x2") }
+            .tag(AppTab.collection)
 
             NavigationStack(path: $router.youPath) {
                 YouScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .tabItem { Label("You", systemImage: "person") }
+            .tabItem { Label("Me", systemImage: "person") }
             .tag(AppTab.you)
         }
         .tint(Color.calibre.primary)
@@ -51,6 +51,25 @@ struct MainTabView: View {
         // as a cover rather than pushing into one.
         .fullScreenCover(item: $router.checkoutRequest) { request in
             CheckoutFlow(listingID: request.listingID, offerID: request.offerID)
+        }
+        // The swipe deck — opened from the Home header, full-screen like the
+        // dedicated tab it used to be.
+        .fullScreenCover(isPresented: $router.deckPresented) {
+            NavigationStack(path: $router.deckPath) {
+                DiscoverScreen()
+                    .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button {
+                                router.deckPresented = false
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                            .tint(Color.calibre.primary)
+                            .accessibilityLabel("Close the deck")
+                        }
+                    }
+            }
         }
     }
 }

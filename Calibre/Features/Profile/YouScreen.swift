@@ -23,12 +23,24 @@ struct YouScreen: View {
                 header
 
                 if session.isAuthenticated {
-                    linkedSection(title: "Account") {
-                        row(icon: "person.text.rectangle", label: "Profile", destination: .profile)
+                    // Activity first — offers, orders, and alerts are what a
+                    // signed-in member checks most (the old Activity tab).
+                    linkedSection(title: "Activity") {
+                        NavigationLink { OffersListScreen() } label: {
+                            rowLabel(icon: "arrow.left.arrow.right", label: "Offers")
+                        }.buttonStyle(PressableStyle())
                         divider
                         NavigationLink { OrdersListScreen() } label: {
                             rowLabel(icon: "shippingbox", label: "Orders")
                         }.buttonStyle(PressableStyle())
+                        divider
+                        NavigationLink { AlertsInboxScreen() } label: {
+                            rowLabel(icon: "bell", label: "Alerts")
+                        }.buttonStyle(PressableStyle())
+                    }
+
+                    linkedSection(title: "Account") {
+                        row(icon: "person.text.rectangle", label: "Profile", destination: .profile)
                         divider
                         NavigationLink { SavedScreen() } label: {
                             rowLabel(icon: "heart", label: "Saved")

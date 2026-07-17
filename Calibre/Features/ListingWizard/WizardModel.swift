@@ -199,6 +199,10 @@ final class WizardModel {
     private(set) var estimate: ShippingEstimate?
     private(set) var estimating = false
 
+    // Market context ("watches like this listed at…"), loaded when the
+    // Price step appears. Nil until loaded or when the sample is too thin.
+    private(set) var pricingGuidance: PricingGuidance?
+
     // Sync + submit
     private(set) var saveError: String?
     private(set) var submitting = false
@@ -559,6 +563,26 @@ final class WizardModel {
 
     var priceDetailsComplete: Bool {
         price != nil && InputValidation.isNonBlank(notes)
+    }
+
+    /// Market context for the Price step. Fire-and-forget: a thin sample or
+    /// a network error just means the card stays hidden.
+    func loadPricingGuidance() async {
+        let brandValue = InputValidation.trimmed(brand)
+        guard !brandValue.isEmpty else {
+            pricingGuidance = nil
+            return
+        }
+        do {
+            let guidance = try await seller.pricingGuidance(
+                brand: brandValue,
+                model: InputValidation.trimmed(model),
+                reference: InputValidation.trimmed(reference)
+            )
+            pricingGuidance = guidance.available && guidance.askMedian != nil ? guidance : nil
+        } catch {
+            pricingGuidance = nil
+        }
     }
 
     /// Debounced shipping estimate — fires as the price settles.

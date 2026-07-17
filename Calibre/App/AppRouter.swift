@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The five root tabs.
 enum AppTab: Hashable {
-    case home, discover, sell, activity, you
+    case home, community, sell, collection, you
 }
 
 /// Everything the app can navigate to from anywhere — pushes, push
@@ -38,13 +38,23 @@ final class AppRouter {
     var selectedTab: AppTab = .home
 
     var homePath: [Route] = []
-    var discoverPath: [Route] = []
+    var communityPath: [Route] = []
     var sellPath: [Route] = []
-    var activityPath: [Route] = []
-    /// Type-erased: the You tab pushes both `Route` (support, from deep links)
-    /// and `ProfileDestination` (profile/addresses/…), so a homogeneous
-    /// `[Route]` would silently drop the profile pushes and desync the stack.
+    var collectionPath: [Route] = []
+    /// Type-erased: the Me tab pushes both `Route` (orders/offers/alerts and
+    /// support, from deep links) and `ProfileDestination` (profile/addresses/…),
+    /// so a homogeneous `[Route]` would silently drop the profile pushes and
+    /// desync the stack.
     var youPath = NavigationPath()
+
+    /// The swipe deck, presented full-screen from the Home header.
+    var deckPresented = false {
+        didSet {
+            if !deckPresented { deckPath = [] }
+        }
+    }
+    /// The deck cover's own navigation stack (listing detail from a card).
+    var deckPath: [Route] = []
 
     /// Set when a calibre://auth/reset?token= link arrives; the root view
     /// presents the reset-password screen.
@@ -66,13 +76,16 @@ final class AppRouter {
             presentCheckout(listingID: listingID, offerID: offerID)
             return
         }
+        // A route arriving from a push or deep link should land on a visible
+        // stack — dismiss the deck cover if it's up.
+        deckPresented = false
         let tab = homeTab(for: route)
         selectedTab = tab
         switch tab {
         case .home: homePath.append(route)
-        case .discover: discoverPath.append(route)
+        case .community: communityPath.append(route)
         case .sell: sellPath.append(route)
-        case .activity: activityPath.append(route)
+        case .collection: collectionPath.append(route)
         case .you: youPath.append(route)  // NavigationPath.append accepts any Hashable
         }
     }
@@ -80,11 +93,11 @@ final class AppRouter {
     /// Which tab a route naturally lives in.
     private func homeTab(for route: Route) -> AppTab {
         switch route {
-        case .listing, .seller, .brand, .journal, .journalArticle, .checkout:
+        case .listing, .seller, .brand, .checkout:
             .home
-        case .order, .offer, .alerts:
-            .activity
-        case .supportChat:
+        case .journal, .journalArticle:
+            .community
+        case .order, .offer, .alerts, .supportChat:
             .you
         }
     }

@@ -323,7 +323,7 @@ struct DiscoverScreen: View {
     }
 
     private func openListing(_ listing: Listing) {
-        router.discoverPath.append(.listing(listing.id))
+        router.deckPath.append(.listing(listing.id))
     }
 
     private func openSaved() {

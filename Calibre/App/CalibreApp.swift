@@ -169,16 +169,18 @@ struct RootView: View {
                     )
                 }
             }
-            // Screenshot hook: `-selectTab home|discover|sell|activity|you`
-            // jumps straight to a tab without scripted touch input.
+            // Screenshot hook: `-selectTab home|community|sell|collection|you`
+            // jumps straight to a tab without scripted touch input
+            // ("discover" opens the deck cover; "activity" maps to Me).
             if let index = ProcessInfo.processInfo.arguments.firstIndex(of: "-selectTab"),
                ProcessInfo.processInfo.arguments.indices.contains(index + 1) {
                 switch ProcessInfo.processInfo.arguments[index + 1] {
                 case "home": services.router.selectedTab = .home
-                case "discover": services.router.selectedTab = .discover
+                case "community": services.router.selectedTab = .community
+                case "discover": services.router.deckPresented = true
                 case "sell": services.router.selectedTab = .sell
-                case "activity": services.router.selectedTab = .activity
-                case "you": services.router.selectedTab = .you
+                case "collection": services.router.selectedTab = .collection
+                case "activity", "you": services.router.selectedTab = .you
                 default: break
                 }
             }
@@ -225,6 +227,9 @@ final class AppServices {
     let seller: SellerStore
     let account: AccountStore
     let support: SupportStore
+    let community: CommunityStore
+    let vault: VaultStore
+    let serverAlerts: ServerAlertsStore
     let signals: LocalSignals
     let alerts = AlertsInbox()
     let router = AppRouter()
@@ -243,6 +248,9 @@ final class AppServices {
         let account = AccountStore(client: client)
         self.account = account
         self.support = SupportStore(client: client)
+        self.community = CommunityStore(client: client)
+        self.vault = VaultStore(client: client)
+        self.serverAlerts = ServerAlertsStore(client: client)
         self.signals = LocalSignals()
         self.push = PushCoordinator(account: account)
 
@@ -254,8 +262,12 @@ final class AppServices {
         // moment a session actually ends, store-level rather than tied to
         // whichever view happens to be on screen.
         let commerce = self.commerce
-        auth.onSessionCleared = { [weak commerce] in
+        let vault = self.vault
+        let serverAlerts = self.serverAlerts
+        auth.onSessionCleared = { [weak commerce, weak vault, weak serverAlerts] in
             commerce?.reset()
+            vault?.reset()
+            serverAlerts?.reset()
         }
     }
 }

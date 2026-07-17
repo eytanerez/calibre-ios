@@ -166,6 +166,26 @@ public final class SellerStore {
         )
     }
 
+    // MARK: - Pricing guidance
+
+    /// "Watches like this listed at $X–Y and sold in ~N days" — computed from
+    /// Calibre's own listings and sales. Returns `available == false` when the
+    /// comparable sample is too thin to be honest about.
+    public func pricingGuidance(
+        brand: String,
+        model: String? = nil,
+        reference: String? = nil
+    ) async throws -> PricingGuidance {
+        var query = [URLQueryItem(name: "brand", value: brand)]
+        if let model, !model.isEmpty {
+            query.append(URLQueryItem(name: "model", value: model))
+        }
+        if let reference, !reference.isEmpty {
+            query.append(URLQueryItem(name: "reference", value: reference))
+        }
+        return try await client.send(Endpoint(path: "/listings/pricing-guidance", query: query))
+    }
+
     // MARK: - Watch requests
 
     /// My own sourcing requests.

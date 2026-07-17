@@ -356,6 +356,10 @@ struct PriceStep: View {
 
             payoutCard
 
+            if let guidance = model.pricingGuidance {
+                marketContextCard(guidance)
+            }
+
             VStack(alignment: .leading, spacing: Space.s) {
                 Text("Notes for buyers")
                     .font(CalibreType.label)
@@ -393,6 +397,47 @@ struct PriceStep: View {
                     )
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
+        }
+        .task { await model.loadPricingGuidance() }
+    }
+
+    /// "Watches like this on Calibre listed at $X–Y" — quiet, honest, and
+    /// only shown when the comparable sample is big enough to mean something.
+    private func marketContextCard(_ guidance: PricingGuidance) -> some View {
+        SellCard {
+            VStack(alignment: .leading, spacing: Space.s) {
+                Text("Market context")
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .textCase(.uppercase)
+                Text(marketContextLine(guidance))
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.foreground)
+                Text("Based on \(guidance.sampleSize ?? 0) listings and sales of \(scopeLabel(guidance)) on Calibre. Your price is always your call.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+            }
+            .padding(Space.l)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func marketContextLine(_ guidance: PricingGuidance) -> String {
+        let low = PriceFormatter.format(Decimal(guidance.askMin ?? 0))
+        let high = PriceFormatter.format(Decimal(guidance.askMax ?? 0))
+        let median = PriceFormatter.format(Decimal(guidance.askMedian ?? 0))
+        var line = "Watches like this listed at \(low)–\(high), median \(median)"
+        if let days = guidance.medianDaysToSell {
+            line += ", and sold in about \(Int(days.rounded())) days"
+        }
+        return line + "."
+    }
+
+    private func scopeLabel(_ guidance: PricingGuidance) -> String {
+        switch guidance.scope {
+        case "reference": return "this reference"
+        case "brand_model": return "this model"
+        default: return "this brand"
         }
     }
 
