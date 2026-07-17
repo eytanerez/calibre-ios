@@ -18,7 +18,6 @@ struct CommunityScreen: View {
     @State private var loadFailed = false
 
     private var today: CommunityToday? { services.community.today }
-    private var market: MarketOverview? { services.community.market }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -60,26 +59,12 @@ struct CommunityScreen: View {
 
     private func load() async {
         loadFailed = false
-        async let todayResult: Void = loadTodaySilently()
-        async let marketResult: Void = loadMarketSilently()
-        _ = await (todayResult, marketResult)
-        isLoading = false
-    }
-
-    private func loadTodaySilently() async {
         do {
             _ = try await services.community.loadToday(authenticated: session.isAuthenticated)
         } catch {
             if today == nil { loadFailed = true }
         }
-    }
-
-    private func loadMarketSilently() async {
-        do {
-            _ = try await services.community.loadMarket()
-        } catch {
-            // The market section shows its own quiet empty state.
-        }
+        isLoading = false
     }
 
     private var skeleton: some View {
@@ -156,96 +141,8 @@ struct CommunityScreen: View {
 
     // MARK: - Market
 
-    @ViewBuilder
     private var marketSection: some View {
-        if let market {
-            VStack(alignment: .leading, spacing: Space.xxl) {
-                VStack(alignment: .leading, spacing: Space.xs) {
-                    Text("The market on Calibre")
-                        .font(CalibreType.serif(.semiBold, 24, relativeTo: .title2))
-                        .foregroundStyle(Color.calibre.foreground)
-                    Text("Live listings and completed, authenticated sales.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                }
-
-                HStack(spacing: Space.m) {
-                    marketTile(label: "Live", value: market.totals.activeListings.formatted())
-                    marketTile(label: "Brands", value: market.totals.brands.formatted())
-                    marketTile(label: "Sold · 90d", value: market.totals.soldLast90Days.formatted())
-                }
-
-                VStack(alignment: .leading, spacing: Space.m) {
-                    sectionHeader("Median asking price")
-                    VStack(spacing: 0) {
-                        ForEach(Array(market.brands.prefix(10).enumerated()), id: \.element.id) { index, brand in
-                            if index > 0 {
-                                Rectangle().fill(Color.calibre.border).frame(height: 1)
-                            }
-                            HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-                                Text(brand.brand)
-                                    .font(CalibreType.bodyMedium)
-                                    .foregroundStyle(Color.calibre.foreground)
-                                    .lineLimit(1)
-                                Spacer(minLength: Space.m)
-                                Text("\(brand.activeCount)")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
-                                    .monospacedDigit()
-                                Text(brand.askMedian.map { PriceFormatter.format(Decimal($0)) } ?? "—")
-                                    .font(CalibreType.bodyMedium)
-                                    .foregroundStyle(Color.calibre.foreground)
-                                    .monospacedDigit()
-                                    .frame(minWidth: 84, alignment: .trailing)
-                            }
-                            .padding(.vertical, Space.m)
-                            .padding(.horizontal, Space.l)
-                        }
-                    }
-                    .background(
-                        Color.calibre.card,
-                        in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                            .strokeBorder(Color.calibre.border, lineWidth: 1)
-                    )
-                }
-            }
-        } else if isLoading {
-            skeleton
-        } else {
-            EmptyState(
-                icon: "chart.line.uptrend.xyaxis",
-                title: "Market data is warming up",
-                message: "Check back in a moment.",
-                actionTitle: "Refresh"
-            ) {
-                Task { await load() }
-            }
-        }
-    }
-
-    private func marketTile(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            Text(label.uppercased())
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
-            Text(value)
-                .font(CalibreType.serif(.semiBold, 22, relativeTo: .title2))
-                .foregroundStyle(Color.calibre.foreground)
-                .monospacedDigit()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Space.l)
-        .background(
-            Color.calibre.card,
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
-        )
+        MarketBoardView()
     }
 
     // MARK: - Journal
