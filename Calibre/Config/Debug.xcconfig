@@ -2,5 +2,5 @@
 // while a physical device reaches the same backend through Cloudflare Tunnel.
 // Routes are served at the origin root (no /api prefix).
 API_BASE_URL[sdk=iphonesimulator*] = http:/$()/localhost:8000
-API_BASE_URL[sdk=iphoneos*] = https:/$()/actual-feels-backed-this.trycloudflare.com
+API_BASE_URL[sdk=iphoneos*] = https:/$()/selections-ooo-retreat-pix.trycloudflare.com
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
