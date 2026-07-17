@@ -36,7 +36,7 @@ struct MainTabView: View {
                 CollectionScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .tabItem { Label("Collection", systemImage: "square.grid.2x2") }
+            .tabItem { Label("Vault", systemImage: "latch.2.case") }
             .tag(AppTab.collection)
 
             NavigationStack(path: $router.youPath) {
@@ -53,22 +53,12 @@ struct MainTabView: View {
             CheckoutFlow(listingID: request.listingID, offerID: request.offerID)
         }
         // The swipe deck — opened from the Home header, full-screen like the
-        // dedicated tab it used to be.
+        // dedicated tab it used to be. The deck hides the navigation bar and
+        // draws its own close button in its header.
         .fullScreenCover(isPresented: $router.deckPresented) {
             NavigationStack(path: $router.deckPath) {
                 DiscoverScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button {
-                                router.deckPresented = false
-                            } label: {
-                                Image(systemName: "xmark")
-                            }
-                            .tint(Color.calibre.primary)
-                            .accessibilityLabel("Close the deck")
-                        }
-                    }
             }
         }
     }

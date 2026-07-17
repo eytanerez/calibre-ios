@@ -70,7 +70,23 @@ struct DiscoverScreen: View {
     /// gesture. Saved is a real destination rather than a decorative counter.
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .center, spacing: Space.m) {
+                // The deck rides above the tabs as a full-screen cover with
+                // the navigation bar hidden — this is the way back out.
+                Button {
+                    router.deckPresented = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.calibre.foreground)
+                        .frame(width: 36, height: 36)
+                        .background(Color.calibre.card, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.calibre.border, lineWidth: 1))
+                }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("Close the deck")
+                .accessibilityIdentifier("deck.close.button")
+
                 Text("Discover")
                     .font(CalibreType.sectionTitle)
                     .foregroundStyle(Color.calibre.foreground)

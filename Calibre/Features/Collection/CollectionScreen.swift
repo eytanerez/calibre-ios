@@ -2,7 +2,7 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// The Collection tab: every watch the member owns. Calibre purchases arrive
+/// The Vault tab: every watch the member owns. Calibre purchases arrive
 /// automatically on delivery — authenticated, with their Passport — and
 /// manual adds cover the rest of the drawer.
 struct CollectionScreen: View {
@@ -20,19 +20,19 @@ struct CollectionScreen: View {
         Group {
             if !session.isAuthenticated {
                 EmptyState(
-                    icon: "square.grid.2x2",
-                    title: "Your collection lives here",
-                    message: "Sign in and every watch you buy on Calibre arrives here authenticated — plus anything else you own.",
+                    icon: "latch.2.case",
+                    title: "Your vault lives here",
+                    message: "Sign in and every watch you buy on Calibre arrives in your vault authenticated — plus anything else you own.",
                     actionTitle: "Sign in"
                 ) {
-                    services.auth.require("Sign in to see your collection") {}
+                    services.auth.require("Sign in to see your vault") {}
                 }
             } else if isLoading, watches.isEmpty {
                 skeleton
             } else if watches.isEmpty, loadFailed {
                 EmptyState(
                     icon: "wifi.slash",
-                    title: "Couldn't load your collection",
+                    title: "Couldn't load your vault",
                     message: "Check your connection and try again.",
                     actionTitle: "Try again"
                 ) {
@@ -40,9 +40,9 @@ struct CollectionScreen: View {
                 }
             } else if watches.isEmpty {
                 EmptyState(
-                    icon: "square.grid.2x2",
+                    icon: "latch.2.case",
                     title: "No watches yet",
-                    message: "Buy on Calibre and your watch lands here authenticated — or add what you already own to track its value.",
+                    message: "Buy on Calibre and your watch lands in your vault authenticated — or add what you already own to track its value.",
                     actionTitle: "Add a watch"
                 ) {
                     showAddSheet = true
@@ -53,7 +53,7 @@ struct CollectionScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.calibre.background)
-        .navigationTitle("Collection")
+        .navigationTitle("Vault")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if session.isAuthenticated {
@@ -291,7 +291,7 @@ private struct AddCollectionWatchSheet: View {
                     Button {
                         save()
                     } label: {
-                        Text(saving ? "Adding…" : "Add to collection")
+                        Text(saving ? "Adding…" : "Add to vault")
                             .font(CalibreType.bodyMedium)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, Space.m)

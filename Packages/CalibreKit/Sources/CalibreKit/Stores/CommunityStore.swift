@@ -14,10 +14,14 @@ public final class CommunityStore {
         self.client = client
     }
 
+    /// Loads today's prompts. Pass `authenticated: true` for signed-in members
+    /// so the response carries their votes — the client only attaches the auth
+    /// header when an endpoint requires it, and without it the feed comes back
+    /// as a guest's (no `my_vote`, questions re-ask after every reload).
     @discardableResult
-    public func loadToday() async throws -> CommunityToday {
+    public func loadToday(authenticated: Bool) async throws -> CommunityToday {
         let payload: CommunityToday = try await client.send(
-            Endpoint(path: "/community/today", requiresAuth: false)
+            Endpoint(path: "/community/today", requiresAuth: authenticated)
         )
         today = payload
         return payload
