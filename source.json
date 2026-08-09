@@ -21,6 +21,14 @@
       ],
       "versions": [
         {
+          "version": "1.0.17",
+          "date": "2026-08-09",
+          "localizedDescription": "Keyboards now match their field — email, number, phone and password. Tap anywhere off a field to dismiss the keyboard.\n\nThe market page scrolls properly, even with a finger on a price chart (press and hold to scrub it), and brand and sort are dropdowns.\n\nListing a watch: Continue tells you what's missing beside each field instead of at the bottom, notes are optional, you can add photos from your library, and tapping a photo you've already taken shows it before you replace it.\n\nYour shop: swipe or press and hold a listing for Edit, Submit and Delete. Opening a listing from Sell keeps you in Sell.\n\nThe vault is behind Face ID and no longer shows value estimates. Save more than one card and pick which to use at checkout. Address forms fill from an address you've already saved, and anything destructive asks first.",
+          "downloadURL": "https://github.com/eytanerez/calibre-ios/releases/download/v1.0.17-b18/Calibre.ipa",
+          "size": 11454558,
+          "minOSVersion": "18.0"
+        },
+        {
           "version": "1.0",
           "date": "2026-07-12",
           "localizedDescription": "Initial SideStore release (build 1).",
