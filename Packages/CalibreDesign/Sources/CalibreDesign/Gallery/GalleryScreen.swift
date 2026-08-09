@@ -7,6 +7,7 @@ public struct GalleryScreen: View {
     @State private var toastCenter = ToastCenter()
     @State private var offerSheetShown = false
     @State private var dealTab: DealTab = .offers
+    @State private var dockTab: DockTab = .home
     @State private var priceLower: Double = 5_200
     @State private var priceUpper: Double = 38_000
     @State private var reviewRating = 4
@@ -24,6 +25,32 @@ public struct GalleryScreen: View {
             case .offers: "Offers"
             case .orders: "Orders"
             case .saved: "Saved"
+            }
+        }
+    }
+
+    /// Mirrors the app's five real tabs so the prototype is judged at the
+    /// width and item count it would actually ship at.
+    private enum DockTab: CaseIterable {
+        case home, community, sell, collection, you
+
+        var label: String {
+            switch self {
+            case .home: "Home"
+            case .community: "Community"
+            case .sell: "Sell"
+            case .collection: "Vault"
+            case .you: "Me"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .home: "house"
+            case .community: "bubble.left.and.bubble.right"
+            case .sell: "plus.circle.fill"
+            case .collection: "latch.2.case"
+            case .you: "person"
             }
         }
     }
@@ -55,6 +82,7 @@ public struct GalleryScreen: View {
                     searchAndFiltersSection
                     formFieldsSection
                     photoSlotsSection
+                    meniscusDockSection
                 }
                 .padding(Space.margin)
             }
@@ -388,6 +416,25 @@ public struct GalleryScreen: View {
                     PhotoSlotRing(phase: .empty)
                 }
                 .padding(.vertical, 2)
+            }
+        }
+    }
+
+    /// Prototype — not part of the shipping system. Here to be felt against
+    /// the rest of the gallery before anyone decides whether it earns its
+    /// place. Tap a tab or drag the bead along the bar.
+    private var meniscusDockSection: some View {
+        section("Meniscus dock (prototype)") {
+            VStack(alignment: .leading, spacing: Space.m) {
+                MeniscusDock(
+                    selection: $dockTab,
+                    items: DockTab.allCases.map {
+                        MeniscusDockItem(value: $0, label: $0.label, systemImage: $0.icon)
+                    }
+                )
+                Text("Chocolate at every tab — the bead never changes hue.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
             }
         }
     }
