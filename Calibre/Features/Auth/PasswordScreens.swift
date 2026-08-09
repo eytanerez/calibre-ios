@@ -45,11 +45,12 @@ struct ForgotPasswordScreen: View {
                 .font(CalibreType.body)
                 .foregroundStyle(Color.calibre.mutedForeground)
 
-            CalibreTextField("Email", text: $email, placeholder: "you@example.com")
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+            CalibreTextField(
+                "Email",
+                text: $email,
+                placeholder: "you@example.com",
+                kind: .email
+            )
 
             if let errorMessage {
                 AuthErrorLine(message: errorMessage)
@@ -143,8 +144,7 @@ struct ResetPasswordScreen: View {
                     .foregroundStyle(Color.calibre.mutedForeground)
 
                 VStack(alignment: .leading, spacing: Space.m) {
-                    CalibreTextField("New password", text: $password, isSecure: true)
-                        .textContentType(.newPassword)
+                    CalibreTextField("New password", text: $password, kind: .newPassword)
 
                     VStack(alignment: .leading, spacing: Space.xs) {
                         rule("At least 8 characters", satisfied: password.count >= 8)
@@ -154,14 +154,13 @@ struct ResetPasswordScreen: View {
                     .animation(Motion.easeFast, value: password)
                 }
 
-                CalibreTextField("Confirm password", text: $confirmPassword, isSecure: true) {
+                CalibreTextField("Confirm password", text: $confirmPassword, kind: .newPassword) {
                     if !confirmPassword.isEmpty {
                         Image(systemName: passwordsMatch ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .font(.system(size: 15))
                             .foregroundStyle(passwordsMatch ? Color.calibre.success : Color.calibre.destructive)
                     }
                 }
-                .textContentType(.newPassword)
 
                 if let errorMessage {
                     AuthErrorLine(message: errorMessage)

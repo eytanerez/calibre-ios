@@ -10,13 +10,67 @@ struct CollectionScreen: View {
     @Environment(AuthSession.self) private var session
     @Environment(\.openURL) private var openURL
 
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var isLoading = true
     @State private var loadFailed = false
     @State private var showAddSheet = false
+    @State private var lock = VaultLock()
+    @State private var confirmRemove: VaultWatch?
 
     private var watches: [VaultWatch] { services.vault.watches }
 
     var body: some View {
+        Group {
+            if session.isAuthenticated, lock.isLocked {
+                lockedState
+            } else {
+                vaultBody
+            }
+        }
+        .task(id: session.isAuthenticated) {
+            guard session.isAuthenticated else { return }
+            await lock.unlockIfNeeded()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Re-lock the moment the app leaves the screen, so handing over an
+            // unlocked phone doesn't hand over the vault.
+            if phase != .active { lock.lock() }
+        }
+    }
+
+    /// Shown while the vault is waiting on Face ID.
+    private var lockedState: some View {
+        VStack(spacing: Space.l) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(Color.calibre.primary)
+            Text("Your vault is locked")
+                .font(CalibreType.title)
+                .foregroundStyle(Color.calibre.foreground)
+            Text("Only you should see what's in the drawer.")
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.mutedForeground)
+            if let error = lock.lastError {
+                Text(error)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.destructive)
+            }
+            Button("Unlock with \(lock.methodLabel)") {
+                Task { await lock.authenticate() }
+            }
+            .buttonStyle(.calibre(.primary))
+            .disabled(lock.authenticating)
+        }
+        .multilineTextAlignment(.center)
+        .padding(Space.xxl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.calibre.background)
+        .navigationTitle("Vault")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var vaultBody: some View {
         Group {
             if !session.isAuthenticated {
                 EmptyState(
@@ -42,7 +96,7 @@ struct CollectionScreen: View {
                 EmptyState(
                     icon: "latch.2.case",
                     title: "No watches yet",
-                    message: "Buy on Calibre and your watch lands in your vault authenticated — or add what you already own to track its value.",
+                    message: "Buy on Calibre and your watch lands in your vault authenticated — or add what you already own to keep the whole drawer in one place.",
                     actionTitle: "Add a watch"
                 ) {
                     showAddSheet = true
@@ -58,18 +112,46 @@ struct CollectionScreen: View {
         .toolbar {
             if session.isAuthenticated {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showAddSheet = true
+                    Menu {
+                        Button {
+                            showAddSheet = true
+                        } label: {
+                            Label("Add a watch", systemImage: "plus")
+                        }
+                        if lock.isAvailable {
+                            Toggle(isOn: Binding(
+                                get: { lock.isEnabled },
+                                set: { lock.isEnabled = $0 }
+                            )) {
+                                Label("Require \(lock.methodLabel)", systemImage: "lock")
+                            }
+                        }
                     } label: {
-                        Image(systemName: "plus")
+                        Image(systemName: "ellipsis.circle")
                     }
                     .tint(Color.calibre.primary)
-                    .accessibilityLabel("Add a watch")
+                    .accessibilityLabel("Vault options")
                 }
             }
         }
         .sheet(isPresented: $showAddSheet) {
             AddCollectionWatchSheet()
+        }
+        .confirmationDialog(
+            "Remove this watch?",
+            isPresented: Binding(
+                get: { confirmRemove != nil },
+                set: { if !$0 { confirmRemove = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: confirmRemove
+        ) { watch in
+            Button("Remove", role: .destructive) {
+                Task { await remove(watch) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { watch in
+            Text("\"\(watch.displayTitle)\" leaves your vault. You can add it again later.")
         }
         .task {
             guard session.isAuthenticated else { return }
@@ -77,6 +159,15 @@ struct CollectionScreen: View {
         }
         .refreshable {
             await load()
+        }
+    }
+
+    private func remove(_ watch: VaultWatch) async {
+        do {
+            try await services.vault.remove(id: watch.id)
+            Haptics.shared.play(.save)
+        } catch {
+            services.toasts.show(title: "Couldn't remove that watch", message: "Please try again.")
         }
     }
 
@@ -111,14 +202,7 @@ struct CollectionScreen: View {
 
                 ForEach(watches) { watch in
                     CollectionWatchCard(watch: watch) {
-                        Task {
-                            do {
-                                try await services.vault.remove(id: watch.id)
-                                Haptics.shared.play(.save)
-                            } catch {
-                                services.toasts.show(title: "Couldn't remove that watch", message: "Please try again.")
-                            }
-                        }
+                        confirmRemove = watch
                     } onPassport: { code in
                         if let url = URL(string: "https://buycalibre.com/passport/\(code)") {
                             openURL(url)
@@ -135,22 +219,15 @@ struct CollectionScreen: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: Space.xs) {
-                Text("ESTIMATED VALUE")
+                Text("YOUR VAULT")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
-                Text(
-                    services.vault.estimatedTotal > 0
-                        ? PriceFormatter.format(Decimal(services.vault.estimatedTotal))
-                        : "—"
-                )
-                .font(CalibreType.serif(.semiBold, 30, relativeTo: .largeTitle))
-                .foregroundStyle(Color.calibre.foreground)
-                .contentTransition(.numericText())
+                Text("\(watches.count) watch\(watches.count == 1 ? "" : "es")")
+                    .font(CalibreType.serif(.semiBold, 30, relativeTo: .largeTitle))
+                    .foregroundStyle(Color.calibre.foreground)
+                    .contentTransition(.numericText())
             }
             Spacer()
-            Text("\(watches.count) watch\(watches.count == 1 ? "" : "es")")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
         }
     }
 }
@@ -186,7 +263,6 @@ private struct CollectionWatchCard: View {
             }
 
             HStack(spacing: Space.xl) {
-                metric(label: "Est. value", value: money(watch.estimatedValue))
                 metric(label: "Acquired for", value: money(watch.acquiredPrice))
             }
 
@@ -274,13 +350,21 @@ private struct AddCollectionWatchSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    CalibreTextField("Brand", text: $brand, placeholder: "Rolex")
-                    CalibreTextField("Model", text: $model, placeholder: "Submariner")
-                    CalibreTextField("Reference", text: $reference, placeholder: "126610LN")
-                    CalibreTextField("Year", text: $yearText, placeholder: "2022")
-                        .keyboardType(.numberPad)
-                    CalibreTextField("What you paid (USD)", text: $priceText, placeholder: "9,500")
-                        .keyboardType(.decimalPad)
+                    CalibreTextField("Brand", text: $brand, placeholder: "Rolex", kind: .sentence)
+                    CalibreTextField("Model", text: $model, placeholder: "Submariner", kind: .sentence)
+                    CalibreTextField(
+                        "Reference",
+                        text: $reference,
+                        placeholder: "126610LN",
+                        kind: .reference
+                    )
+                    CalibreTextField("Year", text: $yearText, placeholder: "2022", kind: .integer)
+                    CalibreTextField(
+                        "What you paid (USD)",
+                        text: $priceText,
+                        placeholder: "9,500",
+                        kind: .money
+                    )
 
                     if let errorMessage {
                         Text(errorMessage)

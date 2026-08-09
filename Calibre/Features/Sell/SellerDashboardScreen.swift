@@ -37,7 +37,6 @@ struct SellerDashboardScreen: View {
     @State private var showBulkImports = false
     @State private var showOpenRequests = false
     @State private var confirmSubmit: Listing?
-    @State private var confirmArchive: Listing?
     @State private var confirmDelete: Listing?
     @State private var showAllInventory = false
     @State private var tutorial = TutorialController(
@@ -55,7 +54,7 @@ struct SellerDashboardScreen: View {
             TutorialStep(
                 id: "shop",
                 title: "Running your shop",
-                message: "Swipe any inventory row left for its quick actions — Edit, Submit for review, or Archive. And the queue up top always surfaces whatever needs you next: an offer to answer, a sale to ship, a draft to finish.",
+                message: "Swipe any inventory row left — or press and hold it — for its quick actions: Edit, Submit for review, or Delete. And the queue up top always surfaces whatever needs you next: an offer to answer, a sale to ship, a draft to finish.",
                 advance: .tapToContinue
             ),
         ]
@@ -154,26 +153,13 @@ struct SellerDashboardScreen: View {
             Text("Our team reviews every listing before it goes live. All six photos need to be uploaded first.")
         }
         .confirmationDialog(
-            "Archive this listing?",
-            isPresented: archiveBinding,
-            titleVisibility: .visible,
-            presenting: confirmArchive
-        ) { listing in
-            Button("Archive", role: .destructive) {
-                Task { await archive(listing) }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: { _ in
-            Text("It leaves the market right away. You can restore and resubmit it any time.")
-        }
-        .confirmationDialog(
-            "Delete this draft?",
+            confirmDelete?.status == .draft ? "Delete this draft?" : "Delete this listing?",
             isPresented: deleteBinding,
             titleVisibility: .visible,
             presenting: confirmDelete
         ) { listing in
-            Button("Delete draft", role: .destructive) {
-                Task { await deleteDraft(listing) }
+            Button("Delete", role: .destructive) {
+                Task { await deleteListing(listing) }
             }
             Button("Cancel", role: .cancel) {}
         } message: { listing in
@@ -211,10 +197,6 @@ struct SellerDashboardScreen: View {
 
     private var submitBinding: Binding<Bool> {
         Binding(get: { confirmSubmit != nil }, set: { if !$0 { confirmSubmit = nil } })
-    }
-
-    private var archiveBinding: Binding<Bool> {
-        Binding(get: { confirmArchive != nil }, set: { if !$0 { confirmArchive = nil } })
     }
 
     private var deleteBinding: Binding<Bool> {
@@ -490,7 +472,7 @@ struct SellerDashboardScreen: View {
         switch action.kind {
         case "offer":
             if let offerID = action.offerId {
-                router.open(.offer(offerID))
+                router.push(.offer(offerID))
             }
         case "fulfillment":
             if let orderID = action.orderId {
@@ -609,6 +591,7 @@ struct SellerDashboardScreen: View {
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         swipeButtons(listing)
                     }
+                    .contextMenu { rowContextMenu(listing) }
             }
             if filteredListings.count > Self.inventoryPreviewCount {
                 inventoryToggle.sellRow(bottom: Space.m)
@@ -744,7 +727,10 @@ struct SellerDashboardScreen: View {
                 Label("Submit", systemImage: "paperplane")
             }
             .tint(Color.calibre.success)
+        }
 
+        // Sold listings are attached to an order and can't be removed.
+        if listing.status != .sold {
             Button(role: .destructive) {
                 confirmDelete = listing
             } label: {
@@ -752,14 +738,32 @@ struct SellerDashboardScreen: View {
             }
             .tint(Color.calibre.destructive)
         }
+    }
 
-        if listing.status != .archived && listing.status != .sold {
+    /// The same actions a swipe offers, on a long press — swiping is easy to
+    /// miss, and holding a row is the other thing people try.
+    @ViewBuilder
+    private func rowContextMenu(_ listing: Listing) -> some View {
+        Button {
+            openWizard(listing.status == .draft ? .finishDraft(listing) : .edit(listing))
+        } label: {
+            Label("Edit", systemImage: "square.and.pencil")
+        }
+
+        if listing.status == .draft {
             Button {
-                confirmArchive = listing
+                confirmSubmit = listing
             } label: {
-                Label("Archive", systemImage: "archivebox")
+                Label("Submit for review", systemImage: "paperplane")
             }
-            .tint(Color.calibre.mutedForeground)
+        }
+
+        if listing.status != .sold {
+            Button(role: .destructive) {
+                confirmDelete = listing
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 
@@ -773,10 +777,10 @@ struct SellerDashboardScreen: View {
             if let order = orderByListing[listing.id] {
                 saleDetailOrderID = order.id
             } else {
-                router.open(.listing(listing.id))
+                router.push(.listing(listing.id))
             }
         default:
-            router.open(.listing(listing.id))
+            router.push(.listing(listing.id))
         }
     }
 
@@ -795,24 +799,17 @@ struct SellerDashboardScreen: View {
         }
     }
 
-    private func archive(_ listing: Listing) async {
-        do {
-            _ = try await services.seller.updateListing(id: listing.id, ListingDraftPayload(status: .archived))
-            toasts.show(title: "Archived", message: "\(listing.title) left the market.")
-            await load()
-        } catch {
-            toasts.show(title: "Couldn't archive", message: sellErrorMessage(error), tone: .error)
-        }
-    }
-
-    private func deleteDraft(_ listing: Listing) async {
+    private func deleteListing(_ listing: Listing) async {
         do {
             try await services.seller.deleteListing(id: listing.id)
             // Clear any saved local snapshot so it doesn't try to resume a
             // draft that no longer exists on the server.
             DraftStore.clear(listingID: listing.id)
             Haptics.shared.play(.press)
-            toasts.show(title: "Draft deleted", message: "\(listing.title) is gone.")
+            toasts.show(
+                title: listing.status == .draft ? "Draft deleted" : "Listing deleted",
+                message: "\(listing.title) is gone."
+            )
             await load()
         } catch {
             toasts.show(title: "Couldn't delete", message: sellErrorMessage(error), tone: .error)
@@ -900,7 +897,7 @@ struct SellerDashboardScreen: View {
     private func offerRow(_ offer: Offer) -> some View {
         Button {
             // The Offers track owns response UI — link, don't rebuild.
-            router.open(.offer(offer.id))
+            router.push(.offer(offer.id))
         } label: {
             HStack(spacing: Space.m) {
                 VStack(alignment: .leading, spacing: 2) {

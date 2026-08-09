@@ -337,6 +337,25 @@ public final class CommerceStore {
         let _: EmptyResponse = try await client.send(Endpoint(method: .delete, path: "/account/payment-method"))
     }
 
+    /// Every saved card, newest first, with the default flagged.
+    public func wallet() async throws -> WalletInfo {
+        try await client.send(Endpoint<WalletInfo>(path: "/account/payment-methods"))
+    }
+
+    /// Detach one card. 409s while it's the default and a hold is active.
+    public func deleteCard(id: String) async throws {
+        let _: EmptyResponse = try await client.send(
+            Endpoint(method: .delete, path: "/account/payment-methods/\(id)")
+        )
+    }
+
+    /// Promote a card to the one offer holds are placed on.
+    public func makeCardDefault(id: String) async throws {
+        let _: EmptyResponse = try await client.send(
+            Endpoint(method: .post, path: "/account/payment-methods/\(id)")
+        )
+    }
+
     /// A SetupIntent for the Payment Method page's Add/Replace card flow —
     /// confirm it with PaymentSheet's setup mode, then re-fetch
     /// `paymentMethod()` to pick up the newly saved card.

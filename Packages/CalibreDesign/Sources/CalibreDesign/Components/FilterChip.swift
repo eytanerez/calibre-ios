@@ -61,6 +61,9 @@ public struct ChipRail<Content: View>: View {
             .padding(.horizontal, fadeWidth)
             .padding(.vertical, 2)
         }
+        // A rail whose chips already fit must not rubber-band sideways —
+        // inside a vertical scroll view that reads as the whole page sliding.
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .mask {
             HStack(spacing: 0) {
                 LinearGradient(

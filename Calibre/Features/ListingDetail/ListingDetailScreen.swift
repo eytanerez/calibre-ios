@@ -173,7 +173,7 @@ struct ListingDetailScreen: View {
 
             if let openOffer {
                 Button("Offer pending — view") {
-                    services.router.open(.offer(openOffer.id))
+                    services.router.push(.offer(openOffer.id))
                 }
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
             } else {

@@ -1,15 +1,125 @@
 import SwiftUI
 
+/// What a field is *for* — drives the keyboard, autofill contentType,
+/// capitalisation and autocorrect in one place so no call site has to
+/// remember the four modifiers that make an input behave natively.
+public enum CalibreFieldKind: Sendable, Equatable {
+    case plain
+    case sentence
+    case email
+    /// Sign-in identifier that accepts either — email keyboard, username autofill.
+    case emailOrUsername
+    case password
+    case newPassword
+    case oneTimeCode
+    case fullName
+    case givenName
+    case familyName
+    case username
+    case phone
+    /// Whole numbers — year, quantity, count.
+    case integer
+    /// Fractional numbers — weight, dimensions.
+    case decimal
+    /// Prices and offers.
+    case money
+    case postalCode
+    case addressLine1
+    case addressLine2
+    case city
+    case state
+    /// Two-letter ISO code — every country field in the app stores "US", not
+    /// "United States", so this uppercases as you type.
+    case country
+    case url
+    /// Reference and serial numbers: uppercase, never autocorrected.
+    case reference
+
+    var keyboardType: UIKeyboardType {
+        switch self {
+        case .email, .emailOrUsername: .emailAddress
+        case .phone: .phonePad
+        case .integer, .oneTimeCode: .numberPad
+        case .decimal, .money: .decimalPad
+        // Alphanumeric so non-US postal codes stay typable, but digits first.
+        case .postalCode: .numbersAndPunctuation
+        case .url: .URL
+        case .username, .reference: .asciiCapable
+        default: .default
+        }
+    }
+
+    var contentType: UITextContentType? {
+        switch self {
+        case .email: .emailAddress
+        case .emailOrUsername: .username
+        case .password: .password
+        // Strong-password autofill throws up a system overlay that swallows
+        // scripted typing, so UI-test runs opt out of it.
+        case .newPassword: Self.suppressesStrongPasswordAutofill ? nil : .newPassword
+        case .oneTimeCode: .oneTimeCode
+        case .fullName: .name
+        case .givenName: .givenName
+        case .familyName: .familyName
+        case .username: .username
+        case .phone: .telephoneNumber
+        case .postalCode: .postalCode
+        case .addressLine1: .streetAddressLine1
+        case .addressLine2: .streetAddressLine2
+        case .city: .addressCity
+        case .state: .addressState
+        case .country: .countryName
+        case .url: .URL
+        default: nil
+        }
+    }
+
+    var autocapitalization: TextInputAutocapitalization {
+        switch self {
+        case .sentence: .sentences
+        case .fullName, .givenName, .familyName, .city, .state,
+             .addressLine1, .addressLine2: .words
+        case .reference, .country: .characters
+        case .email, .emailOrUsername, .username, .password, .newPassword,
+             .url, .phone, .integer, .decimal, .money, .postalCode,
+             .oneTimeCode: .never
+        case .plain: .sentences
+        }
+    }
+
+    var disablesAutocorrection: Bool {
+        switch self {
+        case .plain, .sentence: false
+        default: true
+        }
+    }
+
+    /// Password kinds mask their entry unless the caller says otherwise.
+    var prefersSecureEntry: Bool {
+        self == .password || self == .newPassword
+    }
+
+    private static var suppressesStrongPasswordAutofill: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-uiTesting")
+        #else
+        return false
+        #endif
+    }
+}
+
 /// Labeled form field — the brand input for checkout, listing details, and
 /// auth. Card fill with a hairline border that brightens on focus (plus the
 /// 11% primary glow); an inline error line appears gently in 160ms and turns
-/// the border destructive. `isSecure` renders a secure entry with a reveal
-/// toggle. Use `accessory` for trailing add-ons (units, "Ref." lookups).
+/// the border destructive. `kind` sets the keyboard, autofill and
+/// capitalisation; password kinds render a secure entry with a reveal toggle.
+/// Use `accessory` for trailing add-ons (units, "Ref." lookups).
 public struct CalibreTextField<Accessory: View>: View {
     let label: String
     let placeholder: String
     @Binding var text: String
     let error: String?
+    let kind: CalibreFieldKind
     let isSecure: Bool
     let accessory: Accessory
 
@@ -21,14 +131,16 @@ public struct CalibreTextField<Accessory: View>: View {
         text: Binding<String>,
         placeholder: String = "",
         error: String? = nil,
-        isSecure: Bool = false,
+        kind: CalibreFieldKind = .plain,
+        isSecure: Bool? = nil,
         @ViewBuilder accessory: () -> Accessory
     ) {
         self.label = label
         self._text = text
         self.placeholder = placeholder
         self.error = error
-        self.isSecure = isSecure
+        self.kind = kind
+        self.isSecure = isSecure ?? kind.prefersSecureEntry
         self.accessory = accessory()
     }
 
@@ -92,18 +204,33 @@ public struct CalibreTextField<Accessory: View>: View {
 
     @ViewBuilder
     private var field: some View {
-        if isSecure && !revealed {
-            SecureField(
-                "",
-                text: $text,
-                prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
-            )
+        let entry = Group {
+            if isSecure && !revealed {
+                SecureField(
+                    "",
+                    text: $text,
+                    prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
+                )
+            } else {
+                TextField(
+                    "",
+                    text: $text,
+                    prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
+                )
+            }
+        }
+
+        // `.plain` sets nothing so a call site can still configure the input
+        // from the outside — modifiers applied here would outrank theirs,
+        // being closer to the leaf.
+        if kind == .plain {
+            entry
         } else {
-            TextField(
-                "",
-                text: $text,
-                prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
-            )
+            entry
+                .keyboardType(kind.keyboardType)
+                .textContentType(kind.contentType)
+                .textInputAutocapitalization(kind.autocapitalization)
+                .autocorrectionDisabled(kind.disablesAutocorrection)
         }
     }
 
@@ -124,13 +251,15 @@ public extension CalibreTextField where Accessory == EmptyView {
         text: Binding<String>,
         placeholder: String = "",
         error: String? = nil,
-        isSecure: Bool = false
+        kind: CalibreFieldKind = .plain,
+        isSecure: Bool? = nil
     ) {
         self.init(
             label,
             text: text,
             placeholder: placeholder,
             error: error,
+            kind: kind,
             isSecure: isSecure
         ) { EmptyView() }
     }

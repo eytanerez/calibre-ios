@@ -90,6 +90,29 @@ final class AppRouter {
         }
     }
 
+    /// In-app navigation: push onto the stack the user is *already* looking
+    /// at, so Back returns them where they came from. A listing opened from
+    /// the Sell tab stays in Sell. Deep links and notifications use `open(_:)`
+    /// instead, which jumps to the route's canonical tab.
+    func push(_ route: Route) {
+        if case let .checkout(listingID, offerID) = route {
+            presentCheckout(listingID: listingID, offerID: offerID)
+            return
+        }
+        // The swipe deck is a cover with its own stack — stay inside it.
+        if deckPresented {
+            deckPath.append(route)
+            return
+        }
+        switch selectedTab {
+        case .home: homePath.append(route)
+        case .community: communityPath.append(route)
+        case .sell: sellPath.append(route)
+        case .collection: collectionPath.append(route)
+        case .you: youPath.append(route)
+        }
+    }
+
     /// Which tab a route naturally lives in.
     private func homeTab(for route: Route) -> AppTab {
         switch route {

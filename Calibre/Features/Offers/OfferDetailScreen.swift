@@ -326,18 +326,19 @@ private struct OfferDetailContent: View {
                 "Your counter",
                 text: $model.counterAmountText,
                 placeholder: "0",
-                error: model.counterAmountError
+                error: model.counterAmountError,
+                kind: .money
             ) {
                 Text(offer.currency)
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
-            .keyboardType(.decimalPad)
 
             CalibreTextField(
                 "Message (optional)",
                 text: $model.counterMessage,
-                placeholder: "Add a note with your number"
+                placeholder: "Add a note with your number",
+                kind: .sentence
             )
             .onChange(of: model.counterMessage) { _, value in
                 if value.count > 1_000 {
@@ -558,7 +559,7 @@ final class OfferDetailModel {
     }
 
     func openOrder(_ orderID: String) {
-        router.open(.order(orderID))
+        router.push(.order(orderID))
     }
 
     private func friendlyMessage(_ error: Error) -> String {

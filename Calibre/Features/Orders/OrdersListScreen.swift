@@ -76,7 +76,7 @@ struct OrdersListScreen: View {
                         LazyVStack(spacing: Space.m) {
                             ForEach(orders) { order in
                                 Button {
-                                    services.router.open(.order(order.id))
+                                    services.router.push(.order(order.id))
                                 } label: {
                                     OrderRow(order: order)
                                 }

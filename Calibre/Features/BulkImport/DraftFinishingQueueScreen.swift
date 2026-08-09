@@ -157,9 +157,9 @@ struct DraftFinishingQueueScreen: View {
                         placeholder: "2019",
                         error: yearText.isEmpty || InputValidation.productionYear(yearText) != nil
                             ? nil
-                            : "Enter a valid 4-digit year."
+                            : "Enter a valid 4-digit year.",
+                        kind: .integer
                     )
-                        .keyboardType(.numberPad)
                 }
 
                 if item.missing.contains("description") {

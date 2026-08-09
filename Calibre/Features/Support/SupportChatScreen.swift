@@ -77,12 +77,10 @@ struct SupportChatScreen: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             if needsGuestEmail {
-                CalibreTextField("Your email so we can reply", text: $guestEmail)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.emailAddress)
+                CalibreTextField("Your email so we can reply", text: $guestEmail, kind: .email)
             }
             HStack(alignment: .bottom, spacing: Space.s) {
-                CalibreTextField("Write a message", text: $draft)
+                CalibreTextField("Write a message", text: $draft, kind: .sentence)
                 Button {
                     Task { await send() }
                 } label: {

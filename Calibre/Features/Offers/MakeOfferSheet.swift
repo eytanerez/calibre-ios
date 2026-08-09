@@ -155,13 +155,13 @@ struct MakeOfferSheet: View {
                     "Amount",
                     text: $model.amountText,
                     placeholder: "0",
-                    error: model.amountError
+                    error: model.amountError,
+                    kind: .money
                 ) {
                     Text("USD")
                         .font(CalibreType.label)
                         .foregroundStyle(Color.calibre.mutedForeground)
                 }
-                .keyboardType(.decimalPad)
             }
 
             VStack(alignment: .leading, spacing: Space.s) {

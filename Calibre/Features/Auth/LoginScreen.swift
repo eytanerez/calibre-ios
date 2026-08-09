@@ -43,12 +43,9 @@ struct LoginScreen: View {
                     CalibreTextField(
                         "Email or username",
                         text: $identifier,
-                        placeholder: "you@example.com"
+                        placeholder: "you@example.com",
+                        kind: .emailOrUsername
                     )
-                    .textContentType(.username)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
                     .focused($focusedField, equals: .identifier)
                     .submitLabel(.next)
                     .onSubmit { focusedField = .password }
@@ -56,9 +53,8 @@ struct LoginScreen: View {
                     CalibreTextField(
                         "Password",
                         text: $password,
-                        isSecure: true
+                        kind: .password
                     )
-                    .textContentType(.password)
                     .focused($focusedField, equals: .password)
                     .submitLabel(.go)
                     .onSubmit { if canSubmit { Task { await signIn() } } }

@@ -153,23 +153,46 @@ struct CaptureScreen: View {
     }
 
     private var shutterRow: some View {
-        Button {
-            Haptics.shared.play(.capture)
-            camera.capture(flash: flashOn) { image in
-                captured = image
+        ZStack {
+            // Shutter stays dead-centre; the library sits out to its right.
+            Button {
+                Haptics.shared.play(.capture)
+                camera.capture(flash: flashOn) { image in
+                    captured = image
+                }
+            } label: {
+                ZStack {
+                    Circle()
+                        .strokeBorder(Color(white: 1), lineWidth: 4)
+                        .frame(width: 74, height: 74)
+                    Circle()
+                        .fill(Color(white: 1))
+                        .frame(width: 60, height: 60)
+                }
             }
-        } label: {
-            ZStack {
-                Circle()
-                    .strokeBorder(Color(white: 1), lineWidth: 4)
-                    .frame(width: 74, height: 74)
-                Circle()
-                    .fill(Color(white: 1))
-                    .frame(width: 60, height: 60)
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel("Take photo")
+
+            HStack {
+                Spacer()
+                libraryButton
             }
+            .padding(.horizontal, Space.xl)
         }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel("Take photo")
+    }
+
+    /// Not every good shot happens live — let sellers reach their camera roll
+    /// without backing out of the wizard.
+    private var libraryButton: some View {
+        PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
+            Image(systemName: "photo.on.rectangle")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Color(white: 1))
+                .frame(width: 52, height: 52)
+                .background(Color.black.opacity(0.45), in: Circle())
+                .overlay(Circle().strokeBorder(Color(white: 1).opacity(0.35), lineWidth: 1))
+        }
+        .accessibilityLabel("Choose from library")
     }
 
     private var gridOverlay: some View {

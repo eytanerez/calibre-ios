@@ -1,5 +1,71 @@
 import CalibreDesign
 import SwiftUI
+import UIKit
+
+/// Press-and-hold to scrub the chart.
+///
+/// This is UIKit rather than a SwiftUI `DragGesture` on purpose. A SwiftUI
+/// gesture attached inside a `ScrollView` wins arbitration against the scroll
+/// pan — `simultaneousGesture` included — which left the page unscrollable
+/// whenever a finger landed on a chart. A `UILongPressGestureRecognizer` that
+/// declares itself simultaneous and doesn't cancel touches leaves scrolling
+/// completely untouched: a quick swipe moves past `allowableMovement` before
+/// the press threshold and never starts, so the scroll view just gets it.
+private struct ScrubGestureOverlay: UIViewRepresentable {
+    let onScrub: (CGPoint) -> Void
+    let onEnd: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onScrub: onScrub, onEnd: onEnd)
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        let press = UILongPressGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handle(_:))
+        )
+        press.minimumPressDuration = 0.15
+        press.allowableMovement = 12
+        press.cancelsTouchesInView = false
+        press.delegate = context.coordinator
+        view.addGestureRecognizer(press)
+        return view
+    }
+
+    func updateUIView(_: UIView, context: Context) {
+        context.coordinator.onScrub = onScrub
+        context.coordinator.onEnd = onEnd
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onScrub: (CGPoint) -> Void
+        var onEnd: () -> Void
+
+        init(onScrub: @escaping (CGPoint) -> Void, onEnd: @escaping () -> Void) {
+            self.onScrub = onScrub
+            self.onEnd = onEnd
+        }
+
+        @objc func handle(_ recognizer: UILongPressGestureRecognizer) {
+            guard let view = recognizer.view else { return }
+            switch recognizer.state {
+            case .began, .changed:
+                onScrub(recognizer.location(in: view))
+            case .ended, .cancelled, .failed:
+                onEnd()
+            default:
+                break
+            }
+        }
+
+        func gestureRecognizer(
+            _: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith _: UIGestureRecognizer
+        ) -> Bool { true }
+    }
+}
 
 /// Shared trend tint: green when a series is up over its window, the
 /// destructive red when it's down. Matches the web board's color logic.
@@ -68,6 +134,9 @@ struct MarketAreaChart: View {
     let formatValue: (Double) -> String
 
     @State private var dragIndex: Int?
+    /// Set once per drag, when the finger's intent is clearly sideways. Until
+    /// then the touch belongs to the enclosing scroll view.
+    @State private var scrubbing = false
 
     private static let tooltipDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -177,16 +246,24 @@ struct MarketAreaChart: View {
                         )
                     }
                 }
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { drag in
+                .overlay {
+                    ScrubGestureOverlay(
+                        onScrub: { point in
                             guard series.count > 1 else { return }
-                            let fraction = (drag.location.x - padL) / plotW
+                            if !scrubbing {
+                                scrubbing = true
+                                Haptics.shared.play(.selection)
+                            }
+                            let fraction = (point.x - padL) / plotW
                             let index = Int((fraction * CGFloat(series.count - 1)).rounded())
                             dragIndex = min(max(index, 0), series.count - 1)
+                        },
+                        onEnd: {
+                            scrubbing = false
+                            dragIndex = nil
                         }
-                        .onEnded { _ in dragIndex = nil }
-                )
+                    )
+                }
 
                 if let dragIndex, series.indices.contains(dragIndex), dates.indices.contains(dragIndex) {
                     tooltip(index: dragIndex, xPos: xPos(dragIndex), yPos: yPos(series[dragIndex]), size: size)

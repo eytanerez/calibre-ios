@@ -235,45 +235,59 @@ private struct AddressForm: View {
     @State private var phone = ""
     @State private var makeDefault = true
     @State private var saving = false
+    @State private var confirmingDelete = false
 
     var body: some View {
         SheetScaffold(title: existing == nil ? "Add address" : "Edit address", detents: [.large]) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    CalibreTextField("Full name", text: $fullName)
-                    CalibreTextField("Street", text: $line1)
-                    CalibreTextField("Apt, suite (optional)", text: $line2)
-                    CalibreTextField("City", text: $city)
+                    CalibreTextField("Full name", text: $fullName, kind: .fullName)
+                    CalibreTextField("Street", text: $line1, kind: .addressLine1)
+                    CalibreTextField("Apt, suite (optional)", text: $line2, kind: .addressLine2)
+                    CalibreTextField("City", text: $city, kind: .city)
                     HStack(spacing: Space.m) {
-                        CalibreTextField("State", text: $region)
-                        CalibreTextField("ZIP", text: $postalCode).keyboardType(.numbersAndPunctuation)
+                        CalibreTextField("State", text: $region, kind: .state)
+                        CalibreTextField("ZIP", text: $postalCode, kind: .postalCode)
                     }
                     CalibreTextField(
                         "Country code",
                         text: $country,
                         placeholder: "2-letter, e.g. US",
-                        error: InputValidation.isISO2CountryCode(country) || country.isEmpty ? nil : "Use a 2-letter code like US or CA"
+                        error: InputValidation.isISO2CountryCode(country) || country.isEmpty ? nil : "Use a 2-letter code like US or CA",
+                        kind: .country
                     )
                     CalibreTextField(
                         "Phone",
                         text: $phone,
                         error: InputValidation.isValidPhone(phone, required: false)
                             ? nil
-                            : "Enter a valid phone number, or leave it blank."
+                            : "Enter a valid phone number, or leave it blank.",
+                        kind: .phone
                     )
-                    .keyboardType(.phonePad)
                     Toggle("Set as default shipping address", isOn: $makeDefault)
                         .font(CalibreType.body).tint(Color.calibre.primary)
                     Button(saving ? "Saving…" : "Save address") { Task { await save() } }
                         .buttonStyle(.calibre(.primary, fullWidth: true))
                         .disabled(!isValid || saving)
                     if let existing {
-                        Button(role: .destructive) { Task { await delete(existing) } } label: {
+                        Button(role: .destructive) { confirmingDelete = true } label: {
                             Text("Delete address").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.calibre(.ghost, fullWidth: true))
                         .foregroundStyle(Color.calibre.destructive)
                         .disabled(saving)
+                        .confirmationDialog(
+                            "Delete this address?",
+                            isPresented: $confirmingDelete,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Delete", role: .destructive) {
+                                Task { await delete(existing) }
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("\(existing.line1), \(existing.city) is removed from your account.")
+                        }
                     }
                 }
                 .padding(Space.margin)
@@ -353,7 +367,9 @@ struct PaymentMethodScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(ToastCenter.self) private var toasts
 
-    @State private var method: SavedPaymentMethod?
+    @State private var cards: [WalletCard] = []
+    @State private var defaultCardID: String?
+    @State private var confirmRemove: WalletCard?
     @State private var canRemove = true
     @State private var removeBlockedReason: String?
     @State private var loaded = false
@@ -372,29 +388,17 @@ struct PaymentMethodScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
-                if let method {
+                if !cards.isEmpty {
                     VStack(alignment: .leading, spacing: Space.s) {
-                        HStack(spacing: Space.m) {
-                            IconTile(systemName: "creditcard")
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(method.brand?.capitalized ?? "Card") •••• \(method.last4 ?? "----")")
-                                    .font(CalibreType.bodyMedium).foregroundStyle(Color.calibre.foreground)
-                                if let m = method.expMonth, let y = method.expYear {
-                                    Text("Expires \(m)/\(y % 100)").font(CalibreType.caption)
-                                        .foregroundStyle(Color.calibre.mutedForeground)
-                                }
-                            }
-                            Spacer()
+                        ForEach(cards) { card in
+                            cardRow(card)
                         }
-                        .padding(Space.l)
-                        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
 
                         Button {
                             Task { await startAddOrReplaceCard() }
                         } label: {
                             HStack(spacing: Space.s) {
-                                Text("Replace card")
+                                Text("Add another card")
                                 if isPreparingSetup || isSyncingAfterSetup {
                                     ProgressView().tint(Color.calibre.foreground)
                                 }
@@ -404,18 +408,15 @@ struct PaymentMethodScreen: View {
                         .buttonStyle(.calibre(.secondary, fullWidth: true))
                         .disabled(isPreparingSetup || isSyncingAfterSetup)
 
-                        if canRemove {
-                            Button(role: .destructive) { Task { await removeCard() } } label: {
-                                Text("Remove card").frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.calibre(.ghost, fullWidth: true))
-                            .foregroundStyle(Color.calibre.destructive)
-                            .disabled(isPreparingSetup || isSyncingAfterSetup)
-                        } else if let removeBlockedReason {
+                        if let removeBlockedReason, !canRemove {
                             Text(removeBlockedReason)
                                 .font(CalibreType.caption)
                                 .foregroundStyle(Color.calibre.mutedForeground)
                         }
+
+                        Text("Pick any saved card when you check out. Offer holds use your default.")
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
                     }
                 } else if loadFailed {
                     // Distinct from "no card on file" — a failed fetch used to
@@ -423,7 +424,7 @@ struct PaymentMethodScreen: View {
                     // way to retry short of leaving and re-entering the screen.
                     EmptyState(
                         icon: "wifi.slash",
-                        title: "Couldn't load your payment method",
+                        title: "Couldn't load your cards",
                         message: "Check your connection and try again.",
                         actionTitle: "Try again"
                     ) {
@@ -432,7 +433,7 @@ struct PaymentMethodScreen: View {
                 } else if loaded {
                     EmptyState(
                         icon: "creditcard",
-                        title: "No card on file",
+                        title: "No cards on file",
                         message: "Add a card here, at checkout, or before making an offer — Calibre places a $250 hold to confirm you're serious.",
                         actionTitle: isPreparingSetup || isSyncingAfterSetup ? nil : "Add card"
                     ) {
@@ -469,11 +470,79 @@ struct PaymentMethodScreen: View {
                     }
             }
         }
-        .navigationTitle("Payment method")
+        .navigationTitle("Payment methods")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            "Remove this card?",
+            isPresented: Binding(
+                get: { confirmRemove != nil },
+                set: { if !$0 { confirmRemove = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: confirmRemove
+        ) { card in
+            Button("Remove", role: .destructive) {
+                Task { await removeCard(card) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { card in
+            Text("\(card.displayName) is detached from your account. You can add it again any time.")
+        }
         .task {
             await loadMethod()
         }
+    }
+
+    /// One saved card: the default is marked, the rest can be promoted.
+    private func cardRow(_ card: WalletCard) -> some View {
+        HStack(spacing: Space.m) {
+            IconTile(systemName: "creditcard")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(card.displayName)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                HStack(spacing: Space.s) {
+                    if let expiry = card.expiryLabel {
+                        Text(expiry)
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                    }
+                    if card.id == defaultCardID {
+                        Text("DEFAULT")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.primary)
+                    }
+                }
+            }
+            Spacer()
+            Menu {
+                if card.id != defaultCardID {
+                    Button {
+                        Task { await makeDefault(card) }
+                    } label: {
+                        Label("Make default", systemImage: "checkmark.circle")
+                    }
+                }
+                if canRemove || card.id != defaultCardID {
+                    Button(role: .destructive) {
+                        confirmRemove = card
+                    } label: {
+                        Label("Remove", systemImage: "trash")
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .frame(width: Space.touchTarget, height: Space.touchTarget)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Options for \(card.displayName)")
+        }
+        .padding(.leading, Space.l)
+        .padding(.vertical, Space.s)
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     private func loadMethod() async {
@@ -481,7 +550,7 @@ struct PaymentMethodScreen: View {
         let generation = stateGeneration
         loadFailed = false
         do {
-            let info = try await services.commerce.paymentMethod()
+            let info = try await services.commerce.wallet()
             guard generation == stateGeneration else { return }
             apply(info)
         } catch {
@@ -492,11 +561,23 @@ struct PaymentMethodScreen: View {
         loaded = true
     }
 
-    private func apply(_ info: PaymentMethodInfo) {
-        method = info.paymentMethod
+    private func apply(_ info: WalletInfo) {
+        cards = info.paymentMethods
+        defaultCardID = info.defaultPaymentMethodId
         canRemove = info.canRemove
         removeBlockedReason = info.removeBlockedReason
         loadFailed = false
+    }
+
+    private func makeDefault(_ card: WalletCard) async {
+        do {
+            try await services.commerce.makeCardDefault(id: card.id)
+            defaultCardID = card.id
+            Haptics.shared.play(.selection)
+            await loadMethod()
+        } catch {
+            toasts.show(title: "Couldn't set that card", message: error.orderMessage, tone: .error)
+        }
     }
 
     /// Real Add/Replace: a SetupIntent from the same `/billing/setup-intent`
@@ -545,17 +626,16 @@ struct PaymentMethodScreen: View {
     private func pollForConfirmedCard() async {
         stateGeneration += 1
         let generation = stateGeneration
-        let previousID = method?.id
+        let knownIDs = Set(cards.map(\.id))
         isSyncingAfterSetup = true
         defer { isSyncingAfterSetup = false }
 
         let outcome = await poll(
             maxAttempts: 6,
             delay: { attempt in .seconds(min(1 << attempt, 8)) },
-            fetch: { try await services.commerce.paymentMethod() },
+            fetch: { try await services.commerce.wallet() },
             isReady: { info in
-                guard let newMethod = info.paymentMethod else { return false }
-                return newMethod.id != previousID
+                info.paymentMethods.contains { !knownIDs.contains($0.id) }
             }
         )
 
@@ -575,17 +655,16 @@ struct PaymentMethodScreen: View {
         }
     }
 
-    private func removeCard() async {
+    private func removeCard(_ card: WalletCard) async {
         stateGeneration += 1
         let generation = stateGeneration
         do {
-            try await services.commerce.deletePaymentMethod()
+            try await services.commerce.deleteCard(id: card.id)
             guard generation == stateGeneration else { return }
-            method = nil
-            canRemove = true
-            removeBlockedReason = nil
+            cards.removeAll { $0.id == card.id }
             Haptics.shared.play(.selection)
             toasts.show(title: "Card removed")
+            await loadMethod()
         } catch {
             guard generation == stateGeneration else { return }
             toasts.show(title: "Couldn't remove card", message: error.orderMessage, tone: .error)
@@ -733,16 +812,21 @@ struct ChangePasswordScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
-                CalibreTextField("Current password", text: $current, isSecure: true)
+                CalibreTextField("Current password", text: $current, kind: .password)
                 CalibreTextField(
                     "New password",
                     text: $newPassword,
                     error: newPassword.isEmpty || InputValidation.passwordMeetsRules(newPassword)
                         ? nil
                         : "Use 8+ characters with a capital letter and a number.",
-                    isSecure: true
+                    kind: .newPassword
                 )
-                CalibreTextField("Confirm new password", text: $confirm, error: mismatch ? "Passwords don't match" : nil, isSecure: true)
+                CalibreTextField(
+                    "Confirm new password",
+                    text: $confirm,
+                    error: mismatch ? "Passwords don't match" : nil,
+                    kind: .newPassword
+                )
                 if let errorText {
                     Text(errorText).font(CalibreType.caption).foregroundStyle(Color.calibre.destructive)
                 }

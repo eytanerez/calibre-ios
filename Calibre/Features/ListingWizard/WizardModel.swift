@@ -21,7 +21,13 @@ struct WizardContext: Identifiable {
 
 // MARK: - Condition vocabulary
 
-enum ConditionPart: String, CaseIterable, Identifiable {
+/// Scroll anchors for the wizard's inputs, so pressing Continue can bring the
+/// first offending field into view.
+enum WizardField: Hashable {
+    case brand, year, condition(ConditionPart), price
+}
+
+enum ConditionPart: String, CaseIterable, Identifiable, Hashable {
     case crystal, bezel, bracelet, clasp, caseback, overall
 
     var id: String { rawValue }
@@ -49,6 +55,11 @@ struct WizardPhotoSlot {
     var remoteURL: URL?
     var serverImageID: String?
     var jobID: UUID?
+
+    /// Something the seller can actually look at, locally or on the server.
+    var hasImage: Bool {
+        localURL != nil || remoteURL != nil
+    }
 }
 
 extension ListingImageCategory {
@@ -199,10 +210,6 @@ final class WizardModel {
     private(set) var estimate: ShippingEstimate?
     private(set) var estimating = false
 
-    // Market context ("watches like this listed at…"), loaded when the
-    // Price step appears. Nil until loaded or when the sample is too thin.
-    private(set) var pricingGuidance: PricingGuidance?
-
     // Sync + submit
     private(set) var saveError: String?
     private(set) var submitting = false
@@ -248,9 +255,8 @@ final class WizardModel {
             && ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
     }
 
-    /// What's still missing before Details can advance — shown under the
-    /// disabled Continue button so a seller never hits an inert control with
-    /// no explanation.
+    /// What Details still needs. Used by the Review step's summary and by the
+    /// draft-creation guard — the step itself flags fields inline instead.
     var detailsMissing: [String] {
         var missing: [String] = []
         if !InputValidation.isNonBlank(brand) { missing.append("Brand") }
@@ -261,12 +267,67 @@ final class WizardModel {
         return missing
     }
 
-    /// What's still missing before Price can advance.
+    /// What Price still needs. Notes are optional, so a price is the whole list.
     var priceMissing: [String] {
-        var missing: [String] = []
-        if price == nil { missing.append("Price") }
-        if !InputValidation.isNonBlank(notes) { missing.append("Notes for buyers") }
-        return missing
+        price == nil ? ["Price"] : []
+    }
+
+    // MARK: Field-level validation
+
+    /// Steps where Continue has been pressed at least once. Blank-field errors
+    /// stay quiet until then — a form that scolds you about fields you haven't
+    /// reached yet is just noise.
+    private(set) var attemptedSteps: Set<Int> = []
+
+    func markAttempted(_ step: Int) {
+        attemptedSteps.insert(step)
+    }
+
+    private func attempted(_ step: Int) -> Bool {
+        attemptedSteps.contains(step)
+    }
+
+    var brandError: String? {
+        guard attempted(0), !InputValidation.isNonBlank(brand) else { return nil }
+        return "Enter the brand."
+    }
+
+    /// A year that's been typed wrong is worth flagging straight away; an
+    /// untouched one only after Continue.
+    var yearFieldError: String? {
+        guard !yearUnknown else { return nil }
+        if InputValidation.isNonBlank(yearText) { return yearError }
+        return attempted(0) ? "Enter a 4-digit year, or choose Year unknown." : nil
+    }
+
+    func conditionError(_ part: ConditionPart) -> String? {
+        guard attempted(0), conditions[part] == nil else { return nil }
+        return "Pick a grade."
+    }
+
+    var priceFieldError: String? {
+        if InputValidation.isNonBlank(priceText), price == nil {
+            return "Enter an amount greater than zero, with at most two decimals."
+        }
+        guard attempted(2), price == nil else { return nil }
+        return "Enter your asking price."
+    }
+
+    /// Where to scroll when Continue is pressed on an incomplete step.
+    func firstInvalidField(onStep step: Int) -> WizardField? {
+        switch step {
+        case 0:
+            if brandError != nil { return .brand }
+            if yearFieldError != nil { return .year }
+            if let part = ConditionPart.allCases.first(where: { conditions[$0] == nil }) {
+                return .condition(part)
+            }
+            return nil
+        case 2:
+            return priceFieldError != nil ? .price : nil
+        default:
+            return nil
+        }
     }
 
     // MARK: Bootstrap
@@ -561,28 +622,9 @@ final class WizardModel {
         return price - commission - (estimate?.amount.value ?? 0)
     }
 
+    /// Notes are optional — a price is all the Price step really needs.
     var priceDetailsComplete: Bool {
-        price != nil && InputValidation.isNonBlank(notes)
-    }
-
-    /// Market context for the Price step. Fire-and-forget: a thin sample or
-    /// a network error just means the card stays hidden.
-    func loadPricingGuidance() async {
-        let brandValue = InputValidation.trimmed(brand)
-        guard !brandValue.isEmpty else {
-            pricingGuidance = nil
-            return
-        }
-        do {
-            let guidance = try await seller.pricingGuidance(
-                brand: brandValue,
-                model: InputValidation.trimmed(model),
-                reference: InputValidation.trimmed(reference)
-            )
-            pricingGuidance = guidance.available && guidance.askMedian != nil ? guidance : nil
-        } catch {
-            pricingGuidance = nil
-        }
+        price != nil
     }
 
     /// Debounced shipping estimate — fires as the price settles.
@@ -621,7 +663,7 @@ final class WizardModel {
             return false
         }
         guard priceDetailsComplete else {
-            submitError = "Enter an asking price greater than zero and add notes for buyers."
+            submitError = "Enter an asking price greater than zero."
             return false
         }
         guard allRequiredPhotosDone else {

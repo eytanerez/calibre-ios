@@ -141,7 +141,7 @@ struct OrderDetailScreen: View {
 
     private func listingCard(_ order: Order) -> some View {
         Button {
-            services.router.open(.listing(order.listingId))
+            services.router.push(.listing(order.listingId))
         } label: {
             HStack(spacing: Space.m) {
                 OrderThumb(url: order.listing?.image?.url)
@@ -277,7 +277,8 @@ struct OrderDetailScreen: View {
                     StarRating(selection: $reviewRating)
                     CalibreTextField(
                         "Anything you'd like to add? (optional)",
-                        text: $reviewComment
+                        text: $reviewComment,
+                        kind: .sentence
                     )
                     .onChange(of: reviewComment) { _, value in
                         if value.count > 2_000 {

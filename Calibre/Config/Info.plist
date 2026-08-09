@@ -40,6 +40,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Calibre uses Face ID to keep your vault private, so only you can see the watches you own.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Calibre lets you choose existing photos of your watch when creating a listing.</string>
 	<key>UILaunchScreen</key>

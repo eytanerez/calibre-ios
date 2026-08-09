@@ -101,28 +101,31 @@ struct LabelPurchaseFlow: View {
                 dimensionField("Width", text: $widthText)
                 dimensionField("Height", text: $heightText)
             }
-            CalibreTextField("Weight", text: $weightText, placeholder: "2") {
+            CalibreTextField("Weight", text: $weightText, placeholder: "2", kind: .decimal) {
                 Text("lb")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
-            .keyboardType(.decimalPad)
             .onChange(of: weightText) { _, _ in revalidateAndQuote() }
 
-            CalibreTextField("Notes for the carrier (optional)", text: $notes, placeholder: "Leave at the front desk")
-                .onChange(of: notes) { _, value in
-                    if value.count > 500 { notes = String(value.prefix(500)) }
-                }
+            CalibreTextField(
+                "Notes for the carrier (optional)",
+                text: $notes,
+                placeholder: "Leave at the front desk",
+                kind: .sentence
+            )
+            .onChange(of: notes) { _, value in
+                if value.count > 500 { notes = String(value.prefix(500)) }
+            }
         }
     }
 
     private func dimensionField(_ label: String, text: Binding<String>) -> some View {
-        CalibreTextField(label, text: text, placeholder: "0") {
+        CalibreTextField(label, text: text, placeholder: "0", kind: .decimal) {
             Text("in")
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.mutedForeground)
         }
-        .keyboardType(.decimalPad)
         .onChange(of: text.wrappedValue) { _, _ in revalidateAndQuote() }
     }
 

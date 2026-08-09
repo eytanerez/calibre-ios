@@ -12,12 +12,29 @@ struct DetailsStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             VStack(alignment: .leading, spacing: Space.l) {
-                CalibreTextField("Brand", text: $model.brand, placeholder: "Rolex")
-                    .onChange(of: model.brand) { _, _ in model.fieldChanged() }
-                CalibreTextField("Model", text: $model.model, placeholder: "Submariner Date")
-                    .onChange(of: model.model) { _, _ in model.fieldChanged() }
-                CalibreTextField("Reference", text: $model.reference, placeholder: "116610LN")
-                    .onChange(of: model.reference) { _, _ in model.fieldChanged() }
+                CalibreTextField(
+                    "Brand",
+                    text: $model.brand,
+                    placeholder: "Rolex",
+                    error: model.brandError,
+                    kind: .sentence
+                )
+                .id(WizardField.brand)
+                .onChange(of: model.brand) { _, _ in model.fieldChanged() }
+                CalibreTextField(
+                    "Model",
+                    text: $model.model,
+                    placeholder: "Submariner Date",
+                    kind: .sentence
+                )
+                .onChange(of: model.model) { _, _ in model.fieldChanged() }
+                CalibreTextField(
+                    "Reference",
+                    text: $model.reference,
+                    placeholder: "116610LN",
+                    kind: .reference
+                )
+                .onChange(of: model.reference) { _, _ in model.fieldChanged() }
                 Text("Unusual brands still go to review.")
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
@@ -28,9 +45,10 @@ struct DetailsStep: View {
                     "Year",
                     text: $model.yearText,
                     placeholder: "2019",
-                    error: model.yearText.isEmpty ? nil : model.yearError
+                    error: model.yearFieldError,
+                    kind: .integer
                 )
-                    .keyboardType(.numberPad)
+                    .id(WizardField.year)
                     .disabled(model.yearUnknown)
                     .opacity(model.yearUnknown ? 0.5 : 1)
                     .onChange(of: model.yearText) { _, newValue in
@@ -67,6 +85,7 @@ struct DetailsStep: View {
                     VStack(spacing: 0) {
                         ForEach(Array(ConditionPart.allCases.enumerated()), id: \.element) { index, part in
                             conditionRow(part)
+                                .id(WizardField.condition(part))
                             if index < ConditionPart.allCases.count - 1 {
                                 Rectangle().fill(Color.calibre.border).frame(height: 1)
                             }
@@ -81,41 +100,66 @@ struct DetailsStep: View {
     }
 
     private func conditionRow(_ part: ConditionPart) -> some View {
-        HStack {
-            Text(part.label)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
-            Spacer()
-            Menu {
-                ForEach(ConditionPart.grades, id: \.self) { grade in
-                    Button(grade) {
-                        model.conditions[part] = grade
-                        model.fieldChanged()
-                        Haptics.shared.play(.selection)
+        let error = model.conditionError(part)
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(part.label)
+                    .font(CalibreType.body)
+                    .foregroundStyle(error == nil ? Color.calibre.mutedForeground : Color.calibre.destructive)
+                Spacer()
+                Menu {
+                    ForEach(ConditionPart.grades, id: \.self) { grade in
+                        Button(grade) {
+                            model.conditions[part] = grade
+                            model.fieldChanged()
+                            Haptics.shared.play(.selection)
+                        }
                     }
+                } label: {
+                    HStack(spacing: Space.s) {
+                        Text(model.conditions[part] ?? "Select")
+                            .font(CalibreType.bodyMedium)
+                            .foregroundStyle(
+                                model.conditions[part] == nil
+                                    ? Color.calibre.placeholder
+                                    : Color.calibre.foreground
+                            )
+                            .lineLimit(1)
+                            .fixedSize()
+                            // Reserve room for the longest grade so picking a
+                            // two-word one ("Like New") doesn't resize the
+                            // label. That resize is what made the text blink
+                            // out while the menu animated shut.
+                            .frame(minWidth: Self.gradeLabelWidth, alignment: .trailing)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                    }
+                    .frame(minHeight: Space.touchTarget)
+                    .contentShape(Rectangle())
                 }
-            } label: {
-                HStack(spacing: Space.s) {
-                    Text(model.conditions[part] ?? "Select")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(
-                            model.conditions[part] == nil
-                                ? Color.calibre.placeholder
-                                : Color.calibre.foreground
-                        )
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                }
-                .frame(minHeight: Space.touchTarget)
-                .contentShape(Rectangle())
+                // The menu's dismissal animation must not drag the label
+                // through a crossfade.
+                .transaction { $0.animation = nil }
+            }
+            .frame(minHeight: Space.touchTarget)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(part.label): \(model.conditions[part] ?? "not selected")")
+
+            if let error {
+                Text(error)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.destructive)
+                    .padding(.bottom, Space.s)
+                    .transition(.opacity)
             }
         }
         .padding(.horizontal, Space.l)
-        .frame(minHeight: Space.touchTarget)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(part.label): \(model.conditions[part] ?? "not selected")")
+        .animation(Motion.easeFast, value: error)
     }
+
+    /// Width of "Very Good" at the label's font — the widest grade.
+    private static let gradeLabelWidth: CGFloat = 84
 }
 
 /// "How we grade" — the five grades, in plain words.
@@ -157,6 +201,7 @@ private struct GradeGuideSheet: View {
 struct PhotosStep: View {
     @Bindable var model: WizardModel
     @State private var captureTarget: CaptureTarget?
+    @State private var previewTarget: PhotoReplaceTarget?
     @State private var tutorial = TutorialController(
         id: "sell.wizard.photos",
         steps: [
@@ -229,13 +274,25 @@ struct PhotosStep: View {
                 tutorial.fire("photo")
             }
         }
+        .fullScreenCover(item: $previewTarget) { target in
+            PhotoPreviewScreen(target: target, slot: model.slots[target.category]) { image in
+                Task { await model.attach(image: image, to: target.category) }
+                tutorial.fire("photo")
+            }
+        }
     }
 
     private func slotCell(_ category: ListingImageCategory) -> some View {
         let phase = model.phase(for: category)
         return VStack(spacing: Space.s) {
             Button {
-                captureTarget = CaptureTarget(category: category)
+                // A filled slot opens its photo first; an empty one has
+                // nothing to show, so go straight to the camera.
+                if model.slots[category]?.hasImage == true {
+                    previewTarget = PhotoReplaceTarget(category: category)
+                } else {
+                    captureTarget = CaptureTarget(category: category)
+                }
             } label: {
                 PhotoSlotRing(phase: phase, size: 76) {
                     slotThumbnail(category)
@@ -340,28 +397,24 @@ struct PriceStep: View {
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
 
-            CalibreTextField("Asking price", text: $model.priceText, placeholder: "12,400") {
+            CalibreTextField(
+                "Asking price",
+                text: $model.priceText,
+                placeholder: "12,400",
+                error: model.priceFieldError,
+                kind: .money
+            ) {
                 Text("USD")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
-            .keyboardType(.decimalPad)
+            .id(WizardField.price)
             .onChange(of: model.priceText) { _, _ in model.priceChanged() }
-
-            if InputValidation.isNonBlank(model.priceText), model.price == nil {
-                Text("Enter an amount greater than zero with no more than two decimal places.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
-            }
 
             payoutCard
 
-            if let guidance = model.pricingGuidance {
-                marketContextCard(guidance)
-            }
-
             VStack(alignment: .leading, spacing: Space.s) {
-                Text("Notes for buyers")
+                Text("Notes for buyers (optional)")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.secondaryForeground)
                 TextEditor(text: $model.notes)
@@ -384,60 +437,11 @@ struct PriceStep: View {
                         }
                         model.fieldChanged()
                     }
-                Text(
-                    InputValidation.isNonBlank(model.notes)
-                        ? "\(model.notes.count)/2000"
-                        : "Required · 0/2000"
-                )
+                Text("\(model.notes.count)/2000")
                     .font(CalibreType.caption)
-                    .foregroundStyle(
-                        InputValidation.isNonBlank(model.notes)
-                            ? Color.calibre.mutedForeground
-                            : Color.calibre.destructive
-                    )
+                    .foregroundStyle(Color.calibre.mutedForeground)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-        }
-        .task { await model.loadPricingGuidance() }
-    }
-
-    /// "Watches like this on Calibre listed at $X–Y" — quiet, honest, and
-    /// only shown when the comparable sample is big enough to mean something.
-    private func marketContextCard(_ guidance: PricingGuidance) -> some View {
-        SellCard {
-            VStack(alignment: .leading, spacing: Space.s) {
-                Text("Market context")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .textCase(.uppercase)
-                Text(marketContextLine(guidance))
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
-                Text("Based on \(guidance.sampleSize ?? 0) listings and sales of \(scopeLabel(guidance)) on Calibre. Your price is always your call.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-            }
-            .padding(Space.l)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func marketContextLine(_ guidance: PricingGuidance) -> String {
-        let low = PriceFormatter.format(Decimal(guidance.askMin ?? 0))
-        let high = PriceFormatter.format(Decimal(guidance.askMax ?? 0))
-        let median = PriceFormatter.format(Decimal(guidance.askMedian ?? 0))
-        var line = "Watches like this listed at \(low)–\(high), median \(median)"
-        if let days = guidance.medianDaysToSell {
-            line += ", and sold in about \(Int(days.rounded())) days"
-        }
-        return line + "."
-    }
-
-    private func scopeLabel(_ guidance: PricingGuidance) -> String {
-        switch guidance.scope {
-        case "reference": return "this reference"
-        case "brand_model": return "this model"
-        default: return "this brand"
         }
     }
 

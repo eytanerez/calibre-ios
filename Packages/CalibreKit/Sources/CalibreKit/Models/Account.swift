@@ -172,6 +172,34 @@ public struct PaymentMethodInfo: Decodable, Sendable {
     public let removeBlockedReason: String?
 }
 
+/// One card in the wallet, from `GET /account/payment-methods`.
+public struct WalletCard: Decodable, Sendable, Identifiable, Equatable {
+    public let id: String
+    public let brand: String?
+    public let last4: String?
+    public let expMonth: Int?
+    public let expYear: Int?
+    public let isDefault: Bool
+
+    public var displayName: String {
+        "\(brand?.capitalized ?? "Card") •••• \(last4 ?? "----")"
+    }
+
+    public var expiryLabel: String? {
+        guard let expMonth, let expYear else { return nil }
+        return String(format: "Expires %02d/%02d", expMonth, expYear % 100)
+    }
+}
+
+/// `GET /account/payment-methods` — every card on the Stripe customer, with
+/// which one offers place their hold on.
+public struct WalletInfo: Decodable, Sendable {
+    public let paymentMethods: [WalletCard]
+    public let defaultPaymentMethodId: String?
+    public let canRemove: Bool
+    public let removeBlockedReason: String?
+}
+
 /// A mobile-only Stripe CustomerSession secret. Distinct from the flat
 /// `customer_session` the backend also returns for the web `payment_element`
 /// component — that one does not work with PaymentSheet.

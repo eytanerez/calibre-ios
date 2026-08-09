@@ -113,6 +113,9 @@ struct RootView: View {
             }
         }
         .animation(Motion.easeSlow, value: phase)
+        // One window-level recogniser covers every screen and sheet: tapping
+        // off a field closes the keyboard and drops focus.
+        .dismissesKeyboardOnBackgroundTap()
         // Applied once at the root — sheets and every tab inherit it via the
         // environment, same as the rest of SwiftUI's environment propagation.
         .preferredColorScheme(appearancePreference.colorScheme)

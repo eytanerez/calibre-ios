@@ -180,7 +180,8 @@ private struct AddressRadioCard: View {
 }
 
 /// The inline new-address form. Saves via POST /account/addresses and
-/// auto-selects the result.
+/// auto-selects the result. Fields carry their native autofill content types,
+/// so the keyboard's own address AutoFill works too.
 private struct AddressForm: View {
     @Bindable var model: CheckoutModel
 
@@ -194,67 +195,103 @@ private struct AddressForm: View {
     @State private var phone = ""
     @State private var attempted = false
 
+    /// Most "different addresses" are a small edit of one already on file —
+    /// a work suite, a parent's place on the same street. Start from one
+    /// instead of retyping it.
+    private var quickFillMenu: some View {
+        Menu {
+            ForEach(model.addresses) { address in
+                Button {
+                    fill(from: address)
+                } label: {
+                    Text("\(address.line1), \(address.city)")
+                }
+            }
+        } label: {
+            Label("Start from a saved address", systemImage: "square.on.square")
+                .font(CalibreType.bodyMedium)
+                .foregroundStyle(Color.calibre.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minHeight: Space.touchTarget)
+                .contentShape(Rectangle())
+        }
+    }
+
+    private func fill(from address: Address) {
+        Haptics.shared.play(.selection)
+        fullName = address.fullName
+            ?? [address.firstName, address.lastName].compactMap { $0 }.joined(separator: " ")
+        street = address.line1
+        apartment = address.line2 ?? ""
+        city = address.city
+        state = address.region ?? ""
+        zip = address.postalCode
+        country = address.country
+        phone = address.phone ?? ""
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: Space.l) {
+            if !model.addresses.isEmpty {
+                quickFillMenu
+            }
+
             CalibreTextField(
                 "Full name",
                 text: $fullName,
                 placeholder: "First and last name",
-                error: fieldError(fullName, "Enter the recipient's name.")
+                error: fieldError(fullName, "Enter the recipient's name."),
+                kind: .fullName
             )
-            .textContentType(.name)
 
             CalibreTextField(
                 "Street address",
                 text: $street,
                 placeholder: "Street and number",
-                error: fieldError(street, "Enter a street address.")
+                error: fieldError(street, "Enter a street address."),
+                kind: .addressLine1
             )
-            .textContentType(.streetAddressLine1)
 
-            CalibreTextField("Apt, suite, unit (optional)", text: $apartment)
-                .textContentType(.streetAddressLine2)
+            CalibreTextField("Apt, suite, unit (optional)", text: $apartment, kind: .addressLine2)
 
             CalibreTextField(
                 "City",
                 text: $city,
-                error: fieldError(city, "Enter a city.")
+                error: fieldError(city, "Enter a city."),
+                kind: .city
             )
-            .textContentType(.addressCity)
 
             HStack(alignment: .top, spacing: Space.m) {
                 CalibreTextField(
                     "State",
                     text: $state,
                     placeholder: "e.g. NY",
-                    error: fieldError(state, "Required.")
+                    error: fieldError(state, "Required."),
+                    kind: .state
                 )
-                .textContentType(.addressState)
 
                 CalibreTextField(
                     "ZIP",
                     text: $zip,
-                    error: fieldError(zip, "Required.")
+                    error: fieldError(zip, "Required."),
+                    kind: .postalCode
                 )
-                .textContentType(.postalCode)
-                .keyboardType(.numbersAndPunctuation)
             }
 
             CalibreTextField(
                 "Country",
                 text: $country,
-                error: countryError
+                error: countryError,
+                kind: .country
             )
-            .textContentType(.countryName)
 
             CalibreTextField(
                 "Phone (optional)",
                 text: $phone,
                 placeholder: "For delivery questions",
-                error: phoneError
+                error: phoneError,
+                kind: .phone
             )
-                .textContentType(.telephoneNumber)
-                .keyboardType(.phonePad)
 
             if let error = model.addressFormError {
                 InlineErrorLine(message: error)

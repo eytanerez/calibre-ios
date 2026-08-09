@@ -12,6 +12,7 @@ struct RequestsScreen: View {
     @State private var requests: [WatchRequest] = []
     @State private var loaded = false
     @State private var showNew = false
+    @State private var confirmDelete: WatchRequest?
 
     var body: some View {
         Group {
@@ -37,10 +38,10 @@ struct RequestsScreen: View {
                         ForEach(requests) { request in
                             RequestRow(request: request) {
                                 if let listingID = request.fulfilledListingId {
-                                    services.router.open(.listing(listingID))
+                                    services.router.push(.listing(listingID))
                                 }
                             } onDelete: {
-                                Task { await delete(request) }
+                                confirmDelete = request
                             }
                         }
                     }
@@ -63,6 +64,22 @@ struct RequestsScreen: View {
             NewRequestSheet { created in
                 requests.insert(created, at: 0)
             }
+        }
+        .confirmationDialog(
+            "Remove this request?",
+            isPresented: Binding(
+                get: { confirmDelete != nil },
+                set: { if !$0 { confirmDelete = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: confirmDelete
+        ) { request in
+            Button("Remove", role: .destructive) {
+                Task { await delete(request) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { request in
+            Text("We'll stop looking for \([request.brand, request.model].compactMap { $0 }.joined(separator: " ")).")
         }
         .task(id: session.isAuthenticated) {
             guard session.isAuthenticated else { return }
@@ -161,22 +178,22 @@ private struct NewRequestSheet: View {
                 VStack(alignment: .leading, spacing: Space.l) {
                     Text("Tell us what you're hunting. Sellers see open requests and list against them.")
                         .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
-                    CalibreTextField("Brand (required)", text: $brand)
-                    CalibreTextField("Model", text: $model)
-                    CalibreTextField("Reference", text: $reference)
+                    CalibreTextField("Brand (required)", text: $brand, kind: .sentence)
+                    CalibreTextField("Model", text: $model, kind: .sentence)
+                    CalibreTextField("Reference", text: $reference, kind: .reference)
                     CalibreTextField(
                         "Year",
                         text: $year,
-                        error: yearError
+                        error: yearError,
+                        kind: .integer
                     )
-                    .keyboardType(.numberPad)
                     CalibreTextField(
                         "Max budget (USD)",
                         text: $budget,
-                        error: budgetError
+                        error: budgetError,
+                        kind: .money
                     )
-                    .keyboardType(.decimalPad)
-                    CalibreTextField("Notes", text: $notes)
+                    CalibreTextField("Notes", text: $notes, kind: .sentence)
                         .onChange(of: notes) { _, value in
                             if value.count > 2_000 { notes = String(value.prefix(2_000)) }
                         }

@@ -29,15 +29,11 @@ struct AuthGateSheet: View {
                     CalibreTextField(
                         "Email or username",
                         text: $identifier,
-                        placeholder: "you@example.com"
+                        placeholder: "you@example.com",
+                        kind: .emailOrUsername
                     )
-                    .textContentType(.username)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
 
-                    CalibreTextField("Password", text: $password, isSecure: true)
-                        .textContentType(.password)
+                    CalibreTextField("Password", text: $password, kind: .password)
                         .submitLabel(.go)
                         .onSubmit { if canSubmit { Task { await signIn() } } }
 

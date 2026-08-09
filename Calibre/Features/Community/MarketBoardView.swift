@@ -227,24 +227,15 @@ struct MarketBoardView: View {
 
             searchField
 
-            ChipRail {
-                FilterChip("All brands", isSelected: selectedBrand == nil) { selectedBrand = nil }
-                ForEach(brands, id: \.self) { brand in
-                    FilterChip(brand, isSelected: selectedBrand == brand) {
-                        selectedBrand = selectedBrand == brand ? nil : brand
-                    }
-                }
-            }
-            .padding(.horizontal, -Space.margin)
-
-            HStack {
-                ChipRail {
-                    ForEach(TrendFilter.allCases) { option in
-                        FilterChip(option.label, isSelected: trend == option) { trend = option }
-                    }
-                }
-                Spacer(minLength: Space.m)
+            HStack(spacing: Space.m) {
+                brandMenu
                 sortMenu
+            }
+
+            ChipRail {
+                ForEach(TrendFilter.allCases) { option in
+                    FilterChip(option.label, isSelected: trend == option) { trend = option }
+                }
             }
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.l), GridItem(.flexible(), spacing: Space.l)], spacing: Space.l) {
@@ -310,6 +301,23 @@ struct MarketBoardView: View {
         .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
+    private var brandMenu: some View {
+        Menu {
+            Picker("Brand", selection: $selectedBrand) {
+                Text("All brands").tag(String?.none)
+                ForEach(brands, id: \.self) { brand in
+                    Text(brand).tag(String?.some(brand))
+                }
+            }
+        } label: {
+            dropdownLabel(
+                icon: "tag",
+                title: selectedBrand ?? "All brands"
+            )
+        }
+        .accessibilityLabel("Brand filter, \(selectedBrand ?? "all brands")")
+    }
+
     private var sortMenu: some View {
         Menu {
             Picker("Sort", selection: $sort) {
@@ -318,18 +326,29 @@ struct MarketBoardView: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.arrow.down").font(.system(size: 13, weight: .medium))
-                Text("Sort").font(CalibreType.label)
-            }
-            .foregroundStyle(Color.calibre.foreground)
-            .padding(.horizontal, Space.m)
-            .frame(minHeight: 36)
-            .background(Color.calibre.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+            dropdownLabel(icon: "arrow.up.arrow.down", title: sort.label)
         }
+        .accessibilityLabel("Sort, \(sort.label)")
+    }
+
+    /// Shared pill for the board's two dropdowns: icon, current value, caret.
+    private func dropdownLabel(icon: String, title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 12, weight: .medium))
+            Text(title)
+                .font(CalibreType.label)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 2)
+            Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+        }
+        .foregroundStyle(Color.calibre.foreground)
+        .padding(.horizontal, Space.m)
+        .frame(maxWidth: .infinity)
         .frame(minHeight: Space.touchTarget)
-        .accessibilityLabel("Sort")
+        .background(Color.calibre.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+        .contentShape(Capsule())
     }
 }
 

@@ -59,6 +59,7 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSCameraUsageDescription: Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
         NSPhotoLibraryUsageDescription: Calibre lets you choose existing photos of your watch when creating a listing.
+        NSFaceIDUsageDescription: Calibre uses Face ID to keep your vault private, so only you can see the watches you own.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         CFBundleURLTypes:

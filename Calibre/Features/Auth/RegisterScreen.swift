@@ -116,27 +116,28 @@ struct RegisterScreen: View {
     private var stepOne: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             HStack(alignment: .top, spacing: Space.m) {
-                CalibreTextField("First name", text: $firstName)
-                    .textContentType(.givenName)
-                CalibreTextField("Last name", text: $lastName)
-                    .textContentType(.familyName)
+                CalibreTextField("First name", text: $firstName, kind: .givenName)
+                CalibreTextField("Last name", text: $lastName, kind: .familyName)
             }
 
-            CalibreTextField("Email", text: $email, placeholder: "you@example.com")
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+            CalibreTextField(
+                "Email",
+                text: $email,
+                placeholder: "you@example.com",
+                kind: .email
+            )
 
-            CalibreTextField("Phone", text: $phone, placeholder: "+1 555 000 1234")
-                .textContentType(.telephoneNumber)
-                .keyboardType(.phonePad)
+            CalibreTextField(
+                "Phone",
+                text: $phone,
+                placeholder: "+1 555 000 1234",
+                kind: .phone
+            )
 
             usernameField
 
             VStack(alignment: .leading, spacing: Space.m) {
-                CalibreTextField("Password", text: $password, isSecure: true)
-                    .textContentType(Self.newPasswordContentType)
+                CalibreTextField("Password", text: $password, kind: .newPassword)
                 passwordChecklist
             }
 
@@ -146,12 +147,14 @@ struct RegisterScreen: View {
 
     private var usernameField: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            CalibreTextField("Username", text: $username, placeholder: "e.g. dialside") {
+            CalibreTextField(
+                "Username",
+                text: $username,
+                placeholder: "e.g. dialside",
+                kind: .username
+            ) {
                 usernameAccessory
             }
-            .textContentType(.username)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
 
             if let caption = usernameState.caption {
                 Text(caption.text)
@@ -209,7 +212,7 @@ struct RegisterScreen: View {
 
     private var confirmPasswordField: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            CalibreTextField("Confirm password", text: $confirmPassword, isSecure: true) {
+            CalibreTextField("Confirm password", text: $confirmPassword, kind: .newPassword) {
                 if !confirmPassword.isEmpty {
                     Image(systemName: passwordsMatch ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .font(.system(size: 15))
@@ -217,7 +220,6 @@ struct RegisterScreen: View {
                         .accessibilityLabel(passwordsMatch ? "Passwords match" : "Passwords don't match")
                 }
             }
-            .textContentType(Self.newPasswordContentType)
 
             if !confirmPassword.isEmpty && !passwordsMatch {
                 Text("These passwords don't match yet.")
@@ -233,34 +235,27 @@ struct RegisterScreen: View {
 
     private var stepTwo: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            CalibreTextField("Full name", text: $addressFullName)
-                .textContentType(.name)
+            CalibreTextField("Full name", text: $addressFullName, kind: .fullName)
 
-            CalibreTextField("Street address", text: $street, placeholder: "123 Meridian Ave")
-                .textContentType(.streetAddressLine1)
+            CalibreTextField(
+                "Street address",
+                text: $street,
+                placeholder: "123 Meridian Ave",
+                kind: .addressLine1
+            )
 
-            CalibreTextField("Apartment, suite (optional)", text: $apartment)
-                .textContentType(.streetAddressLine2)
+            CalibreTextField("Apartment, suite (optional)", text: $apartment, kind: .addressLine2)
 
-            CalibreTextField("City", text: $city)
-                .textContentType(.addressCity)
+            CalibreTextField("City", text: $city, kind: .city)
 
             HStack(alignment: .top, spacing: Space.m) {
-                CalibreTextField("ZIP", text: $zip)
-                    .textContentType(.postalCode)
-                    .keyboardType(.numbersAndPunctuation)
-                CalibreTextField("State", text: $state, placeholder: "NY")
-                    .textContentType(.addressState)
+                CalibreTextField("ZIP", text: $zip, kind: .postalCode)
+                CalibreTextField("State", text: $state, placeholder: "NY", kind: .state)
             }
 
-            CalibreTextField("Country", text: $country, placeholder: "US")
-                .textContentType(.countryName)
-                .textInputAutocapitalization(.characters)
-                .autocorrectionDisabled()
+            CalibreTextField("Country", text: $country, placeholder: "US", kind: .country)
 
-            CalibreTextField("Phone", text: $phone)
-                .textContentType(.telephoneNumber)
-                .keyboardType(.phonePad)
+            CalibreTextField("Phone", text: $phone, kind: .phone)
         }
     }
 
