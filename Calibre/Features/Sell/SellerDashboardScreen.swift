@@ -591,12 +591,9 @@ struct SellerDashboardScreen: View {
             emptyInventory.sellRow()
         } else {
             ForEach(visibleListings) { listing in
-                inventoryRow(listing)
+                inventoryRow(listing, actions: inventoryRowActions(listing))
                     .sellRow(bottom: Space.m)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        swipeButtons(listing)
-                    }
-                    .contextMenu { rowContextMenu(listing) }
+                    .rowActions(inventoryRowActions(listing))
             }
             if filteredListings.count > Self.inventoryPreviewCount {
                 inventoryToggle.sellRow(bottom: Space.m)
@@ -660,7 +657,7 @@ struct SellerDashboardScreen: View {
         }
     }
 
-    private func inventoryRow(_ listing: Listing) -> some View {
+    private func inventoryRow(_ listing: Listing, actions: [RowAction] = []) -> some View {
         let badge = SellerStatusDisplay.badge(for: listing)
         let rejectionNote = rejectionReason(listing)
         return Button {
@@ -690,6 +687,7 @@ struct SellerDashboardScreen: View {
                         }
                     }
                     Spacer(minLength: 0)
+                    RowActionsMenu(actions: actions, label: "Options for \(listing.title)")
                 }
                 if let rejectionNote {
                     CalloutBand(icon: "exclamationmark.bubble", message: rejectionNote)
@@ -716,60 +714,31 @@ struct SellerDashboardScreen: View {
         return note ?? "Our review team asked for changes. Edit and resubmit when ready."
     }
 
-    @ViewBuilder
-    private func swipeButtons(_ listing: Listing) -> some View {
-        Button {
-            openWizard(listing.status == .draft ? .finishDraft(listing) : .edit(listing))
-        } label: {
-            Label("Edit", systemImage: "square.and.pencil")
-        }
-        .tint(Color.calibre.primary)
-
-        if listing.status == .draft {
-            Button {
-                confirmSubmit = listing
-            } label: {
-                Label("Submit", systemImage: "paperplane")
+    /// One definition per listing. The swipe rail, the ⋯ menu and long-press
+    /// are all built from this, so a row can't offer different things
+    /// depending on how you reach for it.
+    private func inventoryRowActions(_ listing: Listing) -> [RowAction] {
+        var actions: [RowAction] = [
+            RowAction("Edit", systemImage: "square.and.pencil") {
+                openWizard(listing.status == .draft ? .finishDraft(listing) : .edit(listing))
             }
-            .tint(Color.calibre.success)
+        ]
+        if listing.status == .draft {
+            actions.append(
+                RowAction("Submit", systemImage: "paperplane", tint: Color.calibre.success) {
+                    confirmSubmit = listing
+                }
+            )
         }
-
         // Sold listings are attached to an order and can't be removed.
         if listing.status != .sold {
-            Button(role: .destructive) {
-                confirmDelete = listing
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            .tint(Color.calibre.destructive)
+            actions.append(
+                RowAction("Delete", systemImage: "trash", isDestructive: true) {
+                    confirmDelete = listing
+                }
+            )
         }
-    }
-
-    /// The same actions a swipe offers, on a long press — swiping is easy to
-    /// miss, and holding a row is the other thing people try.
-    @ViewBuilder
-    private func rowContextMenu(_ listing: Listing) -> some View {
-        Button {
-            openWizard(listing.status == .draft ? .finishDraft(listing) : .edit(listing))
-        } label: {
-            Label("Edit", systemImage: "square.and.pencil")
-        }
-
-        if listing.status == .draft {
-            Button {
-                confirmSubmit = listing
-            } label: {
-                Label("Submit for review", systemImage: "paperplane")
-            }
-        }
-
-        if listing.status != .sold {
-            Button(role: .destructive) {
-                confirmDelete = listing
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-        }
+        return actions
     }
 
     private func openListing(_ listing: Listing) {

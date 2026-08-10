@@ -36,13 +36,8 @@ struct RequestsScreen: View {
                 ScrollView {
                     LazyVStack(spacing: Space.m) {
                         ForEach(requests) { request in
-                            RequestRow(request: request) {
-                                if let listingID = request.fulfilledListingId {
-                                    services.router.push(.listing(listingID))
-                                }
-                            } onDelete: {
-                                confirmDelete = request
-                            }
+                            RequestRow(request: request, actions: rowActions(for: request))
+                                .rowActions(rowActions(for: request))
                         }
                     }
                     .padding(Space.margin)
@@ -87,6 +82,24 @@ struct RequestsScreen: View {
         }
     }
 
+    /// One definition, shared by the ⋯ menu, the swipe and long-press.
+    private func rowActions(for request: WatchRequest) -> [RowAction] {
+        var actions: [RowAction] = []
+        if request.status == .fulfilled, let listingID = request.fulfilledListingId {
+            actions.append(
+                RowAction("View match", systemImage: "arrow.up.right") {
+                    services.router.push(.listing(listingID))
+                }
+            )
+        }
+        actions.append(
+            RowAction("Remove request", systemImage: "trash", isDestructive: true) {
+                confirmDelete = request
+            }
+        )
+        return actions
+    }
+
     private func load() async {
         requests = (try? await services.seller.myWatchRequests()) ?? []
         loaded = true
@@ -105,8 +118,7 @@ struct RequestsScreen: View {
 
 private struct RequestRow: View {
     let request: WatchRequest
-    let onViewMatch: () -> Void
-    let onDelete: () -> Void
+    let actions: [RowAction]
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
@@ -135,14 +147,15 @@ private struct RequestRow: View {
                 Text(notes).font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground).lineLimit(2)
             }
             HStack(spacing: Space.m) {
-                if request.status == .fulfilled, request.fulfilledListingId != nil {
-                    Button("View match", action: onViewMatch).buttonStyle(.calibre(.secondary))
+                if let match = actions.first, request.status == .fulfilled {
+                    Button(match.title) { match.action() }
+                        .buttonStyle(.calibre(.secondary))
                 }
                 Spacer()
-                Button(role: .destructive, action: onDelete) {
-                    Image(systemName: "trash").foregroundStyle(Color.calibre.destructive)
-                }
-                .accessibilityLabel("Remove request")
+                RowActionsMenu(
+                    actions: actions,
+                    label: "Options for this request"
+                )
             }
         }
         .padding(Space.l)
