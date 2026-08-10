@@ -49,12 +49,6 @@ struct CommunityScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("Community")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(for: CommunityRoute.self) { route in
-            switch route {
-            case .poll(let prompt):
-                PollDetailScreen(prompt: prompt)
-            }
-        }
         .refreshable { await load() }
         .task { await load() }
         .onChange(of: session.isAuthenticated) {
@@ -128,7 +122,7 @@ struct CommunityScreen: View {
                                 if index > 0 {
                                     Rectangle().fill(Color.calibre.border).frame(height: 1)
                                 }
-                                NavigationLink(value: CommunityRoute.poll(prompt)) {
+                                NavigationLink(value: Route.poll(prompt)) {
                                     RecentResultRow(prompt: prompt)
                                 }
                                 .buttonStyle(PressableStyle())
@@ -248,11 +242,6 @@ private struct RecentResultRow: View {
                 .padding(.trailing, Space.l)
         }
     }
-}
-
-/// Where the Community tab can navigate within itself.
-enum CommunityRoute: Hashable {
-    case poll(CommunityPrompt)
 }
 
 /// A live question or poll: options while unanswered, refined result bars

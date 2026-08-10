@@ -94,6 +94,8 @@ struct RouteDestinationView: View {
         case .journalArticle(let id):
             JournalArticleScreen(articleID: id)
                 .browseStackNode()
+        case .poll(let prompt):
+            PollDetailScreen(prompt: prompt)
         case .order(let id):
             OrderDetailScreen(orderID: id)
         case .offer(let id):

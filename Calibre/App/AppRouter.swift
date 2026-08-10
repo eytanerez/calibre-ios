@@ -1,3 +1,4 @@
+import CalibreKit
 import Foundation
 import Observation
 import SwiftUI
@@ -20,6 +21,8 @@ enum Route: Hashable {
     case supportChat
     case alerts
     case checkout(String, offerID: String?)
+    /// A past poll's own page, carried by value — there's no fetch-by-id yet.
+    case poll(CommunityPrompt)
 }
 
 /// A checkout the app is presenting as a full-screen cover. Checkout owns its
@@ -130,7 +133,7 @@ final class AppRouter {
         switch route {
         case .listing, .seller, .brand, .checkout:
             .home
-        case .journal, .journalArticle:
+        case .journal, .journalArticle, .poll:
             .community
         case .order, .offer, .alerts, .supportChat:
             .you
