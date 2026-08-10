@@ -136,9 +136,39 @@ enum CalibreStripe {
             completion(.failed(error: PresentationError.noPresenter))
             return
         }
-        sheet.present(from: presenter, completion: completion)
+        beginHidingDoneAccessory()
+        sheet.present(from: presenter) { result in
+            endHidingDoneAccessory()
+            completion(result)
+        }
     }
 
+    // MARK: - The floating tick
+
+    @MainActor private static let doneAccessoryStripper = DoneAccessoryStripper()
+
+    /// Drops the "Done" bar Stripe hangs off its card fields.
+    ///
+    /// Stripe sets an `inputAccessoryView` on every field whose keyboard has no
+    /// return key to dismiss with — the card number, expiry, CVC and postcode.
+    /// It's a `UIToolbar` holding a single `.done` item tinted
+    /// `appearance.colors.primary`, and iOS 26 draws a one-item toolbar as a
+    /// floating circular glass button. The result is an unexplained chocolate
+    /// tick hovering over the Pay button. There is no SDK switch for it, so we
+    /// clear the accessory as each field starts editing.
+    ///
+    /// Nothing is lost: `dismissesKeyboardOnBackgroundTap` installs its
+    /// recogniser on the *window*, and the sheet is presented into that same
+    /// window, so tapping anywhere off a field still closes the keypad.
+    @MainActor
+    private static func beginHidingDoneAccessory() {
+        doneAccessoryStripper.start()
+    }
+
+    @MainActor
+    private static func endHidingDoneAccessory() {
+        doneAccessoryStripper.stop()
+    }
     /// Walks the presentation chain from the active window's root so the sheet
     /// comes up over whatever is already modal — checkout runs inside a
     /// full-screen cover, offers inside a sheet.
@@ -165,5 +195,42 @@ enum CalibreStripe {
         var errorDescription: String? {
             "We couldn't open the payment sheet. Please try again."
         }
+    }
+}
+
+/// Listens while a Stripe sheet is up and clears the toolbar accessory from any
+/// field that starts editing. A selector-based observer rather than a block:
+/// UIKit posts this on the main thread, and `@objc` dispatch keeps the
+/// non-`Sendable` `Notification` from crossing an isolation boundary.
+@MainActor
+private final class DoneAccessoryStripper: NSObject {
+    private var listening = false
+
+    func start() {
+        guard !listening else { return }
+        listening = true
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(fieldDidBeginEditing),
+            name: UITextField.textDidBeginEditingNotification,
+            object: nil
+        )
+    }
+
+    func stop() {
+        guard listening else { return }
+        listening = false
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UITextField.textDidBeginEditingNotification,
+            object: nil
+        )
+    }
+
+    @objc private func fieldDidBeginEditing(_ note: Notification) {
+        guard let field = note.object as? UITextField,
+              field.inputAccessoryView is UIToolbar else { return }
+        field.inputAccessoryView = nil
+        field.reloadInputViews()
     }
 }
