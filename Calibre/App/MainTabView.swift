@@ -15,7 +15,6 @@ struct MainTabView: View {
                 HomeScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .supportButtonOverlay()
             .tabItem { Label("Home", systemImage: "house") }
             .tag(AppTab.home)
 
@@ -23,7 +22,6 @@ struct MainTabView: View {
                 CommunityScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .supportButtonOverlay()
             .tabItem { Label("Community", systemImage: "bubble.left.and.bubble.right") }
             .tag(AppTab.community)
 
@@ -31,7 +29,6 @@ struct MainTabView: View {
                 SellScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .supportButtonOverlay()
             .tabItem { Label("Sell", systemImage: "plus.circle.fill") }
             .tag(AppTab.sell)
 
@@ -39,7 +36,6 @@ struct MainTabView: View {
                 CollectionScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .supportButtonOverlay()
             .tabItem { Label("Vault", systemImage: "latch.2.case") }
             .tag(AppTab.collection)
 
@@ -47,7 +43,6 @@ struct MainTabView: View {
                 YouScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
-            .supportButtonOverlay()
             .tabItem { Label("Me", systemImage: "person") }
             .tag(AppTab.you)
         }

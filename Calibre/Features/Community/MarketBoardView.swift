@@ -227,15 +227,21 @@ struct MarketBoardView: View {
 
             searchField
 
-            HStack(spacing: Space.m) {
+            // A grid, not a row of chips: the trend rail was the one
+            // horizontally-scrolling thing left on this page, and at large
+            // Dynamic Type its content outgrew the screen and let the whole
+            // board slide sideways. Three dropdowns can't scroll at all, and
+            // they wrap instead of overflowing.
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: Space.m),
+                    GridItem(.flexible(), spacing: Space.m),
+                ],
+                spacing: Space.m
+            ) {
                 brandMenu
                 sortMenu
-            }
-
-            ChipRail {
-                ForEach(TrendFilter.allCases) { option in
-                    FilterChip(option.label, isSelected: trend == option) { trend = option }
-                }
+                trendMenu
             }
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.l), GridItem(.flexible(), spacing: Space.l)], spacing: Space.l) {
@@ -316,6 +322,19 @@ struct MarketBoardView: View {
             )
         }
         .accessibilityLabel("Brand filter, \(selectedBrand ?? "all brands")")
+    }
+
+    private var trendMenu: some View {
+        Menu {
+            Picker("Trend", selection: $trend) {
+                ForEach(TrendFilter.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+        } label: {
+            dropdownLabel(icon: "chart.line.uptrend.xyaxis", title: trend.label)
+        }
+        .accessibilityLabel("Trend filter, \(trend.label)")
     }
 
     private var sortMenu: some View {
