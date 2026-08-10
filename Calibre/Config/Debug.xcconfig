@@ -5,9 +5,10 @@ API_BASE_URL[sdk=iphonesimulator*] = http:/$()/localhost:8000
 API_BASE_URL[sdk=iphoneos*] = https:/$()/selections-ooo-retreat-pix.trycloudflare.com
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
 
-// Apple Pay ships only where the build can actually complete one: it needs
-// the com.apple.developer.in-app-payments entitlement and a merchant id
-// registered to a paid Apple Developer account. Sideloaded builds signed
-// with a free Apple ID can carry neither, so they stay cards-only. Flip this
-// to YES in the same configuration that adds the entitlement.
-APPLE_PAY_ENABLED = NO
+// Shows Apple Pay in the payment sheet. Completing one additionally needs the
+// com.apple.developer.in-app-payments entitlement and merchant id
+// merchant.com.buycalibre.calibre registered to a *paid* Apple Developer
+// account. Until that exists, Apple Pay works in the Simulator and fails at
+// authorization on a sideloaded device — the entitlement is deliberately not
+// in Calibre.entitlements, because a free-Apple-ID re-sign can't carry it.
+APPLE_PAY_ENABLED = YES
