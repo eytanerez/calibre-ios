@@ -63,6 +63,18 @@ final class AppRouter {
     /// The checkout cover currently presented, if any.
     var checkoutRequest: CheckoutRequest?
 
+    /// A listing the Vault asked us to start. The wizard needs the Sell tab's
+    /// `SellSession`, so the Vault parks the prefill here and switches tabs;
+    /// the seller dashboard picks it up and opens the wizard — which also
+    /// means the seller gate still applies to people who can't list yet.
+    var pendingListingPrefill: ListingPrefill?
+
+    /// Send the seller to a fresh listing prefilled from one of their watches.
+    func startListing(prefill: ListingPrefill) {
+        pendingListingPrefill = prefill
+        selectedTab = .sell
+    }
+
     /// Presents checkout for a listing (optionally an accepted offer) as a
     /// full-screen cover above the tab shell.
     func presentCheckout(listingID: String, offerID: String? = nil) {

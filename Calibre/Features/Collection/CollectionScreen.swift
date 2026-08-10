@@ -203,6 +203,9 @@ struct CollectionScreen: View {
                 ForEach(watches) { watch in
                     CollectionWatchCard(watch: watch) {
                         confirmRemove = watch
+                    } onList: {
+                        Haptics.shared.play(.press)
+                        services.router.startListing(prefill: ListingPrefill(vaultWatch: watch))
                     } onPassport: { code in
                         if let url = URL(string: "https://buycalibre.com/passport/\(code)") {
                             openURL(url)
@@ -235,7 +238,29 @@ struct CollectionScreen: View {
 private struct CollectionWatchCard: View {
     let watch: VaultWatch
     let onRemove: () -> Void
+    let onList: () -> Void
     let onPassport: (String) -> Void
+
+    /// One definition, shared by the ⋯ menu and the long-press menu, so both
+    /// always offer exactly the same things.
+    @ViewBuilder
+    private var rowActions: some View {
+        Button {
+            onList()
+        } label: {
+            Label("List on Calibre", systemImage: "tag")
+        }
+        if let code = watch.passportCode {
+            Button {
+                onPassport(code)
+            } label: {
+                Label("View Passport", systemImage: "doc.text")
+            }
+        }
+        Button(role: .destructive, action: onRemove) {
+            Label("Remove from vault", systemImage: "trash")
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
@@ -266,26 +291,22 @@ private struct CollectionWatchCard: View {
                 metric(label: "Acquired for", value: money(watch.acquiredPrice))
             }
 
-            HStack {
-                if let code = watch.passportCode {
-                    Button {
-                        onPassport(code)
-                    } label: {
-                        Text("View Passport")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.primary)
-                    }
-                    .buttonStyle(.plain)
-                }
+            HStack(spacing: Space.m) {
+                Button("List on Calibre", action: onList)
+                    .buttonStyle(.calibre(.secondary))
+
                 Spacer()
-                Button(role: .destructive) {
-                    onRemove()
+
+                Menu {
+                    rowActions
                 } label: {
-                    Text("Remove")
-                        .font(CalibreType.caption)
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.calibre.mutedForeground)
+                        .frame(width: Space.touchTarget, height: Space.touchTarget)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .accessibilityLabel("Options for \(watch.displayTitle)")
             }
         }
         .padding(Space.l)
@@ -294,6 +315,7 @@ private struct CollectionWatchCard: View {
             Color.calibre.card,
             in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
         )
+        .contextMenu { rowActions }
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)

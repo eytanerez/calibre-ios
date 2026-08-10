@@ -122,6 +122,11 @@ struct SellerDashboardScreen: View {
             // skeleton never resolved.
             await load()
             tutorial.startIfNeeded()
+            consumePendingPrefill()
+        }
+        // The Vault parks a prefill on the router and switches to this tab.
+        .onChange(of: router.pendingListingPrefill) { _, _ in
+            consumePendingPrefill()
         }
         .fullScreenCover(item: $wizardContext) { context in
             ListingWizardScreen(context: context) {
@@ -136,7 +141,7 @@ struct SellerDashboardScreen: View {
         }
         .sheet(isPresented: $showOpenRequests) {
             OpenBuyerRequestsScreen(requests: requests) { request in
-                openWizard(.new(prefill: request))
+                openWizard(.new(prefill: ListingPrefill(request: request)))
             }
         }
         .confirmationDialog(
@@ -935,6 +940,12 @@ struct SellerDashboardScreen: View {
     }
 
     // MARK: - Wizard
+
+    private func consumePendingPrefill() {
+        guard let prefill = router.pendingListingPrefill else { return }
+        router.pendingListingPrefill = nil
+        openWizard(.new(prefill: prefill))
+    }
 
     private func openWizard(_ kind: WizardContext.Kind) {
         wizardContext = WizardContext(kind: kind)

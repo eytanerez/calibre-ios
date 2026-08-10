@@ -10,13 +10,59 @@ import SwiftUI
 /// buyer request), a draft to finish, or a listed watch to edit.
 struct WizardContext: Identifiable {
     enum Kind {
-        case new(prefill: WatchRequest?)
+        case new(prefill: ListingPrefill?)
         case finishDraft(Listing)
         case edit(Listing)
     }
 
     let id = UUID()
     let kind: Kind
+}
+
+/// What a fresh listing can start from — a buyer's request, or a watch the
+/// seller already owns in their vault. Keeping this separate from
+/// `WatchRequest` means the vault route doesn't have to pretend to be one
+/// (and doesn't accidentally mark a request fulfilled).
+struct ListingPrefill: Equatable {
+    var brand: String
+    var model: String?
+    var reference: String?
+    var productionYear: Int?
+    /// Set only when listing against an open buyer request.
+    var fulfillRequestID: String?
+
+    init(
+        brand: String,
+        model: String? = nil,
+        reference: String? = nil,
+        productionYear: Int? = nil,
+        fulfillRequestID: String? = nil
+    ) {
+        self.brand = brand
+        self.model = model
+        self.reference = reference
+        self.productionYear = productionYear
+        self.fulfillRequestID = fulfillRequestID
+    }
+
+    init(request: WatchRequest) {
+        self.init(
+            brand: request.brand,
+            model: request.model,
+            reference: request.reference,
+            productionYear: request.productionYear,
+            fulfillRequestID: request.id
+        )
+    }
+
+    init(vaultWatch: VaultWatch) {
+        self.init(
+            brand: vaultWatch.brand ?? "",
+            model: vaultWatch.model,
+            reference: vaultWatch.reference,
+            productionYear: vaultWatch.productionYear
+        )
+    }
 }
 
 // MARK: - Condition vocabulary
@@ -344,7 +390,7 @@ final class WizardModel {
                 if let year = prefill.productionYear {
                     yearText = String(year)
                 }
-                fulfillRequestID = prefill.id
+                fulfillRequestID = prefill.fulfillRequestID
             }
             // No server draft yet — one is created only once Details is
             // complete (see `createDraftIfNeeded()`), so glancing at the
