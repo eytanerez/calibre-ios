@@ -181,6 +181,18 @@ struct MarketBoardView: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: Space.xs) {
+                    ShareLink(
+                        item: URL(string: "https://buycalibre.com/community?room=market")!,
+                        message: Text(
+                            "The Calibre Index is at \(String(format: "%.2f", indexCurrent)) "
+                                + "(\(Self.formatPercent(indexChange))) over \(MarketData.historyDays) days."
+                        )
+                    ) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                    }
+                    .accessibilityLabel("Share the Calibre Index")
                     Text(String(format: "%.2f", indexCurrent))
                         .font(CalibreType.serif(.semiBold, 24, relativeTo: .title2))
                         .foregroundStyle(Color.calibre.foreground)

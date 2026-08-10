@@ -61,6 +61,19 @@ struct MarketDetailSheet: View {
             .navigationTitle(market.model)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    ShareLink(
+                        item: URL(string: "https://buycalibre.com/community?room=market&watch=\(market.id)")
+                            ?? URL(string: "https://buycalibre.com/community?room=market")!,
+                        message: Text(
+                            "\(market.brand) \(market.model) (Ref. \(market.reference)) on Calibre."
+                        )
+                    ) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .tint(Color.calibre.primary)
+                    .accessibilityLabel("Share \(market.brand) \(market.model)")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         dismiss()

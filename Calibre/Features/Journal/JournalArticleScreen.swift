@@ -26,6 +26,20 @@ struct JournalArticleScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let article {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(
+                        item: URL(string: "https://buycalibre.com/journal/\(article.id)")
+                            ?? URL(string: "https://buycalibre.com/journal")!,
+                        message: Text("\(article.title) — from the Calibre Journal.")
+                    ) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Share this story")
+                }
+            }
+        }
         .browseStackNode()
     }
 

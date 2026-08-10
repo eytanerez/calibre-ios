@@ -49,6 +49,12 @@ struct CommunityScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("Community")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(for: CommunityRoute.self) { route in
+            switch route {
+            case .poll(let prompt):
+                PollDetailScreen(prompt: prompt)
+            }
+        }
         .refreshable { await load() }
         .task { await load() }
         .onChange(of: session.isAuthenticated) {
@@ -122,7 +128,10 @@ struct CommunityScreen: View {
                                 if index > 0 {
                                     Rectangle().fill(Color.calibre.border).frame(height: 1)
                                 }
-                                RecentResultRow(prompt: prompt)
+                                NavigationLink(value: CommunityRoute.poll(prompt)) {
+                                    RecentResultRow(prompt: prompt)
+                                }
+                                .buttonStyle(PressableStyle())
                             }
                         }
                         .background(
@@ -231,7 +240,19 @@ private struct RecentResultRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, Space.m)
         .padding(.horizontal, Space.l)
+        .contentShape(Rectangle())
+        .overlay(alignment: .trailing) {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .padding(.trailing, Space.l)
+        }
     }
+}
+
+/// Where the Community tab can navigate within itself.
+enum CommunityRoute: Hashable {
+    case poll(CommunityPrompt)
 }
 
 /// A live question or poll: options while unanswered, refined result bars
@@ -250,9 +271,18 @@ struct CommunityPromptCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             VStack(alignment: .leading, spacing: Space.s) {
-                Text(prompt.kind == "daily" ? "QUESTION OF THE DAY" : "POLL")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.primary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(prompt.kind == "daily" ? "QUESTION OF THE DAY" : "POLL")
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.primary)
+                    Spacer()
+                    ShareLink(item: prompt.shareURL, message: Text(prompt.shareText)) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                    }
+                    .accessibilityLabel("Share this poll")
+                }
                 Text(prompt.question)
                     .font(CalibreType.serif(.semiBold, featured ? 24 : 18, relativeTo: featured ? .title2 : .title3))
                     .foregroundStyle(Color.calibre.foreground)
