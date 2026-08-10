@@ -276,10 +276,9 @@ private struct AddressForm: View {
                         .buttonStyle(.calibre(.ghost, fullWidth: true))
                         .foregroundStyle(Color.calibre.destructive)
                         .disabled(saving)
-                        .confirmationDialog(
+                        .alert(
                             "Delete this address?",
-                            isPresented: $confirmingDelete,
-                            titleVisibility: .visible
+                            isPresented: $confirmingDelete
                         ) {
                             Button("Delete", role: .destructive) {
                                 Task { await delete(existing) }
@@ -472,13 +471,12 @@ struct PaymentMethodScreen: View {
         }
         .navigationTitle("Payment methods")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog(
+        .alert(
             "Remove this card?",
             isPresented: Binding(
                 get: { confirmRemove != nil },
                 set: { if !$0 { confirmRemove = nil } }
             ),
-            titleVisibility: .visible,
             presenting: confirmRemove
         ) { card in
             Button("Remove", role: .destructive) {
@@ -896,7 +894,7 @@ struct DeleteAccountScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("Delete account")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("Delete your Calibre account?", isPresented: $confirming, titleVisibility: .visible) {
+        .alert("Delete your Calibre account?", isPresented: $confirming) {
             Button("Delete my account", role: .destructive) { Task { await requestDeletion() } }
             Button("Keep my account", role: .cancel) {}
         } message: {

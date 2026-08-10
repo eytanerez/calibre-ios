@@ -152,13 +152,12 @@ struct OffersListScreen: View {
         .tutorialAnchor("offers.list")
         .onAppear { tutorial.startIfNeeded() }
         .refreshable { await model.load(quiet: true) }
-        .confirmationDialog(
+        .alert(
             model.pendingAction?.title ?? "",
             isPresented: Binding(
                 get: { model.pendingAction != nil },
                 set: { if !$0 { model.pendingAction = nil } }
-            ),
-            titleVisibility: .visible
+            )
         ) {
             if let action = model.pendingAction {
                 Button(action.confirmLabel, role: action.isDestructive ? .destructive : nil) {

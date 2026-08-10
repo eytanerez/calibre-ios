@@ -42,6 +42,10 @@ struct HomeScreen: View {
                 .padding(.horizontal, Space.margin)
                 .padding(.top, Space.s)
 
+                // Anything still in motion sits above the browsing shelves —
+                // "where's my watch" beats "here's another watch".
+                ShipmentTrackerSection()
+
                 shelves
             }
             .padding(.bottom, Space.xxl)

@@ -73,10 +73,9 @@ struct ListingDetailScreen: View {
             AuthenticationInfoSheet()
         }
         .sheet(isPresented: $showMakeOfferStub) { makeOfferSheet }
-        .confirmationDialog(
+        .alert(
             "Your bag holds one watch at a time.",
             isPresented: swapDialogPresented,
-            titleVisibility: .visible,
             presenting: swapCandidate
         ) { existing in
             Button("Move \(existing.listing?.title ?? "the current watch") to Saved") {

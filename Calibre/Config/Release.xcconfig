@@ -1,5 +1,3 @@
-// SideStore distribution — talks to the local backend on the dev laptop
-// through a Cloudflare Tunnel (quick tunnels rotate on restart; update this
-// alongside Debug.xcconfig's iphoneos entry when the tunnel URL changes).
+// SideStore distribution — talks to the hosted dev backend.
 // Routes are served at the origin root (no /api prefix).
-API_BASE_URL = https:/$()/selections-ooo-retreat-pix.trycloudflare.com
+API_BASE_URL = https:/$()/dev.api.buycalibre.com

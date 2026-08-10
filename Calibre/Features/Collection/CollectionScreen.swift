@@ -137,13 +137,12 @@ struct CollectionScreen: View {
         .sheet(isPresented: $showAddSheet) {
             AddCollectionWatchSheet()
         }
-        .confirmationDialog(
+        .alert(
             "Remove this watch?",
             isPresented: Binding(
                 get: { confirmRemove != nil },
                 set: { if !$0 { confirmRemove = nil } }
             ),
-            titleVisibility: .visible,
             presenting: confirmRemove
         ) { watch in
             Button("Remove", role: .destructive) {

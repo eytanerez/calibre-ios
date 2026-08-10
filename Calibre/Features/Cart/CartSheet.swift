@@ -73,20 +73,18 @@ struct CartSheet: View {
         .onChange(of: bagItem?.listingId) { _, id in
             if id != nil { tutorial.startIfNeeded() }
         }
-        .confirmationDialog(
+        .alert(
             "Take this watch out of your bag?",
-            isPresented: $confirmRemove,
-            titleVisibility: .visible
+            isPresented: $confirmRemove
         ) {
             Button("Remove from bag", role: .destructive) {
                 Task { await removeBagItem() }
             }
             Button("Keep it", role: .cancel) {}
         }
-        .confirmationDialog(
+        .alert(
             "Your bag holds one watch at a time.",
             isPresented: swapDialogPresented,
-            titleVisibility: .visible,
             presenting: swapCandidate
         ) { candidate in
             Button("Move \(bagItem?.listing?.title ?? "the current watch") to Saved") {

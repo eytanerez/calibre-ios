@@ -88,7 +88,7 @@ struct SellerStorefrontScreen: View {
                 }
             }
 
-            HStack(spacing: Space.xl) {
+            HStack(alignment: .top, spacing: Space.xl) {
                 stat(
                     value: "\(storefront.reputation.salesCount)",
                     label: storefront.reputation.salesCount == 1 ? "sale" : "sales"
@@ -103,13 +103,19 @@ struct SellerStorefrontScreen: View {
                             StarRating(rating: average)
                             Text(average.formatted(.number.precision(.fractionLength(1))))
                                 .font(CalibreType.priceSmall)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .foregroundStyle(Color.calibre.primary)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                         }
                         Text(storefront.reputation.ratingCount == 1 ? "1 review" : "\(storefront.reputation.ratingCount) reviews")
                             .font(CalibreType.caption)
                             .foregroundStyle(Color.calibre.mutedForeground)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
                 }
+                Spacer(minLength: 0)
             }
 
             if let bio = storefront.bio, !bio.isEmpty {
@@ -121,14 +127,23 @@ struct SellerStorefrontScreen: View {
         }
     }
 
+    /// Storefront stat: the figure in chocolate, its unit beneath. Serif
+    /// numerals sit on varying widths and were wrapping mid-number in the old
+    /// equal-spaced row — `monospacedDigit` plus a single unwrapped line keeps
+    /// them stable, and the row lays out by content rather than stretching.
     private func stat(value: String, label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(CalibreType.priceSmall)
-                .foregroundStyle(Color.calibre.foreground)
+                .foregroundStyle(Color.calibre.primary)
+                .monospacedDigit()
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             Text(label)
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 

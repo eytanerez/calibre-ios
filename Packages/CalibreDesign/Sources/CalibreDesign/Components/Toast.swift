@@ -68,8 +68,12 @@ public final class ToastCenter {
     }
 }
 
-/// Overlays the current toast above the bottom safe area. Attach once, at
-/// the root of the screen (or app) that owns the `ToastCenter`.
+/// Overlays the current toast below the top safe area. Attach once, at the
+/// root of the screen (or app) that owns the `ToastCenter`.
+///
+/// Toasts drop from the top: the bottom of the screen belongs to the tab bar
+/// and to whatever primary action a screen puts there, and a banner landing on
+/// top of those read as part of the page rather than as a notification.
 public struct ToastHost: ViewModifier {
     let center: ToastCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -77,13 +81,13 @@ public struct ToastHost: ViewModifier {
 
     public func body(content: Content) -> some View {
         content
-            .overlay(alignment: .bottom) {
+            .overlay(alignment: .top) {
                 if let toast = center.current {
                     ToastCard(toast: toast, center: center)
                         .offset(y: dragOffset)
                         .gesture(dismissDrag)
                         .padding(.horizontal, Space.margin)
-                        .padding(.bottom, Space.s)
+                        .padding(.top, Space.s)
                         .transition(entrance)
                         .id(toast.id)
                 }
@@ -92,23 +96,24 @@ public struct ToastHost: ViewModifier {
             .onChange(of: center.current?.id) { _, _ in dragOffset = 0 }
     }
 
-    /// Toast entrance: translateY(14) + scale(0.97) fade — a plain crossfade
-    /// under Reduce Motion.
+    /// Toast entrance: drops in from above — translateY(-14) + scale(0.97)
+    /// fade; a plain crossfade under Reduce Motion.
     private var entrance: AnyTransition {
         reduceMotion
             ? .opacity
             : .opacity
-                .combined(with: .offset(y: 14))
-                .combined(with: .scale(scale: 0.97, anchor: .bottom))
+                .combined(with: .offset(y: -14))
+                .combined(with: .scale(scale: 0.97, anchor: .top))
     }
 
+    /// Swipe up to dismiss, now that the toast lives at the top.
     private var dismissDrag: some Gesture {
         DragGesture()
             .onChanged { value in
-                dragOffset = max(0, value.translation.height)
+                dragOffset = min(0, value.translation.height)
             }
             .onEnded { value in
-                if value.translation.height > 24 {
+                if value.translation.height < -24 {
                     center.dismiss()
                 } else {
                     withAnimation(Motion.easeFast) { dragOffset = 0 }
@@ -118,7 +123,7 @@ public struct ToastHost: ViewModifier {
 }
 
 public extension View {
-    /// Hosts toasts from `center` above this view's bottom safe area.
+    /// Hosts toasts from `center` below this view's top safe area.
     func toastHost(_ center: ToastCenter) -> some View {
         modifier(ToastHost(center: center))
     }

@@ -125,10 +125,9 @@ struct YouScreen: View {
                 LoginScreen(context: .modal)
             }
         }
-        .confirmationDialog(
+        .alert(
             "Sign out of Calibre?",
-            isPresented: $confirmSignOut,
-            titleVisibility: .visible
+            isPresented: $confirmSignOut
         ) {
             Button("Sign Out", role: .destructive) {
                 Task { await signOut() }

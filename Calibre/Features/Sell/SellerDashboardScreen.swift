@@ -144,10 +144,9 @@ struct SellerDashboardScreen: View {
                 openWizard(.new(prefill: ListingPrefill(request: request)))
             }
         }
-        .confirmationDialog(
+        .alert(
             "Submit for review?",
             isPresented: submitBinding,
-            titleVisibility: .visible,
             presenting: confirmSubmit
         ) { listing in
             Button("Submit") {
@@ -157,10 +156,9 @@ struct SellerDashboardScreen: View {
         } message: { _ in
             Text("Our team reviews every listing before it goes live. All six photos need to be uploaded first.")
         }
-        .confirmationDialog(
+        .alert(
             confirmDelete?.status == .draft ? "Delete this draft?" : "Delete this listing?",
             isPresented: deleteBinding,
-            titleVisibility: .visible,
             presenting: confirmDelete
         ) { listing in
             Button("Delete", role: .destructive) {

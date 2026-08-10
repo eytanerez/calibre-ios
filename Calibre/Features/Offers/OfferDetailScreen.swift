@@ -232,10 +232,9 @@ private struct OfferDetailContent: View {
                 EmptyView()
             }
         }
-        .confirmationDialog(
+        .alert(
             model.acceptDialogTitle,
-            isPresented: $model.confirmingAccept,
-            titleVisibility: .visible
+            isPresented: $model.confirmingAccept
         ) {
             Button("Accept") {
                 Task { await model.respond(.accept(message: nil)) }
@@ -244,20 +243,18 @@ private struct OfferDetailContent: View {
         } message: {
             Text(model.acceptDialogMessage)
         }
-        .confirmationDialog(
+        .alert(
             "Decline this offer?",
-            isPresented: $model.confirmingDecline,
-            titleVisibility: .visible
+            isPresented: $model.confirmingDecline
         ) {
             Button("Decline", role: .destructive) {
                 Task { await model.respond(.decline(message: nil)) }
             }
             Button("Keep it open", role: .cancel) {}
         }
-        .confirmationDialog(
+        .alert(
             "Cancel your offer?",
-            isPresented: $model.confirmingCancel,
-            titleVisibility: .visible
+            isPresented: $model.confirmingCancel
         ) {
             Button("Cancel offer", role: .destructive) {
                 Task { await model.cancel() }
@@ -266,10 +263,9 @@ private struct OfferDetailContent: View {
         } message: {
             Text("Your $250 hold is released when the offer is withdrawn.")
         }
-        .confirmationDialog(
+        .alert(
             "Back out of this purchase?",
-            isPresented: $model.confirmingBackOut,
-            titleVisibility: .visible
+            isPresented: $model.confirmingBackOut
         ) {
             Button("Back out", role: .destructive) {
                 Task { await model.cancel() }

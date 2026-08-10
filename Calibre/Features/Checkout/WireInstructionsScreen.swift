@@ -96,10 +96,9 @@ struct WireInstructionsScreen: View {
             }
         }
         .animation(Motion.easeFast, value: model.pricingError)
-        .confirmationDialog(
+        .alert(
             "Confirm your wire transfer",
-            isPresented: $confirmingSent,
-            titleVisibility: .visible
+            isPresented: $confirmingSent
         ) {
             Button("Yes, I've sent it") {
                 Task {

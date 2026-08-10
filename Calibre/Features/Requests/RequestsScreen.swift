@@ -60,13 +60,12 @@ struct RequestsScreen: View {
                 requests.insert(created, at: 0)
             }
         }
-        .confirmationDialog(
+        .alert(
             "Remove this request?",
             isPresented: Binding(
                 get: { confirmDelete != nil },
                 set: { if !$0 { confirmDelete = nil } }
             ),
-            titleVisibility: .visible,
             presenting: confirmDelete
         ) { request in
             Button("Remove", role: .destructive) {
