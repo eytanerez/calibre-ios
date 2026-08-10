@@ -164,39 +164,17 @@ struct MakeOfferSheet: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: Space.s) {
-                Text("Message to the seller (optional)")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-                TextField(
-                    "",
-                    text: $model.message,
-                    prompt: Text("Anything they should know?")
-                        .foregroundStyle(Color.calibre.placeholder),
-                    axis: .vertical
-                )
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.foreground)
-                .tint(Color.calibre.primary)
-                .lineLimit(3...6)
-                .padding(Space.m)
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                        .strokeBorder(Color.calibre.border, lineWidth: 1)
-                )
-                .onChange(of: model.message) { _, newValue in
-                    if newValue.count > 1000 {
-                        model.message = String(newValue.prefix(1000))
-                    }
+            CalibreTextEditor(
+                "Message to the seller (optional)",
+                text: $model.message,
+                placeholder: "Anything they should know?",
+                minHeight: 92,
+                characterLimit: 1000
+            )
+            .onChange(of: model.message) { _, newValue in
+                if newValue.count > 1000 {
+                    model.message = String(newValue.prefix(1000))
                 }
-            }
-
-            consentRow(model)
-                .tutorialAnchor("offer.hold")
-
-            if let error = model.error {
-                InlineErrorLine(message: error)
             }
 
             Button {

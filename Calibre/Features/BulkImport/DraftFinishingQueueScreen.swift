@@ -163,29 +163,17 @@ struct DraftFinishingQueueScreen: View {
                 }
 
                 if item.missing.contains("description") {
-                    VStack(alignment: .leading, spacing: Space.s) {
-                        Text("Description")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
-                        TextEditor(text: $descriptionText)
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.foreground)
-                            .scrollContentBackground(.hidden)
-                            .frame(minHeight: 100)
-                            .padding(Space.m)
-                            .background(
-                                Color.calibre.card,
-                                in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                    .strokeBorder(Color.calibre.border, lineWidth: 1)
-                            )
-                            .onChange(of: descriptionText) { _, value in
-                                if value.count > 2_000 {
-                                    descriptionText = String(value.prefix(2_000))
-                                }
-                            }
+                    CalibreTextEditor(
+                        "Description",
+                        text: $descriptionText,
+                        placeholder: "How it wears, what's included…",
+                        minHeight: 100,
+                        characterLimit: 2_000
+                    )
+                    .onChange(of: descriptionText) { _, value in
+                        if value.count > 2_000 {
+                            descriptionText = String(value.prefix(2_000))
+                        }
                     }
                 }
 

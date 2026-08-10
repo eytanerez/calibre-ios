@@ -413,34 +413,17 @@ struct PriceStep: View {
 
             payoutCard
 
-            VStack(alignment: .leading, spacing: Space.s) {
-                Text("Notes for buyers (optional)")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-                TextEditor(text: $model.notes)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: 120)
-                    .padding(Space.m)
-                    .background(
-                        Color.calibre.card,
-                        in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                            .strokeBorder(Color.calibre.border, lineWidth: 1)
-                    )
-                    .onChange(of: model.notes) { _, newValue in
-                        if newValue.count > 2000 {
-                            model.notes = String(newValue.prefix(2000))
-                        }
-                        model.fieldChanged()
-                    }
-                Text("\(model.notes.count)/2000")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+            CalibreTextEditor(
+                "Notes for buyers (optional)",
+                text: $model.notes,
+                placeholder: "Service history, how it wears, what's included…",
+                characterLimit: 2000
+            )
+            .onChange(of: model.notes) { _, newValue in
+                if newValue.count > 2000 {
+                    model.notes = String(newValue.prefix(2000))
+                }
+                model.fieldChanged()
             }
         }
     }

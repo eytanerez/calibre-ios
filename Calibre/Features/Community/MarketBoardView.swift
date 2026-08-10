@@ -292,31 +292,7 @@ struct MarketBoardView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: Space.s) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
-            TextField("Filter references\u{2026}", text: $searchText)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.foreground)
-                .tint(Color.calibre.primary)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                }
-                .accessibilityLabel("Clear search")
-            }
-        }
-        .padding(.horizontal, Space.m)
-        .frame(minHeight: Space.touchTarget)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        SearchField(text: $searchText, placeholder: "Filter references\u{2026}")
     }
 
     private var brandMenu: some View {
