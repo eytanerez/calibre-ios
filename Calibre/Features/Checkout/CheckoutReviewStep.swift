@@ -60,7 +60,6 @@ struct CheckoutReviewStep: View {
             ToolbarItem(placement: .topBarTrailing) { CheckoutCloseButton() }
         }
         .safeAreaInset(edge: .bottom) { payBar }
-        .background(paymentSheetHost)
         .animation(Motion.easeFast, value: model.paymentFailure)
         .animation(Motion.easeMedium, value: model.confirmingOrder)
     }
@@ -154,15 +153,4 @@ struct CheckoutReviewStep: View {
         return "Pay \(PriceFormatter.format(breakdown.grandTotal.value, currency: breakdown.currency))"
     }
 
-    /// PaymentSheet rides on an invisible background leaf so creating the
-    /// sheet doesn't re-identify the step's content.
-    @ViewBuilder
-    private var paymentSheetHost: some View {
-        if let sheet = model.paymentSheet {
-            Color.clear
-                .paymentSheet(isPresented: $model.presentingPaymentSheet, paymentSheet: sheet) { result in
-                    model.handlePaymentResult(result)
-                }
-        }
-    }
 }

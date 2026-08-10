@@ -93,7 +93,6 @@ struct MakeOfferSheet: View {
                 .scrollDismissesKeyboard(.interactively)
             }
             .tutorialOverlay(tutorial)
-            .background(paymentSheetHost(model))
         }
     }
 
@@ -297,18 +296,6 @@ struct MakeOfferSheet: View {
         }
     }
 
-    // MARK: - PaymentSheet host
-
-    @ViewBuilder
-    private func paymentSheetHost(_ model: MakeOfferModel) -> some View {
-        @Bindable var model = model
-        if let sheet = model.paymentSheet {
-            Color.clear
-                .paymentSheet(isPresented: $model.presentingPaymentSheet, paymentSheet: sheet) { result in
-                    model.handleHoldResult(result)
-                }
-        }
-    }
 }
 
 /// State for the offer entry sheet: listing, form fields, offer creation,
@@ -342,7 +329,6 @@ final class MakeOfferModel {
 
     private(set) var offer: Offer?
     private(set) var paymentSheet: PaymentSheet?
-    var presentingPaymentSheet = false
 
     init(listingID: String, catalog: CatalogStore, commerce: CommerceStore, client: APIClient) {
         self.listingID = listingID
@@ -438,17 +424,16 @@ final class MakeOfferModel {
             customerID: nil,
             customerSessionClientSecret: nil
         )
-        paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
-        presentingPaymentSheet = true
+        let sheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+        paymentSheet = sheet
+        CalibreStripe.present(sheet) { [weak self] result in
+            self?.handleHoldResult(result)
+        }
     }
 
     func retryHold() {
         guard let offer else { return }
-        if paymentSheet == nil {
-            presentHold(for: offer)
-        } else {
-            presentingPaymentSheet = true
-        }
+        presentHold(for: offer)
     }
 
     func handleHoldResult(_ result: PaymentSheetResult) {

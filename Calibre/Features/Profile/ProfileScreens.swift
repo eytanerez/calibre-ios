@@ -376,7 +376,6 @@ struct PaymentMethodScreen: View {
     @State private var isPreparingSetup = false
     @State private var isSyncingAfterSetup = false
     @State private var paymentSheet: PaymentSheet?
-    @State private var presentingPaymentSheet = false
     /// Bumped by every operation that ends up writing `method`/`canRemove`/
     /// `removeBlockedReason` — a late result from a superseded load, poll, or
     /// removal checks this before committing so it can never clobber a newer
@@ -459,16 +458,6 @@ struct PaymentMethodScreen: View {
             await loadMethod()
         }
         .background(Color.calibre.background)
-        .background {
-            // Invisible leaf so creating the sheet doesn't re-identify the
-            // screen's content — same pattern as Checkout's payment sheet host.
-            if let paymentSheet {
-                Color.clear
-                    .paymentSheet(isPresented: $presentingPaymentSheet, paymentSheet: paymentSheet) { result in
-                        handleSetupResult(result)
-                    }
-            }
-        }
         .navigationTitle("Payment methods")
         .navigationBarTitleDisplayMode(.inline)
         .alert(
@@ -593,11 +582,14 @@ struct PaymentMethodScreen: View {
                 customerID: intent.customerId,
                 customerSessionClientSecret: intent.customerSessionMobile?.clientSecret
             )
-            paymentSheet = PaymentSheet(
+            let sheet = PaymentSheet(
                 setupIntentClientSecret: intent.setupIntent.clientSecret,
                 configuration: configuration
             )
-            presentingPaymentSheet = true
+            paymentSheet = sheet
+            CalibreStripe.present(sheet) { result in
+                handleSetupResult(result)
+            }
         } catch {
             Haptics.shared.play(.error)
             toasts.show(title: "Couldn't start adding a card", message: error.orderMessage, tone: .error)

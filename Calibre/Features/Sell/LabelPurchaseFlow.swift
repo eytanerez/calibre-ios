@@ -32,7 +32,6 @@ struct LabelPurchaseFlow: View {
     @State private var paying = false
     @State private var finalizing = false
     @State private var paymentSheet: PaymentSheet?
-    @State private var presentingSheet = false
     @State private var pendingIntent: SellerLabelIntent?
 
     var body: some View {
@@ -85,11 +84,6 @@ struct LabelPurchaseFlow: View {
         .onAppear {
             revalidateAndQuote()
         }
-        .paymentSheet(
-            isPresented: $presentingSheet,
-            paymentSheet: paymentSheet ?? placeholderSheet,
-            onCompletion: handlePaymentResult
-        )
     }
 
     // MARK: - Form
@@ -240,11 +234,6 @@ struct LabelPurchaseFlow: View {
 
     // MARK: - Payment
 
-    /// Never presented — satisfies the modifier while `paymentSheet` is nil.
-    private var placeholderSheet: PaymentSheet {
-        PaymentSheet(paymentIntentClientSecret: "pi_placeholder_secret_placeholder", configuration: .init())
-    }
-
     private func startPayment() {
         guard let package, validationError == nil, !paying else { return }
         paying = true
@@ -262,20 +251,20 @@ struct LabelPurchaseFlow: View {
                 }
                 STPAPIClient.shared.publishableKey = key
 
-                var configuration = PaymentSheet.Configuration()
-                configuration.merchantDisplayName = "Calibre"
-                configuration.style = .automatic
-                configuration.primaryButtonColor = UIColor(Color.calibre.primary)
-                if let customerID = intent.customerId, let session = intent.customerSessionClientSecret {
-                    configuration.customer = .init(id: customerID, customerSessionClientSecret: session)
-                }
+                let configuration = CalibreStripe.configuration(
+                    customerID: intent.customerId,
+                    customerSessionClientSecret: intent.customerSessionClientSecret
+                )
 
                 pendingIntent = intent
-                paymentSheet = PaymentSheet(
+                let sheet = PaymentSheet(
                     paymentIntentClientSecret: paymentIntent.clientSecret,
                     configuration: configuration
                 )
-                presentingSheet = true
+                paymentSheet = sheet
+                CalibreStripe.present(sheet) { result in
+                    handlePaymentResult(result)
+                }
             } catch {
                 toasts.show(title: "Couldn't start the payment", message: sellErrorMessage(error), tone: .error)
             }

@@ -3,3 +3,10 @@
 // alongside Debug.xcconfig's iphoneos entry when the tunnel URL changes).
 // Routes are served at the origin root (no /api prefix).
 API_BASE_URL = https:/$()/selections-ooo-retreat-pix.trycloudflare.com
+
+// Apple Pay ships only where the build can actually complete one: it needs
+// the com.apple.developer.in-app-payments entitlement and a merchant id
+// registered to a paid Apple Developer account. Sideloaded builds signed
+// with a free Apple ID can carry neither, so they stay cards-only. Flip this
+// to YES in the same configuration that adds the entitlement.
+APPLE_PAY_ENABLED = NO

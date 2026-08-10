@@ -31,6 +31,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CalibreAPIBaseURL</key>
 	<string>$(API_BASE_URL)</string>
+	<key>CalibreApplePayEnabled</key>
+	<string>$(APPLE_PAY_ENABLED)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>

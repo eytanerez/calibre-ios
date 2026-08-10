@@ -1,6 +1,7 @@
 import CalibreDesign
 import CalibreKit
 import Nuke
+import StripePaymentSheet
 import SwiftUI
 
 @main
@@ -140,6 +141,11 @@ struct RootView: View {
             }
         }
         .onOpenURL { url in
+            // Stripe gets first refusal. Redirect-based methods (Cash App Pay,
+            // Klarna, bank redirects) return through `calibre://stripe-redirect`,
+            // and if the SDK never sees that callback the payment hangs on a
+            // spinner forever. Everything it doesn't claim is a Calibre link.
+            guard !StripeAPI.handleURLCallback(with: url) else { return }
             services.router.handle(url: url)
         }
         .onAppear {

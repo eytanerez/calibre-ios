@@ -71,7 +71,6 @@ final class CheckoutModel {
 
     // MARK: Payment
 
-    var presentingPaymentSheet = false
     private(set) var paymentSheet: PaymentSheet?
     private(set) var paymentFailure: String?
     private(set) var confirmingOrder = false
@@ -211,11 +210,16 @@ final class CheckoutModel {
             customerID: intent.customerId,
             customerSessionClientSecret: intent.customerSessionClientSecret
         )
-        paymentSheet = PaymentSheet(
+        // Held for the life of the presentation — the SDK's presenter keeps
+        // only a weak reference.
+        let sheet = PaymentSheet(
             paymentIntentClientSecret: intent.paymentIntent.clientSecret,
             configuration: configuration
         )
-        presentingPaymentSheet = true
+        paymentSheet = sheet
+        CalibreStripe.present(sheet) { [weak self] result in
+            self?.handlePaymentResult(result)
+        }
     }
 
     func handlePaymentResult(_ result: PaymentSheetResult) {

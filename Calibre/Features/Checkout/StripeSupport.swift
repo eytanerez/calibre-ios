@@ -15,10 +15,27 @@ enum CalibreStripe {
     static let returnURL = "calibre://stripe-redirect"
     static let applePayMerchantID = "merchant.com.buycalibre.calibre"
 
-    /// Builds the shared PaymentSheet configuration. Apple Pay is attached
-    /// only when the device reports payment capability — a missing Apple Pay
-    /// entitlement then degrades silently to cards instead of crashing or
-    /// showing a dead button on devices that can't pay anyway.
+    /// Whether this build carries the Apple Pay entitlement, set by
+    /// `APPLE_PAY_ENABLED` in the build config alongside the entitlement itself.
+    ///
+    /// Device capability alone isn't enough to decide. A sideloaded build signed
+    /// with a free Apple ID can't carry `com.apple.developer.in-app-payments`,
+    /// and offering Apple Pay there gives the buyer a button that fails the
+    /// moment they authorize it. iOS has no public API to read your own
+    /// entitlements, so this tracks the one place that grants them: turn it on
+    /// in the same configuration that adds the entitlement and registers the
+    /// merchant id. Every other build is cards only.
+    static let hasApplePayEntitlement: Bool = {
+        let flag = Bundle.main.object(forInfoDictionaryKey: "CalibreApplePayEnabled")
+        if let enabled = flag as? Bool { return enabled }
+        // xcconfig substitution lands as a string.
+        guard let text = flag as? String else { return false }
+        return ["YES", "true", "1"].contains(text.trimmingCharacters(in: .whitespaces))
+    }()
+
+    /// Builds the shared PaymentSheet configuration. Apple Pay is attached only
+    /// when this build can actually complete one; otherwise the sheet is cards
+    /// only.
     static func configuration(
         customerID: String?,
         customerSessionClientSecret: String?
@@ -43,7 +60,7 @@ enum CalibreStripe {
             )
         }
 
-        if PKPaymentAuthorizationController.canMakePayments() {
+        if hasApplePayEntitlement, PKPaymentAuthorizationController.canMakePayments() {
             configuration.applePay = PaymentSheet.ApplePayConfiguration(
                 merchantId: applePayMerchantID,
                 merchantCountryCode: "US"
@@ -95,5 +112,58 @@ enum CalibreStripe {
     static func failureMessage(for error: Error) -> String {
         let text = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty ? "Your payment didn't go through. Please try again." : text
+    }
+
+    /// Presents a PaymentSheet from whatever is frontmost.
+    ///
+    /// We deliberately don't use the SDK's `.paymentSheet(isPresented:)`
+    /// modifier. Its presenter only acts on a false→true transition its
+    /// coordinator actually *observes*, and the coordinator's `didSet` can't
+    /// fire during `init`. Building the sheet and flipping the flag in one
+    /// update — the natural way to write "pay now" — installs the presenter
+    /// already-true, so it lands on (true, true), does nothing, and the button
+    /// looks dead. Presenting imperatively is the same call the modifier makes
+    /// internally, minus the race.
+    ///
+    /// The caller must keep `sheet` alive until `completion` fires; the SDK
+    /// holds it weakly.
+    @MainActor
+    static func present(
+        _ sheet: PaymentSheet,
+        completion: @escaping (PaymentSheetResult) -> Void
+    ) {
+        guard let presenter = frontmostViewController() else {
+            completion(.failed(error: PresentationError.noPresenter))
+            return
+        }
+        sheet.present(from: presenter, completion: completion)
+    }
+
+    /// Walks the presentation chain from the active window's root so the sheet
+    /// comes up over whatever is already modal — checkout runs inside a
+    /// full-screen cover, offers inside a sheet.
+    @MainActor
+    private static func frontmostViewController() -> UIViewController? {
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+            ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+
+        guard let root = (scene?.windows.first { $0.isKeyWindow } ?? scene?.windows.first)?
+            .rootViewController else { return nil }
+
+        var top = root
+        while let next = top.presentedViewController, !next.isBeingDismissed {
+            top = next
+        }
+        return top
+    }
+
+    enum PresentationError: LocalizedError {
+        case noPresenter
+
+        var errorDescription: String? {
+            "We couldn't open the payment sheet. Please try again."
+        }
     }
 }
