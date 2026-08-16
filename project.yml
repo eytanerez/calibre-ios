@@ -32,7 +32,11 @@ targets:
       - package: CalibreDesign
       - package: StripeiOS
         products:
+          # PaymentSheet still drives offer holds and label purchases.
           - StripePaymentSheet
+          # Buyer card checkout needs the card field + the payment handler
+          # directly, so the card's funding is known before we confirm.
+          - StripePaymentsUI
           - StripeConnect
       - package: Nuke
         products:

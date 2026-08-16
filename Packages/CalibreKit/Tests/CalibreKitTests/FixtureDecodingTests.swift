@@ -251,8 +251,8 @@ final class FixtureDecodingTests: XCTestCase {
           "status": "to_auth",
           "subtotal": "4400.00",
           "fees_total": "132.00",
-          "seller_fee_percent_applied": "8.00",
-          "seller_fee_amount": "352.00",
+          "seller_fee_percent_applied": "6.00",
+          "seller_fee_amount": "264.00",
           "fee_adjustments": [],
           "tax_total": "0.00",
           "shipping_base_total": "60.00",
@@ -305,7 +305,7 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(order.status, .toAuth)
         XCTAssertEqual(order.subtotal.value, Decimal(string: "4400.00"))
         XCTAssertEqual(order.grandTotal.value, Decimal(string: "4604.00"))
-        XCTAssertEqual(order.sellerFeePercentApplied?.value, Decimal(string: "8.00"))
+        XCTAssertEqual(order.sellerFeePercentApplied?.value, Decimal(string: "6.00"))
         XCTAssertEqual(order.checkoutPaymentMethod, .card)
         XCTAssertEqual(order.toAuthShipment?.shipmentType, .toAuth)
         XCTAssertEqual(order.toAuthShipment?.trackingNumber, "TRACK123")
@@ -353,20 +353,18 @@ final class FixtureDecodingTests: XCTestCase {
     }
 
     func testProfileAndDashboardSyntheticSamplesDecode() throws {
+        // `dealer_application` is top level and replaced the old nested
+        // `unlock` block; `seller_profile` is down to status + the badge flag.
         let profileJSON = """
         {
           "id": "u1", "email": "buyer@example.com", "username": "buyer_person",
           "first_name": "Test", "last_name": "Buyer", "phone": "+15551234567",
           "created_at": "2026-01-01T00:00:00+00:00", "updated_at": "2026-07-01T00:00:00+00:00",
-          "seller_profile": {
-            "status": "approved", "is_verified_dealer": true, "dealer_active_until": null,
-            "unlock": {
-              "status": "approved", "is_active": true, "active_until": null,
-              "live_listing_count": 12, "threshold": 10, "remaining_to_unlock": 0,
-              "next_month_unlocked": true, "current_fee_percent": "5.00",
-              "member_fee_percent": "8", "dealer_fee_percent": "5",
-              "current_month_label": "July", "next_month_label": "August"
-            }
+          "seller_profile": {"status": "approved", "is_verified_dealer": true},
+          "dealer_application": {
+            "status": "verified", "company_name": "Meridian Watch Co.", "country": "US",
+            "applied_at": "2026-06-02T14:10:00+00:00", "verified_at": "2026-06-03T09:41:00+00:00",
+            "revoked_reason": null, "member_fee_percent": "6.00", "dealer_fee_percent": "4.00"
           },
           "stats": {"orders": 3, "listings": 14, "live_listings": 12, "cart": 1, "watchlist": 6, "addresses": 2}
         }
@@ -374,8 +372,11 @@ final class FixtureDecodingTests: XCTestCase {
         let profile = try apiDecoder().decode(Profile.self, from: Data(profileJSON.utf8))
         XCTAssertEqual(profile.username, "buyer_person")
         XCTAssertEqual(profile.stats.watchlist, 6)
-        XCTAssertEqual(profile.sellerProfile?.unlock?.currentFeePercent.value, Decimal(5))
-        XCTAssertEqual(profile.sellerProfile?.unlock?.memberFeePercent.value, Decimal(8))
+        XCTAssertEqual(profile.sellerProfile?.isVerifiedDealer, true)
+        XCTAssertEqual(profile.dealerApplication?.status, .verified)
+        XCTAssertEqual(profile.dealerApplication?.memberFeePercent?.value, Decimal(string: "6.00"))
+        XCTAssertEqual(profile.dealerApplication?.dealerFeePercent?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(profile.dealerApplication?.companyName, "Meridian Watch Co.")
 
         let readinessJSON = """
         {
@@ -426,4 +427,472 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(address.postalCode, "95014")
         XCTAssertTrue(address.isDefaultShipping)
     }
+
+    // MARK: - Recorded payloads for the marketplace overhaul
+    //
+    // Every fixture below is written to the v1 contract. The assertions are
+    // deliberately about the numbers the client is forbidden from computing:
+    // if one of these stops decoding, a screen would otherwise quietly fall
+    // back to a hardcoded figure, which is the exact failure we're guarding.
+
+    func testAccountProfileFixtureCarriesDealerApplication() throws {
+        let envelope = try apiDecoder().decode(Envelope<Profile>.self, from: fixtureData("account-profile"))
+        let profile = envelope.data
+        XCTAssertEqual(profile.username, "iosbuyer")
+        let application = try XCTUnwrap(profile.dealerApplication)
+        XCTAssertEqual(application.status, .verified)
+        XCTAssertEqual(application.memberFeePercent?.value, Decimal(string: "6.00"))
+        XCTAssertEqual(application.dealerFeePercent?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(profile.sellerProfile?.isVerifiedDealer, true)
+    }
+
+    func testAccountDashboardFixtureCarriesDealerApplication() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<SellerDashboard>.self,
+            from: fixtureData("account-dashboard")
+        )
+        let dashboard = envelope.data
+        // Spelled out: through an optional chain, a bare `.none` binds to
+        // `Optional.none` and silently asserts nil instead of the case.
+        XCTAssertEqual(dashboard.dealerApplication?.status, DealerApplicationStatus.none)
+        XCTAssertEqual(dashboard.dealerApplication?.hasApplied, false)
+        XCTAssertEqual(dashboard.dealerApplication?.dealerFeePercent?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(dashboard.metrics.activeListings, 0)
+        XCTAssertEqual(dashboard.whatToList.count, 5)
+    }
+
+    func testDealerApplicationResultFixtureDecodes() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<DealerApplicationResult>.self,
+            from: fixtureData("dealer-application")
+        )
+        XCTAssertEqual(envelope.data.application.status, .pending)
+        XCTAssertEqual(envelope.data.application.companyName, "Meridian Watch Co.")
+        XCTAssertNotNil(envelope.data.application.appliedAt)
+        XCTAssertEqual(envelope.data.stripe?.clientSecret, "accs_secret_1MxDealerOnboardingSession")
+    }
+
+    func testDealerApplicationUnknownStatusFallsBack() throws {
+        let json = #"{"status": "under_manual_review"}"#
+        let application = try apiDecoder().decode(DealerApplication.self, from: Data(json.utf8))
+        XCTAssertEqual(application.status, .unknown, "a new server status must never crash decoding")
+        XCTAssertNil(application.dealerFeePercent)
+    }
+
+    // MARK: Publish preview
+
+    func testPublishPreviewFixtureDecodes() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<ListingPublishPreview>.self,
+            from: fixtureData("publish-preview")
+        )
+        let preview = envelope.data
+        XCTAssertEqual(preview.price.value, Decimal(string: "4400.00"))
+        XCTAssertEqual(preview.commission.percent.value, Decimal(string: "6.00"))
+        XCTAssertEqual(preview.commission.amount.value, Decimal(string: "264.00"))
+        XCTAssertEqual(preview.commission.minimum.value, Decimal(string: "250.00"))
+        XCTAssertFalse(preview.commission.minimumApplied)
+        XCTAssertEqual(preview.netProceeds.value, Decimal(string: "4064.00"))
+        XCTAssertEqual(preview.buyerDisplay.standard.price.value, Decimal(string: "4400.00"))
+        XCTAssertEqual(preview.shippingEstimate?.amount.value, Decimal(string: "72.00"))
+        XCTAssertEqual(preview.returns?.accepted, true)
+        XCTAssertEqual(preview.returns?.windowHours, 48)
+
+        let discount = try XCTUnwrap(preview.buyerDisplay.discountStates)
+        XCTAssertEqual(discount.states, ["CT", "MA"])
+        XCTAssertEqual(discount.wirePrice.value, Decimal(string: "4400.00"))
+        XCTAssertGreaterThan(discount.price.value, discount.wirePrice.value,
+                             "in the discount presentation the listed price is the card price")
+    }
+
+    func testPublishPreviewAppliesTheCommissionMinimum() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<ListingPublishPreview>.self,
+            from: fixtureData("publish-preview-minimum")
+        )
+        let preview = envelope.data
+        XCTAssertTrue(preview.commission.minimumApplied)
+        XCTAssertEqual(preview.commission.amount.value, preview.commission.minimum.value)
+        // The server already applied the floor — the client must never redo it.
+        XCTAssertEqual(preview.netProceeds.value, Decimal(string: "1678.00"))
+        XCTAssertEqual(preview.returns?.accepted, false)
+        XCTAssertNil(preview.returns?.windowHours)
+    }
+
+    // MARK: Checkout breakdown v2
+
+    func testCheckoutCreateIntentCardFixtureDecodes() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<NativeCheckoutIntent>.self,
+            from: fixtureData("checkout-create-intent-card")
+        )
+        let intent = envelope.data
+        XCTAssertEqual(intent.paymentIntent.id, "pi_3PxCalibre001")
+        XCTAssertEqual(intent.publishableKey, "pk_test_calibre")
+
+        let breakdown = intent.breakdown
+        XCTAssertEqual(breakdown.pricingMode, .surcharge)
+        XCTAssertFalse(breakdown.isDiscountPresentation)
+        XCTAssertFalse(breakdown.acceptsDebit, "surcharge states take credit only")
+        XCTAssertEqual(breakdown.cardFee?.percent?.value, Decimal(string: "2.90"))
+        XCTAssertEqual(breakdown.cardFee?.fixed?.value, Decimal(string: "0.30"))
+        XCTAssertEqual(breakdown.cardFee?.amount.value, Decimal(string: "129.99"))
+        XCTAssertEqual(breakdown.totals?.card?.value, Decimal(string: "4601.99"))
+        XCTAssertEqual(breakdown.totals?.wire?.value, Decimal(string: "4472.00"))
+        XCTAssertEqual(breakdown.display?.price.value, Decimal(string: "4400.00"))
+        XCTAssertNil(breakdown.display?.wirePrice)
+        XCTAssertEqual(breakdown.paymentDisclosures?.cardFeeNonrefundable, true)
+        XCTAssertEqual(breakdown.returns?.windowHours, 48)
+        XCTAssertEqual(breakdown.returnFee?.percent?.value, Decimal(string: "7.00"))
+        XCTAssertEqual(breakdown.returnFee?.minimum?.value, Decimal(string: "250.00"))
+        // Legacy keys still land, so nothing that reads them regresses.
+        XCTAssertEqual(breakdown.cardConvenienceFee?.value, Decimal(string: "129.99"))
+        XCTAssertEqual(breakdown.taxCalculatedUpfront, true)
+    }
+
+    func testListingQuoteDiscountModeFixtureDecodes() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<CheckoutBreakdown>.self,
+            from: fixtureData("listing-quote-discount")
+        )
+        let breakdown = envelope.data
+        XCTAssertTrue(breakdown.isDiscountPresentation)
+        XCTAssertTrue(breakdown.acceptsDebit, "debit is accepted where the discount presentation applies")
+        XCTAssertEqual(breakdown.acceptedCardFunding, ["credit", "debit"])
+        // The listed price shown IS the card price; wire reveals the lower one.
+        XCTAssertEqual(breakdown.display?.price.value, Decimal(string: "4529.99"))
+        XCTAssertEqual(breakdown.display?.wirePrice?.value, Decimal(string: "4400.00"))
+        // Same money either way — only the presentation differs.
+        XCTAssertEqual(breakdown.totals?.card?.value, Decimal(string: "4601.99"))
+    }
+
+    func testPaymentMethodValidationFixturesDecode() throws {
+        let accepted = try apiDecoder().decode(
+            Envelope<PaymentMethodValidation>.self,
+            from: fixtureData("validate-payment-method-accepted")
+        ).data
+        XCTAssertTrue(accepted.accepted)
+        XCTAssertEqual(accepted.funding, "credit")
+        XCTAssertNil(accepted.reason)
+
+        let refused = try apiDecoder().decode(
+            Envelope<PaymentMethodValidation>.self,
+            from: fixtureData("validate-payment-method-refused")
+        ).data
+        XCTAssertFalse(refused.accepted)
+        XCTAssertEqual(refused.funding, "prepaid")
+        XCTAssertEqual(refused.reason, "prepaid_not_accepted")
+    }
+
+    func testCheckoutConfirmationFixtureDecodes() throws {
+        let confirmation = try apiDecoder().decode(
+            Envelope<CheckoutConfirmation>.self,
+            from: fixtureData("checkout-confirm")
+        ).data
+        XCTAssertTrue(confirmation.requiresAction)
+        XCTAssertEqual(confirmation.status, "requires_action")
+        XCTAssertEqual(confirmation.clientSecret, "pi_3PxCalibre001_secret_abc")
+    }
+
+    // MARK: Returns
+
+    func testReturnQuoteFixtureDecodes() throws {
+        let quote = try apiDecoder().decode(
+            Envelope<ReturnQuote>.self,
+            from: fixtureData("return-quote")
+        ).data
+        XCTAssertEqual(quote.watchPrice.value, Decimal(string: "10000.00"))
+        XCTAssertEqual(quote.taxRefund?.value, Decimal(string: "625.00"))
+        XCTAssertEqual(quote.returnFee.percent.value, Decimal(string: "7.00"))
+        XCTAssertEqual(quote.returnFee.minimum.value, Decimal(string: "250.00"))
+        XCTAssertEqual(quote.returnFee.amount.value, Decimal(string: "700.00"))
+        XCTAssertEqual(quote.outboundLabelDeduction?.value, Decimal(string: "150.00"))
+        // Calibre's own return label is deducted from the refund too, and the
+        // client renders the server's figure rather than inferring one.
+        XCTAssertEqual(quote.returnLabelDeduction?.value, Decimal(string: "35.00"))
+        XCTAssertEqual(quote.processingWithholdingBasis, "card_fee_never_refunded")
+        XCTAssertEqual(quote.refundTotal.value, Decimal(string: "9445.95"))
+        XCTAssertEqual(quote.window?.open, true)
+        XCTAssertNil(quote.existingReturn)
+    }
+
+    func testReturnQuoteWithoutALabelDeductionLeavesTheRowOut() throws {
+        // Older payloads carry no `return_label_deduction`; the field stays
+        // nil so the screen omits the line rather than inventing a figure.
+        let json = """
+        {
+          "watch_price": "10000.00",
+          "return_fee": { "percent": "7.00", "minimum": "250.00", "amount": "700.00" },
+          "refund_total": "9300.00",
+          "currency": "USD"
+        }
+        """
+        let quote = try apiDecoder().decode(ReturnQuote.self, from: Data(json.utf8))
+        XCTAssertNil(quote.returnLabelDeduction)
+    }
+
+    func testReturnQuoteWireBuyerWithholdsAnEquivalent() throws {
+        let quote = try apiDecoder().decode(
+            Envelope<ReturnQuote>.self,
+            from: fixtureData("return-quote-wire")
+        ).data
+        // A wire buyer had no card fee, so an equivalent is withheld instead.
+        XCTAssertEqual(quote.processingWithholdingBasis, "card_fee_equivalent")
+        // 7% of $2,000 is $140, so the $250 minimum is what applies.
+        XCTAssertEqual(quote.returnFee.amount.value, quote.returnFee.minimum.value)
+    }
+
+    func testOrderWithOpenReturnFixtureDecodes() throws {
+        let order = try apiDecoder().decode(
+            Envelope<Order>.self,
+            from: fixtureData("order-return")
+        ).data
+        XCTAssertEqual(order.status, .delivered)
+        XCTAssertEqual(order.listing?.seller?.isVerifiedDealer, true)
+
+        let terms = try XCTUnwrap(order.returns)
+        XCTAssertTrue(terms.accepted)
+        XCTAssertEqual(terms.windowHours, 48)
+        XCTAssertNotNil(terms.windowEndsAt)
+
+        let summary = try XCTUnwrap(order.returnSummary)
+        XCTAssertEqual(summary.state, "requested")
+        XCTAssertTrue(summary.awaitingShipment)
+        XCTAssertFalse(summary.isInTransit)
+        XCTAssertNil(summary.relistDecision)
+        XCTAssertEqual(summary.refundTotal?.value, Decimal(string: "9445.95"))
+        // The frozen return carries the label's cost, so the summary can show
+        // the same deduction the quote promised.
+        XCTAssertEqual(summary.returnLabelDeduction?.value, Decimal(string: "35.00"))
+        XCTAssertEqual(summary.label?.trackingNumber, "794612345098")
+        XCTAssertNotNil(summary.shipDeadlineAt)
+
+        let payout = try XCTUnwrap(order.payoutBlock)
+        XCTAssertEqual(payout.trigger, "return_window_close")
+        // "You receive" is the server's figure. 6% of $10,000 is $600, and the
+        // payout block states the $9,400 itself rather than leaving the client
+        // to subtract one from the other.
+        XCTAssertEqual(payout.amount?.value, Decimal(string: "9400.00"))
+        XCTAssertEqual(payout.firstPayoutHold, true)
+        XCTAssertNotNil(payout.expectedArrivalAt)
+        XCTAssertNil(payout.releasedAt)
+        XCTAssertEqual(payout.statusLabel, "Scheduled — releases when the return window closes")
+        // Nothing seller-facing may leak the processor's vocabulary.
+        let label = payout.statusLabel ?? ""
+        for banned in ["Stripe", "balance", "connected account"] {
+            XCTAssertFalse(label.localizedCaseInsensitiveContains(banned), "payout label leaked \"\(banned)\"")
+        }
+
+        let expected = try XCTUnwrap(order.expected)
+        XCTAssertNotNil(expected.authenticationVerdictBy)
+        XCTAssertNotNil(expected.deliveredBy)
+        XCTAssertNotNil(expected.returnWindowEndsAt)
+        XCTAssertEqual(expected.payout?.trigger, "return_window_close")
+    }
+
+    func testReturnStartResultReadsLabelAndDeadlineAsSiblings() throws {
+        // `label` and `ship_deadline_at` arrive beside the return record,
+        // not inside it.
+        let json = """
+        {
+          "id": "ret_1", "order_id": "o1", "status": "requested",
+          "requested_at": "2026-08-14T10:20:00+00:00",
+          "ship_deadline_at": "2026-08-18T10:20:00+00:00",
+          "label": {
+            "shipment_id": "sh_9", "carrier": "FedEx", "tracking_number": "794612345098",
+            "label_url": "/media/labels/return-794612345098.pdf"
+          }
+        }
+        """
+        let result = try apiDecoder().decode(ReturnStartResult.self, from: Data(json.utf8))
+        XCTAssertEqual(result.return.status, "requested")
+        XCTAssertEqual(result.label?.trackingNumber, "794612345098")
+        XCTAssertNotNil(result.shipDeadlineAt)
+        XCTAssertEqual(
+            result.label?.labelUrl?.url?.absoluteString,
+            "https://api.test/media/labels/return-794612345098.pdf"
+        )
+    }
+
+    // MARK: Offers — forfeiture
+
+    func testOfferForfeitFixtureDecodes() throws {
+        let offer = try apiDecoder().decode(
+            Envelope<Offer>.self,
+            from: fixtureData("offer-forfeit")
+        ).data
+        XCTAssertEqual(offer.status, .penaltyCaptured)
+        XCTAssertNotNil(offer.paymentFailedAt)
+        XCTAssertNotNil(offer.resolveBy)
+        // The hold amount is the only source of the figure clients may show.
+        XCTAssertEqual(offer.hold?.amount.value, Decimal(string: "250.00"))
+        // The seller's net is the server's to compute, never the client's.
+        XCTAssertEqual(offer.forfeit?.sellerAmount?.value, Decimal(string: "242.50"))
+        XCTAssertNotNil(offer.forfeit?.forfeitedAt)
+    }
+
+    // MARK: Seller card, config, deletion
+
+    func testSellerCardFixtureDecodes() throws {
+        let card = try apiDecoder().decode(
+            Envelope<SellerCardState>.self,
+            from: fixtureData("seller-card")
+        ).data
+        XCTAssertTrue(card.present)
+        XCTAssertEqual(card.funding, "credit")
+        XCTAssertEqual(card.displayName, "Visa •••• 4242")
+        XCTAssertEqual(card.expiryLabel, "09/26")
+        XCTAssertTrue(card.needsAttention, "an expiring card is surfaced before it lapses")
+    }
+
+    func testMarketplaceConfigFixtureDecodes() throws {
+        let config = try apiDecoder().decode(
+            Envelope<MarketplaceConfig>.self,
+            from: fixtureData("marketplace-config")
+        ).data
+        XCTAssertEqual(config.sellerFeePercentMember?.value, Decimal(string: "6.00"))
+        XCTAssertEqual(config.sellerFeePercentDealer?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(config.sellerFeeMinimum?.value, Decimal(string: "250.00"))
+        XCTAssertEqual(config.cardFee?.percent?.value, Decimal(string: "2.90"))
+        XCTAssertEqual(config.cardFee?.fixed?.value, Decimal(string: "0.30"))
+        XCTAssertEqual(config.offerHoldAmount?.value, Decimal(string: "250.00"))
+        XCTAssertEqual(config.offerTtlHours, 24)
+        XCTAssertEqual(config.offerPaymentGraceHours, 12)
+        XCTAssertEqual(config.offerPaymentDeadlineHours, 24)
+        XCTAssertEqual(config.returnWindows, [24, 48, 72])
+        XCTAssertEqual(config.wireReservationText, "24–48 hours")
+        XCTAssertEqual(config.discountStatesText, "CT and MA")
+    }
+
+    func testMarketplaceConfigAcceptsAScalarReservationWindow() throws {
+        let json = #"{"wire_reservation_hours": 24, "discount_presentation_states": ["CT"]}"#
+        let config = try apiDecoder().decode(MarketplaceConfig.self, from: Data(json.utf8))
+        XCTAssertEqual(config.wireReservationHours, [24])
+        XCTAssertEqual(config.wireReservationText, "24 hours")
+        XCTAssertEqual(config.discountStatesText, "CT")
+        XCTAssertNil(config.offerHoldAmount, "a missing figure stays nil so the UI omits the number")
+    }
+
+    func testAccountDeletionStateFixtureListsObligations() throws {
+        let state = try apiDecoder().decode(
+            Envelope<AccountDeletionState>.self,
+            from: fixtureData("account-delete-request")
+        ).data
+        XCTAssertTrue(state.requested)
+        XCTAssertFalse(state.canDelete)
+        XCTAssertEqual(state.obligations.count, 3)
+        XCTAssertEqual(state.obligations.first?.kind, "live_order")
+        XCTAssertEqual(state.obligations.first?.reference, "CAL-3099")
+        XCTAssertNil(state.scheduledDate, "nothing is scheduled while obligations remain")
+    }
+
+    // MARK: Support
+
+    func testSupportThreadCarriesAssignedContact() throws {
+        let thread = try apiDecoder().decode(
+            Envelope<SupportConversation?>.self,
+            from: fixtureData("support-thread-assigned")
+        ).data
+        let conversation = try XCTUnwrap(thread)
+        XCTAssertEqual(conversation.status, .waitingOnCalibre)
+        XCTAssertEqual(conversation.assignedContact?.displayName, "Amelia Hart")
+        XCTAssertEqual(conversation.messages.count, 1)
+    }
+
+    func testSupportConversationStatusCoversTheNewStates() throws {
+        let wire = ["open", "waiting_on_calibre", "waiting_on_customer", "closed"]
+        let expected: [SupportConversationStatus] = [.open, .waitingOnCalibre, .waitingOnCustomer, .closed]
+        for (raw, status) in zip(wire, expected) {
+            let decoded = try apiDecoder().decode(
+                SupportConversationStatus.self,
+                from: Data("\"\(raw)\"".utf8)
+            )
+            XCTAssertEqual(decoded, status)
+        }
+    }
+
+    // MARK: Listings — returns terms + dealer badge
+
+    func testListingDetailCarriesReturnTermsAndDealerFlag() throws {
+        let listing = try apiDecoder().decode(
+            Envelope<Listing>.self,
+            from: fixtureData("listing-detail")
+        ).data
+        XCTAssertEqual(listing.returns?.accepted, true)
+        XCTAssertEqual(listing.returns?.windowHours, 48)
+        XCTAssertEqual(listing.seller?.isVerifiedDealer, true)
+        XCTAssertEqual(listing.countryOfOrigin, "CH")
+        XCTAssertEqual(listing.htsCode, "9101.21.50")
+    }
+
+    func testListingsPageCarriesBothReturnStances() throws {
+        let page = try apiDecoder().decode(
+            Envelope<PageResponse<Listing>>.self,
+            from: fixtureData("listings-page")
+        ).data
+        XCTAssertTrue(page.results.contains { $0.returns?.accepted == true })
+        XCTAssertTrue(page.results.contains { $0.returns?.accepted == false })
+        // A listing that doesn't accept returns carries no window.
+        for listing in page.results where listing.returns?.accepted == false {
+            XCTAssertNil(listing.returns?.windowHours)
+        }
+    }
+
+    // MARK: Journal content
+
+    func testJournalFeedFixtureDecodesWithoutBodies() throws {
+        // The feed wraps its rows in `results`; the article endpoint answers
+        // with the article itself. Decoding the feed as a bare array is the
+        // shape mismatch this pins.
+        let rows = try apiDecoder().decode(
+            Envelope<JournalFeedPageProbe>.self,
+            from: fixtureData("content-journal")
+        ).data.results
+        XCTAssertEqual(rows.count, 4)
+        let first = try XCTUnwrap(rows.first)
+        XCTAssertEqual(first.id, "rolex-2026-releases")
+        XCTAssertEqual(first.category, "Market")
+        XCTAssertEqual(first.image, "rolex-2026-market.jpg")
+        XCTAssertEqual(first.datePublishedISO, "2026-06-18T00:00:00Z")
+        XCTAssertFalse(first.takeaways.isEmpty)
+        // The feed omits bodies — they must default rather than fail.
+        for row in rows {
+            XCTAssertTrue(row.sections.isEmpty)
+            XCTAssertTrue(row.sources.isEmpty)
+            XCTAssertFalse(row.hasBody)
+            XCTAssertFalse(row.title.isEmpty)
+        }
+    }
+
+    func testJournalArticleFixtureDecodesWithBody() throws {
+        let article = try apiDecoder().decode(
+            Envelope<JournalArticle>.self,
+            from: fixtureData("content-journal-article")
+        ).data
+        XCTAssertEqual(article.id, "rolex-2026-releases")
+        XCTAssertTrue(article.hasBody)
+        XCTAssertEqual(article.sections.count, 5)
+        XCTAssertEqual(article.sources.count, 4)
+        XCTAssertFalse(article.sections[0].heading.isEmpty)
+        XCTAssertFalse(article.sections[0].paragraphs.isEmpty)
+    }
+
+    func testJournalArticleRoundTripsThroughTheOfflineCache() throws {
+        // ContentStore persists articles with a plain JSONEncoder, so the
+        // camelCase keys have to survive a re-decode without the API's
+        // snake_case strategy.
+        let article = try apiDecoder().decode(
+            Envelope<JournalArticle>.self,
+            from: fixtureData("content-journal-article")
+        ).data
+        let encoded = try JSONEncoder().encode(article)
+        let restored = try JSONDecoder().decode(JournalArticle.self, from: encoded)
+        XCTAssertEqual(restored, article)
+    }
+}
+
+/// Mirrors `ContentStore`'s private feed wrapper, so the fixture that pins the
+/// wire's shape and the code that reads it can never drift apart silently.
+private struct JournalFeedPageProbe: Decodable {
+    let results: [JournalArticle]
 }

@@ -155,8 +155,8 @@ public final class CommerceStore {
     }
 
     /// Make an offer. The response's `hold.clientSecret` + `publishableKey`
-    /// feed Stripe PaymentSheet to authorize the $250 good-faith hold; call
-    /// `confirmHold` afterwards.
+    /// feed Stripe PaymentSheet to authorize the good-faith hold, whose
+    /// amount is `hold.amount`; call `confirmHold` afterwards.
     public func createOffer(
         listingID: String,
         amount: Decimal,
@@ -256,6 +256,38 @@ public final class CommerceStore {
     public func orderTimeline(orderID: String) async throws -> [OrderEvent] {
         try await client.send(Endpoint(path: "/orders/\(orderID)/timeline"))
     }
+
+    // MARK: - Returns (buyer)
+
+    /// The exact refund, itemized, before the buyer commits. Also reports
+    /// the live window and any return already open on this order.
+    public func returnQuote(orderID: String) async throws -> ReturnQuote {
+        try await client.send(Endpoint(path: "/orders/\(orderID)/return-quote"))
+    }
+
+    /// Opens the return: stops the window clock, generates the insured,
+    /// signature-required label, and sets the 48-business-hour ship
+    /// deadline. Errors (409): returns_not_accepted, order_not_delivered,
+    /// return_already_open, return_window_closed; 502 return_label_unavailable.
+    @discardableResult
+    public func startReturn(orderID: String) async throws -> ReturnStartResult {
+        try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/return"))
+    }
+
+    /// "I shipped it" — grants a short grace period for the carrier's first
+    /// scan. 409 `return_already_shipped` when it's already been declared.
+    @discardableResult
+    public func declareReturnShipped(orderID: String) async throws -> OrderReturn {
+        try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/return/shipped"))
+    }
+
+    /// Calls the return off and resumes the original window. 409
+    /// `return_in_transit` once the watch is already on its way back.
+    @discardableResult
+    public func cancelReturn(orderID: String) async throws -> OrderReturn {
+        try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/return/cancel"))
+    }
+
 
     // MARK: - Reviews
 

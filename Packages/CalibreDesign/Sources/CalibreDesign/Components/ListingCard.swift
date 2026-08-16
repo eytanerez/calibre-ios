@@ -11,6 +11,8 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
     public let condition: String?
     public let watcherCount: Int?
     public let imageURL: URL?
+    /// Seller is a verified business — earns the dealer badge.
+    public let isVerifiedDealer: Bool
 
     public init(
         id: String,
@@ -21,7 +23,8 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         priceText: String,
         condition: String? = nil,
         watcherCount: Int? = nil,
-        imageURL: URL? = nil
+        imageURL: URL? = nil,
+        isVerifiedDealer: Bool = false
     ) {
         self.id = id
         self.brand = brand
@@ -32,6 +35,32 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         self.condition = condition
         self.watcherCount = watcherCount
         self.imageURL = imageURL
+        self.isVerifiedDealer = isVerifiedDealer
+    }
+}
+
+/// The dealer mark: a verified business is behind this listing. Small,
+/// quiet, and never louder than the watch.
+public struct DealerBadge: View {
+    private let compact: Bool
+
+    public init(compact: Bool = false) {
+        self.compact = compact
+    }
+
+    public var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: compact ? 9 : 11, weight: .semibold))
+            Text("Dealer")
+                .font(compact ? CalibreType.caption : CalibreType.label)
+        }
+        .foregroundStyle(Color.calibre.primary)
+        .padding(.horizontal, compact ? 6 : Space.s)
+        .padding(.vertical, compact ? 2 : 3)
+        .background(Color.calibre.accent.opacity(0.6), in: Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Verified dealer")
     }
 }
 
@@ -73,7 +102,13 @@ public struct ListingCard<ImageContent: View>: View {
             .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
-                Eyebrow([model.brand, model.year].compactMap(\.self).joined(separator: " · "))
+                HStack(spacing: Space.xs) {
+                    Eyebrow([model.brand, model.year].compactMap(\.self).joined(separator: " · "))
+                    if model.isVerifiedDealer {
+                        DealerBadge(compact: true)
+                    }
+                    Spacer(minLength: 0)
+                }
                 Text(model.title)
                     .font(CalibreType.bodyMedium)
                     .foregroundStyle(Color.calibre.foreground)

@@ -194,7 +194,8 @@ extension Listing {
             priceText: PriceFormatter.format(price.value, currency: currency),
             condition: condition?.overall,
             watcherCount: metrics?.watchers,
-            imageURL: images.first?.url
+            imageURL: images.first?.url,
+            isVerifiedDealer: seller?.isVerifiedDealer ?? false
         )
     }
 
@@ -221,7 +222,8 @@ extension ListingSummary {
             brand: productionYear.map(String.init) ?? " ",
             title: title,
             priceText: PriceFormatter.format(price.value, currency: currency),
-            imageURL: image?.url
+            imageURL: image?.url,
+            isVerifiedDealer: seller?.isVerifiedDealer ?? false
         )
     }
 

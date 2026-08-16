@@ -1,0 +1,21 @@
+{
+ "ok": true,
+ "data": {
+  "id": "th_9182",
+  "status": "waiting_on_calibre",
+  "created_at": "2026-08-11T09:00:00+00:00",
+  "last_message_at": "2026-08-14T08:12:00+00:00",
+  "assigned_contact": {
+   "key": "amelia",
+   "display_name": "Amelia Hart"
+  },
+  "messages": [
+   {
+    "id": "m1",
+    "sender": "customer",
+    "body": "When should I expect the verdict?",
+    "created_at": "2026-08-14T08:12:00+00:00"
+   }
+  ]
+ }
+}

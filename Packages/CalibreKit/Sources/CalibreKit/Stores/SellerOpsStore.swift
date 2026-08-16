@@ -78,6 +78,32 @@ public final class SellerOpsStore {
         try await client.send(Endpoint(path: "/orders/\(id)"))
     }
 
+    // MARK: - Returns (seller side)
+
+    /// After a refunded return, the seller chooses: put it back on the
+    /// market, or take it off. The watch is already on its way back to them.
+    @discardableResult
+    public func relistDecision(orderID: String, relist: Bool) async throws -> RelistDecision {
+        struct Payload: Encodable {
+            let relist: Bool
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/orders/\(orderID)/return/relist-decision",
+                payload: Payload(relist: relist)
+            )
+        )
+    }
+
+    /// "I shipped it" for the seller's own outbound leg — the same rule as
+    /// the buyer's return: declaring buys a grace period for the carrier's
+    /// first scan.
+    @discardableResult
+    public func declareOutboundShipped(orderID: String) async throws -> FulfillmentShipped {
+        try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/fulfillment/shipped"))
+    }
+
     // MARK: - Seller shipping label
 
     /// Live quote for the to-auth label without creating any payment.

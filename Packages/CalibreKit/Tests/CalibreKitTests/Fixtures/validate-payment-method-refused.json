@@ -1,0 +1,12 @@
+{
+ "ok": true,
+ "data": {
+  "accepted": false,
+  "funding": "prepaid",
+  "pricing_mode": "surcharge",
+  "accepted_card_funding": [
+   "credit"
+  ],
+  "reason": "prepaid_not_accepted"
+ }
+}

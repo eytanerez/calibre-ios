@@ -32,12 +32,15 @@ struct OfferDetailScreen: View {
                 offerID: offerID,
                 catalog: services.catalog,
                 commerce: services.commerce,
+                config: services.config,
                 userID: session.user?.id,
                 toasts: toasts,
                 router: router
             )
             model = created
+            async let config: Void = { _ = try? await services.config.load() }()
             await created.load()
+            await config
         }
     }
 
@@ -116,6 +119,12 @@ private struct OfferDetailContent: View {
                     CountdownChip(until: deadline)
                 }
                 Spacer()
+            }
+
+            // Money at risk comes before the negotiation history: a buyer
+            // whose payment failed needs the clock and the figure first.
+            if let notice = model.resolutionNotice {
+                OfferResolutionBand(notice: notice)
             }
 
             if let holdCaption = model.holdCaption {
@@ -261,7 +270,7 @@ private struct OfferDetailContent: View {
             }
             Button("Keep it open", role: .cancel) {}
         } message: {
-            Text("Your $250 hold is released when the offer is withdrawn.")
+            Text(model.withdrawalHoldSentence)
         }
         .alert(
             "Back out of this purchase?",
@@ -272,7 +281,7 @@ private struct OfferDetailContent: View {
             }
             Button("Keep the deal", role: .cancel) {}
         } message: {
-            Text("You agreed to buy this watch. If you back out now, Calibre may charge the $250 hold on your card.")
+            Text(model.backOutMessage)
         }
         .tutorialAnchor("offer.actions")
     }
@@ -390,6 +399,9 @@ final class OfferDetailModel {
     let offerID: String
     @ObservationIgnored private let catalog: CatalogStore
     @ObservationIgnored private let commerce: CommerceStore
+    /// Only ever consulted for figures that exist before the offer does; the
+    /// offer's own `hold.amount` always wins.
+    @ObservationIgnored let config: ConfigStore
     @ObservationIgnored private let userID: String?
     @ObservationIgnored private let toasts: ToastCenter
     @ObservationIgnored private let router: AppRouter
@@ -414,6 +426,7 @@ final class OfferDetailModel {
         offerID: String,
         catalog: CatalogStore,
         commerce: CommerceStore,
+        config: ConfigStore,
         userID: String?,
         toasts: ToastCenter,
         router: AppRouter
@@ -421,6 +434,7 @@ final class OfferDetailModel {
         self.offerID = offerID
         self.catalog = catalog
         self.commerce = commerce
+        self.config = config
         self.userID = userID
         self.toasts = toasts
         self.router = router
@@ -463,27 +477,63 @@ final class OfferDetailModel {
         offer?.buyer?.username ?? "The buyer"
     }
 
+    /// The hold's state in one line. The figure is the offer's own, and when
+    /// the payload doesn't carry one the sentence simply loses its number.
     var holdCaption: String? {
-        guard let hold = offer?.hold else { return nil }
-        if hold.capturedAt != nil { return "$250 deposit charged" }
-        if hold.releasedAt != nil { return "$250 hold released" }
+        guard let offer, let hold = offer.hold else { return nil }
+        let noun = offerHoldNoun(offerHoldText(offer, config: config))
+        if offerSettledForfeit(offer) != nil || hold.capturedAt != nil {
+            return "\(noun) forfeited to the seller"
+        }
+        if hold.releasedAt != nil { return "\(noun) released" }
         if hold.authorizedAt != nil || hold.status == "requires_capture" {
-            return "$250 hold authorized · released after payment"
+            return "\(noun) authorized · released after payment"
         }
         return nil
+    }
+
+    /// The failed-payment warning, or the settled outcome once the clock has
+    /// run out. Nil when neither applies.
+    var resolutionNotice: OfferResolutionNotice? {
+        guard let offer else { return nil }
+        return offerResolutionNotice(for: offer, viewerIsSeller: viewerIsSeller, config: config)
+    }
+
+    /// The hold released when a buyer withdraws — said with the real figure
+    /// when we have it.
+    var withdrawalHoldSentence: String {
+        let noun = offerHoldNoun(offerHoldText(offer, config: config))
+        return "Your \(noun) is released when the offer is withdrawn."
+    }
+
+    var withdrawnToastMessage: String {
+        let noun = offerHoldNoun(offerHoldText(offer, config: config))
+        return "Your \(noun) has been released."
+    }
+
+    /// Backing out of an accepted offer is the forfeiture case, stated with
+    /// the exact amount at stake.
+    var backOutMessage: String {
+        let noun = offerHoldNoun(offerHoldText(offer, config: config))
+        return "You agreed to buy this watch. If you back out now, your \(noun) is forfeited to the seller, less the cost of processing it."
     }
 
     var acceptDialogTitle: String {
         viewerIsSeller ? "Accept this offer?" : "Accept the counteroffer?"
     }
 
+    /// §17.5 requires the forfeiture disclosure again at acceptance, adapted
+    /// to whose money is at risk.
     var acceptDialogMessage: String {
         guard let offer else { return "" }
-        let amount = PriceFormatter.format(offerCurrentAmount(offer), currency: offer.currency)
-        if viewerIsSeller {
-            return "The listing is reserved and \(buyerName) has 24 hours to pay \(amount)."
-        }
-        return "You're agreeing to buy this watch for \(amount). Payment is due within 24 hours."
+        return offerAcceptanceDisclosure(
+            amountText: PriceFormatter.format(offerCurrentAmount(offer), currency: offer.currency),
+            holdText: offerHoldText(offer, config: config),
+            graceHours: config.paymentGraceHours,
+            paymentDueHours: config.paymentDeadlineHours,
+            viewerIsSeller: viewerIsSeller,
+            buyerName: buyerName
+        )
     }
 
     // MARK: Actions
@@ -504,7 +554,7 @@ final class OfferDetailModel {
                     title: "Offer accepted",
                     message: viewerIsSeller
                         ? "The listing is reserved while the buyer pays."
-                        : "Pay within 24 hours to make it yours.",
+                        : "Pay within \(offerPaymentDuePhrase(config.paymentDeadlineHours)) to make it yours.",
                     tone: .success
                 )
             case .decline:
@@ -542,7 +592,7 @@ final class OfferDetailModel {
         do {
             let updated = try await commerce.cancelOffer(offerID: offerID)
             offer = updated
-            toasts.show(title: "Offer withdrawn", message: "Your $250 hold has been released.")
+            toasts.show(title: "Offer withdrawn", message: withdrawnToastMessage)
         } catch {
             Haptics.shared.play(.error)
             actionError = friendlyMessage(error)

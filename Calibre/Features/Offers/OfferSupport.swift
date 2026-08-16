@@ -37,10 +37,56 @@ func offerStatusPresentation(for offer: Offer, viewerIsSeller: Bool) -> OfferSta
     case .expired:
         return .init(text: "Expired", tone: .neutral)
     case .penaltyCaptured:
-        return .init(text: "Deposit charged", tone: .danger)
+        // Canonical vocabulary: the good-faith hold was forfeited to the
+        // seller. It was never a penalty deposit, and it was never a charge
+        // the buyer chose to make.
+        return viewerIsSeller
+            ? .init(text: "Hold forfeited to you", tone: .neutral)
+            : .init(text: "Hold forfeited", tone: .danger)
     case .unknown:
         return .init(text: "Updated", tone: .neutral)
     }
+}
+
+// MARK: - The hold figure
+
+/// The hold riding on an offer, formatted from the payload. Once an offer
+/// exists this is the only sanctioned source of the figure — no screen may
+/// state it from memory. Nil when the payload carries no hold, in which case
+/// the sentence is written without a number rather than with a guess.
+func offerHoldText(_ offer: Offer?) -> String? {
+    guard let offer, let hold = offer.hold else { return nil }
+    return PriceFormatter.format(hold.amount.value, currency: hold.currency ?? offer.currency)
+}
+
+/// The hold figure for a screen that may not have an offer yet: the offer's
+/// own hold first, the marketplace config second, and no number at all third.
+/// A live payload figure always wins over the config.
+@MainActor
+func offerHoldText(_ offer: Offer?, config: ConfigStore) -> String? {
+    offerHoldText(offer) ?? config.offerHoldText
+}
+
+/// "$250 hold" when the figure is known, plain "hold" when it isn't, so the
+/// surrounding sentence reads properly either way.
+func offerHoldNoun(_ holdText: String?) -> String {
+    guard let holdText else { return "hold" }
+    return "\(holdText) hold"
+}
+
+/// The currency the hold is denominated in, for figures the server derives
+/// from it.
+func offerHoldCurrency(_ offer: Offer) -> String {
+    offer.hold?.currency ?? offer.currency
+}
+
+/// A forfeit the server has actually settled. An empty object on the wire is
+/// not one, and must not be read as an outcome.
+func offerSettledForfeit(_ offer: Offer) -> OfferForfeit? {
+    guard let forfeit = offer.forfeit,
+          forfeit.forfeitedAt != nil || forfeit.sellerAmount != nil
+    else { return nil }
+    return forfeit
 }
 
 /// The live deadline a countdown should track, when one exists.
@@ -85,6 +131,265 @@ func offerIsOpen(_ offer: Offer) -> Bool {
         true
     default:
         false
+    }
+}
+
+// MARK: - Forfeiture disclosure (canonical §Offers, placements §17.5)
+
+/// Canonical §Offers: payment is due within 24 hours of acceptance.
+///
+/// The figure itself comes from `offer_payment_deadline_hours` on the
+/// marketplace config; this constant is only what the sentence falls back to
+/// while the config hasn't landed, so the disclosure is never silent about a
+/// deadline the buyer is being held to.
+private let canonicalPaymentDueHours = 24
+
+func offerPaymentDuePhrase(_ deadlineHours: Int?) -> String {
+    "\(deadlineHours ?? canonicalPaymentDueHours) hours"
+}
+
+/// Canonical §Offers: offers expire after 24 hours. Same rule as above — the
+/// config's `offer_ttl_hours` wins, and this is only the unloaded fallback.
+private let canonicalOfferTtlHours = 24
+
+func offerExpiryPhrase(_ ttlHours: Int?) -> String {
+    "\(ttlHours ?? canonicalOfferTtlHours) hours"
+}
+
+/// Canonical §Offers: a failed payment leaves 12 hours to resolve it. The
+/// config's `offer_payment_grace_hours` wins; this is the unloaded fallback.
+private let canonicalGraceHours = 12
+
+/// The window a buyer has to fix a failed payment, in words.
+private func offerGracePhrase(_ graceHours: Int?) -> String {
+    "\(graceHours ?? canonicalGraceHours) hours"
+}
+
+/// The disclosure §17.5 requires **at placement**, spoken to the buyer about
+/// to authorize the hold. Every figure arrives from the caller — payload
+/// first, marketplace config second — and a figure the server hasn't stated
+/// drops out of the sentence instead of being invented.
+func offerPlacementDisclosure(
+    holdText: String?,
+    expiryHours: Int?,
+    graceHours: Int?,
+    paymentDueHours: Int?
+) -> String {
+    let holdPhrase = holdText.map { "a refundable \($0) hold" } ?? "a refundable hold"
+    let expiry = "Your offer expires after \(offerExpiryPhrase(expiryHours)) if the seller does not respond."
+
+    return """
+    Placing an offer authorizes \(holdPhrase) on your credit card. It is a hold, not a charge, and it is \
+    released once you pay. \(expiry)
+
+    An accepted offer is a sale, with the same fees and the same return terms as any purchase, and payment \
+    is due within \(offerPaymentDuePhrase(paymentDueHours)) of acceptance. If your payment fails you have \
+    \(offerGracePhrase(graceHours)) to resolve it. If you do not, your \(offerHoldNoun(holdText)) is \
+    forfeited to the seller, less the cost of processing it.
+    """
+}
+
+/// The disclosure §17.5 requires **at acceptance**, adapted to whose money is
+/// at risk. `amountText` is the agreed price; every other figure is optional
+/// and drops out of the sentence when the server hasn't stated it.
+func offerAcceptanceDisclosure(
+    amountText: String,
+    holdText: String?,
+    graceHours: Int?,
+    paymentDueHours: Int?,
+    viewerIsSeller: Bool,
+    buyerName: String
+) -> String {
+    let holdNoun = offerHoldNoun(holdText)
+    let grace = offerGracePhrase(graceHours)
+    let due = offerPaymentDuePhrase(paymentDueHours)
+
+    if viewerIsSeller {
+        return """
+        Accepting makes this a sale at \(amountText), with the same fees and the same return terms as any \
+        purchase. The listing is reserved while \(buyerName) pays, and payment is due within \(due).
+
+        If their payment fails they have \(grace) to resolve it. If they do not, their \(holdNoun) is \
+        forfeited to you, less the cost of processing it.
+        """
+    }
+
+    return """
+    You are agreeing to buy this watch for \(amountText). An accepted offer is a sale, with the same fees \
+    and the same return terms as any purchase, and payment is due within \(due).
+
+    If your payment fails you have \(grace) to resolve it. If you do not, your \(holdNoun) is forfeited to \
+    the seller, less the cost of processing it.
+    """
+}
+
+// MARK: - The payment-failure warning and its settled outcome
+
+/// What a screen shows once a payment has failed after acceptance: the clock,
+/// the exact amount at stake, and what happens if the clock runs out — or,
+/// once it has run out, the outcome the server settled on.
+struct OfferResolutionNotice {
+    enum Emphasis {
+        /// The clock is still running and money is still at risk.
+        case urgent
+        /// Settled. A record, not a warning.
+        case settled
+    }
+
+    let emphasis: Emphasis
+    let icon: String
+    let title: String
+    /// The live deadline, while it is still in the future.
+    let deadline: Date?
+    /// The exact figure, straight from the payload — never computed here.
+    let amountText: String?
+    let amountCaption: String
+    let message: String
+}
+
+/// Builds the notice for an offer, or nil when there is nothing to warn about.
+/// Once `forfeit` is present the outcome replaces the warning; the net figure
+/// the seller received is only ever the server's own `sellerAmount`, and is
+/// omitted entirely when the server hasn't sent it.
+@MainActor
+func offerResolutionNotice(
+    for offer: Offer,
+    viewerIsSeller: Bool,
+    config: ConfigStore
+) -> OfferResolutionNotice? {
+    let holdText = offerHoldText(offer, config: config)
+    let holdNoun = offerHoldNoun(holdText)
+
+    if let forfeit = offerSettledForfeit(offer) {
+        var message: String
+        if viewerIsSeller {
+            message = "The payment was not resolved in time, so the buyer's \(holdNoun) was forfeited to "
+                + "you, less the cost of processing it."
+            if let sellerAmount = forfeit.sellerAmount {
+                let net = PriceFormatter.format(sellerAmount.value, currency: offerHoldCurrency(offer))
+                message += " You received \(net)."
+            }
+        } else {
+            message = "The payment was not resolved in time, so your \(holdNoun) was forfeited to the "
+                + "seller, less the cost of processing it."
+        }
+        return OfferResolutionNotice(
+            emphasis: .settled,
+            icon: "lock.shield",
+            title: viewerIsSeller ? "The hold was forfeited to you" : "Your hold was forfeited",
+            deadline: nil,
+            amountText: holdText,
+            amountCaption: "Forfeited",
+            message: message
+        )
+    }
+
+    guard offer.paymentFailedAt != nil || offer.resolveBy != nil else { return nil }
+
+    let deadline = offer.resolveBy.flatMap { $0 > .now ? $0 : nil }
+    let grace = offerGracePhrase(config.paymentGraceHours)
+    let stillRunning = deadline != nil
+
+    let message: String
+    if viewerIsSeller {
+        message = stillRunning
+            ? "The buyer has \(grace) from the failed payment to resolve it. If they do not, their "
+                + "\(holdNoun) is forfeited to you, less the cost of processing it."
+            : "The buyer had \(grace) to resolve it. If it stays unresolved, their \(holdNoun) is "
+                + "forfeited to you, less the cost of processing it."
+    } else {
+        message = stillRunning
+            ? "You have \(grace) from the failed payment to resolve it. If you do not, your \(holdNoun) "
+                + "is forfeited to the seller, less the cost of processing it."
+            : "You had \(grace) to resolve it. If it stays unresolved, your \(holdNoun) is forfeited to "
+                + "the seller, less the cost of processing it."
+    }
+
+    return OfferResolutionNotice(
+        emphasis: .urgent,
+        icon: "exclamationmark.triangle",
+        title: viewerIsSeller ? "The buyer's payment didn't go through" : "Your payment didn't go through",
+        deadline: deadline,
+        amountText: holdText,
+        amountCaption: "At stake",
+        message: message
+    )
+}
+
+/// Renders an ``OfferResolutionNotice``. Urgent carries the destructive tint
+/// at low weight — prominent without shouting, because money at risk deserves
+/// precision rather than alarm. Settled borrows ``CalloutBand``'s quiet
+/// chrome, because nothing is at risk any more.
+struct OfferResolutionBand: View {
+    let notice: OfferResolutionNotice
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Space.m) {
+            Image(systemName: notice.icon)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(iconTint)
+                .frame(width: 32, height: 32)
+                .background(
+                    Color.calibre.card,
+                    in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                )
+
+            VStack(alignment: .leading, spacing: Space.s) {
+                Text(notice.title)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let deadline = notice.deadline {
+                    CountdownChip(until: deadline)
+                }
+
+                if let amountText = notice.amountText {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Eyebrow(notice.amountCaption)
+                        Text(amountText)
+                            .font(CalibreType.price)
+                            .foregroundStyle(Color.calibre.foreground)
+                    }
+                    .padding(.top, 2)
+                }
+
+                Text(notice.message)
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .multilineTextAlignment(.leading)
+        .padding(Space.l)
+        .background(fill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(stroke, lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    private var iconTint: Color {
+        switch notice.emphasis {
+        case .urgent: Color.calibre.destructive
+        case .settled: Color.calibre.mutedForeground
+        }
+    }
+
+    private var fill: Color {
+        switch notice.emphasis {
+        case .urgent: Color.calibre.destructive.opacity(0.07)
+        case .settled: Color.calibre.accent.opacity(0.4)
+        }
+    }
+
+    private var stroke: Color {
+        switch notice.emphasis {
+        case .urgent: Color.calibre.destructive.opacity(0.28)
+        case .settled: Color.calibre.border
+        }
     }
 }
 

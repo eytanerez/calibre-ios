@@ -2,12 +2,24 @@ import Foundation
 
 public enum SupportConversationStatus: String, Codable, Sendable {
     case open
+    /// The customer wrote last; their Calibre contact owes a reply.
+    case waitingOnCalibre = "waiting_on_calibre"
+    /// Calibre wrote last.
+    case waitingOnCustomer = "waiting_on_customer"
     case closed
     case unknown
 
     public init(from decoder: Decoder) throws {
         self = try decodeWireStatus(from: decoder, fallback: .unknown)
     }
+}
+
+/// The named person on the Calibre side of this conversation. Messages come
+/// personally from them, and writing to support@buycalibre.com lands in the
+/// same thread.
+public struct SupportContact: Codable, Sendable {
+    public let key: String?
+    public let displayName: String?
 }
 
 public enum SupportSender: String, Codable, Sendable {
@@ -30,6 +42,8 @@ public struct SupportConversation: Codable, Sendable, Identifiable {
     public let createdAt: Date?
     public let lastMessageAt: Date?
     public let messages: [SupportMessage]
+    /// Present once a contact is assigned; nil before then.
+    public let assignedContact: SupportContact?
 }
 
 public struct SupportMessage: Codable, Sendable, Identifiable {

@@ -10,6 +10,7 @@ struct SaleDetailScreen: View {
     let orderID: String
 
     @Environment(SellSession.self) private var sell
+    @Environment(ToastCenter.self) private var toasts
     @Environment(\.dismiss) private var dismiss
 
     private enum FlowStep: Hashable {
@@ -20,6 +21,17 @@ struct SaleDetailScreen: View {
     @State private var order: Order?
     @State private var loadError: String?
     @State private var path: [FlowStep] = []
+    @State private var decidingRelist = false
+    @State private var relistError: String?
+    /// The seller's own handover declaration, and the grace period the server
+    /// granted for the carrier's first scan.
+    @State private var declaringShipped = false
+    @State private var outboundDeclaration: FulfillmentShipped?
+    @State private var declareError: String?
+    /// Payout details, opened from a failed payout.
+    @State private var openingPayoutDetails = false
+    @State private var payoutDetailsError: String?
+    @State private var payoutConnect: PayoutConnectSession?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -74,6 +86,21 @@ struct SaleDetailScreen: View {
         .task {
             await load()
         }
+        .fullScreenCover(item: $payoutConnect) { pending in
+            ConnectOnboardingScreen(
+                clientSecret: pending.clientSecret,
+                publishableKey: pending.key,
+                title: "Update payout details",
+                onExit: {
+                    payoutConnect = nil
+                    Task { await load() }
+                },
+                onLoadFailure: { message in
+                    payoutConnect = nil
+                    payoutDetailsError = message
+                }
+            )
+        }
     }
 
     private func load() async {
@@ -89,6 +116,13 @@ struct SaleDetailScreen: View {
         guard let order else { return false }
         return order.sellerActionState == "sold_awaiting_label_creation"
             || (order.status == .purchased && order.toAuthShipment == nil)
+    }
+
+    /// A label exists and the carrier hasn't scanned it yet — the same rule
+    /// (and the same button) as the buyer's return leg.
+    private func awaitingOutboundHandover(_ order: Order) -> Bool {
+        guard let shipment = order.toAuthShipment else { return false }
+        return shipment.shippedAt == nil && shipment.deliveredAt == nil
     }
 
     // MARK: - Content
@@ -109,6 +143,12 @@ struct SaleDetailScreen: View {
 
                 financials(order)
 
+                payoutTiming(order)
+
+                if let summary = order.returnSummary {
+                    returnSection(order, summary)
+                }
+
                 if awaitingLabel {
                     VStack(spacing: Space.s) {
                         Button("Get shipping label") {
@@ -125,6 +165,8 @@ struct SaleDetailScreen: View {
                         path.append(.labelReady)
                     }
                     .buttonStyle(.calibre(.secondary, fullWidth: true))
+
+                    outboundHandover(order)
                 }
             }
             .padding(.horizontal, Space.margin)
@@ -165,22 +207,319 @@ struct SaleDetailScreen: View {
         }
     }
 
+    /// Every figure here is the server's. The commission is quoted at the rate
+    /// the server recorded on the order, and "You receive" is the server's own
+    /// payout amount — never a subtotal minus a fee, and never a "you keep"
+    /// percentage inferred from the rate.
     private func financialRows(_ order: Order) -> [(String, String)] {
         var rows: [(String, String)] = [
             ("Sale price", PriceFormatter.format(order.subtotal.value)),
         ]
         if let fee = order.sellerFeeAmount?.value {
             let percent = order.sellerFeePercentApplied?.value
-            let keep = percent.map { 100 - $0 }
-            let label = keep.map { "Commission (you keep \(compactPercent($0))%)" } ?? "Commission"
+            let label = percent.map { "Commission (\(compactPercent($0))%)" } ?? "Commission"
             rows.append((label, "− \(PriceFormatter.format(fee))"))
-            rows.append(("Estimated payout", PriceFormatter.format(max(order.subtotal.value - fee, 0))))
+        }
+        // Absent when the server hasn't stated it — the row drops out rather
+        // than being computed on the device.
+        if let receive = order.payoutBlock?.amount?.value {
+            rows.append(("You receive", PriceFormatter.format(receive)))
         }
         rows.append(("Payout status", payoutStatusText(order)))
         if let released = order.payoutReleasedAt {
             rows.append(("Released", released.formatted(date: .abbreviated, time: .omitted)))
         }
         return rows
+    }
+
+    // MARK: - Outbound handover
+
+    /// The seller's side of the same rule the buyer's return leg follows:
+    /// declaring the handover buys a short grace period for the carrier's
+    /// first scan, and the grace window granted is shown once it exists.
+    @ViewBuilder
+    private func outboundHandover(_ order: Order) -> some View {
+        if awaitingOutboundHandover(order) {
+            VStack(alignment: .leading, spacing: Space.s) {
+                if let grace = outboundDeclaration?.autoCancelGraceUntil {
+                    HStack(spacing: Space.m) {
+                        Text("Scan expected by")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.secondaryForeground)
+                        CountdownChip(until: grace)
+                        Spacer(minLength: 0)
+                    }
+                    .accessibilityElement(children: .combine)
+                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Calibre contact takes it from there.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if outboundDeclaration != nil {
+                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Calibre contact takes it from there.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Button {
+                        Haptics.shared.play(.press)
+                        Task { await declareOutboundShipped(order) }
+                    } label: {
+                        BusyLabel(title: "I shipped it", busy: declaringShipped)
+                    }
+                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    .disabled(declaringShipped)
+
+                    Text("Tap this once you've handed the parcel over. Telling us buys a short grace period for the carrier's first scan.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let declareError {
+                    InlineErrorLine(message: declareError)
+                }
+            }
+            .animation(Motion.easeFast, value: outboundDeclaration?.autoCancelGraceUntil)
+        }
+    }
+
+    private func declareOutboundShipped(_ order: Order) async {
+        guard !declaringShipped else { return }
+        declaringShipped = true
+        declareError = nil
+        defer { declaringShipped = false }
+        do {
+            outboundDeclaration = try await sell.ops.declareOutboundShipped(orderID: order.id)
+            Haptics.shared.play(.success)
+            toasts.show(
+                title: "Thank you — noted",
+                message: "We'll watch for the carrier's first scan.",
+                tone: .success
+            )
+            await load()
+        } catch {
+            Haptics.shared.play(.error)
+            declareError = sellErrorMessage(error)
+        }
+    }
+
+    // MARK: - Payout timing
+
+    /// The two dates a seller actually needs — when the payout released and
+    /// when it should reach their bank — plus which rule decided the timing
+    /// and why. A seller should never have to guess which one applies to them.
+    @ViewBuilder
+    private func payoutTiming(_ order: Order) -> some View {
+        let payout = order.payoutBlock
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text("When you get paid")
+                .font(CalibreType.sectionTitle)
+                .foregroundStyle(Color.calibre.foreground)
+
+            VStack(alignment: .leading, spacing: Space.s) {
+                Text(payoutTriggerSentence(order))
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if payout?.firstPayoutHold == true {
+                    Text("This is one of your first sales, so this payout may take 7 to 14 days to arrive. After that, payouts settle on the normal schedule.")
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            let dates = payoutDateRows(order)
+            if !dates.isEmpty {
+                SpecList(dates)
+            }
+
+            if let failure = payout?.failureReason, !failure.isEmpty {
+                CalloutBand(
+                    icon: "exclamationmark.triangle",
+                    title: "This payout didn't go through",
+                    message: failure
+                )
+                // The reason alone isn't guidance. This says what to do about
+                // it, and the button opens the place to do it.
+                Text(payoutFixSentence(failure))
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    Haptics.shared.play(.press)
+                    Task { await openPayoutDetails() }
+                } label: {
+                    BusyLabel(title: "Update payout details", busy: openingPayoutDetails)
+                }
+                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .disabled(openingPayoutDetails)
+
+                if let payoutDetailsError {
+                    InlineErrorLine(message: payoutDetailsError)
+                }
+
+                Text("Changing your bank details never affects a payout already on its way — new payouts use the new account.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Text("If a buyer disputes a sale after you've been paid, that's ours to handle. You keep your money.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Which rule applies and why, in the seller's own terms. The trigger is
+    /// the server's; only the sentence is ours.
+    private func payoutTriggerSentence(_ order: Order) -> String {
+        let released = order.payoutBlock?.releasedAt != nil
+        switch order.payoutBlock?.trigger {
+        case "auth_pass":
+            return released
+                ? "This listing doesn't accept returns, so your payout released when authentication passed."
+                : "This listing doesn't accept returns, so your payout releases when authentication passes."
+        case "return_window_close":
+            return released
+                ? "This listing accepts returns, so your payout released when the return window closed."
+                : "This listing accepts returns, so your payout releases when the return window closes."
+        default:
+            // No trigger on the payload — fall back to the listing's own
+            // terms rather than inventing a rule.
+            if let terms = order.returns {
+                return terms.accepted
+                    ? "This listing accepts returns, so your payout releases when the return window closes."
+                    : "This listing doesn't accept returns, so your payout releases when authentication passes."
+            }
+            return "Your payout releases once this sale is settled, and we'll show both dates here."
+        }
+    }
+
+    /// What to fix, in the seller's terms. The server's reason is shown
+    /// verbatim above this; these sentences only say what to do about it, and
+    /// they never name the processor, a balance, or a connected account.
+    private func payoutFixSentence(_ reason: String) -> String {
+        let lowered = reason.lowercased()
+        if lowered.contains("closed") || lowered.contains("no longer") {
+            return "Your bank account looks closed. Add the account you'd like to be paid into and we'll send this payout again."
+        }
+        if lowered.contains("routing") || lowered.contains("account number") || lowered.contains("invalid")
+            || lowered.contains("incorrect") || lowered.contains("could not be found") {
+            return "Check the account and routing numbers on file — one of them isn't matching your bank. Correcting them is all this needs."
+        }
+        if lowered.contains("name") || lowered.contains("owner") || lowered.contains("mismatch") {
+            return "The name on the bank account needs to match the name your account is verified under. Update it and we'll send this payout again."
+        }
+        return "Check your bank details and correct whatever the reason above points at. We'll send this payout again once they're right."
+    }
+
+    /// Opens payout details in the same embedded onboarding host the sell gate
+    /// uses. The backend ignores the SSN field for an existing account.
+    private func openPayoutDetails() async {
+        guard !openingPayoutDetails else { return }
+        openingPayoutDetails = true
+        payoutDetailsError = nil
+        defer { openingPayoutDetails = false }
+        do {
+            let session = try await sell.ops.connectAccountSession(ssn: "")
+            let key = try await sell.stripeKey()
+            payoutConnect = PayoutConnectSession(clientSecret: session.clientSecret, key: key)
+        } catch {
+            payoutDetailsError = sellErrorMessage(error)
+        }
+    }
+
+    private func payoutDateRows(_ order: Order) -> [(String, String)] {
+        var rows: [(String, String)] = []
+        if let released = order.payoutBlock?.releasedAt ?? order.payoutReleasedAt {
+            rows.append(("Payout released", released.formatted(date: .abbreviated, time: .omitted)))
+        }
+        if let arrival = order.payoutBlock?.expectedArrivalAt {
+            rows.append(("Expected in your bank", arrival.formatted(date: .abbreviated, time: .omitted)))
+        }
+        return rows
+    }
+
+    // MARK: - Returns
+
+    /// A return on this sale. The seller pays nothing and gets the watch
+    /// back; once it's refunded the only thing left is their choice.
+    @ViewBuilder
+    private func returnSection(_ order: Order, _ summary: OrderReturnSummary) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text("This sale was returned")
+                .font(CalibreType.sectionTitle)
+                .foregroundStyle(Color.calibre.foreground)
+
+            Text("You pay nothing on a return, and the watch comes back to you. Calibre's label is insured for the full sale price on every leg.")
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let tracking = summary.label?.trackingNumber, !tracking.isEmpty {
+                SpecList([("Return tracking", tracking)])
+            }
+
+            if summary.isRefunded, summary.relistDecision == nil {
+                relistPrompt(order)
+            } else if let decision = summary.relistDecision {
+                Text(
+                    decision == "relist"
+                        ? "It's back on the market."
+                        : "It's been taken off the market and is yours to keep."
+                )
+                .font(CalibreType.label)
+                .foregroundStyle(Color.calibre.mutedForeground)
+            }
+
+            if let error = relistError {
+                InlineErrorLine(message: error)
+            }
+        }
+    }
+
+    private func relistPrompt(_ order: Order) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text("Would you like to list it again?")
+                .font(CalibreType.bodyMedium)
+                .foregroundStyle(Color.calibre.foreground)
+
+            HStack(spacing: Space.m) {
+                Button {
+                    Task { await decideRelist(order, relist: true) }
+                } label: {
+                    BusyLabel(title: "List it again", busy: decidingRelist)
+                }
+                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .disabled(decidingRelist)
+
+                Button {
+                    Task { await decideRelist(order, relist: false) }
+                } label: {
+                    Text("Take it off the market").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .disabled(decidingRelist)
+            }
+        }
+    }
+
+    private func decideRelist(_ order: Order, relist: Bool) async {
+        guard !decidingRelist else { return }
+        decidingRelist = true
+        relistError = nil
+        defer { decidingRelist = false }
+        do {
+            _ = try await sell.ops.relistDecision(orderID: order.id, relist: relist)
+            Haptics.shared.play(.success)
+            await load()
+        } catch {
+            relistError = sellErrorMessage(error)
+        }
     }
 
     private func compactPercent(_ value: Decimal) -> String {
@@ -190,15 +529,22 @@ struct SaleDetailScreen: View {
         return rounded == value ? "\(rounded)" : "\(value)"
     }
 
+    /// The backend's own status line wins when it sends one — it is written
+    /// for the seller. The local fallbacks only exist for older payloads, and
+    /// every one of them talks about money reaching a bank account: the words
+    /// Stripe, balance and connected account are never a seller's problem.
     private func payoutStatusText(_ order: Order) -> String {
-        switch order.payoutStatus {
-        case "released": "Released"
-        case "pending_connect": "Waiting on your Stripe account"
+        if let label = order.payoutBlock?.statusLabel, !label.isEmpty {
+            return label
+        }
+        return switch order.payoutStatus {
+        case "released": "Released — on its way to your bank"
+        case "pending_connect": "Waiting on your payout details"
         case "reversed": "Reversed"
         case "refunded": "Refunded"
         case .some(let other) where !other.isEmpty:
             other.replacingOccurrences(of: "_", with: " ").capitalized
-        default: "Pending — releases after authentication"
+        default: "Scheduled"
         }
     }
 
@@ -212,4 +558,11 @@ struct SaleDetailScreen: View {
         .padding(.horizontal, Space.margin)
         .padding(.top, Space.l)
     }
+}
+
+/// Identity for the payout-details cover.
+private struct PayoutConnectSession: Identifiable {
+    let clientSecret: String
+    let key: String
+    var id: String { clientSecret }
 }

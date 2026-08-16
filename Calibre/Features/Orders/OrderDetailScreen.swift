@@ -16,6 +16,10 @@ struct OrderDetailScreen: View {
     @State private var reviewRating = 0
     @State private var reviewComment = ""
     @State private var submittingReview = false
+    /// Owns the return: the quote, the start call, and the controls that
+    /// follow. Created once the order is known, kept in step with it.
+    @State private var returnFlow: ReturnFlowModel?
+    @State private var showingReturnFlow = false
 
     private let trackerSteps = [
         "Shipped to authentication",
@@ -46,6 +50,18 @@ struct OrderDetailScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .task(id: orderID) { await load() }
         .task(id: orderID) { await autoRefreshWhileInTransit() }
+        // The return flow re-fetches the order after anything that changes it;
+        // `Order` isn't Equatable, so the model hands over a token instead.
+        .onChange(of: returnFlow?.refreshToken) { _, _ in
+            if let refreshed = returnFlow?.refreshedOrder {
+                order = refreshed
+            }
+        }
+        .sheet(isPresented: $showingReturnFlow) {
+            if let returnFlow {
+                ReturnFlowSheet(model: returnFlow)
+            }
+        }
     }
 
     private func content(_ order: Order) -> some View {
@@ -57,10 +73,17 @@ struct OrderDetailScreen: View {
                     wireBanner(order)
                 }
 
+                // A return in progress is the order's current state — it sits
+                // above the journey it interrupted.
+                if let returnFlow, hasLiveReturn(order) {
+                    ReturnCaseCard(model: returnFlow)
+                }
+
                 if showsTracker(order) {
                     VStack(alignment: .leading, spacing: Space.m) {
                         Text("Progress").font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
                         ProgressCheckpoints(steps: trackerSteps, currentIndex: trackerIndex(order))
+                        expectedDates(order)
                     }
                 }
 
@@ -80,6 +103,8 @@ struct OrderDetailScreen: View {
                 }
 
                 receiptCard(order)
+
+                returnTermsSection(order)
 
                 if order.status == .delivered {
                     reviewSection(order)
@@ -250,9 +275,139 @@ struct OrderDetailScreen: View {
         }
         var rows: [(String, String)] = [("Watch", PriceFormatter.format(order.subtotal.value, currency: order.currency))]
         if let shipping = money(order.shippingTotal) { rows.append(("Shipping", shipping)) }
+        // The card's processing cost is its own receipt line, exactly as it
+        // was before payment — without it the rows don't add up to the total.
+        // Buyer-side fees are only ever the card cost, and a wire order sends
+        // zero here, so the row appears when there is something to state.
+        if order.feesTotal.value > 0 {
+            rows.append(("Card processing", PriceFormatter.format(order.feesTotal.value, currency: order.currency)))
+        }
         if let tax = money(order.taxTotal) { rows.append(("Tax", tax)) }
         rows.append(("Total", PriceFormatter.format(order.grandTotal.value, currency: order.currency)))
         return rows
+    }
+
+    // MARK: - Expected dates
+
+    /// The backend's own estimates for the legs ahead, under the tracker.
+    /// Every one of them is nullable — a date we don't have is left unsaid
+    /// rather than guessed at.
+    @ViewBuilder private func expectedDates(_ order: Order) -> some View {
+        let rows = expectedRows(order)
+        if !rows.isEmpty {
+            SpecList(rows)
+        }
+    }
+
+    private func expectedRows(_ order: Order) -> [(String, String)] {
+        guard let expected = order.expected else { return [] }
+        func day(_ date: Date) -> String {
+            date.formatted(date: .abbreviated, time: .omitted)
+        }
+        var rows: [(String, String)] = []
+        if let date = expected.authenticationVerdictBy {
+            rows.append(("Authentication verdict by", day(date)))
+        }
+        if let date = expected.shippedToYouBy {
+            rows.append(("Shipped to you by", day(date)))
+        }
+        if let date = expected.deliveredBy {
+            rows.append(("Delivered by", day(date)))
+        }
+        if let date = expected.returnWindowEndsAt {
+            rows.append(("Return window closes", day(date)))
+        }
+        return rows
+    }
+
+    // MARK: - Returns
+
+    /// A return exists on this order and hasn't been called off.
+    private func hasLiveReturn(_ order: Order) -> Bool {
+        guard let summary = order.returnSummary else { return false }
+        return !summary.isCancelled
+    }
+
+    /// Where a buyer looks for the answer to "can I send this back?" — stated
+    /// either way, and never at all on payloads that predate return terms.
+    @ViewBuilder private func returnTermsSection(_ order: Order) -> some View {
+        if let terms = order.returns, !hasLiveReturn(order) {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Text("Returns")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+
+                if terms.accepted {
+                    acceptedReturnsCard(order, terms)
+                } else {
+                    returnsNote(
+                        "This watch was listed without returns, so this order can't be sent back. If something isn't right with it, your Calibre contact will help — they're one message away."
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func acceptedReturnsCard(_ order: Order, _ terms: OrderReturnTerms) -> some View {
+        if order.status == .delivered, terms.isOpen() {
+            VStack(alignment: .leading, spacing: Space.m) {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    Text("Your return window is open")
+                        .font(CalibreType.bodySemiBold)
+                        .foregroundStyle(Color.calibre.foreground)
+                    Text(openWindowDetail(order, terms))
+                        .font(CalibreType.body)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+
+                Button("Start a return") {
+                    Haptics.shared.play(.press)
+                    showingReturnFlow = true
+                }
+                .buttonStyle(.calibre(.secondary, fullWidth: true))
+
+                Text("We'll show you the exact refund, line by line, before anything is confirmed.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(Space.l)
+            .cardSurface()
+        } else if order.status == .delivered {
+            returnsNote(
+                "The return window on this order has closed. If something isn't right with the watch, your Calibre contact will help."
+            )
+        } else {
+            returnsNote(pendingWindowDetail(terms))
+        }
+    }
+
+    private func openWindowDetail(_ order: Order, _ terms: OrderReturnTerms) -> String {
+        guard let ends = terms.windowEndsAt ?? order.expected?.returnWindowEndsAt else {
+            return "You can send this watch back to us. Starting a return stops the clock while you arrange it."
+        }
+        return "You have until \(ends.formatted(date: .abbreviated, time: .shortened)) to start a return. Starting one stops the clock."
+    }
+
+    private func pendingWindowDetail(_ terms: OrderReturnTerms) -> String {
+        let opening = terms.windowHours.map {
+            "This seller accepts returns for \($0) hours after delivery."
+        } ?? "This seller accepts returns after delivery."
+        return opening
+            + " The window starts when you sign for the watch, or two business days after the first delivery attempt, whichever comes first."
+    }
+
+    private func returnsNote(_ message: String) -> some View {
+        Text(message)
+            .font(CalibreType.body)
+            .foregroundStyle(Color.calibre.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Space.l)
+            .cardSurface()
     }
 
     // MARK: - Review
@@ -322,11 +477,27 @@ struct OrderDetailScreen: View {
 
     private func load() async {
         do {
-            order = try await services.commerce.order(id: orderID)
+            let loaded = try await services.commerce.order(id: orderID)
+            order = loaded
+            syncReturnFlow(loaded)
             review = try? await services.commerce.review(forOrder: orderID)
         } catch {
             if order == nil { failed = true }
         }
+    }
+
+    /// One return model per order, handed the freshest payload each time —
+    /// the order's own `returnSummary` is what the return renders from.
+    private func syncReturnFlow(_ order: Order) {
+        if returnFlow == nil {
+            returnFlow = ReturnFlowModel(
+                orderID: order.id,
+                currency: order.currency,
+                commerce: services.commerce,
+                toasts: toasts
+            )
+        }
+        returnFlow?.adopt(order)
     }
 
     private func autoRefreshWhileInTransit() async {
@@ -339,6 +510,7 @@ struct OrderDetailScreen: View {
             // rendered order and strand the screen on a spinner.
             if let refreshed = try? await services.commerce.order(id: orderID) {
                 order = refreshed
+                syncReturnFlow(refreshed)
             }
         }
     }

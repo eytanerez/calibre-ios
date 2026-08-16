@@ -5,17 +5,27 @@ import SwiftUI
 /// Bulk-import jobs: status, live row progress while processing, results
 /// summary, and the draft-finishing queue for imported listings that still
 /// need photos or details. Owns its NavigationStack — present it modally.
+///
+/// Bulk import is one of the three things dealer status brings, so the
+/// endpoints answer 403 `dealer_required` to everyone else. That refusal gets
+/// the honest explanation and the way to apply rather than a generic error.
 struct BulkImportStatusScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(\.dismiss) private var dismiss
 
     @State private var jobs: [ListingImportJob]?
     @State private var loadError: String?
+    @State private var dealerRequired = false
+    @State private var dealerApplication: DealerApplication?
+    @State private var showDealerApplication = false
 
     var body: some View {
         NavigationStack {
             Group {
-                if let jobs {
+                if dealerRequired {
+                    dealerRequiredState
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let jobs {
                     if jobs.isEmpty {
                         emptyState
                     } else {
@@ -54,6 +64,13 @@ struct BulkImportStatusScreen: View {
                 DraftFinishingQueueScreen(jobID: ref.id)
             }
         }
+        // The application is one tap from the refusal rather than a trip back
+        // to the dashboard to hunt for it.
+        .sheet(isPresented: $showDealerApplication) {
+            DealerApplicationScreen(application: dealerApplication) {
+                Task { await load() }
+            }
+        }
         .task {
             await load()
             await pollWhileProcessing()
@@ -64,11 +81,27 @@ struct BulkImportStatusScreen: View {
         loadError = nil
         do {
             jobs = try await services.seller.importJobs()
+            dealerRequired = false
         } catch {
-            if jobs == nil {
+            if sellErrorCode(error, is: "dealer_required") {
+                dealerRequired = true
+                jobs = nil
+                dealerApplication = try? await services.seller.dealerApplication()
+            } else if jobs == nil {
                 loadError = sellErrorMessage(error)
             }
         }
+    }
+
+    /// The honest explanation, and the way to become one.
+    private var dealerRequiredState: some View {
+        EmptyState(
+            icon: "tray.and.arrow.down",
+            title: "Bulk import is for verified dealers",
+            message: "A dealer is a verified business. Completing the second verification step with your EIN and business details makes you one automatically — there is no approval queue and no waiting on a person. Dealer status also brings the lower seller rate and a badge buyers can see.",
+            actionTitle: "Apply to become a dealer",
+            action: { showDealerApplication = true }
+        )
     }
 
     /// "Row X of Y" refresh loop — 1.5s while any job is still processing.

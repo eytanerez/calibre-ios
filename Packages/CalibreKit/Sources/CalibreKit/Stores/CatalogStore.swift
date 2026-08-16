@@ -44,6 +44,25 @@ public final class CatalogStore {
         return page
     }
 
+    /// A read-only price quote for one listing: the same breakdown checkout
+    /// uses, without creating a PaymentIntent and — crucially — without
+    /// reserving the watch. This is what display pricing and the all-in
+    /// toggle call; starting a checkout to show a price would take the
+    /// listing off the market for everyone else.
+    ///
+    /// Pass the buyer's address to get tax and shipping; without one the
+    /// server quotes what it can.
+    public func listingQuote(
+        listingID: String,
+        shippingAddressID: String? = nil
+    ) async throws -> CheckoutBreakdown {
+        var query: [URLQueryItem] = []
+        if let shippingAddressID {
+            query.append(URLQueryItem(name: "shipping_address_id", value: shippingAddressID))
+        }
+        return try await client.send(Endpoint(path: "/listings/\(listingID)/quote", query: query))
+    }
+
     /// Drops every cached browse page — call on pull-to-refresh so the next
     /// `browse` hits the network.
     public func invalidateBrowseCache() {

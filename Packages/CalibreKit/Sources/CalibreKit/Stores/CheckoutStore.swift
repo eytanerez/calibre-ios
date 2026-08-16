@@ -56,6 +56,50 @@ public struct CheckoutStore: Sendable {
         )
     }
 
+    // MARK: - Funding gate + server confirm
+
+    /// Asks whether this card may be used for this listing, the moment the
+    /// PaymentMethod exists and while wire is still one tap away. Prepaid is
+    /// refused everywhere; debit only clears where the discount presentation
+    /// applies. `reason` carries the backend's machine code.
+    public func validatePaymentMethod(
+        listingID: String,
+        paymentMethodID: String
+    ) async throws -> PaymentMethodValidation {
+        struct Payload: Encodable {
+            let listingId: String
+            let paymentMethodId: String
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/checkout/validate-payment-method",
+                payload: Payload(listingId: listingID, paymentMethodId: paymentMethodID)
+            )
+        )
+    }
+
+    /// Server-side confirmation of the PaymentIntent. A 402 carries the same
+    /// refusal codes as validation (the funding gate is enforced twice, so a
+    /// swapped card can't slip through). When the result requires action,
+    /// hand its `clientSecret` to the SDK and then materialize the order.
+    public func confirm(
+        paymentIntentID: String,
+        paymentMethodID: String
+    ) async throws -> CheckoutConfirmation {
+        struct Payload: Encodable {
+            let paymentIntentId: String
+            let paymentMethodId: String
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/checkout/confirm",
+                payload: Payload(paymentIntentId: paymentIntentID, paymentMethodId: paymentMethodID)
+            )
+        )
+    }
+
     // MARK: - Wire transfer
 
     /// Creates the wire checkout: a bank-transfer PaymentIntent with

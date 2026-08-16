@@ -155,6 +155,11 @@ struct WizardSnapshot: Codable {
     var slotFiles: [String: String]
     var extraFiles: [String]
     var fulfillRequestID: String?
+    /// Return terms, optional so a snapshot written by an earlier build still
+    /// decodes — `DraftStore.load` uses `try?`, and a missing key would
+    /// otherwise throw away a seller's whole in-progress draft.
+    var returnsAccepted: Bool? = nil
+    var returnWindowHours: Int? = nil
     var updatedAt: Date
 }
 
@@ -227,8 +232,7 @@ final class WizardModel {
     let kind: WizardContext.Kind
     @ObservationIgnored private let seller: SellerStore
     @ObservationIgnored private let sell: SellSession
-    /// Seller commission percent, from the dashboard's dealer payload.
-    let feePercent: Decimal
+    @ObservationIgnored private let config: ConfigStore
 
     private(set) var bootstrap: Bootstrap = .working
     private(set) var listing: Listing?
@@ -248,6 +252,10 @@ final class WizardModel {
     var priceText = ""
     var notes = ""
 
+    // Returns — the seller's choice at listing time.
+    var returnsAccepted = false
+    var returnWindowHours: Int?
+
     // Photos
     var slots: [ListingImageCategory: WizardPhotoSlot] = [:]
     var extraPhotos: [WizardPhotoSlot] = []
@@ -255,6 +263,12 @@ final class WizardModel {
     // Payout
     private(set) var estimate: ShippingEstimate?
     private(set) var estimating = false
+    /// The server's own statement of commission, net proceeds and the
+    /// buyer-facing price. Every figure on the payout card comes from here —
+    /// nothing about a rate, a minimum, or a buyer price is worked out on
+    /// device.
+    private(set) var preview: ListingPublishPreview?
+    private(set) var previewing = false
 
     // Sync + submit
     private(set) var saveError: String?
@@ -266,12 +280,14 @@ final class WizardModel {
 
     @ObservationIgnored private var patchTask: Task<Void, Never>?
     @ObservationIgnored private var estimateTask: Task<Void, Never>?
+    @ObservationIgnored private var previewTask: Task<Void, Never>?
+    @ObservationIgnored private var previewGeneration = 0
 
-    init(kind: WizardContext.Kind, seller: SellerStore, sell: SellSession, feePercent: Decimal) {
+    init(kind: WizardContext.Kind, seller: SellerStore, sell: SellSession, config: ConfigStore) {
         self.kind = kind
         self.seller = seller
         self.sell = sell
-        self.feePercent = feePercent
+        self.config = config
     }
 
     var isEdit: Bool {
@@ -381,6 +397,10 @@ final class WizardModel {
     func start() async {
         guard bootstrap != .ready else { return }
         bootstrap = .working
+        // The return windows a seller may pick from are the marketplace's to
+        // state, not ours — ask for them early so the chooser is ready by the
+        // time the Price step is.
+        config.warm()
         switch kind {
         case .new(let prefill):
             if let prefill {
@@ -405,6 +425,9 @@ final class WizardModel {
             }
             bootstrap = .ready
             await loadServerImages()
+            // A resumed draft usually already has a price, and the seller is
+            // entitled to see their net proceeds without touching the field.
+            await ensurePreview()
         }
     }
 
@@ -446,6 +469,10 @@ final class WizardModel {
             priceText = "\(listing.price.value)"
         }
         notes = listing.description ?? ""
+        if let terms = listing.returns {
+            returnsAccepted = terms.accepted
+            returnWindowHours = terms.windowHours
+        }
         if let condition = listing.condition {
             conditions[.crystal] = condition.crystal
             conditions[.bezel] = condition.bezel
@@ -467,6 +494,12 @@ final class WizardModel {
         yearUnknown = snapshot.yearUnknown
         priceText = snapshot.priceText
         notes = snapshot.notes
+        // Absent on snapshots written before return terms existed — leave
+        // whatever the listing itself said in that case.
+        if let accepted = snapshot.returnsAccepted {
+            returnsAccepted = accepted
+            returnWindowHours = snapshot.returnWindowHours
+        }
         step = min(max(snapshot.step, 0), 3)
         fulfillRequestID = snapshot.fulfillRequestID
         for (key, grade) in snapshot.conditions {
@@ -539,7 +572,11 @@ final class WizardModel {
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
             conditionCaseback: conditions[.caseback],
-            productionYear: yearUnknown ? nil : InputValidation.productionYear(yearText)
+            productionYear: yearUnknown ? nil : InputValidation.productionYear(yearText),
+            returnsAccepted: returnsAccepted,
+            // The server requires a window when returns are accepted, and
+            // refuses one when they aren't.
+            returnWindowHours: returnsAccepted ? returnWindowHours : nil
         )
     }
 
@@ -576,6 +613,8 @@ final class WizardModel {
             slotFiles: slotFiles,
             extraFiles: extraPhotos.compactMap { $0.localURL?.lastPathComponent },
             fulfillRequestID: fulfillRequestID,
+            returnsAccepted: returnsAccepted,
+            returnWindowHours: returnWindowHours,
             updatedAt: .now
         ))
     }
@@ -655,17 +694,11 @@ final class WizardModel {
         InputValidation.positiveMoney(priceText)
     }
 
-    var commission: Decimal? {
-        guard let price else { return nil }
-        var result = Decimal()
-        var raw = price * feePercent / 100
-        NSDecimalRound(&result, &raw, 2, .plain)
-        return result
-    }
-
-    var payout: Decimal? {
-        guard let price, let commission else { return nil }
-        return price - commission - (estimate?.amount.value ?? 0)
+    /// The seller's inbound label, whichever source we have it from. The
+    /// listing-scoped preview carries one; the price-scoped preview used
+    /// before a draft exists does not, so the standalone estimate stands in.
+    var shipping: ShippingEstimate? {
+        preview?.shippingEstimate ?? estimate
     }
 
     /// Notes are optional — a price is all the Price step really needs.
@@ -673,10 +706,18 @@ final class WizardModel {
         price != nil
     }
 
-    /// Debounced shipping estimate — fires as the price settles.
+    /// The seller has seen what they take home and what a buyer will be
+    /// shown — the two figures that must be on screen before publishing.
+    var payoutDisclosed: Bool {
+        preview != nil
+    }
+
+    /// Debounced shipping estimate and publish preview — both fire as the
+    /// price settles.
     func priceChanged() {
         fieldChanged()
         estimateTask?.cancel()
+        schedulePreview()
         guard let price, price > 0 else {
             estimate = nil
             estimating = false
@@ -698,6 +739,102 @@ final class WizardModel {
         }
     }
 
+    // MARK: Publish preview
+
+    /// Debounced publish preview, on the shipping estimate's timing so the
+    /// payout card settles once rather than on every keystroke.
+    private func schedulePreview() {
+        previewTask?.cancel()
+        guard let price, price > 0 else {
+            // Clearing the field wins over anything already in flight.
+            previewGeneration += 1
+            preview = nil
+            previewing = false
+            return
+        }
+        previewing = true
+        previewTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled, let self else { return }
+            await self.loadPreview(price: price)
+        }
+    }
+
+    /// Fetches the preview for the price the seller has typed. Once a draft
+    /// exists the listing-scoped call is the right one — it also returns the
+    /// shipping estimate and the listing's return terms — but it reads the
+    /// price the *server* holds, so the pending debounced PATCH has to land
+    /// first or the card would quote the previous price.
+    private func loadPreview(price: Decimal) async {
+        previewGeneration += 1
+        let generation = previewGeneration
+        previewing = true
+        // Only the newest fetch is allowed to write the card or clear the
+        // busy flag; an overtaken one leaves both to its successor.
+        defer {
+            if generation == previewGeneration {
+                previewing = false
+            }
+        }
+        do {
+            let fetched: ListingPublishPreview
+            if let listing {
+                patchTask?.cancel()
+                await pushPatch()
+                guard generation == previewGeneration else { return }
+                // A save that didn't land would leave the preview quoting a
+                // price the seller has since changed.
+                guard saveError == nil else {
+                    preview = nil
+                    return
+                }
+                fetched = try await seller.publishPreview(listingID: listing.id)
+            } else {
+                fetched = try await seller.publishPreview(price: price)
+            }
+            guard generation == previewGeneration else { return }
+            preview = fetched
+        } catch {
+            // A payout figure we can't stand behind is worse than none at
+            // all, so the card falls back to "—" rather than a stale number.
+            guard generation == previewGeneration else { return }
+            preview = nil
+        }
+    }
+
+    /// Fetches a preview only if we don't already have one — for screens that
+    /// need the figures on appearing rather than on a price edit.
+    func ensurePreview() async {
+        guard preview == nil, !previewing, let price, price > 0 else { return }
+        await loadPreview(price: price)
+    }
+
+    /// Explicit retry, for when the preview didn't come back and the seller
+    /// is waiting on it to publish.
+    func refreshPreview() async {
+        guard let price, price > 0 else { return }
+        previewTask?.cancel()
+        await loadPreview(price: price)
+    }
+
+    // MARK: Return terms
+
+    /// The windows the marketplace offers, e.g. [24, 48, 72]. Empty until the
+    /// config lands — in which case the chooser hides rather than inventing
+    /// a list.
+    var returnWindowChoices: [Int] {
+        config.returnWindowChoices
+    }
+
+    /// Call after either return field changes: keeps the window and the
+    /// toggle consistent, then saves like any other edit.
+    func returnsChanged() {
+        if returnsAccepted, returnWindowHours == nil {
+            returnWindowHours = returnWindowChoices.first
+        }
+        fieldChanged()
+    }
+
     // MARK: Submit
 
     /// Flushes fields, then flips the draft to pending review.
@@ -710,6 +847,12 @@ final class WizardModel {
         }
         guard priceDetailsComplete else {
             submitError = "Enter an asking price greater than zero."
+            return false
+        }
+        // Net proceeds and the buyer-facing price are ours to show before a
+        // seller publishes, not after.
+        guard payoutDisclosed else {
+            submitError = "We're still working out your net proceeds and the price buyers will see. Both need to be on screen before this goes to review."
             return false
         }
         guard allRequiredPhotosDone else {

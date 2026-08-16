@@ -1,9 +1,11 @@
 import CalibreDesign
+import CalibreKit
 import SwiftUI
 
-/// The Journal index — editorial cards for every bundled story.
+/// The Journal index — editorial cards for every published story.
 struct JournalScreen: View {
     @Environment(\.browsePush) private var push
+    @Environment(AppServices.self) private var services
 
     private let store = JournalStore.shared
 
@@ -21,20 +23,7 @@ struct JournalScreen: View {
                 }
                 .padding(.top, Space.l)
 
-                if store.articles.isEmpty {
-                    EmptyState(
-                        icon: "text.book.closed",
-                        title: "The presses are quiet",
-                        message: "New stories from the Calibre desk will appear here."
-                    )
-                } else {
-                    ForEach(Array(store.articles.enumerated()), id: \.element.id) { index, article in
-                        JournalCard(article: article) {
-                            push(.journalArticle(article.id))
-                        }
-                        .fadeUpEntrance(index: index)
-                    }
-                }
+                feed
             }
             .padding(.horizontal, Space.margin)
             .padding(.bottom, Space.xxl)
@@ -42,7 +31,59 @@ struct JournalScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("Journal")
         .navigationBarTitleDisplayMode(.inline)
+        .refreshable { await store.refresh() }
+        .task {
+            // Hand the store the app's own ContentStore, so the Journal shares
+            // one client and one cache with everything else.
+            store.configure(content: services.content)
+            await store.refresh()
+        }
         .browseStackNode()
+    }
+
+    /// Four states, and the difference between the last two matters: a
+    /// Journal with nothing in it is quiet, not broken.
+    @ViewBuilder
+    private var feed: some View {
+        if store.articles.isEmpty, !store.hasLoaded {
+            skeleton
+        } else if store.articles.isEmpty, store.loadFailed {
+            EmptyState(
+                icon: "wifi.slash",
+                title: "Couldn't reach the Journal",
+                message: "Check your connection and try again.",
+                actionTitle: "Try again"
+            ) {
+                Task { await store.refresh() }
+            }
+        } else if store.articles.isEmpty {
+            EmptyState(
+                icon: "text.book.closed",
+                title: "The presses are quiet",
+                message: "New stories from the Calibre desk will appear here."
+            )
+        } else {
+            ForEach(Array(store.articles.enumerated()), id: \.element.id) { index, article in
+                JournalCard(article: article) {
+                    push(.journalArticle(article.id))
+                }
+                .fadeUpEntrance(index: index)
+            }
+        }
+    }
+
+    /// Card-shaped placeholders while the first fetch settles.
+    private var skeleton: some View {
+        VStack(spacing: Space.xl) {
+            ForEach(0..<3, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(Color.calibre.card)
+                    .frame(height: 300)
+                    .shimmer()
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading the Journal")
     }
 }
 

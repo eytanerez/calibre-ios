@@ -1,0 +1,41 @@
+{
+ "ok": true,
+ "data": {
+  "price": "4400.00",
+  "currency": "USD",
+  "commission": {
+   "percent": "6.00",
+   "amount": "264.00",
+   "minimum_applied": false,
+   "minimum": "250.00"
+  },
+  "net_proceeds": "4064.00",
+  "buyer_display": {
+   "standard": {
+    "price": "4400.00"
+   },
+   "discount_states": {
+    "price": "4529.99",
+    "wire_price": "4400.00",
+    "states": [
+     "CT",
+     "MA"
+    ]
+   }
+  },
+  "shipping_estimate": {
+   "order_id": null,
+   "quote_id": "q_7f21",
+   "amount": "72.00",
+   "currency": "USD",
+   "provider": "flat_rate",
+   "fallback_reason": null,
+   "origin_postal_code": "10011",
+   "destination_postal_code": "21208"
+  },
+  "returns": {
+   "accepted": true,
+   "window_hours": 48
+  }
+ }
+}

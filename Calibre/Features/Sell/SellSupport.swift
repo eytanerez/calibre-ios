@@ -211,3 +211,35 @@ extension APIError {
 func sellErrorMessage(_ error: Error) -> String {
     (error as? APIError)?.sellMessage ?? error.localizedDescription
 }
+
+/// True when the backend refused with this exact machine-readable code.
+func sellErrorCode(_ error: Error, is code: String) -> Bool {
+    (error as? APIError)?.serverCode == code
+}
+
+// MARK: - Percentages
+
+/// Renders a rate the server sent. "6.00" reads as "6"; a genuinely
+/// fractional rate keeps its digits. Never rounds to a different number, and
+/// never invents one — the caller passes a payload figure or nothing at all.
+func feePercentText(_ value: Decimal) -> String {
+    var raw = value
+    var whole = Decimal()
+    NSDecimalRound(&whole, &raw, 0, .plain)
+    if whole == value {
+        return "\(whole)"
+    }
+    var text = "\(value)"
+    guard text.contains(".") else { return text }
+    while text.hasSuffix("0") { text.removeLast() }
+    if text.hasSuffix(".") { text.removeLast() }
+    return text
+}
+
+/// The share of the sale a seller keeps at a server-stated rate. Returns nil
+/// when the rate hasn't arrived, so the sentence can be written without a
+/// number rather than with a guessed one.
+func sellerKeepPercentText(feePercent: Decimal?) -> String? {
+    guard let feePercent else { return nil }
+    return feePercentText(100 - feePercent)
+}

@@ -11,7 +11,7 @@ import SwiftUI
 @Observable
 public final class TutorialController {
     public let id: String
-    private let steps: [TutorialStep]
+    private var steps: [TutorialStep]
     private let ledger: TutorialLedger
 
     /// Index of the visible step; `nil` when the lesson isn't showing.
@@ -34,6 +34,21 @@ public final class TutorialController {
     public var position: (step: Int, total: Int)? {
         guard let index = activeIndex else { return nil }
         return (index + 1, steps.count)
+    }
+
+    /// Replaces the lesson's steps before it starts.
+    ///
+    /// A controller is `@State`, so its steps are fixed at the moment the view
+    /// value is created — before any environment, and therefore before any
+    /// server-stated figure or entitlement is known. Screens whose lesson
+    /// quotes such a figure, or whose lesson points at something only some
+    /// people have, call this once they know, then ``startIfNeeded()``.
+    ///
+    /// A lesson already on screen keeps the steps it started with: swapping
+    /// them mid-lesson would move the ground under the reader.
+    public func adopt(steps: [TutorialStep]) {
+        guard activeIndex == nil else { return }
+        self.steps = steps
     }
 
     /// Starts the lesson unless it has already been completed. Safe to call

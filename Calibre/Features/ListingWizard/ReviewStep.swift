@@ -41,7 +41,7 @@ struct ReviewStep: View {
                     .foregroundStyle(Color.calibre.destructive)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .transition(.opacity)
-            } else if !canSubmit {
+            } else if !canSubmitMissing.isEmpty {
                 Text("Missing: \(canSubmitMissing.joined(separator: ", "))")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.destructive)
@@ -62,7 +62,16 @@ struct ReviewStep: View {
                 .buttonStyle(.calibre(.primary, fullWidth: true))
                 .disabled(!canSubmit || model.submitting)
 
-                if model.isEdit {
+                // Net proceeds and the buyer-facing price are ours to put on
+                // screen before a seller publishes, so their absence is worth
+                // saying out loud rather than leaving an inert button.
+                if !model.payoutDisclosed, model.price != nil {
+                    Text("Your net proceeds and the price buyers will see need to be on screen before this goes to review.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                } else if model.isEdit {
                     Text("Resubmit for approval — your watch leaves the market until re-approved.")
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
@@ -92,8 +101,11 @@ struct ReviewStep: View {
         .animation(Motion.easeFast, value: model.submitError)
     }
 
+    /// `payoutDisclosed` is part of this on purpose: a seller may not submit
+    /// without having seen their net proceeds and the buyer-facing price.
     private var canSubmit: Bool {
         model.detailsComplete && model.allRequiredPhotosDone && model.priceDetailsComplete
+            && model.payoutDisclosed
     }
 
     private var canSubmitMissing: [String] {
@@ -152,30 +164,85 @@ struct ReviewStep: View {
 
     // MARK: Price
 
+    /// Net proceeds and the buyer-facing price, both straight from the
+    /// server's publish preview — a seller sees exactly these two figures
+    /// before anything goes to review.
     private var priceCard: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Price")
                 .font(CalibreType.sectionTitle)
                 .foregroundStyle(Color.calibre.foreground)
             SellCard {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: Space.xs) {
-                        Text(model.price.map { PriceFormatter.format($0) } ?? "No price yet")
-                            .font(CalibreType.priceLarge)
-                            .foregroundStyle(
-                                model.price == nil ? Color.calibre.placeholder : Color.calibre.foreground
-                            )
-                        if let payout = model.payout {
-                            Text("You'll receive ≈ \(PriceFormatter.format(max(payout, 0)))")
+                VStack(alignment: .leading, spacing: Space.m) {
+                    Text(model.price.map { PriceFormatter.format($0) } ?? "No price yet")
+                        .font(CalibreType.priceLarge)
+                        .foregroundStyle(
+                            model.price == nil ? Color.calibre.placeholder : Color.calibre.foreground
+                        )
+
+                    if let preview = model.preview {
+                        VStack(alignment: .leading, spacing: Space.xs) {
+                            Text("You'll receive \(PriceFormatter.format(preview.netProceeds.value, currency: preview.currency))")
+                                .font(CalibreType.bodyMedium)
+                                .foregroundStyle(Color.calibre.foreground)
+                            Text("Buyers see \(PriceFormatter.format(preview.buyerDisplay.standard.price.value, currency: preview.currency))")
                                 .font(CalibreType.label)
                                 .foregroundStyle(Color.calibre.mutedForeground)
                         }
+                        .accessibilityElement(children: .combine)
+
+                        if preview.commission.minimumApplied {
+                            Text("Every sale carries a minimum commission of \(PriceFormatter.format(preview.commission.minimum.value, currency: preview.currency)), and on this price that minimum is what applies.")
+                                .font(CalibreType.caption)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    } else if model.previewing {
+                        HStack(spacing: Space.s) {
+                            ProgressView().controlSize(.small).tint(Color.calibre.primary)
+                            Text("Working out what you'll receive")
+                                .font(CalibreType.label)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                        }
+                    } else if model.price != nil {
+                        VStack(alignment: .leading, spacing: Space.s) {
+                            Text("We couldn't work out your net proceeds just now, and we won't guess at them. Try again before this goes to review.")
+                                .font(CalibreType.label)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("Try again") {
+                                Task { await model.refreshPreview() }
+                            }
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.primary)
+                            .buttonStyle(PressableStyle())
+                            .frame(minHeight: Space.touchTarget, alignment: .leading)
+                        }
                     }
-                    Spacer()
+
+                    Rectangle().fill(Color.calibre.border).frame(height: 1)
+
+                    Text(returnTermsText)
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Space.l)
             }
         }
+        .task { await model.ensurePreview() }
+    }
+
+    /// The terms the seller chose, and the payout timing that follows.
+    private var returnTermsText: String {
+        guard model.returnsAccepted else {
+            return "No returns. Your payout releases when authentication passes."
+        }
+        guard let hours = model.returnWindowHours else {
+            return "Returns accepted. Your payout releases when the return window closes."
+        }
+        return "Returns accepted, with a \(hours)-hour window. Your payout releases when that window closes."
     }
 
     // MARK: Photo checklist

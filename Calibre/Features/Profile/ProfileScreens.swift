@@ -376,6 +376,18 @@ struct PaymentMethodScreen: View {
     @State private var isPreparingSetup = false
     @State private var isSyncingAfterSetup = false
     @State private var paymentSheet: PaymentSheet?
+
+    /// The hold an offer authorizes, from the marketplace config. No offer
+    /// exists at this point to read a real `hold.amount` from, and a
+    /// remembered figure is not an option — so without the config the
+    /// sentence simply loses its number.
+    private var offerHoldPrompt: String {
+        let base = "Add a card here, at checkout, or before making an offer"
+        guard let hold = services.config.offerHoldText else {
+            return "\(base) — placing an offer authorizes a refundable hold to confirm you're serious."
+        }
+        return "\(base) — placing an offer authorizes a refundable \(hold) hold to confirm you're serious."
+    }
     /// Bumped by every operation that ends up writing `method`/`canRemove`/
     /// `removeBlockedReason` — a late result from a superseded load, poll, or
     /// removal checks this before committing so it can never clobber a newer
@@ -432,7 +444,7 @@ struct PaymentMethodScreen: View {
                     EmptyState(
                         icon: "creditcard",
                         title: "No cards on file",
-                        message: "Add a card here, at checkout, or before making an offer — Calibre places a $250 hold to confirm you're serious.",
+                        message: offerHoldPrompt,
                         actionTitle: isPreparingSetup || isSyncingAfterSetup ? nil : "Add card"
                     ) {
                         Task { await startAddOrReplaceCard() }
@@ -863,6 +875,7 @@ struct DeleteAccountScreen: View {
 
     @State private var confirming = false
     @State private var working = false
+    @State private var state: AccountDeletionState?
 
     var body: some View {
         ScrollView {
@@ -871,10 +884,25 @@ struct DeleteAccountScreen: View {
                     .font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
                 Text("Your account is scheduled for deletion after a 30-day grace period. Sign in any time within those 30 days to cancel and keep your account.")
                     .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
-                CalloutBand(
-                    icon: "exclamationmark.triangle",
-                    message: "Active orders and offers must be resolved before your account can be fully removed."
-                )
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let state, !state.obligations.isEmpty {
+                    obligations(state)
+                } else {
+                    CalloutBand(
+                        icon: "exclamationmark.triangle",
+                        message: "Anything still in flight — a live order, a payout on its way, an active return, an accepted offer — has to finish before your account can be removed."
+                    )
+                }
+
+                if let scheduled = state?.scheduledDate {
+                    CalloutBand(
+                        icon: "calendar",
+                        title: "Deletion scheduled",
+                        message: "Your account is due to be removed on \(scheduled.formatted(date: .abbreviated, time: .omitted)). Sign in before then to cancel."
+                    )
+                }
+
                 Button(role: .destructive) { confirming = true } label: {
                     Text(working ? "Working…" : "Request account deletion").frame(maxWidth: .infinity)
                 }
@@ -886,6 +914,8 @@ struct DeleteAccountScreen: View {
         .background(Color.calibre.background)
         .navigationTitle("Delete account")
         .navigationBarTitleDisplayMode(.inline)
+        .task { await loadState() }
+        .animation(Motion.easeFast, value: state?.obligations.count)
         .alert("Delete your Calibre account?", isPresented: $confirming) {
             Button("Delete my account", role: .destructive) { Task { await requestDeletion() } }
             Button("Keep my account", role: .cancel) {}
@@ -894,14 +924,93 @@ struct DeleteAccountScreen: View {
         }
     }
 
+    /// Exactly what is outstanding, in the backend's own words. Deletion is
+    /// not refused here — it completes on its own once this list clears, so
+    /// the customer never has to come back and ask a second time.
+    private func obligations(_ state: AccountDeletionState) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text("Still to finish first")
+                .font(CalibreType.bodyMedium)
+                .foregroundStyle(Color.calibre.foreground)
+
+            VStack(spacing: 0) {
+                ForEach(Array(state.obligations.enumerated()), id: \.element.id) { index, obligation in
+                    HStack(alignment: .top, spacing: Space.m) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .frame(width: 18)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(obligationTitle(obligation))
+                                .font(CalibreType.bodyMedium)
+                                .foregroundStyle(Color.calibre.foreground)
+                            if let detail = obligation.detail, !detail.isEmpty {
+                                Text(detail)
+                                    .font(CalibreType.label)
+                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(Space.l)
+                    .accessibilityElement(children: .combine)
+
+                    if index < state.obligations.count - 1 {
+                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                    }
+                }
+            }
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+            )
+
+            Text("You don't have to ask again. Once these are settled your deletion completes on its own.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The backend's reference when it sends one, otherwise its `kind` in
+    /// plain words.
+    private func obligationTitle(_ obligation: AccountObligation) -> String {
+        let kind = obligation.kind
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+        if let reference = obligation.reference, !reference.isEmpty {
+            return "\(kind) · \(reference)"
+        }
+        return kind
+    }
+
+    private func loadState() async {
+        state = try? await services.account.deletionState()
+    }
+
     private func requestDeletion() async {
         guard !working else { return }
         working = true
         defer { working = false }
         do {
-            _ = try await services.account.requestDeletion()
+            state = try await services.account.requestDeletion()
             toasts.show(title: "Deletion scheduled", message: "Sign in within 30 days to cancel.", tone: .success)
         } catch {
+            // A blocked deletion isn't a failure — it's a list. The 409's
+            // envelope only carries flat strings, so the obligations come
+            // from a follow-up read.
+            if (error as? APIError)?.serverCode == "obligations_outstanding" {
+                await loadState()
+                // Not an error — a blocked deletion is information, and the
+                // list below already carries the detail.
+                toasts.show(
+                    title: "A few things are still open",
+                    message: "We've listed what has to finish first."
+                )
+                return
+            }
             toasts.show(title: "Couldn't schedule deletion", message: error.orderMessage, tone: .error)
         }
     }

@@ -3,9 +3,9 @@ import CalibreKit
 import NukeUI
 import SwiftUI
 
-/// The seller's shop — tab root once `can_list` is true. Header, dealer
-/// progress, the prioritized action queue, buyer requests, inventory,
-/// recent sales and received offers.
+/// The seller's shop — tab root once `can_list` is true. Header, the card on
+/// file, the dealer application, the prioritized action queue, buyer
+/// requests, inventory, recent sales and received offers.
 struct SellerDashboardScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -39,30 +39,52 @@ struct SellerDashboardScreen: View {
     @State private var confirmSubmit: Listing?
     @State private var confirmDelete: Listing?
     @State private var showAllInventory = false
+    @State private var showDealerApplication = false
+    @State private var showSellerCard = false
+    /// The card a counterfeit or misrepresentation charge would land on.
+    /// Nil until the first load answers; a banner appears only when the
+    /// server says it needs attention.
+    @State private var sellerCard: SellerCardState?
+    /// Bulk import is dealer-only, so the lesson that points at it is too.
+    /// Two controllers over the same ledger id: whichever one matches the
+    /// seller's status is the one that starts, and completing either retires
+    /// the lesson for good.
+    private static let bulkImportStep = TutorialStep(
+        id: "menu",
+        anchor: "sell.menu",
+        title: "Bulk import lives here",
+        message: "Listing many watches at once? This ⋯ menu opens your bulk-import status, where CSV drafts you started on the web get finished.",
+        advance: .tapToContinue,
+        hint: .tap,
+        cutout: .circle
+    )
+
+    private static let shopStep = TutorialStep(
+        id: "shop",
+        title: "Running your shop",
+        message: "Swipe any inventory row left — or press and hold it — for its quick actions: Edit, Submit for review, or Delete. And the queue up top always surfaces whatever needs you next: an offer to answer, a sale to ship, a draft to finish.",
+        advance: .tapToContinue
+    )
+
     @State private var tutorial = TutorialController(
         id: "sell.dashboard",
-        steps: [
-            TutorialStep(
-                id: "menu",
-                anchor: "sell.menu",
-                title: "Bulk import lives here",
-                message: "Listing many watches at once? This ⋯ menu opens your bulk-import status, where CSV drafts you started on the web get finished.",
-                advance: .tapToContinue,
-                hint: .tap,
-                cutout: .circle
-            ),
-            TutorialStep(
-                id: "shop",
-                title: "Running your shop",
-                message: "Swipe any inventory row left — or press and hold it — for its quick actions: Edit, Submit for review, or Delete. And the queue up top always surfaces whatever needs you next: an offer to answer, a sale to ship, a draft to finish.",
-                advance: .tapToContinue
-            ),
-        ]
+        steps: [shopStep]
     )
+
+    /// Dealer status brings exactly three things, and bulk import is one of
+    /// them — the menu entry, the lesson about it, and the screen behind it
+    /// all follow this.
+    private var isVerifiedDealer: Bool {
+        dashboard?.dealerApplication?.isVerified == true
+    }
 
     var body: some View {
         List {
             header
+
+            if let sellerCard, sellerCard.needsAttention {
+                sellerCardBanner(sellerCard).sellRow()
+            }
 
             if let loadError, !hasRevealedContent {
                 EmptyState(
@@ -76,8 +98,8 @@ struct SellerDashboardScreen: View {
             } else if loading, !hasRevealedContent {
                 loadingRows
             } else {
-                if let dealer = dashboard?.dealer {
-                    dealerCard(dealer).sellRow()
+                if let application = dashboard?.dealerApplication {
+                    dealerCard(application).sellRow()
                 }
                 if let queue = dashboard?.actionQueue, !queue.isEmpty {
                     actionQueueHeader.sellRow(bottom: Space.s)
@@ -121,6 +143,9 @@ struct SellerDashboardScreen: View {
             // `load()` here left them stuck at their initial values and the
             // skeleton never resolved.
             await load()
+            // The bulk-import lesson only exists for the sellers who have the
+            // menu entry it points at, which the load above has now answered.
+            tutorial.adopt(steps: isVerifiedDealer ? [Self.bulkImportStep, Self.shopStep] : [Self.shopStep])
             tutorial.startIfNeeded()
             consumePendingPrefill()
         }
@@ -138,6 +163,18 @@ struct SellerDashboardScreen: View {
         }
         .sheet(isPresented: $showBulkImports) {
             BulkImportStatusScreen()
+        }
+        // Applying is a real path from this card: two fields here, then the
+        // embedded verification step that collects the EIN.
+        .sheet(isPresented: $showDealerApplication) {
+            DealerApplicationScreen(application: dashboard?.dealerApplication) {
+                Task { await load() }
+            }
+        }
+        .sheet(isPresented: $showSellerCard) {
+            SellerCardScreen { saved in
+                sellerCard = saved
+            }
         }
         .sheet(isPresented: $showOpenRequests) {
             OpenBuyerRequestsScreen(requests: requests) { request in
@@ -224,7 +261,8 @@ struct SellerDashboardScreen: View {
         async let listingsTask: Void = loadListings()
         async let requestsTask: Void = loadRequests(generation: generation)
         async let salesTask: Void = loadSales()
-        _ = await (dashboardTask, listingsTask, requestsTask, salesTask)
+        async let cardTask: Void = loadSellerCard(generation: generation)
+        _ = await (dashboardTask, listingsTask, requestsTask, salesTask, cardTask)
         guard generation == loadGeneration else { return }
         loading = false
         // Only the first load to actually surface content flips this — once
@@ -259,6 +297,15 @@ struct SellerDashboardScreen: View {
         _ = try? await sell.ops.loadSales(pageSize: 30)
     }
 
+    /// The card a counterfeit or misrepresentation charge would land on. The
+    /// banner only appears when the server says the card needs attention, so
+    /// a failure here simply leaves the dashboard as it was.
+    private func loadSellerCard(generation: Int) async {
+        guard let card = try? await services.seller.sellerCard() else { return }
+        guard generation == loadGeneration else { return }
+        sellerCard = card
+    }
+
     private var loadingRows: some View {
         Group {
             Rectangle().frame(maxWidth: .infinity).frame(height: 96).shimmer().sellRow()
@@ -278,20 +325,24 @@ struct SellerDashboardScreen: View {
                     .font(CalibreType.title)
                     .foregroundStyle(Color.calibre.foreground)
                 Spacer()
-                Menu {
-                    Button {
-                        showBulkImports = true
+                // Bulk import is dealer-only, so the entry to it isn't
+                // offered to a seller who would only be refused behind it.
+                if isVerifiedDealer {
+                    Menu {
+                        Button {
+                            showBulkImports = true
+                        } label: {
+                            Label("Bulk import status", systemImage: "tray.and.arrow.down")
+                        }
                     } label: {
-                        Label("Bulk import status", systemImage: "tray.and.arrow.down")
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundStyle(Color.calibre.foreground)
+                            .frame(width: Space.touchTarget, height: Space.touchTarget, alignment: .trailing)
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.system(size: 20, weight: .regular))
-                        .foregroundStyle(Color.calibre.foreground)
-                        .frame(width: Space.touchTarget, height: Space.touchTarget, alignment: .trailing)
+                    .accessibilityLabel("More options")
+                    .tutorialAnchor("sell.menu")
                 }
-                .accessibilityLabel("More options")
-                .tutorialAnchor("sell.menu")
             }
 
             Button {
@@ -304,83 +355,213 @@ struct SellerDashboardScreen: View {
         .sellRow(top: Space.l)
     }
 
-    // MARK: - Dealer progress
+    // MARK: - Card on file
 
-    private func dealerCard(_ dealer: DealerUnlock) -> some View {
-        let keepNow = Decimal(
-            dealer.isActive ? MarketplaceFees.dealerKeepPercent : MarketplaceFees.privateSellerKeepPercent
+    /// Quiet, and only when the server says so: no card, one that stopped
+    /// working, or one about to lapse. An expiring card is surfaced before it
+    /// lapses rather than after.
+    private func sellerCardBanner(_ card: SellerCardState) -> some View {
+        CalloutBand(
+            icon: "creditcard",
+            title: sellerCardBannerTitle(card),
+            message: sellerCardBannerMessage(card),
+            action: { showSellerCard = true }
         )
-        let keepDealer = Decimal(MarketplaceFees.dealerKeepPercent)
-        return SellCard {
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens your card on file")
+    }
+
+    private func sellerCardBannerTitle(_ card: SellerCardState) -> String {
+        if !card.present { return "Add a card on file" }
+        if card.valid == false { return "Your card on file needs replacing" }
+        return "Your card on file expires soon"
+    }
+
+    private func sellerCardBannerMessage(_ card: SellerCardState) -> String {
+        if !card.present {
+            return "Selling on Calibre needs a credit card on file. It takes a minute, and nothing is charged to it now."
+        }
+        if card.valid == false {
+            return "\(card.displayName) isn't working any more. Replace it so nothing interrupts a sale."
+        }
+        if let expiry = card.expiryLabel {
+            return "\(card.displayName) expires \(expiry). Replace it before it lapses."
+        }
+        return "\(card.displayName) is close to expiring. Replace it before it lapses."
+    }
+
+    // MARK: - Dealer application
+
+    /// A dealer is a verified business — no inventory threshold, no queue.
+    /// Every rate on this card is quoted from the application payload; when
+    /// the server hasn't stated one, the sentence runs without the number.
+    @ViewBuilder
+    private func dealerCard(_ application: DealerApplication) -> some View {
+        switch application.status {
+        case .none:
+            dealerApplyCard(application)
+        case .pending:
+            dealerStatusCard(
+                badgeText: "Verification in progress",
+                badgeTone: .info,
+                headline: "Your business details are being verified",
+                lines: [
+                    "Nothing more is needed from you. There is no approval queue and no one to wait on — when verification clears, dealer status turns on by itself."
+                ]
+            )
+        case .verified:
+            dealerVerifiedCard(application)
+        case .revoked:
+            dealerStatusCard(
+                badgeText: "Dealer status ended",
+                badgeTone: .neutral,
+                headline: "You're selling as a private seller again",
+                lines: dealerRevokedLines(application)
+            )
+        case .unknown:
+            EmptyView()
+        }
+    }
+
+    private func dealerApplyCard(_ application: DealerApplication) -> some View {
+        SellCard {
             VStack(alignment: .leading, spacing: Space.m) {
-                HStack {
-                    Eyebrow("Dealer progress")
-                    Spacer()
-                    if dealer.isActive {
-                        StatusBadge("Dealer", tone: .success)
-                    }
+                Eyebrow("Dealer program")
+
+                Text("Apply as a dealer")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+
+                Text("A dealer is a verified business. We collect your business legal name and EIN, verified through Stripe, so buyers know they are dealing with a real business. Calibre never sees your banking details — they stay with Stripe.")
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: Space.s) {
+                    dealerBenefit(dealerRateLine(application))
+                    dealerBenefit("A dealer badge buyers can see")
+                    dealerBenefit("Bulk import and volume tools — bulk import is dealer-only")
                 }
 
-                if dealer.isActive {
-                    Text(activeDealerLine(dealer))
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                    Text("You keep \(percentText(keepDealer))% on every sale at the dealer rate.")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-                        Text("\(dealer.liveListingCount) of \(dealer.threshold)")
-                            .font(CalibreType.price)
-                            .foregroundStyle(Color.calibre.foreground)
-                        Text("live listings")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                    }
+                Text("There is no approval queue and no waiting on a person. When verification clears, you are a dealer automatically.")
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    // Thin dealer-unlock bar.
-                    GeometryReader { proxy in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(Color.calibre.border)
-                            Capsule()
-                                .fill(Color.calibre.primary)
-                                .frame(width: max(
-                                    proxy.size.width * CGFloat(dealer.liveListingCount) / CGFloat(max(dealer.threshold, 1)),
-                                    dealer.liveListingCount > 0 ? 6 : 0
-                                ))
-                        }
-                    }
-                    .frame(height: 4)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(dealer.liveListingCount) of \(dealer.threshold) live listings toward dealer status")
-
-                    Text("You keep \(percentText(keepNow))% today — dealers keep \(percentText(keepDealer))%.")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-
-                    if dealer.nextMonthUnlocked, let nextMonth = dealer.nextMonthLabel {
-                        Text("Dealer rate unlocked for \(nextMonth).")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.success)
-                    }
+                Button {
+                    showDealerApplication = true
+                } label: {
+                    Text("Apply as a dealer")
                 }
+                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .padding(.top, Space.xs)
             }
             .padding(Space.l)
         }
     }
 
-    private func activeDealerLine(_ dealer: DealerUnlock) -> String {
-        if let until = dealer.activeUntil {
-            return "Dealer active through \(until.formatted(date: .abbreviated, time: .omitted))"
+    private func dealerVerifiedCard(_ application: DealerApplication) -> some View {
+        SellCard {
+            VStack(alignment: .leading, spacing: Space.m) {
+                HStack {
+                    Eyebrow("Dealer program")
+                    Spacer()
+                    DealerBadge()
+                }
+
+                if let name = application.companyName, InputValidation.isNonBlank(name) {
+                    Text(name)
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.foreground)
+                }
+
+                Text(verifiedDealerRateLine(application))
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Dealer status does not expire, and it isn't tied to how much you have listed.")
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(Space.l)
         }
-        return "Dealer rate active"
+        .accessibilityElement(children: .combine)
     }
 
-    private func percentText(_ value: Decimal) -> String {
-        var raw = value
-        var rounded = Decimal()
-        NSDecimalRound(&rounded, &raw, 0, .plain)
-        return rounded == value ? "\(rounded)" : "\(value)"
+    private func dealerStatusCard(
+        badgeText: String,
+        badgeTone: StatusBadge.Tone,
+        headline: String,
+        lines: [String]
+    ) -> some View {
+        SellCard {
+            VStack(alignment: .leading, spacing: Space.m) {
+                HStack {
+                    Eyebrow("Dealer program")
+                    Spacer()
+                    StatusBadge(badgeText, tone: badgeTone)
+                }
+
+                Text(headline)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(Space.l)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func dealerBenefit(_ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.calibre.primary)
+            Text(text)
+                .font(CalibreType.label)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// "The 4% dealer rate, instead of 6%" — both figures from the payload,
+    /// and the sentence still works when neither has arrived.
+    private func dealerRateLine(_ application: DealerApplication) -> String {
+        switch (application.dealerFeePercent?.value, application.memberFeePercent?.value) {
+        case (.some(let dealerRate), .some(let memberRate)):
+            return "The \(feePercentText(dealerRate))% dealer rate, instead of \(feePercentText(memberRate))%"
+        case (.some(let dealerRate), .none):
+            return "The \(feePercentText(dealerRate))% dealer rate on every sale"
+        default:
+            return "The lower dealer rate on every sale"
+        }
+    }
+
+    private func verifiedDealerRateLine(_ application: DealerApplication) -> String {
+        guard let dealerRate = application.dealerFeePercent?.value else {
+            return "Your sales are commissioned at the dealer rate."
+        }
+        return "Your sales are commissioned at the \(feePercentText(dealerRate))% dealer rate."
+    }
+
+    private func dealerRevokedLines(_ application: DealerApplication) -> [String] {
+        var lines: [String] = []
+        if let reason = application.revokedReason, InputValidation.isNonBlank(reason) {
+            lines.append(reason)
+        }
+        lines.append("The badge, the bulk tools and the dealer rate have reverted. Your existing listings stay live and nothing about them changes.")
+        return lines
     }
 
     // MARK: - Action queue

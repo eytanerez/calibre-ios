@@ -1,5 +1,6 @@
 import CalibreDesign
 import PassKit
+import StripePayments
 // sheetCornerRadius is SPI-gated at the pinned stripe-ios 26.2.0 — the plain
 // import doesn't compile. (Cross-track note: P6 added the @_spi form to
 // unblock the shared build; remove when stripe-ios makes it public.)
@@ -8,8 +9,14 @@ import SwiftUI
 import UIKit
 
 /// One place that shapes Stripe PaymentSheet like Calibre: warm cream/ink
-/// (or their dark equivalents), Radius.control corners, Geist type. Both the
-/// checkout total sheet and the offer-hold sheet use this.
+/// (or their dark equivalents), Radius.control corners, Geist type.
+///
+/// PaymentSheet still drives offer holds and seller label purchases. Buyer
+/// card checkout collects the card itself (see `CardEntryField`) because the
+/// card's funding has to be known before any money moves — so the pieces the
+/// hand-rolled path needs (the frontmost presenter, an authentication
+/// context, the Apple Pay request) live here too, beside the merchant id and
+/// the entitlement gate they share.
 enum CalibreStripe {
     static let merchantDisplayName = "Calibre"
     static let returnURL = "calibre://stripe-redirect"
@@ -107,11 +114,40 @@ enum CalibreStripe {
         return appearance
     }
 
-    /// Human copy for a PaymentSheet failure — Stripe's message when it has
-    /// one, a warm fallback when it doesn't.
+    /// Human copy for a Stripe failure — Stripe's message when it has one, a
+    /// warm fallback when it doesn't.
     static func failureMessage(for error: Error) -> String {
         let text = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty ? "Your payment didn't go through. Please try again." : text
+    }
+
+    // MARK: - Apple Pay
+
+    /// Whether this build and this device can actually complete an Apple Pay
+    /// payment. Both halves matter: the entitlement is a property of the
+    /// build, the wallet is a property of the device.
+    @MainActor
+    static var canOfferApplePay: Bool {
+        hasApplePayEntitlement && PKPaymentAuthorizationController.canMakePayments()
+    }
+
+    /// The request behind the Apple Pay sheet. Every line the buyer reads is
+    /// passed in already priced by the server; nothing here adds to a total.
+    static func applePayRequest(
+        currency: String,
+        summaryItems: [PKPaymentSummaryItem]
+    ) -> PKPaymentRequest {
+        let request = StripeAPI.paymentRequest(
+            withMerchantIdentifier: applePayMerchantID,
+            country: "US",
+            currency: currency
+        )
+        request.paymentSummaryItems = summaryItems
+        // Checkout already collected a shipping address of its own, and the
+        // order is priced against it. Asking Apple for one again would let the
+        // buyer pick a destination the tax and shipping lines don't match.
+        request.requiredShippingContactFields = []
+        return request
     }
 
     /// Presents a PaymentSheet from whatever is frontmost.
@@ -160,20 +196,25 @@ enum CalibreStripe {
     /// Nothing is lost: `dismissesKeyboardOnBackgroundTap` installs its
     /// recogniser on the *window*, and the sheet is presented into that same
     /// window, so tapping anywhere off a field still closes the keypad.
+    ///
+    /// The inline `CardEntryField` is the same control with the same toolbar
+    /// and the same window recogniser under it, so the buyer card step brackets
+    /// its own appearance with these two calls.
     @MainActor
-    private static func beginHidingDoneAccessory() {
+    static func beginHidingDoneAccessory() {
         doneAccessoryStripper.start()
     }
 
     @MainActor
-    private static func endHidingDoneAccessory() {
+    static func endHidingDoneAccessory() {
         doneAccessoryStripper.stop()
     }
-    /// Walks the presentation chain from the active window's root so the sheet
-    /// comes up over whatever is already modal — checkout runs inside a
-    /// full-screen cover, offers inside a sheet.
+    /// Walks the presentation chain from the active window's root so Stripe's
+    /// UI comes up over whatever is already modal — checkout runs inside a
+    /// full-screen cover, offers inside a sheet. Shared by PaymentSheet
+    /// presentation and by 3-D Secure's authentication context.
     @MainActor
-    private static func frontmostViewController() -> UIViewController? {
+    static func frontmostViewController() -> UIViewController? {
         let scene = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .first { $0.activationState == .foregroundActive }
@@ -195,6 +236,21 @@ enum CalibreStripe {
         var errorDescription: String? {
             "We couldn't open the payment sheet. Please try again."
         }
+    }
+}
+
+/// Where 3-D Secure puts its challenge when the server-confirmed
+/// PaymentIntent comes back needing one.
+///
+/// Checkout lives in a full-screen cover, so the presenter can't be captured
+/// once and held — it changes as the buyer moves through the steps. Resolving
+/// it on demand keeps the challenge on top of whatever is actually on screen.
+/// The owning model must hold on to this object for the life of the call:
+/// `STPPaymentHandler` keeps only a weak reference.
+@MainActor
+final class CheckoutAuthenticationContext: NSObject, STPAuthenticationContext {
+    func authenticationPresentingViewController() -> UIViewController {
+        CalibreStripe.frontmostViewController() ?? UIViewController()
     }
 }
 

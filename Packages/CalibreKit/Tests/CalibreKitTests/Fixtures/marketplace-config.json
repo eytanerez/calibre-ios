@@ -1,0 +1,33 @@
+{
+ "ok": true,
+ "data": {
+  "seller_fee_percent_member": "6.00",
+  "seller_fee_percent_dealer": "4.00",
+  "seller_fee_minimum": "250.00",
+  "card_fee": {
+   "percent": "2.90",
+   "fixed": "0.30"
+  },
+  "offer_hold_amount": "250.00",
+  "offer_ttl_hours": 24,
+  "offer_payment_grace_hours": 12,
+  "offer_payment_deadline_hours": 24,
+  "return_fee": {
+   "percent": "7.00",
+   "minimum": "250.00"
+  },
+  "return_windows": [
+   24,
+   48,
+   72
+  ],
+  "wire_reservation_hours": [
+   24,
+   48
+  ],
+  "discount_presentation_states": [
+   "CT",
+   "MA"
+  ]
+ }
+}

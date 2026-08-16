@@ -166,6 +166,75 @@ public final class SellerStore {
         )
     }
 
+    // MARK: - Publish preview
+
+    /// What the seller takes home and what the buyer will see, computed
+    /// server-side: the commission (with the flat minimum applied when it
+    /// bites), net proceeds, and the buyer-facing price in both the standard
+    /// and discount-state presentations.
+    ///
+    /// Every figure on the payout card comes from here. Nothing about a
+    /// commission rate, a minimum, or a buyer price is derived on device.
+    public func publishPreview(listingID: String) async throws -> ListingPublishPreview {
+        try await client.send(Endpoint(path: "/account/listings/\(listingID)/publish-preview"))
+    }
+
+    /// The same preview, scoped to a price rather than a listing — so the
+    /// wizard can show a real payout figure on the create path, before any
+    /// draft exists. Shipping and return terms are absent here; the
+    /// listing-scoped call fills those in once there is a draft.
+    public func publishPreview(price: Decimal) async throws -> ListingPublishPreview {
+        try await client.send(
+            Endpoint(
+                path: "/account/publish-preview",
+                query: [URLQueryItem(name: "price", value: "\(price)")]
+            )
+        )
+    }
+
+    // MARK: - Dealer program
+
+    /// Where this seller stands in the dealer program.
+    public func dealerApplication() async throws -> DealerApplication {
+        try await client.send(Endpoint(path: "/account/dealer-application"))
+    }
+
+    /// Applies to become a verified dealer. The response carries an embedded
+    /// onboarding session that collects the business legal name and EIN;
+    /// clearing it grants dealer status automatically.
+    ///
+    /// Throws `APIError.server` with code `connect_required` (409) when the
+    /// seller has no payouts account yet — send them through payout
+    /// onboarding first.
+    public func applyForDealer(companyName: String, country: String) async throws -> DealerApplicationResult {
+        struct Payload: Encodable {
+            let companyName: String
+            let country: String
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/account/dealer-application",
+                payload: Payload(companyName: companyName, country: country)
+            )
+        )
+    }
+
+    // MARK: - Card on file
+
+    /// The credit card Calibre keeps on file for sellers, and whether it
+    /// still works. Listing readiness fails with `seller_card_required`
+    /// until one is present.
+    public func sellerCard() async throws -> SellerCardState {
+        try await client.send(Endpoint(path: "/account/seller-card"))
+    }
+
+    /// A SetupIntent for adding or replacing the seller's card. Credit only:
+    /// a non-credit card is detached server-side after confirmation.
+    public func sellerCardSetupIntent() async throws -> SellerCardSetupIntent {
+        try await client.send(Endpoint(method: .post, path: "/account/seller-card/setup-intent"))
+    }
+
     // MARK: - Pricing guidance
 
     /// "Watches like this listed at $X–Y and sold in ~N days" — computed from

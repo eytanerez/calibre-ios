@@ -1,0 +1,12 @@
+{
+ "ok": true,
+ "data": {
+  "accepted": true,
+  "funding": "credit",
+  "pricing_mode": "surcharge",
+  "accepted_card_funding": [
+   "credit"
+  ],
+  "reason": null
+ }
+}

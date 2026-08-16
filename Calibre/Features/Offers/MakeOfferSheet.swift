@@ -4,8 +4,12 @@ import StripePaymentSheet
 import SwiftUI
 
 /// The offer entry sheet — amount with live serif rendering, an optional
-/// note to the seller, the $250 hold consent, and the hold PaymentSheet.
-/// Present in a `.sheet` (large detent comes from the scaffold).
+/// note to the seller, the refundable hold consent, and the hold
+/// PaymentSheet. Present in a `.sheet` (large detent comes from the scaffold).
+///
+/// No offer exists yet on this screen, so the hold figure comes from
+/// `services.config` rather than a payload. When the config hasn't landed,
+/// every sentence here drops the number and still reads correctly.
 struct MakeOfferSheet: View {
     let listingID: String
 
@@ -15,19 +19,26 @@ struct MakeOfferSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var model: MakeOfferModel?
+    // The lesson quotes the hold, so it is rebuilt once the config lands —
+    // `TutorialStep` is immutable by design.
     @State private var tutorial = TutorialController(
         id: "offers.make",
-        steps: [
-            TutorialStep(
-                id: "hold",
-                anchor: "offer.hold",
-                title: "A hold, not a charge",
-                message: "Offers are backed by a refundable $250 hold on your card — never a charge. It's released once you pay, and only kept if the seller accepts and you then walk away.",
-                advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card)
-            )
-        ]
+        steps: [MakeOfferSheet.holdStep(holdText: nil)]
     )
+    @State private var tutorialHoldText: String?
+
+    /// The coaching beat that sits on the consent row.
+    private static func holdStep(holdText: String?) -> TutorialStep {
+        let holdPhrase = holdText.map { "a refundable \($0) hold" } ?? "a refundable hold"
+        return TutorialStep(
+            id: "hold",
+            anchor: "offer.hold",
+            title: "A hold, not a charge",
+            message: "Offers are backed by \(holdPhrase) on your credit card — never a charge. It's released once you pay, and it is only kept if the seller accepts and you then walk away.",
+            advance: .tapToContinue,
+            cutout: .roundedRect(Radius.card)
+        )
+    }
 
     var body: some View {
         Group {
@@ -53,6 +64,8 @@ struct MakeOfferSheet: View {
             }
         }
         .task {
+            // Rates and windows the sheet quotes before an offer exists.
+            services.config.warm()
             guard session.isAuthenticated, model == nil else { return }
             let created = MakeOfferModel(
                 listingID: listingID,
@@ -176,38 +189,96 @@ struct MakeOfferSheet: View {
                 }
             }
 
+            // The consent toggle gates `canSubmit`, so the disclosure has to be
+            // on screen for the button to be reachable at all.
+            consentRow(model)
+                .tutorialAnchor("offer.hold")
+
+            if let error = model.error {
+                InlineErrorLine(message: error)
+            }
+
             Button {
                 Haptics.shared.play(.press)
                 Task { await model.submit() }
             } label: {
-                BusyLabel(title: "Continue — authorize the $250 hold", busy: model.creating)
+                BusyLabel(title: continueTitle, busy: model.creating)
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
             .disabled(!model.canSubmit || model.creating)
         }
         .animation(Motion.easeFast, value: model.error)
-        .onAppear { tutorial.startIfNeeded() }
+        .onAppear { startTutorial() }
     }
 
+    /// "Continue — authorize the $250 hold", or the same sentence without the
+    /// figure when the config hasn't stated one.
+    private var continueTitle: String {
+        "Continue — authorize the \(offerHoldNoun(services.config.offerHoldText))"
+    }
+
+    /// The disclosure §17.5 requires at placement, plus the consent it gates.
     private func consentRow(_ model: MakeOfferModel) -> some View {
         @Bindable var model = model
-        return HStack(alignment: .top, spacing: Space.m) {
-            Text("I authorize a $250 hold on my card. If the seller accepts and I back out or miss the payment window, Calibre may charge this hold.")
+        let holdText = services.config.offerHoldText
+        let disclosure = offerPlacementDisclosure(
+            holdText: holdText,
+            expiryHours: services.config.offerExpiryHours,
+            graceHours: services.config.paymentGraceHours,
+            paymentDueHours: services.config.paymentDeadlineHours
+        )
+
+        return VStack(alignment: .leading, spacing: Space.m) {
+            Text("Before you place this offer")
+                .font(CalibreType.bodyMedium)
+                .foregroundStyle(Color.calibre.foreground)
+
+            Text(disclosure)
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Toggle("", isOn: $model.consented)
-                .labelsHidden()
-                .tint(Color.calibre.primary)
+            Rectangle()
+                .fill(Color.calibre.border)
+                .frame(height: 1)
+
+            HStack(alignment: .center, spacing: Space.m) {
+                Text("I authorize the \(offerHoldNoun(holdText)) and understand it is kept only if the seller accepts and I then walk away.")
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Toggle("", isOn: $model.consented)
+                    .labelsHidden()
+                    .tint(Color.calibre.primary)
+            }
+            .frame(minHeight: Space.touchTarget)
+            .accessibilityElement(children: .combine)
         }
+        .multilineTextAlignment(.leading)
         .padding(Space.l)
         .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
-        .accessibilityElement(children: .combine)
+    }
+
+    /// Rebuilds the lesson if the config has since supplied the hold figure,
+    /// then starts it. The ledger keeps it to once per person either way.
+    private func startTutorial() {
+        let holdText = services.config.offerHoldText
+        guard holdText != tutorialHoldText else {
+            tutorial.startIfNeeded()
+            return
+        }
+        let refreshed = TutorialController(
+            id: "offers.make",
+            steps: [MakeOfferSheet.holdStep(holdText: holdText)]
+        )
+        tutorialHoldText = holdText
+        tutorial = refreshed
+        refreshed.startIfNeeded()
     }
 
     // MARK: - Hold issue (failed / canceled PaymentSheet)
@@ -222,7 +293,8 @@ struct MakeOfferSheet: View {
                 Text("Your offer isn't sent yet")
                     .font(CalibreType.sectionTitle)
                     .foregroundStyle(Color.calibre.foreground)
-                Text("The $250 hold wasn't completed, so the seller hasn't seen your offer. You can finish the hold or withdraw the offer.")
+                // The offer exists by now, so its own hold is the figure.
+                Text("The \(offerHoldNoun(offerHoldText(model.offer, config: services.config))) wasn't completed, so the seller hasn't seen your offer. You can finish the hold or withdraw the offer.")
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -267,7 +339,7 @@ struct MakeOfferSheet: View {
                 Text("Offer sent.")
                     .font(CalibreType.display)
                     .foregroundStyle(Color.calibre.foreground)
-                Text("\(model.sellerName) has 24 hours to respond. We'll let you know the moment they do.")
+                Text(responseWindowLine(model.sellerName))
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .multilineTextAlignment(.center)
@@ -275,7 +347,7 @@ struct MakeOfferSheet: View {
             HStack(spacing: Space.s) {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 12, weight: .medium))
-                Text("$250 hold authorized · released after payment")
+                Text(holdAuthorizedCaption(offer))
                     .font(CalibreType.caption)
             }
             .foregroundStyle(Color.calibre.mutedForeground)
@@ -296,6 +368,20 @@ struct MakeOfferSheet: View {
         }
     }
 
+    /// How long the seller has to answer — from the marketplace config, with
+    /// the canonical window standing in only while it hasn't landed.
+    private func responseWindowLine(_ seller: String) -> String {
+        "\(seller) has \(offerExpiryPhrase(services.config.offerExpiryHours)) to respond. "
+            + "We'll let you know the moment they do."
+    }
+
+    /// The receipt line on the sent moment — the offer's own hold figure.
+    private func holdAuthorizedCaption(_ offer: Offer) -> String {
+        guard let holdText = offerHoldText(offer, config: services.config) else {
+            return "Hold authorized · released after payment"
+        }
+        return "\(holdText) hold authorized · released after payment"
+    }
 }
 
 /// State for the offer entry sheet: listing, form fields, offer creation,

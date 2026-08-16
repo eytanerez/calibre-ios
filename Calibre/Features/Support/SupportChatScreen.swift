@@ -19,6 +19,14 @@ struct SupportChatScreen: View {
         !session.isAuthenticated && services.support.guestToken == nil
     }
 
+    /// The named person on the Calibre side, once one is assigned. Everything
+    /// below falls back to the generic wording while this is nil.
+    private var contactName: String? {
+        guard let name = conversation?.assignedContact?.displayName else { return nil }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -32,15 +40,53 @@ struct SupportChatScreen: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Message Calibre").font(CalibreType.bodySemiBold).foregroundStyle(Color.calibre.foreground)
-            Text("We typically reply within a day.")
-                .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+        VStack(alignment: .leading, spacing: 3) {
+            Text(contactName.map { "You're talking with \($0)" } ?? "Message Calibre")
+                .font(CalibreType.bodySemiBold)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(statusLine)
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Write here or email support@buycalibre.com — it is the same conversation either way.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.margin)
         .background(Color.calibre.card)
         .overlay(alignment: .bottom) { Rectangle().fill(Color.calibre.border).frame(height: 1) }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Where the thread stands right now. Every conversation state is named
+    /// explicitly so the two waiting states never fall through to a blank
+    /// or generic line.
+    private var statusLine: String {
+        guard let conversation else {
+            return "We typically reply within a day."
+        }
+        switch conversation.status {
+        case .waitingOnCalibre:
+            if let contactName {
+                return "\(contactName) has your message and will reply, usually within a day."
+            }
+            return "We have your message and will reply, usually within a day."
+        case .waitingOnCustomer:
+            if let contactName {
+                return "\(contactName) has replied and is waiting to hear back from you."
+            }
+            return "We have replied and are waiting to hear back from you."
+        case .closed:
+            return "This conversation is closed. Write again any time and it reopens."
+        case .open, .unknown:
+            if contactName != nil {
+                return "Messages come personally from them. We typically reply within a day."
+            }
+            return "We typically reply within a day."
+        }
     }
 
     @ViewBuilder private var messages: some View {

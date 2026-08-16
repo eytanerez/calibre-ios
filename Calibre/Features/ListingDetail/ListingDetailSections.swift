@@ -167,9 +167,16 @@ struct SellerCard: View {
                 AvatarInitial(name: seller.username, size: .m)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("@\(seller.username)")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                    HStack(spacing: Space.xs) {
+                        Text("@\(seller.username)")
+                            .font(CalibreType.bodyMedium)
+                            .foregroundStyle(Color.calibre.foreground)
+                        // A verified business is behind this listing — that is
+                        // the whole of what the badge claims.
+                        if seller.isVerifiedDealer == true {
+                            DealerBadge(compact: true)
+                        }
+                    }
                     if let reputation = seller.reputation {
                         Text(reputation.salesCount == 1 ? "1 sale on Calibre" : "\(reputation.salesCount) sales on Calibre")
                             .font(CalibreType.caption)
@@ -215,31 +222,45 @@ struct AuthenticationInfoSheet: View {
         SheetScaffold(title: "Inspected before it ships", detents: [.medium, .large]) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Every watch sold on Calibre travels to our authentication center before it travels to you. Nothing ships buyer-direct.")
+                    Text("Every watch sold on Calibre travels to the authentication centre before it travels to you. Nothing ships buyer-direct.")
                         .font(CalibreType.body)
                         .foregroundStyle(Color.calibre.secondaryForeground)
                         .lineSpacing(5)
 
                     infoRow(
                         icon: "checkmark.shield",
-                        title: "Authenticated by watchmakers",
-                        message: "Movement, case, dial, and papers are examined by our in-house watchmakers against the reference's factory specification."
+                        title: "Authenticated by a specialist partner",
+                        message: "Movement, case, dial, and papers are examined against the reference's factory specification by a third-party authentication partner, under a 72-hour commitment from arrival to verdict."
                     )
                     infoRow(
                         icon: "clock.badge.checkmark",
                         title: "Condition verified",
-                        message: "We confirm the listing's condition grading part by part. If anything doesn't match, the sale doesn't proceed."
+                        message: "The listing's condition grading is confirmed part by part. If anything doesn't match, the sale doesn't proceed."
                     )
                     infoRow(
                         icon: "shippingbox",
-                        title: "Insured to your door",
-                        message: "After inspection, your watch ships fully insured with a signature required on delivery."
+                        title: "Insured on every leg",
+                        message: "Every label on every leg requires a direct signature and is insured for the full sale price."
                     )
 
-                    Text("If a watch fails inspection, you're refunded in full — no questions, no waiting.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                        .padding(.top, Space.xs)
+                    VStack(alignment: .leading, spacing: Space.s) {
+                        Text("If something is wrong")
+                            .font(CalibreType.bodyMedium)
+                            .foregroundStyle(Color.calibre.foreground)
+                        Text("If a watch is found to be counterfeit, authentication costs you nothing, you're refunded in full including the card fee, and the watch is destroyed — it cannot legally be returned to anyone.")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("If a watch is genuine but not as described, your Calibre contact treats it as urgent and settles it case by case — either a partial refund, or the watch goes back.")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("If authentication runs past its commitment, you hear from your Calibre contact before you have to ask.")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, Space.xs)
                 }
                 .padding(.bottom, Space.xxl)
             }

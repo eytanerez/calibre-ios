@@ -174,6 +174,44 @@ struct InlineErrorLine: View {
     }
 }
 
+/// The clear and conspicuous notice a discount-presentation state (Connecticut
+/// and Massachusetts today) owes the buyer: the price here depends on how they
+/// pay, and by how much.
+///
+/// It belongs on every step where a payment method is being chosen or a price
+/// is being shown, which is why it lives here rather than inside one screen —
+/// a buyer who takes the wire route never reaches the review step, so a notice
+/// that only appeared there would never be seen by the people it is for.
+struct DiscountPresentationNotice: View {
+    let breakdown: CheckoutBreakdown
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            CalloutBand(
+                icon: "info.circle",
+                title: "The price here depends on how you pay",
+                message: "The listed price is the card price. Paying by wire receives a discount off it. The final total is the same in every state — only how it is presented differs."
+            )
+            if !priceRows.isEmpty {
+                SpecList(priceRows)
+            }
+        }
+    }
+
+    /// Both totals, from whichever key the payload carries them under. A
+    /// figure the server hasn't sent is left out rather than derived.
+    private var priceRows: [(String, String)] {
+        let currency = breakdown.currency
+        let card = breakdown.totals?.card?.value ?? breakdown.display?.price.value
+        let wire = breakdown.totals?.wire?.value ?? breakdown.display?.wirePrice?.value
+        guard let card, let wire else { return [] }
+        return [
+            ("Card price", PriceFormatter.format(card, currency: currency)),
+            ("Wire price", PriceFormatter.format(wire, currency: currency)),
+        ]
+    }
+}
+
 /// Primary button label that swaps in a compact progress while busy.
 struct BusyLabel: View {
     let title: String

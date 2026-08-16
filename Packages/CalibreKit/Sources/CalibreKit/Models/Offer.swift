@@ -1,7 +1,8 @@
 import Foundation
 
-/// Full offer lifecycle, including the $250 good-faith hold states and
-/// multi-round counter negotiation.
+/// Full offer lifecycle, including the good-faith hold states and
+/// multi-round counter negotiation. The hold's amount always comes from
+/// `offer.hold.amount` — never a literal.
 public enum OfferStatus: String, Codable, Sendable {
     /// Stripe card hold being authorized.
     case holdPending = "hold_pending"
@@ -50,6 +51,12 @@ public struct Offer: Codable, Sendable, Identifiable {
     public let buyerPenaltyConsentAt: Date?
     public let acceptedAt: Date?
     public let paidAt: Date?
+    /// Set when payment failed after acceptance — the buyer has until
+    /// `resolveBy` (12 hours) to fix it before the hold is forfeited.
+    public let paymentFailedAt: Date?
+    public let resolveBy: Date?
+    /// Present once the hold has actually been forfeited to the seller.
+    public let forfeit: OfferForfeit?
     public let hold: OfferHold?
     public let buyer: OfferParticipant?
     public let listing: OfferListingSummary?
@@ -72,7 +79,15 @@ public struct NegotiationEntry: Codable, Sendable {
     public let at: Date?
 }
 
-/// The good-faith card hold riding on an offer.
+/// A forfeited hold. The seller receives the hold less the cost of
+/// processing it; `sellerAmount` is that figure, from the server.
+public struct OfferForfeit: Codable, Sendable {
+    public let forfeitedAt: Date?
+    public let sellerAmount: APIDecimal?
+}
+
+/// The good-faith card hold riding on an offer. `amount` is the only source
+/// of the hold figure — no client may state it from memory.
 public struct OfferHold: Codable, Sendable {
     public let amount: APIDecimal
     public let currency: String?

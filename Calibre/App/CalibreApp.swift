@@ -237,6 +237,8 @@ final class AppServices {
     let account: AccountStore
     let support: SupportStore
     let community: CommunityStore
+    let content: ContentStore
+    let config: ConfigStore
     let vault: VaultStore
     let serverAlerts: ServerAlertsStore
     let signals: LocalSignals
@@ -258,10 +260,18 @@ final class AppServices {
         self.account = account
         self.support = SupportStore(client: client)
         self.community = CommunityStore(client: client)
+        self.content = ContentStore(client: client)
+        let config = ConfigStore(client: client)
+        self.config = config
         self.vault = VaultStore(client: client)
         self.serverAlerts = ServerAlertsStore(client: client)
         self.signals = LocalSignals()
         self.push = PushCoordinator(account: account)
+
+        // Rates, minimums and windows the app may quote before the object
+        // that would carry them exists. Warmed once at launch so a
+        // disclosure never has to wait on a round trip.
+        config.warm()
 
         // A cleared session (manual sign-out, a rejected refresh token, or a
         // failed bootstrap validation) must not leave the previous account's

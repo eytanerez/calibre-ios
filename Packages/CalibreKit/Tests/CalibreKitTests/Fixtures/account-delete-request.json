@@ -1,0 +1,25 @@
+{
+ "ok": true,
+ "data": {
+  "requested": true,
+  "deletion_scheduled_for": null,
+  "can_delete": false,
+  "obligations": [
+   {
+    "kind": "live_order",
+    "reference": "CAL-3099",
+    "detail": "A watch is on its way to you."
+   },
+   {
+    "kind": "outstanding_payout",
+    "reference": "CAL-2971",
+    "detail": "A payout has not reached your bank yet."
+   },
+   {
+    "kind": "accepted_offer",
+    "reference": "OFR-4412",
+    "detail": "You have an accepted offer awaiting payment."
+   }
+  ]
+ }
+}

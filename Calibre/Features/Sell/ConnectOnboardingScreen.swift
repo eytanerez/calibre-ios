@@ -6,11 +6,30 @@ import UIKit
 /// Stripe Connect embedded onboarding, bridged into SwiftUI. The SDK's
 /// `AccountOnboardingController` presents itself full-screen from a host
 /// view controller; this cover shows a quiet holding view underneath.
+///
+/// Two flows share this host: payout setup, and the dealer application's
+/// business/EIN step. Only the component's own title differs, so the title
+/// is a parameter rather than a second copy of the controller plumbing.
 struct ConnectOnboardingScreen: View {
     let clientSecret: String
     let publishableKey: String
+    let title: String
     let onExit: () -> Void
     let onLoadFailure: (String) -> Void
+
+    init(
+        clientSecret: String,
+        publishableKey: String,
+        title: String = "Set up payouts",
+        onExit: @escaping () -> Void,
+        onLoadFailure: @escaping (String) -> Void
+    ) {
+        self.clientSecret = clientSecret
+        self.publishableKey = publishableKey
+        self.title = title
+        self.onExit = onExit
+        self.onLoadFailure = onLoadFailure
+    }
 
     var body: some View {
         ZStack {
@@ -18,13 +37,14 @@ struct ConnectOnboardingScreen: View {
             VStack(spacing: Space.l) {
                 ProgressView()
                     .tint(Color.calibre.primary)
-                Text("Opening Stripe…")
+                Text("Opening secure verification…")
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
             ConnectOnboardingHost(
                 clientSecret: clientSecret,
                 publishableKey: publishableKey,
+                title: title,
                 onExit: onExit,
                 onLoadFailure: onLoadFailure
             )
@@ -36,6 +56,7 @@ struct ConnectOnboardingScreen: View {
 private struct ConnectOnboardingHost: UIViewControllerRepresentable {
     let clientSecret: String
     let publishableKey: String
+    let title: String
     let onExit: () -> Void
     let onLoadFailure: (String) -> Void
 
@@ -43,6 +64,7 @@ private struct ConnectOnboardingHost: UIViewControllerRepresentable {
         HostViewController(
             clientSecret: clientSecret,
             publishableKey: publishableKey,
+            title: title,
             onExit: onExit,
             onLoadFailure: onLoadFailure
         )
@@ -55,6 +77,7 @@ private struct ConnectOnboardingHost: UIViewControllerRepresentable {
     final class HostViewController: UIViewController, @preconcurrency AccountOnboardingControllerDelegate {
         private let clientSecret: String
         private let publishableKey: String
+        private let componentTitle: String
         private let onExit: () -> Void
         private let onLoadFailure: (String) -> Void
 
@@ -68,11 +91,13 @@ private struct ConnectOnboardingHost: UIViewControllerRepresentable {
         init(
             clientSecret: String,
             publishableKey: String,
+            title: String,
             onExit: @escaping () -> Void,
             onLoadFailure: @escaping (String) -> Void
         ) {
             self.clientSecret = clientSecret
             self.publishableKey = publishableKey
+            self.componentTitle = title
             self.onExit = onExit
             self.onLoadFailure = onLoadFailure
             super.init(nibName: nil, bundle: nil)
@@ -97,7 +122,7 @@ private struct ConnectOnboardingHost: UIViewControllerRepresentable {
             self.manager = manager
 
             let controller = manager.createAccountOnboardingController()
-            controller.title = "Set up payouts"
+            controller.title = componentTitle
             controller.delegate = self
             self.controller = controller
             controller.present(from: self)

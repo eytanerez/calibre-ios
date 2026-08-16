@@ -3,11 +3,13 @@ import CalibreKit
 import SwiftUI
 
 /// The wire path terminus — bank details with per-row copy, the reference
-/// warning, the 24 h reservation countdown, and "I've sent the wire".
+/// warning, the reservation countdown, and "I've sent the wire". The window
+/// itself is the marketplace config's, matching what the method step quoted.
 struct WireInstructionsScreen: View {
     @Bindable var model: CheckoutModel
     let onReserved: (Order) -> Void
 
+    @Environment(AppServices.self) private var services
     @Environment(ToastCenter.self) private var toasts
     @State private var confirmingSent = false
     @State private var tutorial = TutorialController(
@@ -71,6 +73,7 @@ struct WireInstructionsScreen: View {
         .tutorialOverlay(tutorial)
         .navigationTitle("Wire transfer")
         .navigationBarTitleDisplayMode(.inline)
+        .task { try? await services.config.load() }
         .onAppear {
             if model.wireCheckout?.wire.instructions != nil { tutorial.startIfNeeded() }
         }
@@ -125,16 +128,28 @@ struct WireInstructionsScreen: View {
 
             HStack(spacing: Space.m) {
                 CountdownChip(until: reservationDeadline(checkout))
-                Text("Your watch is held for 24 hours.")
+                // The same window the method step quoted, from the same
+                // config — never a second, differently remembered number.
+                Text("Your watch is held for \(reservationPhrase).")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, 2)
         }
     }
 
+    private var reservationPhrase: String {
+        CheckoutCopy.wireReservationPhrase(services.config.config?.wireReservationText)
+    }
+
+    /// The server's own expiry when it sent one. The local fallback only
+    /// covers the seconds before the payload lands, and takes the shortest
+    /// window the config states rather than a remembered one.
     private func reservationDeadline(_ checkout: WireCheckout) -> Date {
-        checkout.session?.expiresAtDate ?? Date.now.addingTimeInterval(24 * 3600)
+        if let expiry = checkout.session?.expiresAtDate { return expiry }
+        let hours = services.config.config?.wireReservationHours.min() ?? 24
+        return Date.now.addingTimeInterval(TimeInterval(hours) * 3600)
     }
 
     private func detailRows(_ instructions: WireInstructions, breakdown: CheckoutBreakdown) -> some View {

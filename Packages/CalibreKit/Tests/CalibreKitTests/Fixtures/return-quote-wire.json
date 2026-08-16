@@ -1,0 +1,24 @@
+{
+ "ok": true,
+ "data": {
+  "watch_price": "2000.00",
+  "tax_refund": "125.00",
+  "return_fee": {
+   "percent": "7.00",
+   "minimum": "250.00",
+   "amount": "250.00"
+  },
+  "outbound_label_deduction": "150.00",
+  "return_label_deduction": "35.00",
+  "processing_withholding": "61.90",
+  "processing_withholding_basis": "card_fee_equivalent",
+  "refund_total": "1628.10",
+  "currency": "USD",
+  "window": {
+   "started_at": "2026-08-12T09:00:00+00:00",
+   "ends_at": "2026-08-15T09:00:00+00:00",
+   "open": true
+  },
+  "existing_return": null
+ }
+}

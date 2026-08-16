@@ -42,6 +42,11 @@ public struct Listing: Codable, Sendable, Identifiable {
     public let reviewEvents: [ListingReviewEvent]?
     public let estimatedShipping: ShippingEstimate?
     public let metrics: ListingMetricCounts?
+    /// The seller's return terms, chosen at listing time and visible to the
+    /// buyer before purchase. Nil on payloads recorded before returns shipped.
+    public let returns: ListingReturnTerms?
+    public let countryOfOrigin: String?
+    public let htsCode: String?
     public let createdAt: Date?
     public let updatedAt: Date?
 
@@ -55,7 +60,8 @@ public struct Listing: Codable, Sendable, Identifiable {
         case id, listingNumber, sellerId, seller, variantId, title, brand, model
         case referenceNumber, description, price, currency, condition, boxPapers
         case productionYear, status, reviewStatus, sellerStatus, reviewEvents
-        case estimatedShipping, metrics, createdAt, updatedAt
+        case estimatedShipping, metrics, returns, countryOfOrigin, htsCode
+        case createdAt, updatedAt
         case imageList = "images"
     }
 }
@@ -64,6 +70,8 @@ public struct ListingSeller: Codable, Sendable {
     public let id: String
     public let username: String
     public let reputation: SellerReputation?
+    /// Drives the dealer badge on listing cards and the PDP.
+    public let isVerifiedDealer: Bool?
 }
 
 public struct SellerReputation: Codable, Sendable {
@@ -126,6 +134,7 @@ public struct ListingSummary: Codable, Sendable, Identifiable {
     public struct Seller: Codable, Sendable {
         public let id: String
         public let username: String
+        public let isVerifiedDealer: Bool?
     }
 
     public let id: String

@@ -23,9 +23,10 @@ public struct ConnectStatus: Codable, Sendable {
 // FIXTURE-PENDING: shape from `SellerDashboardView.get` in
 // app/api/views/payouts.py.
 /// `/account/dashboard` — seller KPIs, action queue, received offers and
-/// dealer unlock progress.
+/// where the seller stands in the dealer program.
 public struct SellerDashboard: Codable, Sendable {
-    public let dealer: DealerUnlock?
+    /// Replaces the retired `dealer` unlock block.
+    public let dealerApplication: DealerApplication?
     public let metrics: SellerDashboardMetrics
     public let actionQueue: [DashboardAction]
     public let offers: [Offer]
@@ -227,6 +228,11 @@ public struct ListingDraftPayload: Encodable, Sendable {
     public var conditionCaseback: String?
     public var boxPapers: Bool?
     public var productionYear: Int?
+    /// Whether this listing accepts returns. Changing either return field on
+    /// an active listing sends it back through review.
+    public var returnsAccepted: Bool?
+    /// 24, 48 or 72 — required by the server when `returnsAccepted` is true.
+    public var returnWindowHours: Int?
     /// Seller may set draft / pending_review / archived.
     public var status: String?
 
@@ -248,6 +254,8 @@ public struct ListingDraftPayload: Encodable, Sendable {
         conditionCaseback: String? = nil,
         boxPapers: Bool? = nil,
         productionYear: Int? = nil,
+        returnsAccepted: Bool? = nil,
+        returnWindowHours: Int? = nil,
         status: ListingStatus? = nil
     ) {
         self.title = title
@@ -267,6 +275,8 @@ public struct ListingDraftPayload: Encodable, Sendable {
         self.conditionCaseback = conditionCaseback
         self.boxPapers = boxPapers
         self.productionYear = productionYear
+        self.returnsAccepted = returnsAccepted
+        self.returnWindowHours = returnWindowHours
         self.status = status?.rawValue
     }
 }

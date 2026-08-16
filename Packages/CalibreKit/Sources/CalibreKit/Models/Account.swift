@@ -15,6 +15,9 @@ public struct Profile: Codable, Sendable, Identifiable {
     public let createdAt: Date?
     public let updatedAt: Date?
     public let sellerProfile: SellerProfileSummary?
+    /// Top-level dealer program state. Replaced the old nested `unlock`
+    /// block when dealer status stopped being tied to listing volume.
+    public let dealerApplication: DealerApplication?
     public let stats: ProfileStats
 }
 
@@ -22,24 +25,6 @@ public struct SellerProfileSummary: Codable, Sendable {
     /// DealerProfile status: pending / approved / downgraded / rejected.
     public let status: String
     public let isVerifiedDealer: Bool
-    public let dealerActiveUntil: Date?
-    public let unlock: DealerUnlock?
-}
-
-/// Dealer-tier unlock progress (10 live listings → dealer pricing next month).
-public struct DealerUnlock: Codable, Sendable {
-    public let status: String
-    public let isActive: Bool
-    public let activeUntil: Date?
-    public let liveListingCount: Int
-    public let threshold: Int
-    public let remainingToUnlock: Int
-    public let nextMonthUnlocked: Bool
-    public let currentFeePercent: APIDecimal
-    public let memberFeePercent: APIDecimal
-    public let dealerFeePercent: APIDecimal
-    public let currentMonthLabel: String?
-    public let nextMonthLabel: String?
 }
 
 public struct ProfileStats: Codable, Sendable {
@@ -229,6 +214,21 @@ public struct BillingSetupIntent: Decodable, Sendable {
     /// must poll `paymentMethod()` after PaymentSheet reports `.completed`
     /// rather than trust this snapshot.
     public let paymentMethod: SavedPaymentMethod?
+}
+
+/// One thing standing between a customer and account deletion — a live
+/// order, an outstanding payout, money in flight, an active return, or an
+/// accepted offer. Shown verbatim so the customer knows exactly what's left.
+public struct AccountObligation: Codable, Sendable, Identifiable {
+    public let kind: String
+    public let reference: String?
+    public let detail: String?
+
+    enum CodingKeys: String, CodingKey {
+        case kind, reference, detail
+    }
+
+    public var id: String { kind + "-" + (reference ?? detail ?? "") }
 }
 
 // FIXTURE-PENDING: the endpoint 404s until the other agent's notification

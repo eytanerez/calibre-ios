@@ -64,6 +64,26 @@ public struct Order: Codable, Sendable, Identifiable {
     /// pending / pending_connect / released / reversed / refunded / …
     public let payoutStatus: String?
     public let payoutReleasedAt: Date?
+    /// The seller-facing payout block: which trigger applies, the two dates,
+    /// the first-payout hold, and the backend's own status/failure wording.
+    public let payout: OrderPayout?
+
+    // Returns.
+    /// The return terms locked onto this order at purchase, plus the live
+    /// window. Nil on payloads recorded before returns shipped.
+    public let returns: OrderReturnTerms?
+    /// The live return case, present only once a return exists. Read it
+    /// through `returnSummary` — `return` is a keyword at the call site.
+    public let `return`: OrderReturnSummary?
+    /// Dates the backend expects to hit, plus the seller's payout forecast.
+    public let expected: OrderExpected?
+
+    /// The open (or finished) return on this order, if there is one.
+    public var returnSummary: OrderReturnSummary? { self.return }
+
+    /// The payout block to render: the order's own, falling back to the
+    /// forecast under `expected` when only that is present.
+    public var payoutBlock: OrderPayout? { payout ?? expected?.payout }
 
     // Seller fulfillment.
     /// "awaiting_wire_transfer" or "sold_awaiting_label_creation" when the

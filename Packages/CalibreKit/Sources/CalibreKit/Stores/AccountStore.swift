@@ -82,7 +82,18 @@ public final class AccountStore {
 
     // MARK: - Account deletion
 
+    /// Where a deletion request stands, including exactly what is still
+    /// outstanding. Safe to read before asking.
+    public func deletionState() async throws -> AccountDeletionState {
+        try await client.send(Endpoint(path: "/account/delete-request"))
+    }
+
     /// Schedules deletion with the backend's 30-day grace window.
+    ///
+    /// Throws `APIError.server` with code `obligations_outstanding` (409)
+    /// while anything is still in flight. Follow that with `deletionState()`
+    /// to show the customer the actual list — the error envelope only
+    /// carries flat string details, not the obligations array.
     @discardableResult
     public func requestDeletion() async throws -> AccountDeletionState {
         try await client.send(Endpoint(method: .post, path: "/account/delete-request"))
@@ -104,10 +115,39 @@ public struct DeviceRegistration: Codable, Sendable, Identifiable {
     public let createdAt: Date?
 }
 
-/// Pending-deletion state returned by the delete-request endpoint.
+/// Pending-deletion state returned by the delete-request endpoints.
+///
+/// Deletion is blocked while obligations remain — a live order, an
+/// outstanding payout, money in flight, an active return, an accepted offer.
+/// The customer is told exactly what is outstanding, and deletion completes
+/// on its own once the list clears.
 public struct AccountDeletionState: Codable, Sendable {
-    public let status: String
+    public let requested: Bool
+    public let deletionScheduledFor: Date?
+    public let obligations: [AccountObligation]
+    public let canDelete: Bool
+    /// Legacy field from the pre-obligations payload; still sent.
+    public let status: String?
     public let scheduledFor: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case requested, deletionScheduledFor, obligations, canDelete
+        case status, scheduledFor
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        requested = try container.decodeIfPresent(Bool.self, forKey: .requested) ?? false
+        deletionScheduledFor = try container.decodeIfPresent(Date.self, forKey: .deletionScheduledFor)
+        obligations = try container.decodeIfPresent([AccountObligation].self, forKey: .obligations) ?? []
+        canDelete = try container.decodeIfPresent(Bool.self, forKey: .canDelete) ?? false
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        scheduledFor = try container.decodeIfPresent(Date.self, forKey: .scheduledFor)
+    }
+
+    /// When deletion is expected to complete, from whichever field the
+    /// backend filled in.
+    public var scheduledDate: Date? { deletionScheduledFor ?? scheduledFor }
 }
 
 /// A partial notification-preferences update. Only non-nil fields are sent, so

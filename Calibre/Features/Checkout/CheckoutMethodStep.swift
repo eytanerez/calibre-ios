@@ -2,11 +2,14 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// Step 2 — how to pay. Two quiet cards: card/Apple Pay (instant, 3% cost)
-/// vs wire transfer (no card cost, 24 h reservation). The fee difference is
-/// shown in dollars once the server has priced the order.
+/// Step 2 — how to pay. Two quiet cards: card or Apple Pay (instant, with the
+/// card's processing cost) versus wire transfer (no processing cost, the
+/// watch reserved while the transfer arrives). Every figure comes from the
+/// server's breakdown once the order is priced; nothing here is a rate we
+/// remember.
 struct CheckoutMethodStep: View {
     @Bindable var model: CheckoutModel
+    @Environment(AppServices.self) private var services
     @State private var tutorial = TutorialController(
         id: "checkout.method",
         steps: [
@@ -14,7 +17,11 @@ struct CheckoutMethodStep: View {
                 id: "methods",
                 anchor: "checkout.methods",
                 title: "Two ways to pay",
-                message: "Card or Apple Pay clears instantly but adds about 3%. A wire transfer skips that cost — your watch is held for 24 hours while the transfer lands.",
+                // True under both presentations: where a surcharge is allowed
+                // the card carries its processing cost, and where it is not
+                // the wire route earns a discount instead. Either way the
+                // difference is in dollars on this screen, before paying.
+                message: "Card or Apple Pay clears instantly. Paying by wire comes to less, and the difference is shown to you in dollars on this screen before you pay. Choosing wire holds the watch while the transfer lands.",
                 advance: .tapToContinue,
                 cutout: .roundedRect(Radius.card)
             )
@@ -30,11 +37,19 @@ struct CheckoutMethodStep: View {
                     .font(CalibreType.title)
                     .foregroundStyle(Color.calibre.foreground)
 
+                // Where surcharges are prohibited and discounts permitted, the
+                // price difference has to be clear and conspicuous *here* —
+                // a buyer who chooses wire leaves for the wire screen and
+                // never sees the review step.
+                if let breakdown = model.breakdown, breakdown.isDiscountPresentation {
+                    DiscountPresentationNotice(breakdown: breakdown)
+                }
+
                 VStack(spacing: Space.m) {
                     MethodCard(
                         icon: "creditcard",
                         title: "Card or Apple Pay",
-                        subtitle: "Pay instantly. A 3% card processing cost applies.",
+                        subtitle: cardSubtitle,
                         detail: cardDetail,
                         detailLoading: model.preparingCardIntent && model.cardFeeText == nil,
                         isSelected: model.method == .card
@@ -46,7 +61,7 @@ struct CheckoutMethodStep: View {
                     MethodCard(
                         icon: "building.columns",
                         title: "Wire transfer",
-                        subtitle: "No card processing cost. Your watch is reserved for 24 hours.",
+                        subtitle: wireSubtitle,
                         detail: wireDetail,
                         detailLoading: model.preparingCardIntent && model.cardFeeText == nil,
                         isSelected: model.method == .wire
@@ -57,13 +72,29 @@ struct CheckoutMethodStep: View {
                 }
                 .tutorialAnchor("checkout.methods")
 
-                if let error = model.pricingError {
+                // Which cards work here, before the buyer commits to the card
+                // route at all — the card form says it again at entry.
+                if let breakdown = model.breakdown, model.method == .card {
+                    Text(CheckoutCopy.acceptedCardsNote(breakdown, statesText: discountStatesText))
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let problem = model.pricingProblem {
                     VStack(alignment: .leading, spacing: Space.s) {
-                        InlineErrorLine(message: error)
-                        Button("Try again") {
-                            Task { await model.prepareCardIntent() }
+                        InlineErrorLine(message: problem.message)
+                        if problem.listingReserved {
+                            Button("Back to the watch") {
+                                model.path.removeAll()
+                            }
+                            .buttonStyle(.calibreGhost)
+                        } else if problem.retryable {
+                            Button("Try again") {
+                                Task { await model.prepareCardIntent() }
+                            }
+                            .buttonStyle(.calibreGhost)
                         }
-                        .buttonStyle(.calibreGhost)
                     }
                 }
             }
@@ -96,17 +127,70 @@ struct CheckoutMethodStep: View {
             .background(Color.calibre.background.opacity(0.97))
         }
         .task { await model.prepareCardIntent() }
+        .task { try? await services.config.load() }
         .animation(Motion.easeFast, value: model.pricingError)
     }
 
+    /// Which presentation this order is priced under. In discount mode the
+    /// listed price *is* the card price, so nothing on this step may frame the
+    /// card as adding a cost — the wire route earns a discount instead.
+    private var isDiscountMode: Bool {
+        model.breakdown?.isDiscountPresentation == true
+    }
+
+    private var cardSubtitle: String {
+        if isDiscountMode {
+            return "Pay instantly. The listed price is the card price, so this is what the watch is listed at."
+        }
+        guard let breakdown = model.breakdown,
+              let rate = CheckoutCopy.cardFeeRateText(breakdown) else {
+            return "Pay instantly. The card's processing cost is shown before you pay."
+        }
+        return "Pay instantly. The card's processing cost is \(rate) — exactly our cost of accepting it."
+    }
+
+    private var wireSubtitle: String {
+        let reservation = CheckoutCopy.wireReservationSentence(services.config.config?.wireReservationText)
+        if isDiscountMode {
+            return "A discount off the listed price. \(reservation)"
+        }
+        return "No processing cost. \(reservation)"
+    }
+
     private var cardDetail: String? {
+        if isDiscountMode {
+            guard let total = cardTotalText else { return nil }
+            return "Card price: \(total)"
+        }
         guard let fee = model.cardFeeText else { return nil }
         return "Card processing today: \(fee)"
     }
 
     private var wireDetail: String? {
+        if isDiscountMode {
+            // The wire figure is the discounted amount the server priced, not
+            // a saving subtracted on the device.
+            guard let total = wireTotalText else { return nil }
+            return "Wire price: \(total)"
+        }
         guard let fee = model.cardFeeText else { return nil }
-        return "Save \(fee) vs. paying by card"
+        return "Save \(fee) versus paying by card"
+    }
+
+    private var cardTotalText: String? {
+        guard let breakdown = model.breakdown else { return nil }
+        guard let amount = breakdown.totals?.card?.value ?? breakdown.display?.price.value else { return nil }
+        return PriceFormatter.format(amount, currency: breakdown.currency)
+    }
+
+    private var wireTotalText: String? {
+        guard let breakdown = model.breakdown else { return nil }
+        guard let amount = breakdown.totals?.wire?.value ?? breakdown.display?.wirePrice?.value else { return nil }
+        return PriceFormatter.format(amount, currency: breakdown.currency)
+    }
+
+    private var discountStatesText: String? {
+        services.config.config?.discountStatesText
     }
 }
 

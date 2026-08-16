@@ -21,6 +21,10 @@ struct ListingDetailScreen: View {
     @State private var showAuthenticationInfo = false
     @State private var showMakeOfferStub = false
     @State private var swapCandidate: CartItem?
+    /// Display pricing — the read-only quote behind the all-in toggle. Built
+    /// fresh per listing so the toggle always starts off.
+    @State private var pricing: ListingPricingModel?
+    @State private var showAddressBook = false
     @Namespace private var similarNamespace
     /// Guards `load()`'s commit: `.task(id:)` cancels the in-flight load when
     /// `listingID` changes, but a manual "Try again" tap can still overlap
@@ -71,6 +75,17 @@ struct ListingDetailScreen: View {
         }
         .sheet(isPresented: $showAuthenticationInfo) {
             AuthenticationInfoSheet()
+        }
+        // The all-in toggle asks for an address rather than disappearing, so
+        // it needs somewhere to send the buyer — and it re-prices itself the
+        // moment they come back with one.
+        .sheet(isPresented: $showAddressBook, onDismiss: {
+            guard let pricing else { return }
+            Task { await pricing.load(isAuthenticated: session.isAuthenticated) }
+        }) {
+            NavigationStack {
+                AddressesScreen()
+            }
         }
         .sheet(isPresented: $showMakeOfferStub) { makeOfferSheet }
         .alert(
@@ -147,7 +162,10 @@ struct ListingDetailScreen: View {
                 .foregroundStyle(Color.calibre.foreground)
 
             HStack(alignment: .firstTextBaseline, spacing: Space.m) {
-                Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                // Logged-out visitors only ever see the seller's listed
+                // price; the model keeps it that way until there is a quote.
+                Text(pricing?.headlinePrice(for: listing)
+                    ?? PriceFormatter.format(listing.price.value, currency: listing.currency))
                     .font(CalibreType.priceLarge)
                     .foregroundStyle(Color.calibre.foreground)
                 if let badge = availabilityBadge(listing) {
@@ -155,10 +173,61 @@ struct ListingDetailScreen: View {
                 }
             }
 
-            Text("Taxes and shipping calculated at checkout.")
+            Text(pricing?.headlineCaption ?? "Taxes and shipping calculated at checkout.")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let pricing {
+                ListingPriceControls(model: pricing) {
+                    showAddressBook = true
+                }
+                .padding(.top, Space.xs)
+            }
+
+            returnTerms(listing)
         }
+    }
+
+    /// The seller's return terms, where the buyer is deciding — they have to
+    /// be visible before purchase, not discovered at checkout.
+    @ViewBuilder
+    private func returnTerms(_ listing: Listing) -> some View {
+        if let terms = listing.returns {
+            VStack(alignment: .leading, spacing: 2) {
+                Label {
+                    Text(terms.accepted
+                        ? (terms.windowHours.map { "Returns accepted within \($0) hours of delivery" }
+                            ?? "Returns accepted")
+                        : "Sold without returns")
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.foreground)
+                } icon: {
+                    Image(systemName: terms.accepted ? "arrow.uturn.backward" : "xmark.circle")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                }
+                if terms.accepted, let costLine = returnCostLine {
+                    Text(costLine)
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.top, Space.xs)
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// What a return costs, from the marketplace config. Without it the terms
+    /// still stand — they just arrive without figures rather than with
+    /// remembered ones.
+    private var returnCostLine: String? {
+        guard let fee = services.config.config?.returnFee,
+              let percent = fee.percent, let minimum = fee.minimum else { return nil }
+        let percentText = CheckoutCopy.percentText(percent.value)
+        let minimumText = PriceFormatter.format(minimum.value)
+        return "A return costs \(percentText) of the watch price with a \(minimumText) minimum, the label is deducted from your refund, and the card fee is not refunded."
     }
 
     private func actionStack(_ listing: Listing) -> some View {
@@ -345,6 +414,16 @@ struct ListingDetailScreen: View {
             listing = loaded
             similar = resolvedSimilar
             openOffer = resolvedOffer
+
+            // A fresh model per listing, so the all-in toggle always starts
+            // off — never inherited from the last watch the buyer looked at.
+            let model = ListingPricingModel(
+                listingID: listingID,
+                catalog: catalog,
+                commerce: services.commerce
+            )
+            pricing = model
+            Task { await model.load(isAuthenticated: session.isAuthenticated) }
             services.signals.recordViewed(listingID)
             failed = false
         } catch {

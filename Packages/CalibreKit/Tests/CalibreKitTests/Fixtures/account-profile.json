@@ -1,22 +1,35 @@
 {
-    "ok": true,
-    "data": {
-        "id": "fafc2903-6bd7-4f90-a0b0-e3965fe10e96",
-        "email": "iosbuyer.calibre@gmail.com",
-        "username": "iosbuyer",
-        "first_name": "Ios",
-        "last_name": "Buyer",
-        "phone": "+12025550142",
-        "created_at": "2026-07-12T05:27:05.452319+00:00",
-        "updated_at": "2026-07-12T05:27:05.452319+00:00",
-        "seller_profile": null,
-        "stats": {
-            "orders": 0,
-            "listings": 0,
-            "live_listings": 0,
-            "cart": 0,
-            "watchlist": 0,
-            "addresses": 1
-        }
-    }
+ "ok": true,
+ "data": {
+  "id": "fafc2903-6bd7-4f90-a0b0-e3965fe10e96",
+  "email": "iosbuyer.calibre@gmail.com",
+  "username": "iosbuyer",
+  "first_name": "Ios",
+  "last_name": "Buyer",
+  "phone": "+12025550142",
+  "created_at": "2026-07-12T05:27:05.452319+00:00",
+  "updated_at": "2026-07-12T05:27:05.452319+00:00",
+  "seller_profile": {
+   "status": "approved",
+   "is_verified_dealer": true
+  },
+  "stats": {
+   "orders": 0,
+   "listings": 0,
+   "live_listings": 0,
+   "cart": 0,
+   "watchlist": 0,
+   "addresses": 1
+  },
+  "dealer_application": {
+   "status": "verified",
+   "company_name": "Meridian Watch Co.",
+   "country": "US",
+   "applied_at": "2026-06-02T14:10:00+00:00",
+   "verified_at": "2026-06-03T09:41:00+00:00",
+   "revoked_reason": null,
+   "member_fee_percent": "6.00",
+   "dealer_fee_percent": "4.00"
+  }
+ }
 }

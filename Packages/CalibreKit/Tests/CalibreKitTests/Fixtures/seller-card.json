@@ -1,0 +1,13 @@
+{
+ "ok": true,
+ "data": {
+  "present": true,
+  "brand": "visa",
+  "last4": "4242",
+  "exp_month": 9,
+  "exp_year": 2026,
+  "funding": "credit",
+  "valid": true,
+  "expiring_soon": true
+ }
+}

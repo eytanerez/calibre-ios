@@ -68,13 +68,14 @@ struct ListingWizardScreen: View {
     }
 
     private func createModel() {
-        let isVerifiedDealer = services.seller.dashboard?.dealer?.isActive == true
-        let feePercent = MarketplaceFees.sellerPercent(isVerifiedDealer: isVerifiedDealer)
+        // No commission rate is passed in — what the seller keeps, what the
+        // buyer sees, and every figure between them come from the server's
+        // publish preview.
         let created = WizardModel(
             kind: context.kind,
             seller: services.seller,
             sell: sell,
-            feePercent: feePercent
+            config: services.config
         )
         model = created
         Task { await created.start() }

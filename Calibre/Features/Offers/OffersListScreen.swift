@@ -12,14 +12,18 @@ struct OffersListScreen: View {
 
     @State private var model: OffersListModel?
     @State private var segment: OffersSegment = .sent
-    @State private var tutorial = TutorialController(
-        id: "offers.list",
-        steps: [
+    @State private var tutorial = TutorialController(id: "offers.list", steps: steps(expiryHours: nil))
+
+    /// The lesson's own copy quotes the offer's time to live, so it is built
+    /// once the marketplace config has stated it — the canonical window only
+    /// stands in while the config hasn't landed.
+    private static func steps(expiryHours: Int?) -> [TutorialStep] {
+        [
             TutorialStep(
                 id: "swipe",
                 anchor: "offers.list",
                 title: "Swipe for the quick answer",
-                message: "Swipe any offer row: Accept or Decline the ones waiting on you, or Cancel one you sent. Each offer expires 24 hours after the last move.",
+                message: "Swipe any offer row: Accept or Decline the ones waiting on you, or Cancel one you sent. Each offer expires \(offerExpiryPhrase(expiryHours)) after the last move.",
                 advance: .tapToContinue,
                 cutout: .roundedRect(Radius.card),
                 cutoutPadding: Space.xs
@@ -35,7 +39,7 @@ struct OffersListScreen: View {
                 actionPrompt: "Tap a segment"
             ),
         ]
-    )
+    }
 
     var body: some View {
         Group {
@@ -64,12 +68,14 @@ struct OffersListScreen: View {
             let created = OffersListModel(
                 catalog: services.catalog,
                 commerce: services.commerce,
+                config: services.config,
                 userID: session.user?.id,
                 toasts: toasts
             )
             model = created
             await created.load()
         }
+        .task { try? await services.config.load() }
     }
 
     @ViewBuilder
@@ -150,7 +156,10 @@ struct OffersListScreen: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .tutorialAnchor("offers.list")
-        .onAppear { tutorial.startIfNeeded() }
+        .onAppear {
+            tutorial.adopt(steps: Self.steps(expiryHours: services.config.offerExpiryHours))
+            tutorial.startIfNeeded()
+        }
         .refreshable { await model.load(quiet: true) }
         .alert(
             model.pendingAction?.title ?? "",
@@ -167,7 +176,7 @@ struct OffersListScreen: View {
             Button("Not now", role: .cancel) { model.pendingAction = nil }
         } message: {
             if let action = model.pendingAction {
-                Text(action.message)
+                Text(model.confirmationMessage(action))
             }
         }
     }
@@ -204,7 +213,7 @@ struct OffersListScreen: View {
                 EmptyState(
                     icon: "arrow.down.left",
                     title: "Nothing received yet",
-                    message: "Offers on your listings land here, with 24 hours to respond to each one."
+                    message: "Offers on your listings land here, with \(offerExpiryPhrase(services.config.offerExpiryHours)) to respond to each one."
                 )
             }
         }
@@ -284,14 +293,29 @@ final class OffersListModel {
             }
         }
 
+        /// Every hold figure here is the offer's own `hold.amount` — for a
+        /// specific offer the payload always wins. The accept case's windows
+        /// come from the marketplace config, so it is composed on the model
+        /// (see `confirmationMessage(_:)`) where the config is reachable;
+        /// this is only its fallback.
         var message: String {
             switch self {
             case .accept(let offer):
-                "The listing is reserved and the buyer has 24 hours to pay \(PriceFormatter.format(offerCurrentAmount(offer), currency: offer.currency))."
-            case .decline:
-                "The buyer's hold is released and the negotiation ends."
-            case .cancel:
-                "Your $250 hold is released when the offer is withdrawn."
+                offerAcceptanceDisclosure(
+                    amountText: PriceFormatter.format(
+                        offerCurrentAmount(offer),
+                        currency: offer.currency
+                    ),
+                    holdText: offerHoldText(offer),
+                    graceHours: nil,
+                    paymentDueHours: nil,
+                    viewerIsSeller: true,
+                    buyerName: offer.buyer?.username ?? "the buyer"
+                )
+            case .decline(let offer):
+                "The buyer's \(offerHoldNoun(offerHoldText(offer))) is released and the negotiation ends."
+            case .cancel(let offer):
+                "Your \(offerHoldNoun(offerHoldText(offer))) is released when the offer is withdrawn."
             }
         }
 
@@ -312,6 +336,7 @@ final class OffersListModel {
     }
 
     @ObservationIgnored private let commerce: CommerceStore
+    @ObservationIgnored private let config: ConfigStore
     @ObservationIgnored private let userID: String?
     @ObservationIgnored private let toasts: ToastCenter
     let thumbs: ListingThumbCache
@@ -320,11 +345,32 @@ final class OffersListModel {
     private(set) var all: [Offer] = []
     var pendingAction: QuickAction?
 
-    init(catalog: CatalogStore, commerce: CommerceStore, userID: String?, toasts: ToastCenter) {
+    init(
+        catalog: CatalogStore,
+        commerce: CommerceStore,
+        config: ConfigStore,
+        userID: String?,
+        toasts: ToastCenter
+    ) {
         self.commerce = commerce
+        self.config = config
         self.userID = userID
         self.toasts = toasts
         self.thumbs = ListingThumbCache(catalog: catalog)
+    }
+
+    /// The disclosure §17.5 requires at acceptance, built with the windows the
+    /// marketplace config states. The hold figure stays the offer's own.
+    func confirmationMessage(_ action: QuickAction) -> String {
+        guard case .accept(let offer) = action else { return action.message }
+        return offerAcceptanceDisclosure(
+            amountText: PriceFormatter.format(offerCurrentAmount(offer), currency: offer.currency),
+            holdText: offerHoldText(offer),
+            graceHours: config.paymentGraceHours,
+            paymentDueHours: config.paymentDeadlineHours,
+            viewerIsSeller: true,
+            buyerName: offer.buyer?.username ?? "the buyer"
+        )
     }
 
     func load(quiet: Bool = false) async {
@@ -353,13 +399,20 @@ final class OffersListModel {
             case .accept(let offer):
                 _ = try await commerce.respond(toOffer: offer.id, .accept(message: nil))
                 Haptics.shared.play(.success)
-                toasts.show(title: "Offer accepted", message: "The buyer has 24 hours to pay.", tone: .success)
+                toasts.show(
+                    title: "Offer accepted",
+                    message: "The buyer has \(offerPaymentDuePhrase(config.paymentDeadlineHours)) to pay.",
+                    tone: .success
+                )
             case .decline(let offer):
                 _ = try await commerce.respond(toOffer: offer.id, .decline(message: nil))
                 toasts.show(title: "Offer declined")
             case .cancel(let offer):
                 _ = try await commerce.cancelOffer(offerID: offer.id)
-                toasts.show(title: "Offer withdrawn", message: "Your $250 hold has been released.")
+                toasts.show(
+                    title: "Offer withdrawn",
+                    message: "Your \(offerHoldNoun(offerHoldText(offer))) has been released."
+                )
             }
             await load(quiet: true)
         } catch {
