@@ -23,10 +23,21 @@ struct CheckoutReviewStep: View {
                     .font(CalibreType.title)
                     .foregroundStyle(Color.calibre.foreground)
 
-                if let listing = model.listing {
+                // What is being bought. One watch keeps its mini card; a set
+                // is itemised, because each watch has its own price, its own
+                // shipping and its own return terms.
+                if model.isMultiItem {
+                    CheckoutItemsCard(items: model.items)
+                } else if let listing = model.listing {
                     ListingMiniCard(listing: listing)
                 } else {
                     ListingMiniCardSkeleton()
+                }
+
+                if let dropped = model.droppedWatch {
+                    DroppedWatchNote(title: dropped.title, remaining: model.itemCount) {
+                        model.dismissDroppedWatchNote()
+                    }
                 }
 
                 if let breakdown = model.breakdown {
@@ -41,18 +52,20 @@ struct CheckoutReviewStep: View {
                 }
 
                 if let problem = model.pricingProblem {
-                    problemBlock(problem) {
+                    CheckoutProblemBlock(model: model, problem: problem) {
                         Task { await model.prepareCardIntent() }
                     }
                 }
 
                 CalloutBand(
                     icon: "checkmark.shield",
-                    message: "Your watch is inspected at the authentication centre before it ships."
+                    message: model.isMultiItem
+                        ? "Every watch is inspected at the authentication centre before it ships."
+                        : "Your watch is inspected at the authentication centre before it ships."
                 )
 
                 if let problem = model.paymentProblem {
-                    problemBlock(problem) {
+                    CheckoutProblemBlock(model: model, problem: problem) {
                         model.dismissPaymentProblem()
                     }
                 }
@@ -109,11 +122,15 @@ struct CheckoutReviewStep: View {
         }
     }
 
+    /// The purchase's single column. However many watches it covers, there is
+    /// one card-fee line, one tax line and one total — every one of them the
+    /// server's own combined figure, never a sum taken on the device. The
+    /// per-watch prices are stated once, above, in the items card.
     private func breakdownRows(_ breakdown: CheckoutBreakdown) -> [(label: String, value: String)] {
         let currency = breakdown.currency
         var rows: [(String, String)] = [
             (
-                model.offerID == nil ? "Watch price" : "Your accepted offer",
+                subtotalLabel,
                 PriceFormatter.format(breakdown.subtotal.value, currency: currency)
             ),
             ("Shipping", PriceFormatter.format(breakdown.shipping.value, currency: currency)),
@@ -126,6 +143,11 @@ struct CheckoutReviewStep: View {
             rows.append(("Tax", PriceFormatter.format(tax.value, currency: currency)))
         }
         return rows
+    }
+
+    private var subtotalLabel: String {
+        if model.isMultiItem { return CheckoutCopy.watchCount(model.itemCount) }
+        return model.offerID == nil ? "Watch price" : "Your accepted offer"
     }
 
     private var breakdownSkeleton: some View {
@@ -293,7 +315,10 @@ struct CheckoutReviewStep: View {
                 )
             }
 
-            let returnLines = CheckoutCopy.returnTermLines(breakdown)
+            // Return terms are the seller's, so a purchase of several watches
+            // states them per watch in the items card above rather than
+            // merging them into one sentence that would be true of neither.
+            let returnLines = model.isMultiItem ? [] : CheckoutCopy.returnTermLines(breakdown)
             if !returnLines.isEmpty {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     Text("Returns on this watch")
@@ -364,31 +389,13 @@ struct CheckoutReviewStep: View {
         services.config.config?.discountStatesText
     }
 
-    // MARK: - Problems
-
-    private func problemBlock(_ problem: CheckoutProblem, retry: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: Space.s) {
-            InlineErrorLine(message: problem.message)
-            if problem.listingReserved {
-                Button("Back to the watch") {
-                    Haptics.shared.play(.press)
-                    model.path.removeAll()
-                }
-                .buttonStyle(.calibreGhost)
-            } else if problem.retryable {
-                Button("Try again", action: retry)
-                    .buttonStyle(.calibreGhost)
-            }
-        }
-    }
-
     // MARK: - Pay
 
     @ViewBuilder
     private var payBar: some View {
         Group {
             if model.confirmingOrder {
-                busyRow("Confirming your order…")
+                busyRow(model.isMultiItem ? "Confirming your orders…" : "Confirming your order…")
             } else if let label = model.payState.label {
                 busyRow(label)
             } else {

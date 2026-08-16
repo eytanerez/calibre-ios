@@ -51,6 +51,73 @@
     "percent": "7.00",
     "minimum": "250.00"
    }
+  },
+  "breakdown_group": {
+   "items": [
+    {
+     "listing_id": "49e52179-1035-46f9-abe0-443d915d8c3b",
+     "subtotal": "4400.00",
+     "fees": "129.99",
+     "card_convenience_fee": "129.99",
+     "card_convenience_fee_percent": "2.90",
+     "payment_method": "card",
+     "seller_fee_percent_applied": "6.00",
+     "seller_fee_amount": "264.00",
+     "shipping": "72.00",
+     "tax": "0.00",
+     "tax_calculated_upfront": true,
+     "grand_total": "4601.99",
+     "currency": "USD",
+     "shipping_provider": "flat_rate",
+     "offer_id": null,
+     "pricing_mode": "surcharge",
+     "accepted_card_funding": [
+      "credit"
+     ],
+     "display": {
+      "price": "4400.00",
+      "wire_price": null
+     },
+     "payment_disclosures": {
+      "card_fee_nonrefundable": true
+     },
+     "returns": {
+      "accepted": true,
+      "window_hours": 48
+     },
+     "return_fee": {
+      "percent": "7.00",
+      "minimum": "250.00"
+     }
+    }
+   ],
+   "combined": {
+    "subtotal": "4400.00",
+    "shipping": "72.00",
+    "tax": "0.00",
+    "card_fee": {
+     "percent": "2.90",
+     "fixed": "0.30",
+     "amount": "129.99"
+    },
+    "totals": {
+     "card": "4601.99",
+     "wire": "4472.00"
+    },
+    "grand_total": "4601.99",
+    "pricing_mode": "surcharge",
+    "accepted_card_funding": [
+     "credit"
+    ],
+    "display": {
+     "price": "4400.00",
+     "wire_price": null
+    },
+    "currency": "USD",
+    "item_count": 1,
+    "payment_method": "card"
+   },
+   "checkout_group_id": "8d2a5f13-64c7-42be-9a01-b7e5c3d09f26"
   }
  }
 }

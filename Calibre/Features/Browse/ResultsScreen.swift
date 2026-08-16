@@ -46,6 +46,7 @@ final class ResultsModel {
             listings = response.results
             total = response.pagination.total
             reachedEnd = response.results.count < response.pagination.pageSize
+            trackSearchPerformed(resultsCount: total ?? response.results.count)
         } catch {
             guard generation == expected else { return }
             if !(error is CancellationError) {
@@ -55,6 +56,22 @@ final class ResultsModel {
         if generation == expected {
             isLoadingFirst = false
         }
+    }
+
+    /// `search_performed` fires here rather than on the type-ahead in
+    /// `SearchScreen`: this is where a query has settled *and* the response
+    /// carries a real `pagination.total`. The type-ahead asks for six rows
+    /// with `includeTotal: false`, so its count would be a cap, not a count.
+    /// A first page only — paging is the same search, not a new one — and a
+    /// facet-only browse (no query text) is not a search at all.
+    private func trackSearchPerformed(resultsCount: Int) {
+        guard let search = filters.search?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !search.isEmpty else { return }
+        Analytics.searchPerformed(
+            query: search,
+            resultsCount: resultsCount,
+            filtersActive: filters.activeCount() > 0
+        )
     }
 
     func apply(_ newFilters: BrowseFilters) async {

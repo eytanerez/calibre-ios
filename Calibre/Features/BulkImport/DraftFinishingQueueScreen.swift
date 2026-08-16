@@ -17,6 +17,10 @@ struct DraftFinishingQueueScreen: View {
     @State private var loadError: String?
     @State private var index = 0
     @State private var saving = false
+    /// Drafts passed over with "Skip for now". Reaching the end with any of
+    /// these left offers a second lap over just those, rather than making the
+    /// dealer leave and re-enter the queue to find them again.
+    @State private var skipped: Set<String> = []
 
     // Editors for the current item.
     @State private var conditions: [ConditionPart: String] = [:]
@@ -37,7 +41,20 @@ struct DraftFinishingQueueScreen: View {
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if index < queue.count {
+                    // Keyed on the item so each draft opens at the top of its
+                    // own form — the scroll offset used to carry over from the
+                    // draft before it, landing the next watch mid-page.
                     itemEditor(queue[index], position: index + 1, total: queue.count)
+                        .id(queue[index].id)
+                } else if !skipped.isEmpty {
+                    EmptyState(
+                        icon: "arrow.uturn.backward",
+                        title: "\(skipped.count) draft\(skipped.count == 1 ? "" : "s") still waiting",
+                        message: "You skipped \(skipped.count == 1 ? "one" : "\(skipped.count)"). Take another lap through just those, or come back to them from your shop.",
+                        actionTitle: "Finish the skipped \(skipped.count == 1 ? "one" : "ones")",
+                        action: { replaySkipped() }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     EmptyState(
                         icon: "checkmark.circle",
@@ -84,8 +101,14 @@ struct DraftFinishingQueueScreen: View {
     private func load() async {
         loadError = nil
         do {
-            queue = try await services.seller.importCompletionQueue(jobID: jobID)
+            let loaded = try await services.seller.importCompletionQueue(jobID: jobID)
+            // These drafts are provably bulk-imported. Nothing on the wire says
+            // so later, and they are submitted from the shop, so record them
+            // now for `listing_submitted.source`.
+            Analytics.noteBulkImportedDrafts(loaded.map(\.id))
+            queue = loaded
             index = 0
+            skipped = []
             prepareEditors()
         } catch {
             loadError = sellErrorMessage(error)
@@ -185,6 +208,7 @@ struct DraftFinishingQueueScreen: View {
 
                 HStack(spacing: Space.m) {
                     Button("Skip for now") {
+                        skipped.insert(item.id)
                         advance()
                     }
                     .buttonStyle(.calibreGhost)
@@ -358,6 +382,7 @@ struct DraftFinishingQueueScreen: View {
         )
         do {
             _ = try await services.seller.updateListing(id: item.id, payload)
+            skipped.remove(item.id)
             Haptics.shared.play(.save)
             advance()
         } catch {
@@ -370,6 +395,23 @@ struct DraftFinishingQueueScreen: View {
         withAnimation(Motion.easeMedium) {
             index += 1
         }
+        prepareEditors()
+    }
+
+    /// A second lap over only what was skipped, in place — no re-fetch, no
+    /// trip back to the job list.
+    private func replaySkipped() {
+        guard let queue else { return }
+        let remaining = queue.filter { skipped.contains($0.id) }
+        guard !remaining.isEmpty else {
+            skipped = []
+            return
+        }
+        withAnimation(Motion.easeMedium) {
+            self.queue = remaining
+            index = 0
+        }
+        skipped = []
         prepareEditors()
     }
 

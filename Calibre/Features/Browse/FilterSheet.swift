@@ -287,6 +287,10 @@ struct FilterSheet: View {
             defer { savingSearch = false }
             do {
                 _ = try await services.serverAlerts.createSavedSearch(filters: filters)
+                Analytics.savedSearchCreated(
+                    query: draft.search ?? "",
+                    hasFilters: draft.activeCount() > 0
+                )
                 Haptics.shared.play(.success)
                 savedSearch = true
             } catch {

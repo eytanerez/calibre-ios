@@ -73,14 +73,13 @@ struct OrdersListScreen: View {
                         )
                         .padding(.top, Space.xxl)
                     } else {
-                        LazyVStack(spacing: Space.m) {
-                            ForEach(orders) { order in
-                                Button {
-                                    services.router.push(.order(order.id))
-                                } label: {
-                                    OrderRow(order: order)
+                        LazyVStack(spacing: Space.l) {
+                            ForEach(sections) { section in
+                                if section.isPurchase {
+                                    purchaseGroup(section)
+                                } else if let order = section.orders.first {
+                                    orderButton(order)
                                 }
-                                .buttonStyle(PressableStyle())
                             }
                         }
                         .padding(Space.margin)
@@ -99,6 +98,64 @@ struct OrdersListScreen: View {
         }
     }
 
+    // MARK: - Grouping
+
+    /// Orders bought together belong together. Rows that share a
+    /// `checkout_group_id` are gathered under one purchase header, in the
+    /// order the server returned them; everything else stands alone, exactly
+    /// as it always has.
+    private var sections: [OrderSection] {
+        var order: [String] = []
+        var buckets: [String: [Order]] = [:]
+        for row in orders {
+            // An order with no group — or the only one of its group on this
+            // page — is its own row, keyed by id so it can never merge.
+            let key = row.checkoutGroupId.map { "group:\($0)" } ?? "order:\(row.id)"
+            if buckets[key] == nil {
+                buckets[key] = []
+                order.append(key)
+            }
+            buckets[key]?.append(row)
+        }
+        return order.map { OrderSection(id: $0, orders: buckets[$0] ?? []) }
+    }
+
+    private func orderButton(_ order: Order) -> some View {
+        Button {
+            services.router.push(.order(order.id))
+        } label: {
+            OrderRow(order: order)
+        }
+        .buttonStyle(PressableStyle())
+    }
+
+    /// One purchase: when it was bought, how many watches it covered, and a
+    /// row per watch beneath — each still its own order, opening on its own.
+    private func purchaseGroup(_ section: OrderSection) -> some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s) {
+                Eyebrow("One purchase")
+                Spacer()
+                Text(section.headline)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("One purchase, \(section.headline)")
+
+            VStack(spacing: Space.s) {
+                ForEach(section.orders) { order in
+                    orderButton(order)
+                }
+            }
+            .padding(Space.s)
+            .background(
+                Color.calibre.secondary.opacity(0.35),
+                in: RoundedRectangle(cornerRadius: Radius.card + Space.s, style: .continuous)
+            )
+        }
+    }
+
     private func load() async {
         if orders.isEmpty { phase = .loading }
         do {
@@ -108,6 +165,26 @@ struct OrdersListScreen: View {
         } catch {
             phase = .failed(error.orderMessage)
         }
+    }
+}
+
+/// One row of the orders list: a lone order, or the orders of one purchase.
+private struct OrderSection: Identifiable {
+    let id: String
+    let orders: [Order]
+
+    /// Only a purchase that actually covered more than one watch gets a
+    /// header — a single order needs no explaining.
+    var isPurchase: Bool { orders.count > 1 }
+
+    /// "14 Aug 2026 · 3 watches". The count is the purchase's own, from the
+    /// order payload, so a page that happens to show only two of three still
+    /// says what was bought.
+    var headline: String {
+        let count = orders.first?.purchaseItemCount ?? orders.count
+        let watches = count == 1 ? "1 watch" : "\(count) watches"
+        guard let date = orders.compactMap(\.createdAt).min() else { return watches }
+        return "\(date.formatted(date: .abbreviated, time: .omitted)) · \(watches)"
     }
 }
 

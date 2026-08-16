@@ -870,7 +870,11 @@ final class WizardModel {
             return false
         }
         do {
-            _ = try await seller.submitForReview(listingID: listing.id)
+            let reviewed = try await seller.submitForReview(listingID: listing.id)
+            Analytics.listingSubmitted(
+                .init(reviewed),
+                source: Analytics.listingSource(for: reviewed.id)
+            )
             if let fulfillRequestID {
                 // Best effort — the listing is submitted either way.
                 _ = try? await seller.fulfillWatchRequest(id: fulfillRequestID, listingID: listing.id)

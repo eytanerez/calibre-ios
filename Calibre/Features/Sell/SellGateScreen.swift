@@ -256,6 +256,10 @@ struct SellGateScreen: View {
                 // The payouts account exists — skip straight to verification.
                 resumeOnboarding()
             } else {
+                // No Connect account yet, so this is the first onboarding
+                // session — server truth, not a client guess. (The seam also
+                // latches it, covering the other entries into onboarding.)
+                Analytics.sellerStarted()
                 showSSNStep = true
             }
         }

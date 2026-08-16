@@ -478,6 +478,11 @@ final class MakeOfferModel {
                 message: trimmedMessage.isEmpty ? nil : trimmedMessage
             )
             self.offer = offer
+            // Schema puts `offer_started` at the create call succeeding,
+            // deliberately independent of whether the card hold completes.
+            Analytics.offerStarted(
+                listing.map(Analytics.ListingInfo.init) ?? .init(id: listingID)
+            )
             presentHold(for: offer)
         } catch let apiError as APIError {
             if case .server(let message, _, let status, _) = apiError, status == 409 {

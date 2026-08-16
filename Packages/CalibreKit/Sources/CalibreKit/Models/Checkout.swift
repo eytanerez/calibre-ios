@@ -94,6 +94,128 @@ public struct CheckoutBreakdown: Decodable, Sendable {
     }
 }
 
+/// `breakdown_group` — how the server prices a checkout that covers a set of
+/// watches. Present on every checkout response, one watch or ten.
+///
+/// The shape says the thing the screen has to say: each watch has its own
+/// price, shipping and return terms (`items`), and the purchase has exactly
+/// one card fee, one tax line and one total (`combined`). A per-item line
+/// therefore carries no `card_fee` and no `totals` — those belong to the
+/// purchase, not to any one watch in it.
+public struct CheckoutBreakdownGroup: Decodable, Sendable {
+    public let items: [Item]
+    /// Nil only on the display-only quote, which prices nothing that needs a
+    /// destination and so has no combined column to state.
+    public let combined: Combined?
+    /// The purchase these watches belong to. Nil before a group exists (the
+    /// read-only quote) — analytics omits the property rather than inventing
+    /// one.
+    public let checkoutGroupId: String?
+
+    /// One watch's own share of the purchase. Every key a single-item
+    /// `CheckoutBreakdown` carries except `card_fee` and `totals`, plus the
+    /// `listing_id` that says which watch it is about.
+    public struct Item: Decodable, Sendable, Identifiable {
+        public let listingId: String
+        public let subtotal: APIDecimal
+        /// This item's allocated share of the one card fee. The shares sum to
+        /// `combined.card_fee.amount` — the server allocates, never the client.
+        public let fees: APIDecimal?
+        public let cardConvenienceFee: APIDecimal?
+        public let cardConvenienceFeePercent: APIDecimal?
+        public let paymentMethod: String?
+        public let sellerFeePercentApplied: APIDecimal?
+        public let sellerFeeAmount: APIDecimal?
+        public let shipping: APIDecimal
+        public let tax: APIDecimal?
+        public let taxCalculatedUpfront: Bool?
+        /// This order's grand total — its own share of the purchase, and the
+        /// exact figure `purchase_completed.value` reports for it.
+        public let grandTotal: APIDecimal
+        public let currency: String
+        public let shippingProvider: String?
+        public let offerId: String?
+        public let pricingMode: CheckoutBreakdown.PricingMode?
+        public let acceptedCardFunding: [String]?
+        public let display: CheckoutBreakdown.DisplayPrices?
+        public let paymentDisclosures: CheckoutBreakdown.PaymentDisclosures?
+        /// This watch's own return terms — they are the seller's, so two
+        /// watches in one purchase can differ.
+        public let returns: ListingReturnTerms?
+        public let returnFee: ReturnFeeTerms?
+
+        public var id: String { listingId }
+    }
+
+    /// The purchase's single column: one card fee, one tax line, one total.
+    public struct Combined: Decodable, Sendable {
+        public let subtotal: APIDecimal
+        public let shipping: APIDecimal
+        public let tax: APIDecimal?
+        public let cardFee: CheckoutBreakdown.CardFee?
+        public let totals: CheckoutBreakdown.MethodTotals?
+        public let grandTotal: APIDecimal
+        public let pricingMode: CheckoutBreakdown.PricingMode?
+        public let acceptedCardFunding: [String]?
+        public let display: CheckoutBreakdown.DisplayPrices?
+        public let currency: String
+        public let itemCount: Int
+        public let paymentMethod: String?
+    }
+
+    /// The combined column expressed as a `CheckoutBreakdown`, so every piece
+    /// of copy already written against one payment breakdown renders a
+    /// multi-watch purchase without being told there is more than one watch.
+    ///
+    /// Nothing here is computed: each figure is the server's own `combined`
+    /// value, moved across. The keys `combined` does not carry — the card-fee
+    /// disclosure, and the return terms of a purchase of exactly one watch —
+    /// come from the items, which do carry them; return terms are deliberately
+    /// dropped for a set of two or more, because two watches can have
+    /// different terms and one merged sentence would be true of neither.
+    public var combinedBreakdown: CheckoutBreakdown? {
+        guard let combined else { return nil }
+        let single = items.count == 1 ? items.first : nil
+        return CheckoutBreakdown(
+            subtotal: combined.subtotal,
+            fees: APIDecimal(combined.cardFee?.amount.value ?? 0),
+            cardConvenienceFee: combined.cardFee?.amount,
+            cardConvenienceFeePercent: combined.cardFee?.percent,
+            paymentMethod: combined.paymentMethod,
+            sellerFeePercentApplied: single?.sellerFeePercentApplied,
+            sellerFeeAmount: single?.sellerFeeAmount,
+            shipping: combined.shipping,
+            tax: combined.tax,
+            taxCalculatedUpfront: items.first?.taxCalculatedUpfront,
+            grandTotal: combined.grandTotal,
+            currency: combined.currency,
+            shippingProvider: single?.shippingProvider,
+            offerId: single?.offerId,
+            pricingMode: combined.pricingMode,
+            cardFee: combined.cardFee,
+            totals: combined.totals,
+            acceptedCardFunding: combined.acceptedCardFunding,
+            display: combined.display,
+            // Marketplace policy, identical on every line, so the first line
+            // states it for the purchase.
+            paymentDisclosures: items.first?.paymentDisclosures,
+            returns: single?.returns,
+            returnFee: single?.returnFee
+        )
+    }
+}
+
+/// `GET /checkout/quote` — the set priced, reserving nothing and charging
+/// nothing. Same money shape as a checkout intent, minus the PaymentIntent.
+public struct CheckoutQuote: Decodable, Sendable {
+    public let breakdown: CheckoutBreakdown?
+    public let breakdownGroup: CheckoutBreakdownGroup?
+
+    public var payableBreakdown: CheckoutBreakdown? {
+        breakdown ?? breakdownGroup?.combinedBreakdown
+    }
+}
+
 /// `POST /checkout/validate-payment-method` — run the moment a PaymentMethod
 /// exists, while wire is still one tap away.
 ///
@@ -159,7 +281,17 @@ public struct NativeCheckoutIntent: Decodable, Sendable {
     /// CustomerSession secret with the `mobile_payment_element` component;
     /// nil when Stripe hiccuped — PaymentSheet still works without it.
     public let customerSessionClientSecret: String?
-    public let breakdown: CheckoutBreakdown
+    /// The legacy single-watch breakdown. Present for a checkout of exactly
+    /// one watch; absent for a set, whose money lives in `breakdownGroup`.
+    public let breakdown: CheckoutBreakdown?
+    public let breakdownGroup: CheckoutBreakdownGroup?
+
+    /// The money to render, whichever kind of checkout this is: the single
+    /// breakdown when the server sent one, the group's combined column
+    /// otherwise. Never a client-side sum.
+    public var payableBreakdown: CheckoutBreakdown? {
+        breakdown ?? breakdownGroup?.combinedBreakdown
+    }
 }
 
 /// `POST /checkout/create-intent` with `payment_method: "wire"` — the wire
@@ -168,7 +300,15 @@ public struct NativeCheckoutIntent: Decodable, Sendable {
 public struct WireCheckout: Decodable, Sendable {
     public let session: SessionStub?
     public let wire: WireIntent
-    public let breakdown: CheckoutBreakdown
+    /// As on the card path: the single-watch breakdown when the checkout
+    /// covers one watch, and nothing when it covers a set.
+    public let breakdown: CheckoutBreakdown?
+    public let breakdownGroup: CheckoutBreakdownGroup?
+
+    /// The amount to wire and the lines behind it — one breakdown either way.
+    public var payableBreakdown: CheckoutBreakdown? {
+        breakdown ?? breakdownGroup?.combinedBreakdown
+    }
 
     /// The web-shape session envelope; only `expiresAt` (unix seconds, the
     /// 24 h pay-by moment) matters to the native client.

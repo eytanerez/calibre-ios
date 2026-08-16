@@ -287,8 +287,10 @@ struct SellerDashboardScreen: View {
         _ = try? await services.seller.loadMyListings()
     }
 
+    /// Verified dealers only. A non-dealer's 403 is swallowed here on purpose:
+    /// the summary row simply never appears, and the shop still opens.
     private func loadRequests(generation: Int) async {
-        let result = (try? await services.seller.openDealerRequests()) ?? requests
+        let result = (try? await services.seller.openDealerRequests())?.results ?? requests
         guard generation == loadGeneration else { return }
         requests = result
     }
@@ -939,7 +941,14 @@ struct SellerDashboardScreen: View {
 
     private func submitDraft(_ listing: Listing) async {
         do {
-            _ = try await services.seller.submitForReview(listingID: listing.id)
+            let submitted = try await services.seller.submitForReview(listingID: listing.id)
+            // The shop is where bulk-imported drafts are actually submitted —
+            // the import completion queue only fills them in — so the source
+            // comes from the import ledger rather than being assumed manual.
+            Analytics.listingSubmitted(
+                .init(submitted),
+                source: Analytics.listingSource(for: submitted.id)
+            )
             Haptics.shared.play(.success)
             toasts.show(
                 title: "In review",

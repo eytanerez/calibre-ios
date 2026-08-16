@@ -1,0 +1,53 @@
+{
+    "ok": true,
+    "data": {
+        "results": [
+            {
+                "id": "6f0a9e21-0a4b-4a3f-9b53-3f0f3a6a1c11",
+                "requester_id": "1c3d7a52-77aa-4c0e-9e07-2a1b6f9d4e02",
+                "requester_username": "harrison.k",
+                "brand": "Rolex",
+                "model": "Submariner Date",
+                "reference": "126610LN",
+                "watch_reference_id": "b21e5c88-30b5-4d64-9a3a-1f7e2c9d5a44",
+                "watch_reference": {
+                    "id": "b21e5c88-30b5-4d64-9a3a-1f7e2c9d5a44",
+                    "brand": "Rolex",
+                    "model": "Submariner Date",
+                    "reference": "126610LN"
+                },
+                "production_year": 2022,
+                "max_budget": "14500.00",
+                "currency": "USD",
+                "notes": "Full set preferred, happy to wait for the right one.",
+                "status": "open",
+                "fulfilled_listing_id": null,
+                "created_at": "2026-08-14T09:12:44.118204+00:00",
+                "updated_at": "2026-08-14T09:12:44.118204+00:00",
+                "matching_live_listings": 3
+            },
+            {
+                "id": "2d4b8f13-5c6e-4a91-8f2d-71b0a4c6e933",
+                "requester_id": "9a2c1b40-6de3-4f18-b0c7-5e8d3a2f1904",
+                "requester_username": "member-9a2c1b40",
+                "brand": "Omega",
+                "model": null,
+                "reference": "speedy pro anything",
+                "watch_reference_id": null,
+                "watch_reference": null,
+                "production_year": null,
+                "max_budget": null,
+                "currency": "USD",
+                "notes": null,
+                "status": "open",
+                "fulfilled_listing_id": null,
+                "created_at": "2026-08-13T17:40:02.905311+00:00",
+                "updated_at": "2026-08-13T17:40:02.905311+00:00",
+                "matching_live_listings": 0
+            }
+        ],
+        "page": 1,
+        "page_size": 25,
+        "total": 2
+    }
+}

@@ -79,10 +79,19 @@ struct GoogleSignInButton: View {
         }
 
         // The one-time code lives 60 seconds — redeem it immediately.
+        // One endpoint serves both sign-up and sign-in; only the 201 this
+        // reports separates them.
+        var createdAccount = false
         let ok = await performAuthAction({
-            try await session.authenticate(path: "/auth/exchange", payload: ["code": code])
+            createdAccount = try await session.authenticate(
+                path: "/auth/exchange",
+                payload: ["code": code]
+            )
         }, onError: onMessage)
         if ok {
+            if createdAccount {
+                Analytics.signupCompleted(method: .google)
+            }
             Haptics.shared.play(.success)
             onSuccess()
         }

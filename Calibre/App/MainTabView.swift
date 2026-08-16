@@ -50,7 +50,7 @@ struct MainTabView: View {
         // Checkout owns its own navigation stack, so it rides above the tabs
         // as a cover rather than pushing into one.
         .fullScreenCover(item: $router.checkoutRequest) { request in
-            CheckoutFlow(listingID: request.listingID, offerID: request.offerID)
+            CheckoutFlow(listingIDs: request.listingIDs, offerID: request.offerID)
         }
         // The swipe deck — opened from the Home header, full-screen like the
         // dedicated tab it used to be. The deck hides the navigation bar and

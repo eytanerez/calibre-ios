@@ -20,7 +20,6 @@ struct ListingDetailScreen: View {
     @State private var lightbox: LightboxContext?
     @State private var showAuthenticationInfo = false
     @State private var showMakeOfferStub = false
-    @State private var swapCandidate: CartItem?
     /// Display pricing — the read-only quote behind the all-in toggle. Built
     /// fresh per listing so the toggle always starts off.
     @State private var pricing: ListingPricingModel?
@@ -30,6 +29,11 @@ struct ListingDetailScreen: View {
     /// `listingID` changes, but a manual "Try again" tap can still overlap
     /// with it — this keeps the slower of the two from winning.
     @State private var loadGeneration = 0
+    /// The listing `watch_viewed` has already been sent for. Scoped to this
+    /// screen instance, so it survives every re-render and a "Try again"
+    /// reload, and keyed by id so a push to a different listing on the same
+    /// instance still counts as a view.
+    @State private var viewedListingID: String?
 
     var body: some View {
         Group {
@@ -88,18 +92,6 @@ struct ListingDetailScreen: View {
             }
         }
         .sheet(isPresented: $showMakeOfferStub) { makeOfferSheet }
-        .alert(
-            "Your bag holds one watch at a time.",
-            isPresented: swapDialogPresented,
-            presenting: swapCandidate
-        ) { existing in
-            Button("Move \(existing.listing?.title ?? "the current watch") to Saved") {
-                Task { await performSwap(existing) }
-            }
-            Button("Keep my bag as it is", role: .cancel) {}
-        } message: { existing in
-            Text("We'll tuck \(existing.listing?.title ?? "your current watch") into Saved and put this one in your bag.")
-        }
     }
 
     private var makeOfferSheet: some View {
@@ -386,13 +378,6 @@ struct ListingDetailScreen: View {
         services.client.baseURL.appending(path: "/listings/\(listingID)/share-image.jpg")
     }
 
-    private var swapDialogPresented: Binding<Bool> {
-        Binding(
-            get: { swapCandidate != nil },
-            set: { if !$0 { swapCandidate = nil } }
-        )
-    }
-
     // MARK: - Loading
 
     /// The similar-watches lane and the open-offer state used to arrive
@@ -425,6 +410,10 @@ struct ListingDetailScreen: View {
             pricing = model
             Task { await model.load(isAuthenticated: session.isAuthenticated) }
             services.signals.recordViewed(listingID)
+            if viewedListingID != listingID {
+                viewedListingID = listingID
+                Analytics.watchViewed(.init(loaded))
+            }
             failed = false
         } catch {
             guard generation == loadGeneration, !(error is CancellationError) else { return }
@@ -461,10 +450,17 @@ struct ListingDetailScreen: View {
         }
     }
 
+    /// Listing-shaped analytics properties, degrading to the id alone while
+    /// the listing is still loading.
+    private var analyticsListing: Analytics.ListingInfo {
+        listing.map(Analytics.ListingInfo.init) ?? .init(id: listingID)
+    }
+
     private func toggleSave() {
         let commerce = services.commerce
         let toasts = toasts
         let listingID = listingID
+        let analyticsListing = analyticsListing
         session.require("Sign in to save this watch") {
             let wasSaved = commerce.isWatching(listingID: listingID)
             do {
@@ -473,6 +469,9 @@ struct ListingDetailScreen: View {
                 if wasSaved {
                     toasts.show(title: "Removed from Saved")
                 } else {
+                    // Save direction only — the toggle is optimistic, so the
+                    // pre-call snapshot above is the reliable discriminator.
+                    Analytics.watchLiked(analyticsListing)
                     toasts.show(title: "Saved", message: "We'll keep an eye on this one for you.", tone: .success)
                 }
             } catch {
@@ -482,11 +481,14 @@ struct ListingDetailScreen: View {
         }
     }
 
+    /// Adds this watch to the bag. The bag holds as many as the buyer wants —
+    /// the checkout that follows covers whichever of them they pick — so
+    /// nothing has to be displaced to make room.
     private func addToBag() {
         let commerce = services.commerce
         let toasts = toasts
         let listingID = listingID
-        let candidate = $swapCandidate
+        let analyticsListing = analyticsListing
         session.require("Sign in to add this watch to your bag") {
             do {
                 let cart = try await commerce.loadCart()
@@ -494,39 +496,20 @@ struct ListingDetailScreen: View {
                     toasts.show(title: "Already in your bag")
                     return
                 }
-                if let existing = cart.first {
-                    candidate.wrappedValue = existing
-                    return
-                }
                 try await commerce.addToCart(listingID: listingID)
+                Analytics.watchAddedToCart(analyticsListing)
                 Haptics.shared.play(.save)
-                toasts.show(title: "In your bag", message: "Ready when you are.", tone: .success)
+                toasts.show(
+                    title: "In your bag",
+                    message: cart.isEmpty
+                        ? "Ready when you are."
+                        : "That's \(cart.count + 1) in your bag — buy them together or one at a time.",
+                    tone: .success
+                )
             } catch {
                 Haptics.shared.play(.error)
                 toasts.show(title: "Couldn't add to your bag", message: error.browseMessage, tone: .error)
             }
-        }
-    }
-
-    /// The one-watch bag swap: previous watch moves to Saved, this one takes
-    /// its place.
-    private func performSwap(_ existing: CartItem) async {
-        let commerce = services.commerce
-        do {
-            if !commerce.isWatching(listingID: existing.listingId) {
-                try await commerce.toggleWatch(listingID: existing.listingId)
-            }
-            try await commerce.removeCartItem(id: existing.id)
-            try await commerce.addToCart(listingID: listingID)
-            Haptics.shared.play(.save)
-            toasts.show(
-                title: "In your bag",
-                message: "We moved \(existing.listing?.title ?? "your other watch") to Saved.",
-                tone: .success
-            )
-        } catch {
-            Haptics.shared.play(.error)
-            toasts.show(title: "Couldn't swap your bag", message: error.browseMessage, tone: .error)
         }
     }
 }

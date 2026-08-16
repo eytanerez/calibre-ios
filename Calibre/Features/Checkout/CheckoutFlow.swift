@@ -4,10 +4,12 @@ import SwiftUI
 
 /// The checkout cover — three unhurried steps (Shipping → Payment → Review,
 /// or wire instructions) in one NavigationStack, ending in the success
-/// moment. Present as a fullScreenCover from the `.checkout(listingID,
-/// offerID:)` route.
+/// moment. Present as a fullScreenCover from the router's checkout request.
+///
+/// A checkout covers a set of watches: one payment, one order each. Buying a
+/// single watch is a set of one, so nothing below has two shapes.
 struct CheckoutFlow: View {
-    let listingID: String
+    let listingIDs: [String]
     let offerID: String?
 
     @Environment(AppServices.self) private var services
@@ -16,9 +18,13 @@ struct CheckoutFlow: View {
 
     @State private var model: CheckoutModel?
 
-    init(listingID: String, offerID: String? = nil) {
-        self.listingID = listingID
+    init(listingIDs: [String], offerID: String? = nil) {
+        self.listingIDs = listingIDs
         self.offerID = offerID
+    }
+
+    init(listingID: String, offerID: String? = nil) {
+        self.init(listingIDs: [listingID], offerID: offerID)
     }
 
     var body: some View {
@@ -34,7 +40,7 @@ struct CheckoutFlow: View {
         .task {
             guard session.isAuthenticated, model == nil else { return }
             let created = CheckoutModel(
-                listingID: listingID,
+                listingIDs: listingIDs,
                 offerID: offerID,
                 catalog: services.catalog,
                 commerce: services.commerce,
@@ -52,11 +58,15 @@ struct CheckoutFlow: View {
             EmptyState(
                 icon: "creditcard",
                 title: "Sign in to check out",
-                message: "Your watch is one sign-in away. We'll bring you right back here.",
+                message: listingIDs.count > 1
+                    ? "Your watches are one sign-in away. We'll bring you right back here."
+                    : "Your watch is one sign-in away. We'll bring you right back here.",
                 actionTitle: "Sign in",
                 action: {
                     dismiss()
-                    session.require("Sign in to buy this watch") {}
+                    session.require(
+                        listingIDs.count > 1 ? "Sign in to buy these watches" : "Sign in to buy this watch"
+                    ) {}
                 }
             )
         }
@@ -84,8 +94,10 @@ private struct CheckoutStack: View {
                         case .review:
                             CheckoutReviewStep(model: model)
                         case .wire:
-                            WireInstructionsScreen(model: model) { order in
-                                router.open(.order(order.id))
+                            WireInstructionsScreen(model: model) { orders in
+                                if let first = orders.first {
+                                    router.open(.order(first.id))
+                                }
                                 dismiss()
                             }
                         }
@@ -99,8 +111,8 @@ private struct CheckoutStack: View {
 
             if let order = model.completedOrder {
                 CheckoutSuccessMoment(
-                    order: order,
-                    listing: model.listing,
+                    orders: model.completedOrders,
+                    listings: model.completedOrders.map { model.listingsByID[$0.listingId] },
                     onViewOrder: {
                         router.open(.order(order.id))
                         dismiss()

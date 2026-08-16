@@ -11,3 +11,11 @@ API_BASE_URL = https:/$()/selections-ooo-retreat-pix.trycloudflare.com
 // authorization on a sideloaded device — the entitlement is deliberately not
 // in Calibre.entitlements, because a free-Apple-ID re-sign can't carry it.
 APPLE_PAY_ENABLED = YES
+
+// Product analytics (PostHog). Deliberately EMPTY in the tracked config — an
+// empty key disables analytics entirely: the SDK is never configured and every
+// capture is a no-op. Supply a real project key in a local override or CI
+// build setting to turn it on. The host has a working default because it is
+// not a secret; only the key gates the feature.
+CALIBRE_POSTHOG_KEY =
+CALIBRE_POSTHOG_HOST = https:/$()/us.i.posthog.com

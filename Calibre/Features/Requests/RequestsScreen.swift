@@ -253,6 +253,15 @@ private struct NewRequestSheet: View {
                 notes: InputValidation.isNonBlank(notes) ? InputValidation.trimmed(notes) : nil
             )
             onCreate(created)
+            // `watch_reference_id` has no client-side equivalent — the request
+            // carries a free-text reference, never a catalogue match — so it
+            // is omitted rather than invented.
+            Analytics.watchRequestSubmitted(
+                brand: created.brand,
+                reference: created.reference,
+                watchReferenceID: nil,
+                hasBudget: created.maxBudget != nil
+            )
             Haptics.shared.play(.success)
             toasts.show(title: "Request posted", message: "We'll let you know when a match goes live.", tone: .success)
             dismiss()

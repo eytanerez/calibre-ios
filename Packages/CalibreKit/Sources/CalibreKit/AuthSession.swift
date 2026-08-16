@@ -110,7 +110,17 @@ public final class AuthSession {
 
     /// Sign in with Apple / Google-exchange — any endpoint that answers with
     /// the login shape.
-    public func authenticate(path: String, payload: [String: some Encodable & Sendable]) async throws {
+    ///
+    /// Returns true when the backend *created* an account for this call. Every
+    /// account-creating auth endpoint answers 201 and every sign-in answers
+    /// 200, and `/auth/apple` and `/auth/exchange` do both behind one path —
+    /// so the status code is the only thing that separates a social sign-up
+    /// from a social sign-in. Callers that don't care can ignore it.
+    @discardableResult
+    public func authenticate(
+        path: String,
+        payload: [String: some Encodable & Sendable]
+    ) async throws -> Bool {
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         var request = URLRequest(url: configuration.baseURL.appending(path: path))
@@ -153,6 +163,7 @@ public final class AuthSession {
             user: envelope.data.user,
             tokens: TokenPair(accessToken: envelope.data.tokens.accessToken, refreshToken: refreshToken)
         )
+        return http.statusCode == 201
     }
 
     public func logout() async {

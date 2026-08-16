@@ -37,6 +37,18 @@ struct CheckoutMethodStep: View {
                     .font(CalibreType.title)
                     .foregroundStyle(Color.calibre.foreground)
 
+                // What is being paid for, before how. One payment covers the
+                // whole set, so the set is on screen when the method is chosen.
+                if model.isMultiItem {
+                    CheckoutItemsCard(items: model.items, showsReturnTerms: false)
+                }
+
+                if let dropped = model.droppedWatch {
+                    DroppedWatchNote(title: dropped.title, remaining: model.itemCount) {
+                        model.dismissDroppedWatchNote()
+                    }
+                }
+
                 // Where surcharges are prohibited and discounts permitted, the
                 // price difference has to be clear and conspicuous *here* —
                 // a buyer who chooses wire leaves for the wire screen and
@@ -82,19 +94,8 @@ struct CheckoutMethodStep: View {
                 }
 
                 if let problem = model.pricingProblem {
-                    VStack(alignment: .leading, spacing: Space.s) {
-                        InlineErrorLine(message: problem.message)
-                        if problem.listingReserved {
-                            Button("Back to the watch") {
-                                model.path.removeAll()
-                            }
-                            .buttonStyle(.calibreGhost)
-                        } else if problem.retryable {
-                            Button("Try again") {
-                                Task { await model.prepareCardIntent() }
-                            }
-                            .buttonStyle(.calibreGhost)
-                        }
+                    CheckoutProblemBlock(model: model, problem: problem) {
+                        Task { await model.prepareCardIntent() }
                     }
                 }
             }

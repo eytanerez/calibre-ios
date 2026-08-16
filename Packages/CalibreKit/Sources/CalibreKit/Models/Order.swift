@@ -106,6 +106,59 @@ public struct Order: Codable, Sendable, Identifiable {
 
     public let createdAt: Date?
     public let updatedAt: Date?
+
+    // MARK: Multi-item checkout
+
+    /// The purchase this order came out of, when it came out of one. Nil on
+    /// every order placed before groups existed.
+    public let checkoutGroupId: String?
+    /// The sibling orders bought in the same purchase. The server sends this
+    /// only when there are two or more — a purchase of one watch has nothing
+    /// for a "part of a purchase" affordance to point at.
+    public let group: OrderGroup?
+
+    /// How many watches were bought in this purchase, this one included.
+    /// Always at least 1, so a caller never has to special-case an ungrouped
+    /// order.
+    public var purchaseItemCount: Int { group?.count ?? 1 }
+}
+
+/// `order.group` — every order id in the purchase, and how many there are.
+public struct OrderGroup: Codable, Sendable, Hashable {
+    public let orderIds: [String]
+    public let count: Int
+
+    /// The other watches in the purchase, from this order's point of view.
+    public func siblingIDs(of orderID: String) -> [String] {
+        orderIds.filter { $0 != orderID }
+    }
+}
+
+/// `POST /orders/from-payment-intent` and `POST /checkout/wire-reservation`.
+///
+/// The payload is today's single-order shape with an `orders` array beside
+/// it, so one response covers both kinds of checkout: `first` is what a
+/// single-watch flow always read, and `orders` is what a set polls against
+/// until its count matches what was checked out.
+public struct OrderMaterialization: Decodable, Sendable {
+    /// The order at the top level of the payload.
+    public let first: Order
+    /// Every order the purchase materialized, `first` included. A server that
+    /// predates the array yields the single order, so `count` is never zero.
+    public let orders: [Order]
+
+    public var count: Int { orders.count }
+
+    enum CodingKeys: String, CodingKey {
+        case orders
+    }
+
+    public init(from decoder: Decoder) throws {
+        first = try Order(from: decoder)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decoded = try container.decodeIfPresent([Order].self, forKey: .orders) ?? []
+        orders = decoded.isEmpty ? [first] : decoded
+    }
 }
 
 public enum ShipmentType: String, Codable, Sendable {

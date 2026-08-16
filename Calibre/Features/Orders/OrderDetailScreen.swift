@@ -89,6 +89,8 @@ struct OrderDetailScreen: View {
 
                 listingCard(order)
 
+                purchaseGroupNote(order)
+
                 if let auth = order.authResult, order.status == .authPass || order.status == .authFail {
                     authResultCard(order, auth)
                 }
@@ -186,6 +188,41 @@ struct OrderDetailScreen: View {
             .cardSurface()
         }
         .buttonStyle(PressableStyle())
+    }
+
+    /// A quiet line saying this watch was bought alongside others, with a way
+    /// to reach them. It is deliberately understated: this order is complete
+    /// on its own — its own shipment, its own authentication, its own return
+    /// — and the purchase is context, not a container.
+    @ViewBuilder private func purchaseGroupNote(_ order: Order) -> some View {
+        if let group = order.group {
+            let siblings = group.siblingIDs(of: order.id)
+            if !siblings.isEmpty {
+                VStack(alignment: .leading, spacing: Space.s) {
+                    Label {
+                        Text("Part of a purchase with \(siblings.count == 1 ? "1 other watch" : "\(siblings.count) other watches"). Each one is its own order, tracked separately.")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } icon: {
+                        Image(systemName: "square.stack")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                    }
+
+                    if siblings.count == 1, let other = siblings.first {
+                        Button("View the other order") {
+                            services.router.push(.order(other))
+                        }
+                        .buttonStyle(.calibreGhost)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Space.l)
+                .cardSurface()
+                .accessibilityElement(children: .combine)
+            }
+        }
     }
 
     private func authResultCard(_ order: Order, _ auth: OrderAuthResult) -> some View {
@@ -465,6 +502,11 @@ struct OrderDetailScreen: View {
                     : nil
             )
             review = saved
+            Analytics.reviewLeft(
+                orderID: order.id,
+                listingID: order.listingId,
+                rating: saved.rating
+            )
             Haptics.shared.play(.success)
             toasts.show(title: "Review shared", message: "Thanks for helping other buyers.", tone: .success)
         } catch {

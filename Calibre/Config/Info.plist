@@ -33,6 +33,10 @@
 	<string>$(API_BASE_URL)</string>
 	<key>CalibreApplePayEnabled</key>
 	<string>$(APPLE_PAY_ENABLED)</string>
+	<key>CalibrePostHogHost</key>
+	<string>$(CALIBRE_POSTHOG_HOST)</string>
+	<key>CalibrePostHogKey</key>
+	<string>$(CALIBRE_POSTHOG_KEY)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>

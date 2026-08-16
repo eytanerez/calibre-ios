@@ -5,9 +5,12 @@ import SwiftUI
 /// The wire path terminus — bank details with per-row copy, the reference
 /// warning, the reservation countdown, and "I've sent the wire". The window
 /// itself is the marketplace config's, matching what the method step quoted.
+///
+/// A purchase covering several watches is one transfer for one combined
+/// amount, said once: "I've sent the wire" reserves the whole group.
 struct WireInstructionsScreen: View {
     @Bindable var model: CheckoutModel
-    let onReserved: (Order) -> Void
+    let onReserved: ([Order]) -> Void
 
     @Environment(AppServices.self) private var services
     @Environment(ToastCenter.self) private var toasts
@@ -39,11 +42,15 @@ struct WireInstructionsScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
-                if let checkout = model.wireCheckout {
-                    header(checkout)
+                if let checkout = model.wireCheckout, let breakdown = checkout.payableBreakdown {
+                    header(checkout, breakdown: breakdown)
+
+                    if model.isMultiItem {
+                        CheckoutItemsCard(items: model.items)
+                    }
 
                     if let instructions = checkout.wire.instructions {
-                        detailRows(instructions, breakdown: checkout.breakdown)
+                        detailRows(instructions, breakdown: breakdown)
                             .tutorialAnchor("wire.details")
 
                         CalloutBand(
@@ -105,24 +112,36 @@ struct WireInstructionsScreen: View {
         ) {
             Button("Yes, I've sent it") {
                 Task {
-                    if let order = await model.confirmWireSent() {
+                    let orders = await model.confirmWireSent()
+                    if !orders.isEmpty {
                         Haptics.shared.play(.success)
-                        onReserved(order)
+                        onReserved(orders)
                     }
                 }
             }
             Button("Not yet", role: .cancel) {}
         } message: {
-            Text("Once you continue, this order is marked as sent and we'll wait for the transfer to arrive. Only confirm once you've actually completed the wire with your bank.")
+            Text(confirmationMessage)
         }
+    }
+
+    /// One transfer covers the whole purchase, so this is confirmed once —
+    /// and the sentence says what "once" covers.
+    private var confirmationMessage: String {
+        if model.isMultiItem {
+            return "Once you continue, all \(model.itemCount) orders are marked as sent and we'll wait for the single transfer to arrive. Only confirm once you've actually completed the wire with your bank."
+        }
+        return "Once you continue, this order is marked as sent and we'll wait for the transfer to arrive. Only confirm once you've actually completed the wire with your bank."
     }
 
     // MARK: - Pieces
 
-    private func header(_ checkout: WireCheckout) -> some View {
+    private func header(_ checkout: WireCheckout, breakdown: CheckoutBreakdown) -> some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            Eyebrow("Send exactly")
-            Text(PriceFormatter.format(checkout.breakdown.grandTotal.value, currency: checkout.breakdown.currency))
+            // One transfer, one amount — the combined total the server priced
+            // for the whole purchase, never a per-watch figure.
+            Eyebrow(model.isMultiItem ? "Send exactly, in one transfer" : "Send exactly")
+            Text(PriceFormatter.format(breakdown.grandTotal.value, currency: breakdown.currency))
                 .font(CalibreType.priceLarge)
                 .foregroundStyle(Color.calibre.foreground)
 
@@ -130,7 +149,9 @@ struct WireInstructionsScreen: View {
                 CountdownChip(until: reservationDeadline(checkout))
                 // The same window the method step quoted, from the same
                 // config — never a second, differently remembered number.
-                Text("Your watch is held for \(reservationPhrase).")
+                Text(model.isMultiItem
+                    ? "All \(model.itemCount) watches are held for \(reservationPhrase)."
+                    : "Your watch is held for \(reservationPhrase).")
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)

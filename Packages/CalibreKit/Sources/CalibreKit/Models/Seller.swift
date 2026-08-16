@@ -137,6 +137,16 @@ public enum WatchRequestStatus: String, Codable, Sendable {
     }
 }
 
+/// The catalog row a request resolved to, when the buyer's free text could be
+/// pinned to one. `null` on the wire when it never resolved — the request
+/// still stands on its own.
+public struct WatchReferenceSummary: Codable, Sendable, Identifiable {
+    public let id: String
+    public let brand: String?
+    public let model: String?
+    public let reference: String?
+}
+
 // FIXTURE-PENDING: shape from `_serialize_watch_request` in
 // app/api/views/watch_requests.py.
 /// A buyer's watch sourcing request; dealers browse and fulfill open ones.
@@ -148,6 +158,9 @@ public struct WatchRequest: Codable, Sendable, Identifiable {
     public let brand: String
     public let model: String?
     public let reference: String?
+    /// Set when the request's text was pinned to a catalog row.
+    public let watchReferenceId: String?
+    public let watchReference: WatchReferenceSummary?
     public let productionYear: Int?
     public let maxBudget: APIDecimal?
     public let currency: String?
@@ -156,6 +169,40 @@ public struct WatchRequest: Codable, Sendable, Identifiable {
     public let fulfilledListingId: String?
     public let createdAt: Date?
     public let updatedAt: Date?
+    /// Dealer feed only: how many of *my* listings are live against the same
+    /// catalog row. Absent on `/account/watch-requests`, hence optional —
+    /// synthesized `Decodable` ignores property defaults.
+    public let matchingLiveListings: Int?
+
+    /// Zero unless the dealer feed said otherwise.
+    public var liveMatchCount: Int { matchingLiveListings ?? 0 }
+
+    /// True when the buyer's text resolved to a catalog row.
+    public var isCatalogMatched: Bool { watchReference != nil }
+}
+
+/// `GET /dealer/watch-requests` — a flat `{results, page, page_size, total}`
+/// page rather than the `{results, pagination}` envelope the browse endpoints
+/// use. Not interchangeable with `PageResponse`.
+public struct DealerWatchRequestPage: Codable, Sendable {
+    public let results: [WatchRequest]
+    public let page: Int
+    public let pageSize: Int
+    public let total: Int
+
+    public init(results: [WatchRequest], page: Int = 1, pageSize: Int = 25, total: Int = 0) {
+        self.results = results
+        self.page = page
+        self.pageSize = pageSize
+        self.total = total
+    }
+}
+
+/// The orderings `/dealer/watch-requests` accepts.
+public enum DealerRequestSort: String, Sendable, CaseIterable {
+    case latest
+    case budgetHigh = "budget_high"
+    case budgetLow = "budget_low"
 }
 
 public enum ImportJobStatus: String, Codable, Sendable {

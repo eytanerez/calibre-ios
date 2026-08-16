@@ -27,10 +27,24 @@ enum Route: Hashable {
 
 /// A checkout the app is presenting as a full-screen cover. Checkout owns its
 /// own navigation stack, so it rides above the tabs rather than pushing.
+///
+/// A checkout covers a *set* of watches — one payment, one order each. Buying
+/// a single watch is a set of one, so the PDP, an accepted offer and a bag of
+/// five all present through the same request.
 struct CheckoutRequest: Identifiable, Hashable {
-    let listingID: String
+    let listingIDs: [String]
     let offerID: String?
-    var id: String { "\(listingID)|\(offerID ?? "")" }
+
+    init(listingIDs: [String], offerID: String? = nil) {
+        self.listingIDs = listingIDs
+        self.offerID = offerID
+    }
+
+    init(listingID: String, offerID: String? = nil) {
+        self.init(listingIDs: [listingID], offerID: offerID)
+    }
+
+    var id: String { "\(listingIDs.joined(separator: ","))|\(offerID ?? "")" }
 }
 
 /// Owns tab selection and one navigation path per tab. `open(_:)` selects the
@@ -82,6 +96,13 @@ final class AppRouter {
     /// full-screen cover above the tab shell.
     func presentCheckout(listingID: String, offerID: String? = nil) {
         checkoutRequest = CheckoutRequest(listingID: listingID, offerID: offerID)
+    }
+
+    /// Presents checkout for a set of watches — the bag's selected rows. An
+    /// empty set is not a checkout, so it presents nothing.
+    func presentCheckout(listingIDs: [String]) {
+        guard !listingIDs.isEmpty else { return }
+        checkoutRequest = CheckoutRequest(listingIDs: listingIDs)
     }
 
     /// Selects the tab that owns `route` and pushes it there. `.checkout` is

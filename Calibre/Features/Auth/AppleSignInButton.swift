@@ -62,10 +62,19 @@ struct AppleSignInButton: View {
             busy = true
             Task {
                 defer { busy = false }
+                // One endpoint serves both sign-up and sign-in; only the 201
+                // this reports separates them.
+                var createdAccount = false
                 let ok = await performAuthAction({
-                    try await session.authenticate(path: "/auth/apple", payload: payload)
+                    createdAccount = try await session.authenticate(
+                        path: "/auth/apple",
+                        payload: payload
+                    )
                 }, onError: onMessage)
                 if ok {
+                    if createdAccount {
+                        Analytics.signupCompleted(method: .apple)
+                    }
                     Haptics.shared.play(.success)
                     onSuccess()
                 }

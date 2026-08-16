@@ -24,11 +24,21 @@ struct CheckoutProblem: Equatable {
     let retryable: Bool
     /// Someone else is in checkout for this watch. Retrying now is a lie.
     let listingReserved: Bool
+    /// Which watch, when the server named one. A checkout covering several
+    /// watches fails on exactly one of them, and the buyer is owed its name
+    /// before being asked what to do about it.
+    let reservedListingID: String?
 
-    init(message: String, retryable: Bool = true, listingReserved: Bool = false) {
+    init(
+        message: String,
+        retryable: Bool = true,
+        listingReserved: Bool = false,
+        reservedListingID: String? = nil
+    ) {
         self.message = message
         self.retryable = retryable
         self.listingReserved = listingReserved
+        self.reservedListingID = reservedListingID
     }
 }
 
@@ -196,6 +206,47 @@ enum CheckoutCopy {
         return lines
     }
 
+    /// One watch's return terms in a single line, for the itemised list of a
+    /// purchase covering several. Return terms are the seller's, so two
+    /// watches in one purchase can answer differently and each says its own.
+    /// A line with nothing to state is no line at all.
+    static func itemReturnLine(_ item: CheckoutBreakdownGroup.Item) -> String? {
+        guard let terms = item.returns else { return nil }
+        guard terms.accepted else { return "Sold without returns" }
+
+        var line = terms.windowHours.map { "Returns within \($0) hours of delivery" }
+            ?? "Returns accepted"
+        if let fee = item.returnFee {
+            switch (fee.percent, fee.minimum) {
+            case (let percent?, let minimum?):
+                line += " · \(percentText(percent.value)) return fee, minimum \(PriceFormatter.format(minimum.value, currency: item.currency))"
+            case (let percent?, nil):
+                line += " · \(percentText(percent.value)) return fee"
+            case (nil, let minimum?):
+                line += " · return fee from \(PriceFormatter.format(minimum.value, currency: item.currency))"
+            case (nil, nil):
+                break
+            }
+        }
+        return line
+    }
+
+    // MARK: - A set of watches
+
+    /// "3 watches" — the one place the count is turned into words, so every
+    /// screen says it the same way.
+    static func watchCount(_ count: Int) -> String {
+        count == 1 ? "1 watch" : "\(count) watches"
+    }
+
+    /// The watch someone else got to first, and what happens to the rest.
+    static func reservedWatchMessage(_ title: String, remaining: Int) -> String {
+        if remaining > 0 {
+            return "Someone else is checking out with \(title) right now. You can go on with the other \(watchCount(remaining)) — we'll re-price your purchase without it."
+        }
+        return "Someone else is checking out with \(title) right now. If they don't finish, it comes back on its own."
+    }
+
     // MARK: - Errors
 
     /// The backend's own message wins wherever it has one; these codes get
@@ -206,16 +257,17 @@ enum CheckoutCopy {
             return CheckoutProblem(message: "Something went wrong. Please try again.")
         }
 
-        if case .server(let message, let code, let status, _) = apiError {
+        if case .server(let message, let code, let status, let details) = apiError {
             let served = message.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            if code == "listing_reserved" || status == 409 {
+            if code == "listing_reserved" || details?["code"] == "listing_reserved" || status == 409 {
                 return CheckoutProblem(
                     message: served.isEmpty
                         ? "Someone else is checking out with this watch right now. If they don't finish, it comes back on its own."
                         : served,
                     retryable: false,
-                    listingReserved: true
+                    listingReserved: true,
+                    reservedListingID: reservedListingID(in: details)
                 )
             }
 
@@ -234,6 +286,16 @@ enum CheckoutCopy {
     }
 
     // MARK: - Helpers
+
+    /// Which watch the server refused, from its error details. The client's
+    /// decoder converts wire keys to camelCase, so both spellings are read —
+    /// and a blank id is no id at all.
+    private static func reservedListingID(in details: [String: String]?) -> String? {
+        guard let details else { return nil }
+        let raw = details["listing_id"] ?? details["listingId"]
+        guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return raw
+    }
 
     /// "credit", "credit and debit", "credit, debit and X".
     private static func list(_ items: [String]) -> String {

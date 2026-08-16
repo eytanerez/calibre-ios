@@ -472,6 +472,71 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(envelope.data.stripe?.clientSecret, "accs_secret_1MxDealerOnboardingSession")
     }
 
+    // MARK: Dealer watch requests
+
+    /// `/dealer/watch-requests` is a flat `{results, page, page_size, total}`
+    /// page — not the `{results, pagination}` envelope browse uses.
+    func testDealerWatchRequestPageFixtureDecodes() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<DealerWatchRequestPage>.self,
+            from: fixtureData("dealer-watch-requests")
+        )
+        let page = envelope.data
+        XCTAssertEqual(page.page, 1)
+        XCTAssertEqual(page.pageSize, 25)
+        XCTAssertEqual(page.total, 2)
+        XCTAssertEqual(page.results.count, 2)
+
+        let matched = try XCTUnwrap(page.results.first)
+        XCTAssertEqual(matched.requesterUsername, "harrison.k")
+        XCTAssertEqual(matched.status, .open)
+        XCTAssertEqual(matched.maxBudget?.value, Decimal(string: "14500.00"))
+        XCTAssertEqual(matched.watchReferenceId, "b21e5c88-30b5-4d64-9a3a-1f7e2c9d5a44")
+        XCTAssertEqual(matched.watchReference?.reference, "126610LN")
+        XCTAssertEqual(matched.watchReference?.model, "Submariner Date")
+        XCTAssertTrue(matched.isCatalogMatched)
+        XCTAssertEqual(matched.liveMatchCount, 3)
+        XCTAssertNotNil(matched.createdAt)
+
+        // Free text that never resolved: no catalog row, and therefore no
+        // live-match count to speak of.
+        let unmatched = page.results[1]
+        XCTAssertNil(unmatched.watchReferenceId)
+        XCTAssertNil(unmatched.watchReference)
+        XCTAssertFalse(unmatched.isCatalogMatched)
+        XCTAssertEqual(unmatched.liveMatchCount, 0)
+        XCTAssertNil(unmatched.maxBudget)
+    }
+
+    /// `/account/watch-requests` still answers a bare array without the
+    /// dealer-only columns; the same model has to survive both.
+    func testAccountWatchRequestDecodesWithoutDealerFields() throws {
+        let json = """
+        {
+          "id": "6f0a9e21-0a4b-4a3f-9b53-3f0f3a6a1c11",
+          "requester_id": "1c3d7a52-77aa-4c0e-9e07-2a1b6f9d4e02",
+          "brand": "Tudor",
+          "model": "Black Bay 58",
+          "reference": "79030N",
+          "watch_reference_id": null,
+          "watch_reference": null,
+          "production_year": null,
+          "max_budget": "3200.00",
+          "currency": "USD",
+          "notes": null,
+          "status": "open",
+          "fulfilled_listing_id": null,
+          "created_at": "2026-08-12T11:02:00+00:00",
+          "updated_at": "2026-08-12T11:02:00+00:00"
+        }
+        """
+        let request = try apiDecoder().decode(WatchRequest.self, from: Data(json.utf8))
+        XCTAssertNil(request.requesterUsername)
+        XCTAssertNil(request.matchingLiveListings)
+        XCTAssertEqual(request.liveMatchCount, 0)
+        XCTAssertFalse(request.isCatalogMatched)
+    }
+
     func testDealerApplicationUnknownStatusFallsBack() throws {
         let json = #"{"status": "under_manual_review"}"#
         let application = try apiDecoder().decode(DealerApplication.self, from: Data(json.utf8))
@@ -530,7 +595,7 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(intent.paymentIntent.id, "pi_3PxCalibre001")
         XCTAssertEqual(intent.publishableKey, "pk_test_calibre")
 
-        let breakdown = intent.breakdown
+        let breakdown = try XCTUnwrap(intent.breakdown, "a single-watch checkout keeps the legacy breakdown")
         XCTAssertEqual(breakdown.pricingMode, .surcharge)
         XCTAssertFalse(breakdown.isDiscountPresentation)
         XCTAssertFalse(breakdown.acceptsDebit, "surcharge states take credit only")
@@ -548,6 +613,92 @@ final class FixtureDecodingTests: XCTestCase {
         // Legacy keys still land, so nothing that reads them regresses.
         XCTAssertEqual(breakdown.cardConvenienceFee?.value, Decimal(string: "129.99"))
         XCTAssertEqual(breakdown.taxCalculatedUpfront, true)
+
+        // A single-watch checkout also answers with the group shape, so one
+        // renderer covers both kinds of purchase.
+        let group = try XCTUnwrap(intent.breakdownGroup)
+        XCTAssertEqual(group.items.count, 1)
+        XCTAssertEqual(group.combined?.itemCount, 1)
+        XCTAssertEqual(group.checkoutGroupId, "8d2a5f13-64c7-42be-9a01-b7e5c3d09f26")
+        // The combined column of a set of one is the same money the legacy
+        // breakdown states — and it carries that one watch's return terms.
+        let combined = try XCTUnwrap(group.combinedBreakdown)
+        XCTAssertEqual(combined.grandTotal.value, breakdown.grandTotal.value)
+        XCTAssertEqual(combined.cardFee?.amount.value, breakdown.cardFee?.amount.value)
+        XCTAssertEqual(combined.returns?.windowHours, 48)
+        XCTAssertEqual(combined.paymentDisclosures?.cardFeeNonrefundable, true)
+    }
+
+    // MARK: Multi-item checkout
+
+    func testCheckoutPaymentIntentGroupFixtureDecodes() throws {
+        let envelope = try apiDecoder().decode(
+            Envelope<NativeCheckoutIntent>.self,
+            from: fixtureData("checkout-payment-intent-group")
+        )
+        let intent = envelope.data
+        XCTAssertEqual(intent.paymentIntent.id, "pi_3PxCalibreGroup01")
+        XCTAssertNil(intent.breakdown, "a set carries breakdown_group only")
+
+        let group = try XCTUnwrap(intent.breakdownGroup)
+        XCTAssertEqual(group.checkoutGroupId, "3f8b6c1e-9a24-4d77-b0f5-2c9d81a4e6b3")
+        XCTAssertEqual(
+            group.items.map(\.listingId),
+            ["49e52179-1035-46f9-abe0-443d915d8c3b", "7c1f2b90-33ad-4a52-9c61-5b0a2f4d81e7"]
+        )
+
+        let combined = try XCTUnwrap(group.combined)
+        XCTAssertEqual(combined.itemCount, 2)
+        XCTAssertEqual(combined.subtotal.value, Decimal(string: "12000.00"))
+        XCTAssertEqual(combined.shipping.value, Decimal(string: "156.00"))
+        XCTAssertEqual(combined.tax?.value, Decimal(string: "110.00"))
+        XCTAssertEqual(combined.cardFee?.amount.value, Decimal(string: "362.94"))
+        XCTAssertEqual(combined.cardFee?.percent?.value, Decimal(string: "2.90"))
+        XCTAssertEqual(combined.cardFee?.fixed?.value, Decimal(string: "0.30"))
+        XCTAssertEqual(combined.grandTotal.value, Decimal(string: "12628.94"))
+        XCTAssertEqual(combined.totals?.card?.value, Decimal(string: "12628.94"))
+        XCTAssertEqual(combined.totals?.wire?.value, Decimal(string: "12262.85"))
+
+        // The server allocates; the client only checks that what it was handed
+        // is internally consistent. Each item's own share of the single card
+        // fee sums to the fee charged once, and the per-order grand totals —
+        // which are exactly what `purchase_completed.value` reports — sum to
+        // what the buyer pays.
+        let feeShares = group.items.compactMap { $0.fees?.value }
+        XCTAssertEqual(feeShares.count, 2)
+        XCTAssertEqual(feeShares.reduce(Decimal(0), +), Decimal(string: "362.94"))
+        XCTAssertEqual(
+            group.items.map(\.grandTotal.value).reduce(Decimal(0), +),
+            Decimal(string: "12628.94")
+        )
+        XCTAssertEqual(
+            group.items.map(\.subtotal.value).reduce(Decimal(0), +),
+            combined.subtotal.value
+        )
+        XCTAssertEqual(
+            group.items.compactMap { $0.tax?.value }.reduce(Decimal(0), +),
+            Decimal(string: "110.00")
+        )
+
+        // Return terms are the seller's, so two watches in one purchase can
+        // answer differently.
+        XCTAssertEqual(group.items.first?.returns?.accepted, true)
+        XCTAssertEqual(group.items.first?.returns?.windowHours, 48)
+        XCTAssertEqual(group.items.last?.returns?.accepted, false)
+        XCTAssertNil(group.items.last?.returns?.windowHours)
+
+        // The combined column renders through the same breakdown shape every
+        // piece of checkout copy already reads — with no return terms, because
+        // the two watches don't share any.
+        let payable = try XCTUnwrap(intent.payableBreakdown)
+        XCTAssertEqual(payable.grandTotal.value, Decimal(string: "12628.94"))
+        XCTAssertEqual(payable.subtotal.value, Decimal(string: "12000.00"))
+        XCTAssertEqual(payable.currency, "USD")
+        XCTAssertEqual(payable.pricingMode, .surcharge)
+        XCTAssertFalse(payable.isDiscountPresentation)
+        XCTAssertEqual(payable.paymentDisclosures?.cardFeeNonrefundable, true)
+        XCTAssertNil(payable.returns)
+        XCTAssertNil(payable.returnFee)
     }
 
     func testListingQuoteDiscountModeFixtureDecodes() throws {

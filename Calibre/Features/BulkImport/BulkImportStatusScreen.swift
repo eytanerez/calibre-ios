@@ -18,6 +18,11 @@ struct BulkImportStatusScreen: View {
     @State private var dealerRequired = false
     @State private var dealerApplication: DealerApplication?
     @State private var showDealerApplication = false
+    /// jobID → what its drafts are still missing. Only settled jobs are
+    /// counted, and only when the settled set actually changed — the 1.5s
+    /// poll below must not turn into a burst of queue fetches per tick.
+    @State private var pending: [String: ImportPending] = [:]
+    @State private var countedSignature: String?
 
     var body: some View {
         NavigationStack {
@@ -82,15 +87,58 @@ struct BulkImportStatusScreen: View {
         do {
             jobs = try await services.seller.importJobs()
             dealerRequired = false
+            await refreshPendingCounts()
         } catch {
             if sellErrorCode(error, is: "dealer_required") {
                 dealerRequired = true
                 jobs = nil
+                pending = [:]
+                countedSignature = nil
                 dealerApplication = try? await services.seller.dealerApplication()
             } else if jobs == nil {
                 loadError = sellErrorMessage(error)
             }
         }
+    }
+
+    /// A finished import is a pile of listings with no photos on them — a CSV
+    /// can't carry pictures. Knowing how many are still waiting is what turns
+    /// the job card from a receipt into a way in, so each settled job's
+    /// completion queue is counted once and re-counted only when a job's
+    /// status changes — the 1.5s poll above must not turn into a burst of
+    /// queue fetches per tick.
+    private func refreshPendingCounts() async {
+        let settled = (jobs ?? []).filter(Self.isSettled)
+        let signature = settled.map { "\($0.id):\($0.status.rawValue)" }.joined(separator: "|")
+        guard signature != countedSignature else { return }
+        guard !settled.isEmpty else {
+            countedSignature = signature
+            pending = [:]
+            return
+        }
+        var counts: [String: ImportPending] = [:]
+        var complete = true
+        for job in settled {
+            guard let items = try? await services.seller.importCompletionQueue(jobID: job.id) else {
+                complete = false
+                continue
+            }
+            counts[job.id] = ImportPending(
+                photos: items.filter { $0.missing.contains("photos") }.count,
+                total: items.count
+            )
+        }
+        pending = counts
+        // A partial pass isn't recorded, so pull-to-refresh can try the
+        // missing ones again rather than being short-circuited by the guard.
+        if complete {
+            countedSignature = signature
+        }
+    }
+
+    /// Jobs whose drafts exist and have stopped changing.
+    private static func isSettled(_ job: ListingImportJob) -> Bool {
+        job.status == .completed || job.status == .completedWithErrors
     }
 
     /// The honest explanation, and the way to become one.
@@ -129,8 +177,18 @@ struct BulkImportStatusScreen: View {
                     message: "Upload and column-map your CSV on the web — then finish drafts here."
                 )
                 .padding(.horizontal, Space.margin)
+                approvalNote
+                    .padding(.horizontal, Space.margin)
             }
         }
+    }
+
+    /// Said once, plainly, and left at that.
+    private var approvalNote: some View {
+        Text("Bulk-imported listings can take a little longer to approve.")
+            .font(CalibreType.caption)
+            .foregroundStyle(Color.calibre.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func jobList(_ jobs: [ListingImportJob]) -> some View {
@@ -140,6 +198,7 @@ struct BulkImportStatusScreen: View {
                     icon: "desktopcomputer",
                     message: "Upload and column-map your CSV on the web — then finish drafts here."
                 )
+                approvalNote
                 ForEach(jobs) { job in
                     jobCard(job)
                 }
@@ -181,27 +240,70 @@ struct BulkImportStatusScreen: View {
                             .lineLimit(3)
                     }
 
-                    HStack {
-                        if let created = job.createdAt {
-                            Text(created.formatted(date: .abbreviated, time: .shortened))
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
-                        }
-                        Spacer()
-                        HStack(spacing: Space.xs) {
-                            Text("Finish drafts")
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.primary)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(Color.calibre.primary)
-                        }
+                    if let created = job.createdAt {
+                        Text(created.formatted(date: .abbreviated, time: .shortened))
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
                     }
+
+                    handoff(job)
                 }
                 .padding(Space.l)
             }
         }
         .buttonStyle(PressableStyle())
+    }
+
+    /// The way into the finishing queue. When the import left drafts without
+    /// photos it says so and promises the shape of the work; otherwise it
+    /// stays the quiet link it always was.
+    @ViewBuilder
+    private func handoff(_ job: ListingImportJob) -> some View {
+        let waiting = pending[job.id]
+        if let waiting, waiting.photos > 0 {
+            HStack(spacing: Space.m) {
+                IconTile(systemName: "camera")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Add photos — \(waiting.photos) watch\(waiting.photos == 1 ? "" : "es") waiting")
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.foreground)
+                    Text("We'll take you through each watch one at a time.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.calibre.primary)
+            }
+            .padding(Space.m)
+            .background(
+                Color.calibre.accent.opacity(0.6),
+                in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+            )
+            .accessibilityElement(children: .combine)
+        } else if let waiting, waiting.total > 0 {
+            handoffLink("Finish \(waiting.total) draft\(waiting.total == 1 ? "" : "s")")
+        } else if waiting != nil {
+            Text("Every draft from this import is complete.")
+                .font(CalibreType.label)
+                .foregroundStyle(Color.calibre.mutedForeground)
+        } else {
+            handoffLink("Finish drafts")
+        }
+    }
+
+    private func handoffLink(_ title: String) -> some View {
+        HStack(spacing: Space.xs) {
+            Spacer(minLength: 0)
+            Text(title)
+                .font(CalibreType.label)
+                .foregroundStyle(Color.calibre.primary)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.calibre.primary)
+        }
     }
 
     private func statusBadge(_ job: ListingImportJob) -> StatusBadge {
@@ -270,4 +372,10 @@ struct BulkImportStatusScreen: View {
 /// Push value for the draft-finishing queue.
 struct ImportJobRef: Hashable {
     let id: String
+}
+
+/// What one settled import still has waiting in its completion queue.
+struct ImportPending: Equatable {
+    let photos: Int
+    let total: Int
 }

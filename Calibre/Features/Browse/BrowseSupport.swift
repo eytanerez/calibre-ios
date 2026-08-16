@@ -331,6 +331,7 @@ struct ListingGridCard: View {
         let id = listing.id
         let commerce = services.commerce
         let toasts = toasts
+        let analyticsListing = Analytics.ListingInfo(listing)
         services.auth.require("Sign in to save this watch") {
             let wasWatching = commerce.isWatching(listingID: id)
             do {
@@ -339,6 +340,7 @@ struct ListingGridCard: View {
                 if wasWatching {
                     toasts.show(title: "Removed from Saved")
                 } else {
+                    Analytics.watchLiked(analyticsListing)
                     toasts.show(title: "Saved", message: "We'll keep an eye on this one for you.", tone: .success)
                 }
             } catch {

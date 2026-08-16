@@ -422,11 +422,15 @@ struct RegisterScreen: View {
             "address": .object(address),
         ]
 
+        var createdAccount = false
         let ok = await performAuthAction({
-            try await session.authenticate(path: "/auth/register", payload: payload)
+            createdAccount = try await session.authenticate(path: "/auth/register", payload: payload)
         }, onError: { errorMessage = $0 })
 
         if ok {
+            if createdAccount {
+                Analytics.signupCompleted(method: .email)
+            }
             Haptics.shared.play(.success)
             toasts.show(
                 title: "Welcome to Calibre",

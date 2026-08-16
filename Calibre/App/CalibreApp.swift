@@ -11,6 +11,10 @@ struct CalibreApp: App {
     init() {
         CalibreFonts.register()
 
+        // Configures PostHog once, or does nothing at all when no key is
+        // built in. Must precede any screen that could emit.
+        Analytics.start()
+
         // Keep original image bytes in an app-owned disk cache so the same
         // watch is not downloaded again for card, row, and gallery sizes.
         // Progressive decoding makes large JPEGs useful before the full body
@@ -139,6 +143,14 @@ struct RootView: View {
                     ResetPasswordScreen(token: token)
                 }
             }
+        }
+        // Analytics identity follows the session, observed here in the app
+        // layer rather than hooked into AuthSession. Watching `user?.id`
+        // covers all three ways it can move — sign-in, sign-out, and the
+        // launch-time restore that `bootstrap()` performs — with one call.
+        // `Analytics.sessionChanged` is idempotent, so `initial: true` is safe.
+        .onChange(of: services.auth.user?.id, initial: true) { _, userID in
+            Analytics.sessionChanged(to: userID)
         }
         .onOpenURL { url in
             // Stripe gets first refusal. Redirect-based methods (Cash App Pay,

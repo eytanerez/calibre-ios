@@ -262,9 +262,36 @@ public final class SellerStore {
         try await client.send(Endpoint(path: "/account/watch-requests"))
     }
 
-    /// Other members' open requests for dealers to fulfill (latest 100).
-    public func openDealerRequests() async throws -> [WatchRequest] {
-        try await client.send(Endpoint(path: "/dealer/watch-requests"))
+    /// Other members' open requests, for verified dealers to source against.
+    ///
+    /// Verified dealers only: everyone else gets `APIError.server` with code
+    /// `dealer_required` (403). The response is a flat
+    /// `{results, page, page_size, total}` page — a buyer request carries a
+    /// budget and a username, so it is a lead list, not public browse.
+    public func openDealerRequests(
+        query: String? = nil,
+        brand: String? = nil,
+        watchReferenceID: String? = nil,
+        sort: DealerRequestSort = .latest,
+        openOnly: Bool = true,
+        page: Int = 1,
+        pageSize: Int = 25
+    ) async throws -> DealerWatchRequestPage {
+        var items: [URLQueryItem] = []
+        if let query, !query.isEmpty {
+            items.append(URLQueryItem(name: "q", value: query))
+        }
+        if let brand, !brand.isEmpty {
+            items.append(URLQueryItem(name: "brand", value: brand))
+        }
+        if let watchReferenceID, !watchReferenceID.isEmpty {
+            items.append(URLQueryItem(name: "watch_reference_id", value: watchReferenceID))
+        }
+        items.append(URLQueryItem(name: "sort", value: sort.rawValue))
+        items.append(URLQueryItem(name: "open_only", value: openOnly ? "true" : "false"))
+        items.append(URLQueryItem(name: "page", value: String(page)))
+        items.append(URLQueryItem(name: "page_size", value: String(pageSize)))
+        return try await client.send(Endpoint(path: "/dealer/watch-requests", query: items))
     }
 
     @discardableResult

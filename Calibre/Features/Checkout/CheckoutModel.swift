@@ -30,14 +30,56 @@ struct CardRefusalError: LocalizedError {
     var errorDescription: String? { message }
 }
 
-/// Everything the checkout cover needs: the listing, the buyer's addresses,
-/// server-priced breakdowns for both payment methods, the funding-gated card
-/// payment, and the post-payment order materialization.
+/// One watch in the checkout: the listing itself, and the server's own line
+/// for it once the set has been priced.
+struct CheckoutItem: Identifiable {
+    let listingID: String
+    var listing: Listing?
+    var line: CheckoutBreakdownGroup.Item?
+
+    var id: String { listingID }
+
+    var title: String { listing?.title ?? "Your watch" }
+    var imageURL: URL? { listing?.images.first?.url }
+
+    /// The watch's own price — the server's line when the set is priced, the
+    /// listing's price while it is still being priced.
+    var priceText: String? {
+        if let line {
+            return PriceFormatter.format(line.subtotal.value, currency: line.currency)
+        }
+        guard let listing else { return nil }
+        return PriceFormatter.format(listing.price.value, currency: listing.currency)
+    }
+
+    /// This watch's own shipping, from the server's line. Never a guess.
+    var shippingText: String? {
+        guard let line else { return nil }
+        return PriceFormatter.format(line.shipping.value, currency: line.currency)
+    }
+}
+
+/// One watch the server refused to reserve, so the buyer can be told which
+/// one and offered the rest of their set.
+struct ReservedWatch: Equatable {
+    let listingID: String
+    let title: String
+}
+
+/// Everything the checkout cover needs: the set of watches, the buyer's
+/// addresses, server-priced breakdowns for both payment methods, the
+/// funding-gated card payment, and the post-payment order materialization.
 @MainActor
 @Observable
 final class CheckoutModel {
-    let listingID: String
+    /// The set as it stands. Shrinks by exactly one when the server refuses
+    /// to reserve a watch and the buyer chooses to go on without it.
+    private(set) var listingIDs: [String]
     let offerID: String?
+
+    /// The set the cover opened with, so the success moment and the "we left
+    /// one behind" copy can say what changed.
+    private let requestedListingIDs: [String]
 
     @ObservationIgnored private let catalog: CatalogStore
     @ObservationIgnored private let commerce: CommerceStore
@@ -77,8 +119,31 @@ final class CheckoutModel {
     var phase: Phase = .loading
     var path: [CheckoutStep] = []
 
-    var listing: Listing?
+    /// Every listing this checkout has loaded, by id — including one that has
+    /// since been dropped from the set, so it can still be named.
+    private(set) var listingsByID: [String: Listing] = [:]
     var offer: Offer?
+
+    /// The single watch, when there is exactly one. The screens that predate
+    /// multi-item checkout read this and are right to.
+    var listing: Listing? {
+        guard listingIDs.count == 1, let id = listingIDs.first else { return nil }
+        return listingsByID[id]
+    }
+
+    /// How many watches this checkout covers.
+    var itemCount: Int { listingIDs.count }
+    var isMultiItem: Bool { listingIDs.count > 1 }
+
+    /// The set in order, each with its server line once the set is priced.
+    var items: [CheckoutItem] {
+        let lines = breakdownGroup?.items.reduce(into: [String: CheckoutBreakdownGroup.Item]()) {
+            $0[$1.listingId] = $1
+        }
+        return listingIDs.map { id in
+            CheckoutItem(listingID: id, listing: listingsByID[id], line: lines?[id])
+        }
+    }
 
     // MARK: Shipping
 
@@ -87,9 +152,7 @@ final class CheckoutModel {
         didSet {
             guard oldValue != selectedAddressID else { return }
             // Pricing (tax, shipping) depends on the destination — refetch.
-            cardIntent = nil
-            pricingError = nil
-            wireCheckout = nil
+            invalidatePricing()
         }
     }
     var showAddressForm = false
@@ -105,6 +168,14 @@ final class CheckoutModel {
     private(set) var preparingCardIntent = false
     private(set) var wireCheckout: WireCheckout?
     private(set) var preparingWire = false
+
+    /// The watch the server would not reserve. Held separately from the
+    /// pricing problem because the honest next step here isn't "try again" —
+    /// it's "go on with the others".
+    private(set) var reservedWatch: ReservedWatch?
+    /// A watch the buyer chose to leave behind, so the set can say so once
+    /// rather than silently shrinking.
+    private(set) var droppedWatch: ReservedWatch?
 
     // MARK: Card entry
 
@@ -139,7 +210,12 @@ final class CheckoutModel {
     private(set) var cardRefusal: CardRefusal?
     private(set) var paymentProblem: CheckoutProblem?
     private(set) var confirmingOrder = false
-    private(set) var completedOrder: Order?
+    /// Every order the purchase materialized — one per watch.
+    private(set) var completedOrders: [Order] = []
+
+    /// The order the success moment leads with (and the one "View your order"
+    /// opens). Nil until the purchase has materialized.
+    var completedOrder: Order? { completedOrders.first }
 
     /// `STPPaymentHandler` and `STPApplePayContext` both keep only weak
     /// references to these, so the model owns them for the life of a payment.
@@ -147,8 +223,15 @@ final class CheckoutModel {
     @ObservationIgnored private var applePayCheckout: ApplePayCheckout?
     @ObservationIgnored private var applePayContext: STPApplePayContext?
 
-    init(listingID: String, offerID: String?, catalog: CatalogStore, commerce: CommerceStore, client: APIClient) {
-        self.listingID = listingID
+    init(
+        listingIDs: [String],
+        offerID: String?,
+        catalog: CatalogStore,
+        commerce: CommerceStore,
+        client: APIClient
+    ) {
+        self.listingIDs = listingIDs
+        self.requestedListingIDs = listingIDs
         self.offerID = offerID
         self.catalog = catalog
         self.commerce = commerce
@@ -160,13 +243,15 @@ final class CheckoutModel {
     func load() async {
         phase = .loading
         do {
-            async let listingTask = catalog.listing(id: listingID)
             async let addressesTask = commerce.loadAddresses()
             if let offerID {
                 offer = try await commerce.offer(id: offerID)
             }
-            let (listing, addresses) = try await (listingTask, addressesTask)
-            self.listing = listing
+            async let listingsTask = loadListings(listingIDs)
+            let (listings, addresses) = try await (listingsTask, addressesTask)
+            for listing in listings {
+                listingsByID[listing.id] = listing
+            }
             self.addresses = addresses
             selectedAddressID = addresses.first(where: \.isDefaultShipping)?.id ?? addresses.first?.id
             showAddressForm = addresses.isEmpty
@@ -176,11 +261,29 @@ final class CheckoutModel {
         }
     }
 
-    /// The amount being paid for the watch itself — the accepted offer when
-    /// one rides along, the list price otherwise.
+    /// Every watch in the set, fetched together. One failure fails the load —
+    /// a checkout that can't name what it is selling isn't one.
+    private func loadListings(_ ids: [String]) async throws -> [Listing] {
+        try await withThrowingTaskGroup(of: Listing.self) { group in
+            for id in ids {
+                group.addTask { [catalog] in try await catalog.listing(id: id) }
+            }
+            var loaded: [Listing] = []
+            for try await listing in group {
+                loaded.append(listing)
+            }
+            return loaded
+        }
+    }
+
+    /// The amount being paid for the watches themselves — the accepted offer
+    /// when one rides along, the set's own prices otherwise.
     var watchAmountText: String? {
         if let offer {
             return PriceFormatter.format(offer.amount.value, currency: offer.currency)
+        }
+        if let combined = breakdownGroup?.combined {
+            return PriceFormatter.format(combined.subtotal.value, currency: combined.currency)
         }
         guard let listing else { return nil }
         return PriceFormatter.format(listing.price.value, currency: listing.currency)
@@ -190,8 +293,24 @@ final class CheckoutModel {
         addresses.first { $0.id == selectedAddressID }
     }
 
+    /// The money for the purchase as a whole: the legacy single breakdown for
+    /// one watch, the server's combined column for a set. Both are the
+    /// server's own figures — nothing here is added up on the device.
     var breakdown: CheckoutBreakdown? {
-        cardIntent?.breakdown
+        cardIntent?.payableBreakdown
+    }
+
+    /// The per-watch lines and the combined column, whichever way this
+    /// checkout was priced.
+    var breakdownGroup: CheckoutBreakdownGroup? {
+        cardIntent?.breakdownGroup ?? wireCheckout?.breakdownGroup
+    }
+
+    /// The purchase the server grouped this checkout under, for the two
+    /// events that carry it. Absent until the intent exists — and then
+    /// omitted from the event rather than invented.
+    var checkoutGroupID: String? {
+        breakdownGroup?.checkoutGroupId
     }
 
     /// The hold a buyer forfeits by not paying an accepted offer. Only ever
@@ -227,30 +346,31 @@ final class CheckoutModel {
 
     // MARK: - Method step
 
-    /// Prices the card path (and thereby the whole order). Fired when the
+    /// Prices the card path (and thereby the whole purchase). Fired when the
     /// method step appears so the fee difference can be shown in dollars.
     func prepareCardIntent() async {
         guard cardIntent == nil, !preparingCardIntent, let addressID = selectedAddressID else { return }
+        guard !listingIDs.isEmpty else { return }
         preparingCardIntent = true
         pricingError = nil
         pricingProblem = nil
+        reservedWatch = nil
         defer { preparingCardIntent = false }
         do {
             let intent = try await checkout.paymentIntent(
-                listingID: listingID,
+                listingIDs: listingIDs,
                 shippingAddressID: addressID,
                 offerID: offerID
             )
             cardIntent = intent
             STPAPIClient.shared.publishableKey = intent.publishableKey
+            trackCheckoutStarted(.card, group: intent.breakdownGroup, breakdown: intent.breakdown)
         } catch {
-            let problem = CheckoutCopy.problem(for: error)
-            pricingProblem = problem
-            pricingError = problem.message
+            recordPricingFailure(error)
         }
     }
 
-    /// The card cost in dollars, once the server has priced the order.
+    /// The card cost in dollars, once the server has priced the purchase.
     var cardFeeText: String? {
         guard let breakdown else { return nil }
         return CheckoutCopy.cardFeeAmountText(breakdown)
@@ -278,23 +398,85 @@ final class CheckoutModel {
             if path.last != .wire { path.append(.wire) }
             return
         }
-        guard !preparingWire, let addressID = selectedAddressID else { return }
+        guard !preparingWire, let addressID = selectedAddressID, !listingIDs.isEmpty else { return }
         preparingWire = true
         pricingError = nil
         pricingProblem = nil
+        reservedWatch = nil
         defer { preparingWire = false }
         do {
-            wireCheckout = try await checkout.wireCheckout(
-                listingID: listingID,
+            let wire = try await checkout.wireCheckout(
+                listingIDs: listingIDs,
                 shippingAddressID: addressID,
                 offerID: offerID
             )
+            wireCheckout = wire
+            trackCheckoutStarted(.wire, group: wire.breakdownGroup, breakdown: wire.breakdown)
             path.append(.wire)
         } catch {
-            let problem = CheckoutCopy.problem(for: error)
-            pricingProblem = problem
-            pricingError = problem.message
+            recordPricingFailure(error)
         }
+    }
+
+    // MARK: - A watch someone else is checking out
+
+    /// Reads a pricing failure. A reserved watch in a set of several is not a
+    /// dead end — it names the watch so the buyer can be offered the rest.
+    private func recordPricingFailure(_ error: Error) {
+        let problem = CheckoutCopy.problem(for: error)
+        if problem.listingReserved, let id = problem.reservedListingID ?? soleListingID {
+            reservedWatch = ReservedWatch(listingID: id, title: title(of: id))
+        }
+        pricingProblem = problem
+        pricingError = problem.message
+    }
+
+    /// In a checkout of one there is only one watch a 409 can be about, so a
+    /// payload without an id still names it correctly.
+    private var soleListingID: String? {
+        listingIDs.count == 1 ? listingIDs.first : nil
+    }
+
+    func title(of listingID: String) -> String {
+        listingsByID[listingID]?.title ?? "that watch"
+    }
+
+    /// Whether dropping the refused watch still leaves something to buy.
+    var canContinueWithoutReservedWatch: Bool {
+        guard let reservedWatch else { return false }
+        return listingIDs.contains(reservedWatch.listingID) && listingIDs.count > 1
+    }
+
+    /// "Go on without it" — drops the refused watch and re-prices the rest.
+    /// The server is asked again from scratch; nothing about the old quote
+    /// carries over.
+    func continueWithoutReservedWatch() async {
+        guard let reservedWatch, canContinueWithoutReservedWatch else { return }
+        listingIDs.removeAll { $0 == reservedWatch.listingID }
+        droppedWatch = reservedWatch
+        self.reservedWatch = nil
+        invalidatePricing()
+        pricingError = nil
+        pricingProblem = nil
+        switch method {
+        case .card:
+            await prepareCardIntent()
+        case .wire:
+            await startWire()
+        }
+    }
+
+    func dismissDroppedWatchNote() {
+        droppedWatch = nil
+    }
+
+    /// Everything the server priced is stale — a new destination, or a new
+    /// set. Both quotes go, so neither can be paid against.
+    private func invalidatePricing() {
+        cardIntent = nil
+        wireCheckout = nil
+        pricingError = nil
+        clearCardEntry()
     }
 
     // MARK: - Review & pay (card)
@@ -323,7 +505,7 @@ final class CheckoutModel {
         do {
             let paymentMethodID = try await createPaymentMethodID(params)
             let validation = try await checkout.validatePaymentMethod(
-                listingID: listingID,
+                listingIDs: listingIDs,
                 paymentMethodID: paymentMethodID
             )
             guard validation.accepted else {
@@ -361,7 +543,7 @@ final class CheckoutModel {
                 try await handleNextAction(clientSecret: clientSecret)
             }
             payState = .idle
-            await materializeOrder()
+            await materializeOrders()
         } catch let refusal as CardRefusalError {
             payState = .idle
             cardRefusal = refusal.refusal
@@ -402,7 +584,7 @@ final class CheckoutModel {
     private func gateThenConfirm(paymentMethodID: String, paymentIntentID: String) async throws -> String? {
         payState = .checkingCard
         let validation = try await checkout.validatePaymentMethod(
-            listingID: listingID,
+            listingIDs: listingIDs,
             paymentMethodID: paymentMethodID
         )
         guard validation.accepted else {
@@ -537,18 +719,34 @@ final class CheckoutModel {
 
     /// Every line already priced by the server. Nothing here adds up to a
     /// total — the total is the server's `grand_total`, shown as the last item
-    /// because that is the one Apple charges.
+    /// because that is the one Apple charges. A purchase of several watches
+    /// lists each one, so the wallet sheet says what is being bought.
     private func applePaySummaryItems(_ breakdown: CheckoutBreakdown) -> [PKPaymentSummaryItem] {
-        var items: [PKPaymentSummaryItem] = [
-            PKPaymentSummaryItem(
-                label: offerID == nil ? "Watch" : "Your accepted offer",
-                amount: NSDecimalNumber(decimal: breakdown.subtotal.value)
-            ),
+        var items: [PKPaymentSummaryItem] = []
+        let lines = breakdownGroup?.items ?? []
+        if isMultiItem, lines.count == listingIDs.count {
+            for line in lines {
+                items.append(
+                    PKPaymentSummaryItem(
+                        label: listingsByID[line.listingId]?.title ?? "Watch",
+                        amount: NSDecimalNumber(decimal: line.subtotal.value)
+                    )
+                )
+            }
+        } else {
+            items.append(
+                PKPaymentSummaryItem(
+                    label: offerID == nil ? "Watch" : "Your accepted offer",
+                    amount: NSDecimalNumber(decimal: breakdown.subtotal.value)
+                )
+            )
+        }
+        items.append(
             PKPaymentSummaryItem(
                 label: "Shipping",
                 amount: NSDecimalNumber(decimal: breakdown.shipping.value)
-            ),
-        ]
+            )
+        )
         if let fee = CheckoutCopy.cardFeeAmount(breakdown), fee > 0 {
             items.append(
                 PKPaymentSummaryItem(label: "Card processing", amount: NSDecimalNumber(decimal: fee))
@@ -593,46 +791,82 @@ final class CheckoutModel {
             // A plain cancel says nothing — the buyer changed their mind.
             return
         }
-        Task { await materializeOrder() }
+        Task { await materializeOrders() }
     }
 
     // MARK: - Order materialization
 
     /// Quiet "Confirming your order…" poll of /orders/from-payment-intent.
-    /// The webhook can win the race — an already-created order returns 200
-    /// and is equally a success. 402 means the payment is still settling.
-    private func materializeOrder() async {
+    /// The webhook can win the race — already-created orders return 200 and
+    /// are equally a success. 402 means the payment is still settling.
+    ///
+    /// A purchase of several watches materializes one order per watch, and
+    /// they can land one at a time, so this polls until the count matches the
+    /// set that was paid for rather than stopping at the first 200.
+    private func materializeOrders() async {
         guard let intent = cardIntent else { return }
         confirmingOrder = true
         defer { confirmingOrder = false }
 
+        let expected = listingIDs.count
         let deadline = Date.now.addingTimeInterval(15)
+        var partial: [Order] = []
+
         while true {
             do {
-                let order = try await checkout.orderFromPaymentIntent(
+                let result = try await checkout.orderFromPaymentIntent(
                     paymentIntentID: intent.paymentIntent.id
                 )
-                completedOrder = order
-                return
+                partial = result.orders
+                if result.count >= expected {
+                    finish(with: result.orders, paymentMethod: .card)
+                    return
+                }
+                // Fewer orders than watches: the rest are still being written.
+                if Date.now >= deadline {
+                    // Some of the purchase exists. Showing it is truer than
+                    // showing an error about a payment that went through.
+                    finish(with: partial, paymentMethod: .card)
+                    return
+                }
             } catch let error as APIError {
                 if case .server(_, _, let status, _) = error, status != 402, status < 500 {
                     // Terminal server verdict (refunded races, forbidden) —
                     // stop polling and show the backend's own message.
-                    paymentProblem = CheckoutProblem(message: error.localizedDescription, retryable: false)
+                    giveUp(partial, message: error.localizedDescription)
                     return
                 }
                 if Date.now >= deadline {
-                    paymentProblem = CheckoutProblem(message: Self.settlingMessage, retryable: false)
+                    giveUp(partial, message: Self.settlingMessage)
                     return
                 }
             } catch {
                 if Date.now >= deadline {
-                    paymentProblem = CheckoutProblem(message: Self.settlingMessage, retryable: false)
+                    giveUp(partial, message: Self.settlingMessage)
                     return
                 }
             }
             try? await Task.sleep(for: .milliseconds(1200))
         }
+    }
+
+    /// The purchase is real. Recorded once — the poll above returns on the
+    /// first call that gets here — and one `purchase_completed` per order.
+    private func finish(with orders: [Order], paymentMethod: Analytics.PaymentMethod) {
+        guard completedOrders.isEmpty, !orders.isEmpty else { return }
+        completedOrders = orders
+        trackPurchaseCompleted(orders, paymentMethod: paymentMethod)
+    }
+
+    /// The poll ran out. Orders that did materialize are still the buyer's,
+    /// so they are shown rather than thrown away in favour of an error about
+    /// a payment that went through.
+    private func giveUp(_ partial: [Order], message: String) {
+        if !partial.isEmpty {
+            finish(with: partial, paymentMethod: .card)
+            return
+        }
+        paymentProblem = CheckoutProblem(message: message, retryable: false)
     }
 
     private static let settlingMessage =
@@ -642,19 +876,88 @@ final class CheckoutModel {
 
     private(set) var sendingWireReservation = false
 
-    /// "I've sent the wire" — creates the awaiting-wire order and hands back
-    /// its id so the view can route to order detail.
-    func confirmWireSent() async -> Order? {
-        guard let wire = wireCheckout, !sendingWireReservation else { return nil }
+    /// "I've sent the wire" — one transfer covers the whole purchase, so this
+    /// is said once and creates every awaiting-wire order in the group. Hands
+    /// back the orders so the view can route to the first one.
+    func confirmWireSent() async -> [Order] {
+        guard let wire = wireCheckout, !sendingWireReservation else { return [] }
         sendingWireReservation = true
         defer { sendingWireReservation = false }
         do {
-            return try await checkout.wireReservation(paymentIntentID: wire.wire.paymentIntentId)
+            let result = try await checkout.wireReservation(paymentIntentID: wire.wire.paymentIntentId)
+            // An awaiting-wire order is not a completed purchase — no money
+            // has moved yet — so nothing is emitted here. `purchase_completed`
+            // fires when the transfer lands and the order is paid.
+            return result.orders
         } catch {
             let problem = CheckoutCopy.problem(for: error)
             pricingProblem = problem
             pricingError = problem.message
-            return nil
+            return []
+        }
+    }
+
+    // MARK: - Analytics
+
+    /// Listing-shaped analytics properties for one watch in the set. Per the
+    /// schema, an accepted offer bands by the agreed amount rather than the
+    /// list price.
+    private func analyticsListing(_ listingID: String) -> Analytics.ListingInfo {
+        let info = listingsByID[listingID].map(Analytics.ListingInfo.init) ?? .init(id: listingID)
+        return offer.map { info.priced(at: $0.amount.value) } ?? info
+    }
+
+    /// One `checkout_started` **per watch**, each with its own `event_id`,
+    /// all carrying the same `checkout_group_id`. A checkout covering three
+    /// watches emits three events — an event that sometimes means one watch
+    /// and sometimes three could not answer a per-watch question.
+    ///
+    /// `pricing_mode` comes from the breakdown the server priced; an
+    /// `unknown` mode (a wire format this build predates) is omitted rather
+    /// than guessed, so the event goes out without it.
+    private func trackCheckoutStarted(
+        _ paymentMethod: Analytics.PaymentMethod,
+        group: CheckoutBreakdownGroup?,
+        breakdown: CheckoutBreakdown?
+    ) {
+        let groupID = group?.checkoutGroupId
+        let lines = group?.items.reduce(into: [String: CheckoutBreakdownGroup.Item]()) {
+            $0[$1.listingId] = $1
+        }
+        for listingID in listingIDs {
+            let mode = lines?[listingID]?.pricingMode ?? group?.combined?.pricingMode ?? breakdown?.pricingMode
+            Analytics.checkoutStarted(
+                analyticsListing(listingID),
+                paymentMethod: paymentMethod,
+                pricingMode: Self.pricingMode(mode),
+                fromOffer: offerID != nil,
+                checkoutGroupID: groupID
+            )
+        }
+    }
+
+    /// One `purchase_completed` **per order**, each with its own `event_id`
+    /// and its own `value` — that order's grand total, exactly as the API
+    /// reports it, including its allocated share of the single card fee.
+    /// Summing `value` across the group is what the buyer paid, and that only
+    /// holds if each event carries its own share.
+    private func trackPurchaseCompleted(_ orders: [Order], paymentMethod: Analytics.PaymentMethod) {
+        for order in orders {
+            Analytics.purchaseCompleted(
+                orderID: order.id,
+                listing: analyticsListing(order.listingId),
+                paymentMethod: paymentMethod,
+                value: order.grandTotal.value,
+                checkoutGroupID: order.checkoutGroupId ?? checkoutGroupID
+            )
+        }
+    }
+
+    private static func pricingMode(_ mode: CheckoutBreakdown.PricingMode?) -> Analytics.PricingMode? {
+        switch mode {
+        case .surcharge: .surcharge
+        case .discount: .discount
+        case .unknown, nil: nil
         }
     }
 

@@ -16,6 +16,11 @@ packages:
   Nuke:
     url: https://github.com/kean/Nuke
     from: 13.0.6
+  # Product analytics. App target only — CalibreKit stays dependency-free, so
+  # the seam that wraps this lives in Calibre/App/Analytics.swift.
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    exactVersion: 3.69.6
 
 configFiles:
   Debug: Calibre/Config/Debug.xcconfig
@@ -42,6 +47,9 @@ targets:
         products:
           - Nuke
           - NukeUI
+      - package: PostHog
+        products:
+          - PostHog
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.buycalibre.calibre
@@ -71,6 +79,8 @@ targets:
               - calibre
         CalibreAPIBaseURL: $(API_BASE_URL)
         CalibreApplePayEnabled: $(APPLE_PAY_ENABLED)
+        CalibrePostHogKey: $(CALIBRE_POSTHOG_KEY)
+        CalibrePostHogHost: $(CALIBRE_POSTHOG_HOST)
   CalibreUITests:
     type: bundle.ui-testing
     platform: iOS
