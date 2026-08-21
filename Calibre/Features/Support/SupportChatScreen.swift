@@ -1,6 +1,8 @@
 import CalibreDesign
 import CalibreKit
+import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Message Calibre — works for guests and signed-in users. Guests give an
 /// email on their first message so support can reply; the thread survives
@@ -13,6 +15,13 @@ struct SupportChatScreen: View {
     @State private var guestEmail = ""
     @State private var sending = false
     @State private var errorText: String?
+    /// Files staged against the thread, waiting for the message that carries
+    /// them. Cleared when that message sends.
+    @State private var attachments: [SupportAttachment] = []
+    @State private var uploading = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var showingPhotoPicker = false
+    @State private var showingFileImporter = false
 
     private var conversation: SupportConversation? { services.support.conversation }
     private var needsGuestEmail: Bool {
@@ -125,7 +134,13 @@ struct SupportChatScreen: View {
             if needsGuestEmail {
                 CalibreTextField("Your email so we can reply", text: $guestEmail, kind: .email)
             }
+
+            if !attachments.isEmpty {
+                stagedAttachments
+            }
+
             HStack(alignment: .bottom, spacing: Space.s) {
+                attachButton
                 CalibreTextField("Write a message", text: $draft, kind: .sentence)
                 Button {
                     Task { await send() }
@@ -138,16 +153,163 @@ struct SupportChatScreen: View {
                 }
                 .disabled(!canSend || sending)
             }
+
+            if !canAttach {
+                Text("Send your first message and you can attach photos or a PDF to the thread after that.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(Space.margin)
         .background(Color.calibre.card)
         .overlay(alignment: .top) { Rectangle().fill(Color.calibre.border).frame(height: 1) }
+        .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task {
+                await stagePickedPhoto(item)
+                photoItem = nil
+            }
+        }
+        .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: [.pdf]) { result in
+            if case .success(let url) = result {
+                Task { await stagePickedPDF(url) }
+            }
+        }
+    }
+
+    /// An upload cannot start a conversation — the server refuses one until a
+    /// thread exists — so the control only turns on once there is a thread to
+    /// hang the file on.
+    private var canAttach: Bool {
+        conversation != nil
+    }
+
+    private var attachButton: some View {
+        Menu {
+            Button {
+                showingPhotoPicker = true
+            } label: {
+                Label("Photo", systemImage: "photo")
+            }
+            Button {
+                showingFileImporter = true
+            } label: {
+                Label("PDF", systemImage: "doc")
+            }
+        } label: {
+            Group {
+                if uploading {
+                    ProgressView().controlSize(.small).tint(Color.calibre.primary)
+                } else {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(canAttach ? Color.calibre.primary : Color.calibre.placeholder)
+                }
+            }
+            .frame(width: 40, height: 40)
+        }
+        .disabled(!canAttach || uploading || sending)
+        .accessibilityLabel("Attach a file")
+    }
+
+    private var stagedAttachments: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s) {
+                ForEach(attachments) { attachment in
+                    HStack(spacing: Space.xs) {
+                        Image(systemName: attachment.isPDF ? "doc" : "photo")
+                            .font(.system(size: 12, weight: .medium))
+                        Text(attachment.filename ?? "Attachment")
+                            .font(CalibreType.caption)
+                            .lineLimit(1)
+                        if let size = attachment.sizeText {
+                            Text(size)
+                                .font(CalibreType.caption)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                        }
+                        Button {
+                            attachments.removeAll { $0.id == attachment.id }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                        }
+                        .accessibilityLabel("Remove \(attachment.filename ?? "attachment")")
+                    }
+                    .padding(.horizontal, Space.s)
+                    .padding(.vertical, Space.xs)
+                    .background(Color.calibre.secondary, in: Capsule())
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var canSend: Bool {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && (!needsGuestEmail || InputValidation.isValidEmail(guestEmail))
             && !sending
+            && !uploading
+    }
+
+    // MARK: - Attachments
+
+    /// Images and PDFs only, at most 10MB each and 20MB across a message —
+    /// the server enforces all three; these checks only save the buyer a
+    /// pointless upload.
+    private func stage(_ data: Data, filename: String, contentType: String) async {
+        guard !uploading else { return }
+        errorText = nil
+        guard data.count <= SupportAttachment.maxBytesPerFile else {
+            errorText = "An attached file can be at most 10MB."
+            return
+        }
+        let staged = attachments.reduce(0) { $0 + ($1.sizeBytes ?? 0) }
+        guard staged + data.count <= SupportAttachment.maxBytesPerMessage else {
+            errorText = "One message can carry at most 20MB of files."
+            return
+        }
+        uploading = true
+        defer { uploading = false }
+        do {
+            let attachment = try await services.support.uploadAttachment(
+                filename: filename,
+                contentType: contentType,
+                data: data,
+                authenticated: session.isAuthenticated
+            )
+            attachments.append(attachment)
+            Haptics.shared.play(.selection)
+        } catch {
+            errorText = (error as? APIError)?.errorDescription ?? "Couldn\u{2019}t attach that file."
+            Haptics.shared.play(.error)
+        }
+    }
+
+    private func stagePickedPhoto(_ item: PhotosPickerItem) async {
+        guard let data = try? await item.loadTransferable(type: Data.self) else {
+            errorText = "Couldn\u{2019}t read that photo."
+            return
+        }
+        let type = item.supportedContentTypes.first(where: { $0.conforms(to: .image) })
+        await stage(
+            data,
+            filename: "photo." + (type?.preferredFilenameExtension ?? "jpg"),
+            contentType: type?.preferredMIMEType ?? "image/jpeg"
+        )
+    }
+
+    private func stagePickedPDF(_ url: URL) async {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else {
+            errorText = "Couldn\u{2019}t read that file."
+            return
+        }
+        await stage(data, filename: url.lastPathComponent, contentType: "application/pdf")
     }
 
     private func send() async {
@@ -162,9 +324,11 @@ struct SupportChatScreen: View {
             _ = try await services.support.send(
                 body,
                 authenticated: session.isAuthenticated,
-                guestEmail: needsGuestEmail ? InputValidation.trimmed(guestEmail).lowercased() : nil
+                guestEmail: needsGuestEmail ? InputValidation.trimmed(guestEmail).lowercased() : nil,
+                attachmentIDs: attachments.map(\.id)
             )
             draft = ""
+            attachments = []
             Haptics.shared.play(.selection)
         } catch {
             errorText = (error as? APIError)?.errorDescription ?? "Couldn't send. Please try again."
@@ -194,17 +358,51 @@ private struct SupportBubble: View {
                 if !isCustomer {
                     Text("Calibre").font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
                 }
-                Text(message.body)
-                    .font(CalibreType.body)
-                    .foregroundStyle(isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground)
-                    .padding(.horizontal, Space.m)
-                    .padding(.vertical, Space.s)
-                    .background(
-                        isCustomer ? Color.calibre.primary : Color.calibre.secondary,
-                        in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    )
+                if !message.body.isEmpty {
+                    Text(message.body)
+                        .font(CalibreType.body)
+                        .foregroundStyle(isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground)
+                        .padding(.horizontal, Space.m)
+                        .padding(.vertical, Space.s)
+                        .background(
+                            isCustomer ? Color.calibre.primary : Color.calibre.secondary,
+                            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        )
+                }
+
+                // Signed, time-limited links, so they open in the browser
+                // rather than being cached anywhere they would outlive.
+                ForEach(message.attachments) { attachment in
+                    attachmentRow(attachment)
+                }
             }
             if !isCustomer { Spacer(minLength: 40) }
+        }
+    }
+
+    @ViewBuilder
+    private func attachmentRow(_ attachment: SupportAttachment) -> some View {
+        let label = HStack(spacing: Space.xs) {
+            Image(systemName: attachment.isPDF ? "doc" : "photo")
+                .font(.system(size: 12, weight: .medium))
+            Text(attachment.filename ?? "Attachment")
+                .font(CalibreType.caption)
+                .lineLimit(1)
+            if let size = attachment.sizeText {
+                Text(size)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+            }
+        }
+        .foregroundStyle(Color.calibre.foreground)
+        .padding(.horizontal, Space.s)
+        .padding(.vertical, Space.xs)
+        .background(Color.calibre.secondary, in: Capsule())
+
+        if let url = attachment.url?.url {
+            Link(destination: url) { label }
+        } else {
+            label
         }
     }
 }

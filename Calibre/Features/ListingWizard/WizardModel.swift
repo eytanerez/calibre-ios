@@ -73,15 +73,22 @@ enum WizardField: Hashable {
     case brand, year, condition(ConditionPart), price
 }
 
+/// The eight grades, in the order the sell form asks for them — the same
+/// order and the same words the server's submit gate names when one is
+/// missing. Nothing is ever derived from anything else here: a missing clasp
+/// is a missing clasp, not the bracelet's grade wearing the clasp's name.
 enum ConditionPart: String, CaseIterable, Identifiable, Hashable {
-    case crystal, bezel, bracelet, clasp, caseback, overall
+    case watchCase = "case"
+    case dial, bezel, crystal, bracelet, clasp, caseback, overall
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .crystal: "Crystal"
+        case .watchCase: "Case"
+        case .dial: "Dial"
         case .bezel: "Bezel"
+        case .crystal: "Crystal"
         case .bracelet: "Bracelet"
         case .clasp: "Clasp"
         case .caseback: "Caseback"
@@ -155,6 +162,8 @@ struct WizardSnapshot: Codable {
     var slotFiles: [String: String]
     var extraFiles: [String]
     var fulfillRequestID: String?
+    /// Absent on snapshots written before the SKU field existed.
+    var sellerSku: String? = nil
     /// Return terms, optional so a snapshot written by an earlier build still
     /// decodes — `DraftStore.load` uses `try?`, and a missing key would
     /// otherwise throw away a seller's whole in-progress draft.
@@ -244,6 +253,10 @@ final class WizardModel {
     var brand = ""
     var model = ""
     var reference = ""
+    /// The seller's own shelf label. Optional here — a listing made by hand
+    /// needs no SKU — but it is the only key a bulk import ever matches on,
+    /// so a dealer who keeps one is asked for it.
+    var sellerSku = ""
     var yearText = ""
     var yearUnknown = false
     var conditions: [ConditionPart: String] = [:]
@@ -315,6 +328,15 @@ final class WizardModel {
         InputValidation.isNonBlank(brand)
             && (yearUnknown || InputValidation.productionYear(yearText) != nil)
             && ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
+    }
+
+    /// The grades still to fill, worded the way the server's submit gate
+    /// words its own refusal — so the sentence a seller reads before pressing
+    /// submit matches the one they would read after.
+    var missingGradesSentence: String? {
+        let missing = ConditionPart.allCases.filter { conditions[$0] == nil }
+        guard !missing.isEmpty else { return nil }
+        return "Required condition grades missing: " + missing.map(\.label).joined(separator: ", ") + "."
     }
 
     /// What Details still needs. Used by the Review step's summary and by the
@@ -460,6 +482,7 @@ final class WizardModel {
         brand = listing.brand ?? ""
         model = listing.model ?? ""
         reference = listing.referenceNumber ?? ""
+        sellerSku = listing.sellerSku ?? ""
         if let year = listing.productionYear {
             yearText = String(year)
         } else {
@@ -474,8 +497,10 @@ final class WizardModel {
             returnWindowHours = terms.windowHours
         }
         if let condition = listing.condition {
-            conditions[.crystal] = condition.crystal
+            conditions[.watchCase] = condition.caseCondition
+            conditions[.dial] = condition.dial
             conditions[.bezel] = condition.bezel
+            conditions[.crystal] = condition.crystal
             conditions[.bracelet] = condition.bracelet
             conditions[.clasp] = condition.clasp
             conditions[.caseback] = condition.caseback
@@ -490,6 +515,7 @@ final class WizardModel {
         brand = snapshot.brand
         model = snapshot.model
         reference = snapshot.reference
+        if let sku = snapshot.sellerSku { sellerSku = sku }
         yearText = snapshot.yearText
         yearUnknown = snapshot.yearUnknown
         priceText = snapshot.priceText
@@ -563,11 +589,16 @@ final class WizardModel {
             brand: InputValidation.isNonBlank(brand) ? InputValidation.trimmed(brand) : nil,
             model: InputValidation.isNonBlank(model) ? InputValidation.trimmed(model) : nil,
             reference: InputValidation.isNonBlank(reference) ? InputValidation.trimmed(reference) : nil,
+            sellerSku: InputValidation.isNonBlank(sellerSku) ? InputValidation.trimmed(sellerSku) : nil,
             price: price,
+            // Each grade is sent as the seller graded it. There is no
+            // back-fill: the case is not the caseback, the dial is not the
+            // crystal, and a seller who enters one grade must never produce a
+            // listing that displays eight.
             conditionOverall: conditions[.overall],
-            conditionCase: conditions[.caseback],
+            conditionCase: conditions[.watchCase],
             conditionBracelet: conditions[.bracelet],
-            conditionDial: conditions[.crystal],
+            conditionDial: conditions[.dial],
             conditionBezel: conditions[.bezel],
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
@@ -613,6 +644,7 @@ final class WizardModel {
             slotFiles: slotFiles,
             extraFiles: extraPhotos.compactMap { $0.localURL?.lastPathComponent },
             fulfillRequestID: fulfillRequestID,
+            sellerSku: sellerSku,
             returnsAccepted: returnsAccepted,
             returnWindowHours: returnWindowHours,
             updatedAt: .now
@@ -842,7 +874,13 @@ final class WizardModel {
         guard !submitting else { return false }
         submitError = nil
         guard detailsComplete else {
-            submitError = "Add the brand, a valid year (or mark it unknown), and grade every condition item."
+            var parts: [String] = []
+            if !InputValidation.isNonBlank(brand) { parts.append("Add the brand.") }
+            if !yearUnknown, InputValidation.productionYear(yearText) == nil {
+                parts.append("Add a 4-digit year, or mark it unknown.")
+            }
+            if let grades = missingGradesSentence { parts.append(grades) }
+            submitError = parts.joined(separator: " ")
             return false
         }
         guard priceDetailsComplete else {

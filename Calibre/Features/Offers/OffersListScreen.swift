@@ -69,6 +69,8 @@ struct OffersListScreen: View {
                 catalog: services.catalog,
                 commerce: services.commerce,
                 config: services.config,
+                seller: services.seller,
+                client: services.client,
                 userID: session.user?.id,
                 toasts: toasts
             )
@@ -118,7 +120,11 @@ struct OffersListScreen: View {
                 OfferRow(
                     offer: offer,
                     viewerIsSeller: segment == .received,
-                    thumbURL: model.thumbs.url(for: offer.listingId)
+                    thumbURL: model.thumbs.url(for: offer.listingId),
+                    netProceeds: segment == .received ? model.netProceeds(for: offer) : nil,
+                    currency: offer.currency,
+                    feePercent: model.effectiveFeePercent,
+                    includesShipping: model.hasShippingEstimate(for: offer)
                 )
                 .onAppear { model.thumbs.warm(listingID: offer.listingId) }
                 .listRowBackground(Color.calibre.background)
@@ -229,6 +235,11 @@ private struct OfferRow: View {
     let offer: Offer
     let viewerIsSeller: Bool
     let thumbURL: URL?
+    /// Seller side only, and only when the server has stated a rate.
+    var netProceeds: SellerNetProceeds?
+    var currency: String = "USD"
+    var feePercent: Decimal?
+    var includesShipping: Bool = false
 
     var body: some View {
         NavigationLink {
@@ -256,6 +267,20 @@ private struct OfferRow: View {
                     }
                     .padding(.top, 2)
 
+                    if offerHoldNeedsRenewal(offer) {
+                        Label(
+                            viewerIsSeller ? "Buyer\u{2019}s deposit expiring" : "Renew your deposit",
+                            systemImage: "creditcard.trianglebadge.exclamationmark"
+                        )
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.primary)
+                        .padding(.top, 1)
+                    }
+
+                    if let netProceeds {
+                        netProceedsLine(netProceeds)
+                    }
+
                     if let preview = offerLatestMessage(offer) {
                         Text(preview)
                             .font(CalibreType.caption)
@@ -267,6 +292,40 @@ private struct OfferRow: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// What the seller would take home, and the working behind it. Labelled
+    /// an estimate every time it is shown: the shipping figure is priced from
+    /// a standard box, and the real label is bought after the sale.
+    private func netProceedsLine(_ estimate: SellerNetProceeds) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("You\u{2019}d take home about \(PriceFormatter.format(estimate.takeHome, currency: currency))")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(workingText(estimate))
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("An estimate \u{2014} the shipping figure is priced from a standard box, and the actual label cost is what comes off your payout.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 2)
+    }
+
+    private func workingText(_ estimate: SellerNetProceeds) -> String {
+        var line = "\(PriceFormatter.format(estimate.offerAmount, currency: currency)) offer \u{2212} \(PriceFormatter.format(estimate.commission, currency: currency)) commission"
+        if let feePercent {
+            line += " (\(feePercentText(feePercent))%\(estimate.minimumApplied ? ", minimum applied" : ""))"
+        } else if estimate.minimumApplied {
+            line += " (minimum applied)"
+        }
+        if includesShipping {
+            line += " \u{2212} \(PriceFormatter.format(estimate.shipping, currency: currency)) estimated shipping"
+        }
+        return line
     }
 }
 
@@ -339,24 +398,86 @@ final class OffersListModel {
     @ObservationIgnored private let config: ConfigStore
     @ObservationIgnored private let userID: String?
     @ObservationIgnored private let toasts: ToastCenter
+    @ObservationIgnored private let seller: SellerStore
+    @ObservationIgnored private let client: APIClient
     let thumbs: ListingThumbCache
 
     var phase: Phase = .loading
     private(set) var all: [Offer] = []
     var pendingAction: QuickAction?
 
+    /// The rate this seller is actually quoted, from the server — a
+    /// negotiated override included. Nil until it lands, and nil is an
+    /// answer: no rate means no net-proceeds figure at all, because a
+    /// commission guessed from a tier the seller may not be on would be
+    /// contradicted at the sale.
+    private(set) var effectiveFeePercent: Decimal?
+    /// offer amount → the seller's estimated label to authentication.
+    private(set) var shippingEstimates: [Decimal: Decimal] = [:]
+
     init(
         catalog: CatalogStore,
         commerce: CommerceStore,
         config: ConfigStore,
+        seller: SellerStore,
+        client: APIClient,
         userID: String?,
         toasts: ToastCenter
     ) {
         self.commerce = commerce
         self.config = config
+        self.seller = seller
+        self.client = client
         self.userID = userID
         self.toasts = toasts
         self.thumbs = ListingThumbCache(catalog: catalog)
+    }
+
+    // MARK: What a seller would take home
+
+    /// Loaded only once there is something to price. A member who has never
+    /// listed a watch is never asked for a seller rate.
+    private func loadSellerFigures() async {
+        let received = all.filter { offerViewerIsSeller($0, userID: userID) }
+        guard !received.isEmpty else { return }
+
+        if effectiveFeePercent == nil {
+            // The profile carries the resolved rate; the dashboard is the
+            // fallback for a build whose profile predates it.
+            if let profile = try? await client.accountProfile(),
+               let percent = profile.dealerApplication?.effectiveFeePercent?.value {
+                effectiveFeePercent = percent
+            } else if let percent = seller.dashboard?.dealerApplication?.effectiveFeePercent?.value {
+                effectiveFeePercent = percent
+            }
+        }
+
+        // Priced against the offer rather than the asking price, from the
+        // same endpoint the sell form uses — and it inherits that endpoint's
+        // caveat, which is why every figure is called an estimate.
+        for amount in Set(received.map { offerCurrentAmount($0) }) where shippingEstimates[amount] == nil {
+            guard amount > 0 else { continue }
+            if let quote = try? await seller.shippingEstimate(listingPrice: amount) {
+                shippingEstimates[amount] = quote.amount.value
+            }
+        }
+    }
+
+    /// What this offer would leave the seller, or nil when we cannot say.
+    func netProceeds(for offer: Offer) -> SellerNetProceeds? {
+        let amount = offerCurrentAmount(offer)
+        return SellerNetProceeds(
+            offerAmount: amount,
+            feePercent: effectiveFeePercent,
+            feeMinimum: config.config?.sellerFeeMinimum?.value,
+            shippingEstimate: shippingEstimates[amount]
+        )
+    }
+
+    /// True when a shipping figure was actually priced, so the sentence can
+    /// name it rather than pretending a zero is an estimate.
+    func hasShippingEstimate(for offer: Offer) -> Bool {
+        shippingEstimates[offerCurrentAmount(offer)] != nil
     }
 
     /// The disclosure §17.5 requires at acceptance, built with the windows the
@@ -378,6 +499,7 @@ final class OffersListModel {
         do {
             all = try await commerce.offers()
             phase = .ready
+            await loadSellerFigures()
         } catch {
             if !quiet {
                 phase = .failed((error as? APIError)?.errorDescription ?? "Something went wrong.")
@@ -417,6 +539,20 @@ final class OffersListModel {
             await load(quiet: true)
         } catch {
             Haptics.shared.play(.error)
+            // Not a refusal of the price: the deposit behind the offer has
+            // aged out and there is nothing standing behind it any more. Only
+            // the buyer can replace their own authorization, so the seller is
+            // told what is happening rather than offered a button they could
+            // not press.
+            if offerHoldRenewalRequired(error) {
+                toasts.show(
+                    title: "The buyer\u{2019}s deposit has run out",
+                    message: "This offer can\u{2019}t move until they place a new one. We\u{2019}ve asked them to.",
+                    tone: .neutral
+                )
+                await load(quiet: true)
+                return
+            }
             toasts.show(
                 title: "That didn't go through",
                 message: (error as? APIError)?.errorDescription ?? "Please try again.",

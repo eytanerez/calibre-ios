@@ -2,9 +2,15 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// One imported listing at a time: shows exactly what's missing (photos,
-/// condition, year, description), saves, and moves to the next. Skip leaves
-/// the draft for later.
+/// One imported draft at a time: its own title and the facts that identify
+/// it, the six photo slots shot with the camera, the eight grades, and then
+/// the ordinary listing PATCH that sends it to review. Skip leaves the draft
+/// exactly as it was.
+///
+/// An import creates drafts and nothing else — it never promotes a row — so
+/// every draft here is waiting for a person, and finishing one is what puts
+/// it in front of buyers. This is the primary place that work happens: the
+/// photographs need a camera, and the camera is on the phone.
 struct DraftFinishingQueueScreen: View {
     let jobID: String
 
@@ -29,6 +35,18 @@ struct DraftFinishingQueueScreen: View {
     @State private var captureTarget: CaptureTarget?
     /// Upload jobs started for the current listing, keyed by category.
     @State private var photoJobs: [String: UUID] = [:]
+    /// Photos the listing already carries, keyed by category — a draft that
+    /// was part-finished on an earlier visit opens with those slots filled.
+    @State private var existingPhotoCategories: Set<String> = []
+    /// Photos the CSV brought as bare URLs, which carry no angle. They are
+    /// what lets an imported draft go to review without six camera shots —
+    /// right up until the first camera shot lands.
+    @State private var existingUncategorizedPhotos = 0
+    /// How many drafts this pass sent to review, for the closing screen.
+    @State private var sentForReview = 0
+    /// The server's own refusal when a submit is turned down — the
+    /// missing-grades sentence is shown exactly as it was written.
+    @State private var submitNote: String?
 
     var body: some View {
         Group {
@@ -59,7 +77,7 @@ struct DraftFinishingQueueScreen: View {
                     EmptyState(
                         icon: "checkmark.circle",
                         title: "That's the queue",
-                        message: "Every draft you finished is ready to submit from your shop.",
+                        message: closingMessage,
                         actionTitle: "Done",
                         action: { dismiss() }
                     )
@@ -98,6 +116,15 @@ struct DraftFinishingQueueScreen: View {
         }
     }
 
+    /// What this pass actually did. Anything skipped is still a draft and is
+    /// still reachable — an import never sends a listing to review on its own.
+    private var closingMessage: String {
+        if sentForReview > 0 {
+            return "\(sentForReview) listing\(sentForReview == 1 ? "" : "s") went to review. Anything you skipped is still a draft — pick it up from Continue bulk import whenever you like."
+        }
+        return "Anything you skipped is still a draft — pick it up from Continue bulk import whenever you like."
+    }
+
     private func load() async {
         loadError = nil
         do {
@@ -125,19 +152,36 @@ struct DraftFinishingQueueScreen: View {
         yearText = ""
         descriptionText = ""
         photoJobs = [:]
+        existingPhotoCategories = []
+        existingUncategorizedPhotos = 0
+        submitNote = nil
         guard let item = current else { return }
         yearText = item.productionYear.map(String.init) ?? ""
         descriptionText = item.description ?? ""
-        // Prefill known grades from the cached inventory copy, if present.
-        if let listing = services.seller.myListings.first(where: { $0.id == item.id }),
-           let condition = listing.condition {
-            conditions[.crystal] = condition.crystal
-            conditions[.bezel] = condition.bezel
-            conditions[.bracelet] = condition.bracelet
-            conditions[.clasp] = condition.clasp
-            conditions[.caseback] = condition.caseback
-            conditions[.overall] = condition.overall
+        // Whatever the CSV carried, exactly as it carried it. Nothing is
+        // derived from anything else — a blank grade stays blank until the
+        // seller grades it.
+        conditions[.watchCase] = item.conditionCase
+        conditions[.dial] = item.conditionDial
+        conditions[.bezel] = item.conditionBezel
+        conditions[.crystal] = item.conditionCrystal
+        conditions[.bracelet] = item.conditionBracelet
+        conditions[.clasp] = item.conditionClasp
+        conditions[.caseback] = item.conditionCaseback
+        conditions[.overall] = item.conditionOverall
+        for part in ConditionPart.allCases where conditions[part]?.isEmpty == true {
+            conditions[part] = nil
         }
+        Task { await loadExistingPhotos(listingID: item.id) }
+    }
+
+    /// Which of the six slots already have a photo on the server. A draft
+    /// part-finished on an earlier visit should not ask for those again.
+    private func loadExistingPhotos(listingID: String) async {
+        guard let images = try? await services.seller.images(listingID: listingID) else { return }
+        guard current?.id == listingID else { return }
+        existingPhotoCategories = Set(images.compactMap(\.category))
+        existingUncategorizedPhotos = images.filter { ($0.category ?? "").isEmpty }.count
     }
 
     // MARK: - Editor
@@ -150,6 +194,7 @@ struct DraftFinishingQueueScreen: View {
                     Text(item.title ?? "Imported listing")
                         .font(CalibreType.sectionTitle)
                         .foregroundStyle(Color.calibre.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: Space.s) {
                         if let number = item.listingNumber {
                             Text("#\(number)")
@@ -162,16 +207,20 @@ struct DraftFinishingQueueScreen: View {
                                 .foregroundStyle(Color.calibre.foreground)
                         }
                     }
+                    if !identityLine(item).isEmpty {
+                        Text(identityLine(item))
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     missingChips(item)
                 }
 
-                if item.missing.contains("photos") {
-                    photoSection
-                }
+                // A CSV cannot carry photographs, so the six slots are always
+                // on screen here. Every one of them is a camera shot.
+                photoSection
 
-                if missingConditionParts(item).isEmpty == false {
-                    conditionSection(missingConditionParts(item))
-                }
+                conditionSection(ConditionPart.allCases)
 
                 if item.missing.contains("production_year") {
                     CalibreTextField(
@@ -200,7 +249,7 @@ struct DraftFinishingQueueScreen: View {
                     }
                 }
 
-                if let message = incompleteMessage(item) {
+                if let message = incompleteMessage {
                     Text(message)
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
@@ -219,11 +268,11 @@ struct DraftFinishingQueueScreen: View {
                         if saving {
                             ProgressView().tint(Color.calibre.primaryForeground)
                         } else {
-                            Text("Save & next")
+                            Text(willSubmit ? "Send to review" : "Save & next")
                         }
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
-                    .disabled(saving || !canSave(item))
+                    .disabled(saving || !canSave)
                 }
             }
             .padding(.horizontal, Space.margin)
@@ -231,6 +280,16 @@ struct DraftFinishingQueueScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    /// SKU first: it is the seller's own name for the watch and the only key
+    /// the import ever matched on. The reference is descriptive and follows.
+    private func identityLine(_ item: ImportCompletionItem) -> String {
+        var parts: [String] = []
+        if let sku = item.sellerSku, !sku.isEmpty { parts.append("SKU \(sku)") }
+        if let reference = item.reference, !reference.isEmpty { parts.append("Ref. \(reference)") }
+        if let brand = item.brand, !brand.isEmpty, item.title == nil { parts.append(brand) }
+        return parts.joined(separator: " \u{00B7} ")
     }
 
     private func missingChips(_ item: ImportCompletionItem) -> some View {
@@ -260,23 +319,6 @@ struct DraftFinishingQueueScreen: View {
         }
     }
 
-    /// The condition parts this item still needs, in wizard order.
-    private func missingConditionParts(_ item: ImportCompletionItem) -> [ConditionPart] {
-        var parts: [ConditionPart] = []
-        for key in item.missing {
-            switch key {
-            case "condition_crystal", "condition_dial": parts.append(.crystal)
-            case "condition_bezel": parts.append(.bezel)
-            case "condition_bracelet": parts.append(.bracelet)
-            case "condition_clasp": parts.append(.clasp)
-            case "condition_caseback", "condition_case": parts.append(.caseback)
-            case "condition_overall": parts.append(.overall)
-            default: break
-            }
-        }
-        return ConditionPart.allCases.filter { parts.contains($0) }
-    }
-
     // MARK: Photos
 
     private var photoSection: some View {
@@ -284,6 +326,10 @@ struct DraftFinishingQueueScreen: View {
             Text("Photos")
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.secondaryForeground)
+            Text("A spreadsheet can\u{2019}t carry pictures, so all six are taken here. Tap a slot and shoot it \u{2014} the same six angles every Calibre listing carries.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.l) {
                     ForEach(ListingImageCategory.allCases, id: \.self) { category in
@@ -308,7 +354,9 @@ struct DraftFinishingQueueScreen: View {
 
     private func photoPhase(_ category: ListingImageCategory) -> PhotoSlotPhase {
         guard let jobID = photoJobs[category.rawValue], let entry = sell.board.entry(for: jobID) else {
-            return .empty
+            // Nothing shot this visit — the slot is filled only if the server
+            // already holds a photo for that angle.
+            return existingPhotoCategories.contains(category.rawValue) ? .done : .empty
         }
         switch entry.state {
         case .queued: return .uploading(0)
@@ -316,6 +364,26 @@ struct DraftFinishingQueueScreen: View {
         case .done: return .done
         case .failed: return .failed
         }
+    }
+
+    /// Exactly the rule the server applies, and no stricter.
+    ///
+    /// A draft whose only pictures came from the CSV carries no angles at
+    /// all, and may go to review on those alone. The moment one categorized
+    /// shot lands, the listing is a wizard-graded listing and all six are
+    /// required — which is why shooting three would be refused, and why this
+    /// asks for six as soon as the seller takes the first.
+    private var photosSatisfyTheGate: Bool {
+        let shot = ListingImageCategory.allCases.filter { photoPhase($0) == .done }
+        if shot.isEmpty {
+            return existingUncategorizedPhotos > 0
+        }
+        return shot.count == ListingImageCategory.allCases.count
+    }
+
+
+    private var allGradesPresent: Bool {
+        ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
     }
 
     private func attach(image: UIImage, category: ListingImageCategory?) async {
@@ -336,44 +404,55 @@ struct DraftFinishingQueueScreen: View {
 
     // MARK: Save & advance
 
-    private func canSave(_ item: ImportCompletionItem) -> Bool {
-        if item.missing.contains("production_year"), InputValidation.productionYear(yearText) == nil {
-            return false
-        }
-        if item.missing.contains("description"), !InputValidation.isNonBlank(descriptionText) {
-            return false
-        }
-        if missingConditionParts(item).contains(where: { conditions[$0] == nil }) {
-            return false
-        }
-        if item.missing.contains("photos") {
-            let completedUploads = photoJobs.values.reduce(into: 0) { count, jobID in
-                if sell.board.entry(for: jobID)?.state == .done { count += 1 }
-            }
-            if item.imageCount + completedUploads < ListingImageCategory.allCases.count {
-                return false
-            }
-        }
-        return true
+    /// Saving is always allowed: a partly-finished draft is still worth
+    /// keeping, and skipping one costs the seller nothing. The only thing
+    /// that can block it is a year that has been typed wrong. What
+    /// completeness decides is whether the save also submits.
+    private var canSave: Bool {
+        yearText.isEmpty || InputValidation.productionYear(yearText) != nil
     }
 
-    private func incompleteMessage(_ item: ImportCompletionItem) -> String? {
-        guard !canSave(item) else { return nil }
-        return "Complete the highlighted year, description, condition, and photo requirements — or choose Skip for now."
+    /// Whether this save will also send the draft to review. The server has
+    /// the last word — this only decides which sentence to show and whether
+    /// to ask.
+    private var willSubmit: Bool {
+        allGradesPresent && photosSatisfyTheGate
+    }
+
+    /// The one sentence under the button: what this save will actually do,
+    /// or — after a refusal — the server's own words for why it didn't.
+    private var incompleteMessage: String? {
+        if let submitNote { return submitNote }
+        if willSubmit {
+            return "Everything\u{2019}s here \u{2014} saving sends this listing to review."
+        }
+        var waiting: [String] = []
+        if !photosSatisfyTheGate {
+            let missing = ListingImageCategory.allCases.filter { photoPhase($0) != .done }
+            waiting.append("\(missing.count) photo\(missing.count == 1 ? "" : "s")")
+        }
+        if !allGradesPresent {
+            let missing = ConditionPart.allCases.filter { conditions[$0] == nil }
+            waiting.append("\(missing.count) grade\(missing.count == 1 ? "" : "s")")
+        }
+        if waiting.isEmpty { return "Saving updates this listing." }
+        return "Still waiting on \(waiting.joined(separator: " and ")) \u{2014} saving keeps this one a draft."
     }
 
     private func saveAndNext(_ item: ImportCompletionItem) async {
-        guard canSave(item), !saving else { return }
+        guard canSave, !saving else { return }
         saving = true
+        submitNote = nil
         defer { saving = false }
         let payload = ListingDraftPayload(
             description: InputValidation.isNonBlank(descriptionText)
                 ? InputValidation.trimmed(descriptionText)
                 : nil,
+            // Exactly as graded, all eight, nothing derived from anything.
             conditionOverall: conditions[.overall],
-            conditionCase: conditions[.caseback],
+            conditionCase: conditions[.watchCase],
             conditionBracelet: conditions[.bracelet],
-            conditionDial: conditions[.crystal],
+            conditionDial: conditions[.dial],
             conditionBezel: conditions[.bezel],
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
@@ -382,12 +461,37 @@ struct DraftFinishingQueueScreen: View {
         )
         do {
             _ = try await services.seller.updateListing(id: item.id, payload)
-            skipped.remove(item.id)
-            Haptics.shared.play(.save)
-            advance()
         } catch {
-            toasts.show(title: "Couldn't save", message: sellErrorMessage(error), tone: .error)
+            toasts.show(title: "Couldn\u{2019}t save", message: sellErrorMessage(error), tone: .error)
+            return
         }
+
+        if willSubmit {
+            do {
+                // The ordinary listing PATCH, which is where the submit gate
+                // lives. A refusal is the server's own sentence — it names
+                // the grades or the angles that are still missing — and it is
+                // shown as written rather than translated.
+                let submitted = try await services.seller.submitForReview(listingID: item.id)
+                sentForReview += 1
+                Analytics.listingSubmitted(
+                    .init(submitted),
+                    source: Analytics.listingSource(for: submitted.id)
+                )
+            } catch {
+                submitNote = sellErrorMessage(error)
+                toasts.show(
+                    title: "Saved as a draft",
+                    message: sellErrorMessage(error),
+                    tone: .neutral
+                )
+                return
+            }
+        }
+
+        skipped.remove(item.id)
+        Haptics.shared.play(.save)
+        advance()
     }
 
     /// The "Save & next" rhythm — skip leaves the draft untouched.

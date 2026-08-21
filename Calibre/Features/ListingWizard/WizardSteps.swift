@@ -35,6 +35,20 @@ struct DetailsStep: View {
                     kind: .reference
                 )
                 .onChange(of: model.reference) { _, _ in model.fieldChanged() }
+                CalibreTextField(
+                    "Seller SKU (optional)",
+                    text: $model.sellerSku,
+                    placeholder: "CAL-001",
+                    kind: .reference
+                )
+                .onChange(of: model.sellerSku) { _, value in
+                    if value.count > 64 { model.sellerSku = String(value.prefix(64)) }
+                    model.fieldChanged()
+                }
+                Text("Your own shelf label, if you keep one. It has to be unique to this watch \u{2014} a bulk import matches on the SKU and nothing else. Buyers never see it.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("Unusual brands still go to review.")
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
@@ -548,7 +562,12 @@ struct PriceStep: View {
     /// states where a surcharge isn't permitted.
     private var payoutNotes: [String] {
         guard let preview = model.preview else { return [] }
-        var notes: [String] = []
+        // The shipping figure is priced from a standard box nobody has
+        // measured yet, and it binds nothing: Calibre buys the real label
+        // after the sale and the actual cost is what comes off the payout.
+        var notes: [String] = [
+            "The shipping figure is an estimate, priced from a standard box. It commits you to nothing \u{2014} after the sale you give us the real dimensions, Calibre buys the label, and what it actually costs is what comes off your payout."
+        ]
         if preview.commission.minimumApplied {
             let minimum = PriceFormatter.format(preview.commission.minimum.value, currency: preview.currency)
             notes.append(

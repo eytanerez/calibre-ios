@@ -44,19 +44,56 @@ public final class SupportStore {
         return thread
     }
 
-    /// Posts a message. Guests must supply `guestEmail` on their first message;
-    /// the returned guest token is persisted automatically.
+    /// Stages one file against the caller's existing thread, before the
+    /// message that carries it. An upload cannot start a conversation — the
+    /// server refuses one with "Start the conversation before attaching a
+    /// file", which is why the attach control only turns on once a thread
+    /// exists (admin-contracts §11.8, binding).
+    ///
+    /// Images and PDFs only, at most 10MB each.
     @discardableResult
-    public func send(_ body: String, authenticated: Bool, guestEmail: String? = nil) async throws -> SupportConversation {
+    public func uploadAttachment(
+        filename: String,
+        contentType: String,
+        data: Data,
+        authenticated: Bool
+    ) async throws -> SupportAttachment {
+        var form = MultipartForm()
+        if !authenticated, let token = guestToken {
+            form.addField("token", value: token)
+        }
+        form.addFile("file", filename: filename, contentType: contentType, data: data)
+        return try await client.send(
+            Endpoint(
+                method: .post,
+                path: "/support/attachments",
+                body: .multipart(form),
+                requiresAuth: authenticated
+            )
+        )
+    }
+
+    /// Posts a message. Guests must supply `guestEmail` on their first message;
+    /// the returned guest token is persisted automatically. `attachmentIDs`
+    /// claims files already staged through `uploadAttachment`.
+    @discardableResult
+    public func send(
+        _ body: String,
+        authenticated: Bool,
+        guestEmail: String? = nil,
+        attachmentIDs: [String] = []
+    ) async throws -> SupportConversation {
         struct Payload: Encodable {
             let body: String
             let email: String?
             let token: String?
+            let attachmentIds: [String]?
         }
         let payload = Payload(
             body: body,
             email: authenticated ? nil : guestEmail,
-            token: authenticated ? nil : guestToken
+            token: authenticated ? nil : guestToken,
+            attachmentIds: attachmentIDs.isEmpty ? nil : attachmentIDs
         )
         let result: SupportPostResult = try await client.send(
             try Endpoint.json(

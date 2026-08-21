@@ -51,6 +51,48 @@ public struct SupportMessage: Codable, Sendable, Identifiable {
     public let sender: SupportSender
     public let body: String
     public let createdAt: Date?
+    /// Files carried by this message. Served through signed, time-limited
+    /// URLs, so a link is only good for as long as the thread is open.
+    public let attachments: [SupportAttachment]
+
+    enum CodingKeys: String, CodingKey {
+        case id, sender, body, createdAt, attachments
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        sender = try container.decode(SupportSender.self, forKey: .sender)
+        body = try container.decodeIfPresent(String.self, forKey: .body) ?? ""
+        createdAt = try? container.decodeIfPresent(Date.self, forKey: .createdAt)
+        attachments = (try? container.decodeIfPresent([SupportAttachment].self, forKey: .attachments)) ?? []
+    }
+}
+
+/// One file on a support message. Images and PDFs only, at most 10MB each and
+/// 20MB across a message — the server enforces all three and says so in its
+/// own words when it refuses.
+public struct SupportAttachment: Codable, Sendable, Identifiable {
+    /// Images and PDFs, and nothing else.
+    public static let maxBytesPerFile = 10 * 1024 * 1024
+    public static let maxBytesPerMessage = 20 * 1024 * 1024
+
+    public let id: String
+    public let filename: String?
+    public let contentType: String?
+    public let sizeBytes: Int?
+    /// Signed and time-limited. Absent on the upload response, which answers
+    /// before the file belongs to any message.
+    public let url: MediaURL?
+
+    public var isImage: Bool { (contentType ?? "").hasPrefix("image/") }
+    public var isPDF: Bool { contentType == "application/pdf" }
+
+    /// "1.2 MB" — what a person needs to know about a file they can see.
+    public var sizeText: String? {
+        guard let sizeBytes, sizeBytes > 0 else { return nil }
+        return ByteCountFormatter.string(fromByteCount: Int64(sizeBytes), countStyle: .file)
+    }
 }
 
 /// POST `/support/messages` response — `{"thread": ..., "guest_token": ...}`.

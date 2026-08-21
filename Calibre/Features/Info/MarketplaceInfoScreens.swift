@@ -57,7 +57,7 @@ struct MarketplaceGuideScreen: View {
             guideRow(
                 icon: "shippingbox",
                 title: "It ships insured, on every leg",
-                message: "Every label requires a direct signature and is insured for the full sale price. The seller pays their own inbound label to the authentication centre, and the buyer pays outbound at checkout."
+                message: "Every label requires a direct signature and is insured for the full sale price. Calibre buys the inbound label to the authentication centre once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
             )
         }
         .infoCard()
@@ -277,7 +277,7 @@ struct FeeBreakdownScreen: View {
         feeSection("Paying by card") {
             detailRow(
                 title: "What a card costs",
-                message: "A card costs \(PolicyCopy.cardFee(config)). That is exactly our cost of accepting the card, never more. It appears as its own line on the receipt before you pay, and you can cancel or switch to wire once you have seen it."
+                message: "A card costs \(PolicyCopy.cardFee(config)). That is exactly our cost of accepting the card, never more. It appears as its own line on the receipt before you pay, and you can switch to wire once you have seen it."
             )
             divider
             detailRow(

@@ -14,7 +14,7 @@ struct SaleDetailScreen: View {
     @Environment(\.dismiss) private var dismiss
 
     private enum FlowStep: Hashable {
-        case purchaseLabel
+        case shippingDetails
         case labelReady
     }
 
@@ -69,9 +69,9 @@ struct SaleDetailScreen: View {
             }
             .navigationDestination(for: FlowStep.self) { step in
                 switch step {
-                case .purchaseLabel:
+                case .shippingDetails:
                     if let order {
-                        LabelPurchaseFlow(order: order) { updated in
+                        ShippingDetailsFlow(order: order) { updated in
                             self.order = updated
                             path = [.labelReady]
                         }
@@ -151,14 +151,15 @@ struct SaleDetailScreen: View {
 
                 if awaitingLabel {
                     VStack(spacing: Space.s) {
-                        Button("Get shipping label") {
-                            path.append(.purchaseLabel)
+                        Button("Add your shipping details") {
+                            path.append(.shippingDetails)
                         }
                         .buttonStyle(.calibre(.primary, fullWidth: true))
-                        Text("A prepaid, insured label to our authentication center. The cost is yours; the quote comes up next.")
+                        Text("Tell us the box you are sending and Calibre buys the label \u{2014} prepaid, insured for the full sale price, to our authentication centre. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
                             .font(CalibreType.caption)
                             .foregroundStyle(Color.calibre.mutedForeground)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 } else if order.toAuthShipment != nil {
                     Button("View shipping label") {
@@ -185,6 +186,12 @@ struct SaleDetailScreen: View {
                         .font(CalibreType.bodyMedium)
                         .foregroundStyle(Color.calibre.foreground)
                         .lineLimit(2)
+                    // The number a person says out loud, and the one support
+                    // will ask for.
+                    Text(order.displayNumber)
+                        .font(CalibreType.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(Color.calibre.mutedForeground)
                     StatusBadge(badge.text, tone: badge.tone)
                     if let buyer = order.shippingAddress?.fullName, !buyer.isEmpty {
                         Text("Sold to \(buyer)")
@@ -198,35 +205,55 @@ struct SaleDetailScreen: View {
         }
     }
 
+    /// The payout ledger, from the order's own `payout.breakdown`: sale
+    /// price, commission (with its rate and whether the minimum applied), the
+    /// label Calibre bought, and the payout. Not one figure is arithmetic done
+    /// here, and no money figure is ever shortened to fit.
+    ///
+    /// When the payload predates the breakdown the legacy rows stand in, and
+    /// a figure the server did not state is simply not a row.
     private func financials(_ order: Order) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Your payout")
                 .font(CalibreType.sectionTitle)
                 .foregroundStyle(Color.calibre.foreground)
-            SpecList(financialRows(order))
+
+            if let breakdown = order.payoutBlock?.breakdown {
+                PayoutLedger(breakdown: breakdown, currency: order.currency)
+            } else {
+                SpecList(legacyFinancialRows(order))
+            }
+
+            SpecList(payoutStatusRows(order))
         }
     }
 
-    /// Every figure here is the server's. The commission is quoted at the rate
-    /// the server recorded on the order, and "You receive" is the server's own
-    /// payout amount — never a subtotal minus a fee, and never a "you keep"
-    /// percentage inferred from the rate.
-    private func financialRows(_ order: Order) -> [(String, String)] {
+    /// Only for payloads recorded before `payout.breakdown` existed.
+    private func legacyFinancialRows(_ order: Order) -> [(String, String)] {
         var rows: [(String, String)] = [
-            ("Sale price", PriceFormatter.format(order.subtotal.value)),
+            ("Sale price", PriceFormatter.format(order.subtotal.value, currency: order.currency)),
         ]
         if let fee = order.sellerFeeAmount?.value {
             let percent = order.sellerFeePercentApplied?.value
             let label = percent.map { "Commission (\(compactPercent($0))%)" } ?? "Commission"
-            rows.append((label, "− \(PriceFormatter.format(fee))"))
+            rows.append((label, "− \(PriceFormatter.format(fee, currency: order.currency))"))
         }
-        // Absent when the server hasn't stated it — the row drops out rather
-        // than being computed on the device.
+        if let labelCost = order.sellerLabelPriceTotal?.value, labelCost > 0 {
+            rows.append((
+                "Shipping label to authentication",
+                "− \(PriceFormatter.format(labelCost, currency: order.currency))"
+            ))
+        }
         if let receive = order.payoutBlock?.amount?.value {
-            rows.append(("You receive", PriceFormatter.format(receive)))
+            rows.append(("Your payout", PriceFormatter.format(receive, currency: order.currency)))
         }
-        rows.append(("Payout status", payoutStatusText(order)))
-        if let released = order.payoutReleasedAt {
+        return rows
+    }
+
+    /// The backend's own status line, and the date it released on.
+    private func payoutStatusRows(_ order: Order) -> [(String, String)] {
+        var rows: [(String, String)] = [("Payout status", payoutStatusText(order))]
+        if let released = order.payoutBlock?.releasedAt ?? order.payoutReleasedAt {
             rows.append(("Released", released.formatted(date: .abbreviated, time: .omitted)))
         }
         return rows

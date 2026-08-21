@@ -20,6 +20,7 @@ struct SellerDashboardScreen: View {
         case draft = "Draft"
         case pending = "Pending"
         case sold = "Sold"
+        case paused = "Paused"
         case archived = "Archived"
     }
 
@@ -35,6 +36,10 @@ struct SellerDashboardScreen: View {
     @State private var wizardContext: WizardContext?
     @State private var saleDetailOrderID: String?
     @State private var showBulkImports = false
+    /// The import whose drafts the seller is finishing right now.
+    @State private var continueImportJob: ImportJobRef?
+    /// Imports that still have drafts waiting, newest first.
+    @State private var unfinishedImports: [UnfinishedImport] = []
     @State private var showOpenRequests = false
     @State private var confirmSubmit: Listing?
     @State private var confirmDelete: Listing?
@@ -116,6 +121,9 @@ struct SellerDashboardScreen: View {
                             }
                     }
                 }
+                if !unfinishedImports.isEmpty {
+                    continueBulkImport.sellRow()
+                }
                 if !requests.isEmpty {
                     buyerRequests.sellRow()
                 }
@@ -163,6 +171,13 @@ struct SellerDashboardScreen: View {
         }
         .sheet(isPresented: $showBulkImports) {
             BulkImportStatusScreen()
+        }
+        // Straight into the work, without a stop at the job list: this is the
+        // entry point for the phone, and the phone is where the camera is.
+        .sheet(item: $continueImportJob) { job in
+            NavigationStack {
+                DraftFinishingQueueScreen(jobID: job.id)
+            }
         }
         // Applying is a real path from this card: two fields here, then the
         // embedded verification step that collects the EIN.
@@ -262,7 +277,8 @@ struct SellerDashboardScreen: View {
         async let requestsTask: Void = loadRequests(generation: generation)
         async let salesTask: Void = loadSales()
         async let cardTask: Void = loadSellerCard(generation: generation)
-        _ = await (dashboardTask, listingsTask, requestsTask, salesTask, cardTask)
+        async let importsTask: Void = loadUnfinishedImports(generation: generation)
+        _ = await (dashboardTask, listingsTask, requestsTask, salesTask, cardTask, importsTask)
         guard generation == loadGeneration else { return }
         loading = false
         // Only the first load to actually surface content flips this — once
@@ -298,6 +314,33 @@ struct SellerDashboardScreen: View {
     private func loadSales() async {
         _ = try? await sell.ops.loadSales(pageSize: 30)
     }
+
+    /// The imports that left drafts behind.
+    ///
+    /// Both figures are the server's, counted across the job's rows in one
+    /// query: "finished" means the row's listing has left `draft`. A job whose
+    /// payload does not state them drops out of the section rather than
+    /// appearing with a ratio worked out here — `created + updated` counts
+    /// rows an import wrote, not listings a seller finished, and it says
+    /// nothing at all about the ones it skipped.
+    ///
+    /// One request for the whole section. The completion queue is still
+    /// fetched, but by the finishing flow, for the drafts themselves.
+    ///
+    /// Bulk import is dealer-only, so a non-dealer's 403 simply leaves the
+    /// section absent.
+    private func loadUnfinishedImports(generation: Int) async {
+        guard let jobs = try? await services.seller.importJobs() else { return }
+        let found = jobs
+            .filter { $0.status == .completed || $0.status == .completedWithErrors }
+            .compactMap(UnfinishedImport.init)
+            .prefix(Self.importLookback)
+        guard generation == loadGeneration else { return }
+        unfinishedImports = Array(found)
+    }
+
+    /// How many recent imports are worth asking about.
+    private static let importLookback = 3
 
     /// The card a counterfeit or misrepresentation charge would land on. The
     /// banner only appears when the server says the card needs attention, so
@@ -677,6 +720,80 @@ struct SellerDashboardScreen: View {
         }
     }
 
+    // MARK: - Continue bulk import
+
+    /// An import creates drafts and nothing else, so the drafts it left are
+    /// work waiting for a person. This is where that work starts on a phone —
+    /// which is where most of it happens, because the photographs need a
+    /// camera.
+    private var continueBulkImport: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            SellSectionHeader("Finish what you imported")
+
+            Text("Each draft goes to review as you finish it. Photos are quickest here \u{2014} the camera is already in your hand.")
+                .font(CalibreType.label)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: Space.m) {
+                ForEach(unfinishedImports) { entry in
+                    Button {
+                        Haptics.shared.play(.press)
+                        continueImportJob = ImportJobRef(id: entry.job.id)
+                    } label: {
+                        importRow(entry)
+                    }
+                    .buttonStyle(PressableStyle())
+                }
+            }
+        }
+    }
+
+    private func importRow(_ entry: UnfinishedImport) -> some View {
+        SellCard {
+            HStack(alignment: .top, spacing: Space.m) {
+                IconTile(systemName: "camera")
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Continue bulk import \u{2014} \(entry.finished) of \(entry.total) finished")
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.foreground)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(entry.remainderLine)
+                        .font(CalibreType.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                    if let filename = entry.job.originalFilename, !filename.isEmpty {
+                        Text(filename)
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .lineLimit(1)
+                    }
+                    importProgressBar(entry)
+                        .padding(.top, Space.xs)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.calibre.primary)
+            }
+            .padding(Space.l)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func importProgressBar(_ entry: UnfinishedImport) -> some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.calibre.border)
+                Capsule()
+                    .fill(Color.calibre.primary)
+                    .frame(width: proxy.size.width * entry.fraction)
+            }
+        }
+        .frame(height: 4)
+    }
+
     // MARK: - Buyer requests
 
     /// A single summary row rather than the requests themselves — the shop's
@@ -721,6 +838,9 @@ struct SellerDashboardScreen: View {
         case .draft: listings.filter { $0.status == .draft }
         case .pending: listings.filter { $0.status == .pendingReview }
         case .sold: listings.filter { $0.status == .sold }
+        case .paused: listings.filter { $0.status == .pausedCard }
+        // Never includes the paused ones: Calibre took those down, and the
+        // seller has to be able to tell the two apart.
         case .archived: listings.filter { $0.status == .archived || $0.status == .rejected }
         }
     }
@@ -745,7 +865,7 @@ struct SellerDashboardScreen: View {
                     selection: $inventoryTab,
                     items: InventoryTab.allCases.map { ($0, $0.rawValue) }
                 )
-                .frame(width: 660)
+                .frame(width: 760)
                 .padding(.trailing, Space.xl)
             }
             .overlay(alignment: .trailing) {
@@ -833,6 +953,7 @@ struct SellerDashboardScreen: View {
         case .draft: "No drafts — everything you started is out the door."
         case .pending: "Nothing waiting on review."
         case .sold: "No sales yet — they'll appear here."
+        case .paused: "Nothing paused."
         case .archived: "Nothing archived."
         case .all: "No listings here yet."
         }
@@ -886,8 +1007,12 @@ struct SellerDashboardScreen: View {
         .buttonStyle(PressableStyle())
     }
 
-    /// The moderator's words, shown on rejected rows.
+    /// The moderator's words, shown on rejected rows — and, on a paused one,
+    /// the reason Calibre took it down and what brings it back.
     private func rejectionReason(_ listing: Listing) -> String? {
+        if listing.status == .pausedCard {
+            return "We took this off the market because your card on file lapsed. Add a valid credit card and it goes back up automatically — no re-review, nothing to resubmit."
+        }
         guard listing.status == .rejected else { return nil }
         let note = listing.reviewEvents?
             .first { $0.toStatus == "rejected" && !($0.notes ?? "").isEmpty }?
@@ -908,6 +1033,15 @@ struct SellerDashboardScreen: View {
             actions.append(
                 RowAction("Submit", systemImage: "paperplane", tint: Color.calibre.success) {
                     confirmSubmit = listing
+                }
+            )
+        }
+        // Nothing about the listing changed, so there is nothing to resubmit:
+        // the card is the whole of what is wrong with it.
+        if listing.status == .pausedCard {
+            actions.append(
+                RowAction("Card on file", systemImage: "creditcard", tint: Color.calibre.primary) {
+                    showSellerCard = true
                 }
             )
         }
@@ -1019,10 +1153,20 @@ struct SellerDashboardScreen: View {
                 }
                 Spacer(minLength: Space.s)
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(PriceFormatter.format(order.subtotal.value))
+                    Text(PriceFormatter.format(order.subtotal.value, currency: order.currency))
                         .font(CalibreType.priceSmall)
                         .foregroundStyle(Color.calibre.foreground)
-                    Text(needsLabel ? "Get label" : "View sale")
+                    // The compact payout line: what this sale pays and where
+                    // that payout stands. The full ledger is one tap away on
+                    // the sale itself.
+                    if let payout = payoutLine(order) {
+                        Text(payout)
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .multilineTextAlignment(.trailing)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text(needsLabel ? "Add shipping details" : "View sale")
                         .font(CalibreType.label)
                         .foregroundStyle(Color.calibre.primary)
                 }
@@ -1032,6 +1176,17 @@ struct SellerDashboardScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
+    }
+
+    /// "You receive $9,400 \u{00B7} Scheduled" \u{2014} both halves the server's, and
+    /// the line is simply absent when it has not stated the amount.
+    private func payoutLine(_ order: Order) -> String? {
+        guard let amount = order.payoutBlock?.amount?.value else { return nil }
+        let money = PriceFormatter.format(amount, currency: order.currency)
+        guard let status = order.payoutBlock?.statusLabel, !status.isEmpty else {
+            return "You receive \(money)"
+        }
+        return "You receive \(money) \u{00B7} \(status)"
     }
 
     // MARK: - Offers
@@ -1134,5 +1289,42 @@ private extension View {
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: top, leading: Space.margin, bottom: bottom, trailing: Space.margin))
+    }
+}
+
+
+/// One import that still has drafts waiting, and how far through it the
+/// seller is.
+///
+/// Both figures are served, and the initializer fails when either is missing
+/// or there is nothing left to finish — so this type cannot exist holding a
+/// number nobody counted.
+struct UnfinishedImport: Identifiable {
+    let job: ListingImportJob
+    let remaining: Int
+    let total: Int
+    let finished: Int
+
+    init?(job: ListingImportJob) {
+        guard let total = job.draftsTotal,
+              let remaining = job.draftsRemaining,
+              let finished = job.draftsFinished,
+              total > 0,
+              remaining > 0 else { return nil }
+        self.job = job
+        self.total = total
+        self.remaining = remaining
+        self.finished = finished
+    }
+
+    var id: String { job.id }
+
+    var fraction: CGFloat {
+        guard total > 0 else { return 0 }
+        return min(1, max(0, CGFloat(finished) / CGFloat(total)))
+    }
+
+    var remainderLine: String {
+        remaining == 1 ? "1 still a draft" : "\(remaining) still drafts"
     }
 }

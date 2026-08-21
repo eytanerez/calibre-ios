@@ -145,7 +145,9 @@ struct CheckoutSuccessMoment: View {
         if isMultiItem {
             return "\(count) orders · one payment"
         }
-        return "Order \(shortNumber(first.id))"
+        // The order number, as a person says it out loud. The uuid is only a
+        // fallback for a payload that predates numbering.
+        return "Order \(first.displayNumber)"
     }
 
     private var imageURLs: [URL?] {
@@ -161,7 +163,4 @@ struct CheckoutSuccessMoment: View {
         return listings + Array(repeating: nil, count: orders.count - listings.count)
     }
 
-    private func shortNumber(_ id: String) -> String {
-        String(id.replacingOccurrences(of: "-", with: "").prefix(8)).uppercased()
-    }
 }

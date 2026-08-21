@@ -108,6 +108,8 @@ struct OrderDetailScreen: View {
 
                 returnTermsSection(order)
 
+                cancellationNote(order)
+
                 if order.status == .delivered {
                     reviewSection(order)
                 }
@@ -121,7 +123,16 @@ struct OrderDetailScreen: View {
 
     private func hero(_ order: Order) -> some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            StatusBadge(order.statusLabel, tone: order.statusTone)
+            HStack(spacing: Space.s) {
+                StatusBadge(order.statusLabel, tone: order.statusTone)
+                // The order's identity, in the form a person reads it out:
+                // this is the number support will ask for.
+                Text(order.displayNumber)
+                    .font(CalibreType.label)
+                    .monospacedDigit()
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                Spacer(minLength: 0)
+            }
             Text(heroHeadline(order))
                 .font(CalibreType.title)
                 .foregroundStyle(Color.calibre.foreground)
@@ -130,6 +141,8 @@ struct OrderDetailScreen: View {
                 .foregroundStyle(Color.calibre.mutedForeground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Order \(order.displayNumber), \(order.statusLabel). \(order.statusSummary)")
     }
 
     private func heroHeadline(_ order: Order) -> String {
@@ -159,9 +172,25 @@ struct OrderDetailScreen: View {
             Text("Send your wire to secure this watch. We'll email you the moment it clears.")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.accentForeground)
+
+            // The authorization the buyer can see on their statement, said
+            // where they will look for it. There is no control here to take
+            // it off: it comes off when the transfer arrives.
+            if let hold = order.wireHold, hold.isLive {
+                Text(wireHoldLine(hold))
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.accentForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(Space.l)
         .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+    }
+
+    /// The amount is the payload's own — never a remembered $250.
+    private func wireHoldLine(_ hold: OrderWireHold) -> String {
+        let amount = hold.amount.map { PriceFormatter.format($0.value) } ?? "The"
+        return "\(amount) authorization placed \u{2014} released when your transfer arrives. If the transfer isn\u{2019}t sent by the deadline it is charged and goes to the seller."
     }
 
     // MARK: - Cards
@@ -355,6 +384,31 @@ struct OrderDetailScreen: View {
             rows.append(("Return window closes", day(date)))
         }
         return rows
+    }
+
+    // MARK: - Cancellation
+
+    /// Said plainly, because the buyer will look for a button and there isn't
+    /// one. An order cannot be cancelled from here at all — a person can still
+    /// help before the watch is on its way, and this says where to find them.
+    @ViewBuilder
+    private func cancellationNote(_ order: Order) -> some View {
+        if !order.status.isFinished {
+            VStack(alignment: .leading, spacing: Space.s) {
+                Text("Cancelling")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+                Text("Orders can\u{2019}t be cancelled once the seller ships. If something has changed, message your Calibre contact \u{2014} the sooner the better.")
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Message Calibre") {
+                    Haptics.shared.play(.press)
+                    services.router.push(.supportChat)
+                }
+                .buttonStyle(.calibre(.secondary, fullWidth: true))
+            }
+        }
     }
 
     // MARK: - Returns

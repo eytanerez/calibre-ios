@@ -1,5 +1,6 @@
 import CalibreDesign
 import CalibreKit
+import StripePaymentSheet
 import Foundation
 import Observation
 import SwiftUI
@@ -131,6 +132,154 @@ func offerIsOpen(_ offer: Offer) -> Bool {
         true
     default:
         false
+    }
+}
+
+// MARK: - The deposit, and renewing it
+
+/// How close to expiring a live offer's authorization has to be before the
+/// buyer is asked to replace it. Card authorizations do not last forever and
+/// a negotiation can easily outlive one; an offer must never sit accepted
+/// with no live deposit behind it.
+let offerHoldRenewalWindowHours = 48
+
+/// The three states where the deposit is the thing holding everything
+/// together: a negotiation still moving, and an acceptance still waiting to be
+/// paid. Mirrors `offers.LIVE_HOLD_OFFER_STATUSES`.
+let offerLiveHoldStatuses: Set<OfferStatus> = [.pendingSeller, .countered, .acceptedPendingPayment]
+
+/// Whether this offer's deposit runs out soon enough to ask for a new one.
+///
+/// The date is `hold.captureBefore` — the last moment the authorization can
+/// be captured, which is what actually expires. An offer that is no longer
+/// live, a hold already released or captured, and a payload with no date at
+/// all all answer false: none of them has anything left to renew.
+func offerHoldNeedsRenewal(
+    _ offer: Offer?,
+    withinHours: Int = offerHoldRenewalWindowHours,
+    now: Date = .now
+) -> Bool {
+    guard let offer, let hold = offer.hold, let captureBefore = hold.captureBefore else { return false }
+    guard offerLiveHoldStatuses.contains(offer.status) else { return false }
+    guard hold.releasedAt == nil, hold.capturedAt == nil else { return false }
+    return captureBefore <= now.addingTimeInterval(TimeInterval(max(1, withinHours)) * 3600)
+}
+
+/// A 409 refusing an offer action because the deposit behind it has aged out.
+/// Not a refusal of the price — a refusal to let an offer sit accepted with
+/// nothing behind it. The same renewal the banner offers is what clears it.
+func offerHoldRenewalRequired(_ error: Error) -> Bool {
+    (error as? APIError)?.serverCode == "offer_hold_renewal_required"
+}
+
+/// Runs one deposit renewal: cancel-and-replace the authorization, then
+/// confirm the new intent with the card sheet the offer flow already uses.
+///
+/// Owned by the screen rather than the store because the sheet has to outlive
+/// the call — Stripe holds it weakly.
+@MainActor
+@Observable
+final class OfferHoldRenewer {
+    @ObservationIgnored private let commerce: CommerceStore
+
+    private(set) var renewing = false
+    var error: String?
+    @ObservationIgnored private var paymentSheet: PaymentSheet?
+
+    init(commerce: CommerceStore) {
+        self.commerce = commerce
+    }
+
+    /// Replaces the deposit. Answers the refreshed offer on success so the
+    /// caller can redraw from the server's own account of it.
+    func renew(offerID: String) async -> Offer? {
+        guard !renewing else { return nil }
+        renewing = true
+        error = nil
+        defer { renewing = false }
+
+        let renewed: Offer
+        do {
+            renewed = try await commerce.renewOfferHold(offerID: offerID)
+        } catch {
+            self.error = (error as? APIError)?.errorDescription
+                ?? "We couldn\u{2019}t renew the hold just now. Please try again shortly."
+            return nil
+        }
+
+        // No secret means Stripe took the new authorization without asking
+        // the buyer anything — there is nothing left to confirm.
+        guard let clientSecret = renewed.hold?.clientSecret else {
+            Haptics.shared.play(.success)
+            return renewed
+        }
+        if let key = renewed.publishableKey {
+            STPAPIClient.shared.publishableKey = key
+        }
+        let sheet = PaymentSheet(
+            paymentIntentClientSecret: clientSecret,
+            configuration: CalibreStripe.configuration(
+                customerID: nil,
+                customerSessionClientSecret: nil
+            )
+        )
+        paymentSheet = sheet
+
+        let outcome: PaymentSheetResult = await withCheckedContinuation { continuation in
+            CalibreStripe.present(sheet) { result in
+                continuation.resume(returning: result)
+            }
+        }
+        switch outcome {
+        case .completed:
+            Haptics.shared.play(.success)
+            return (try? await commerce.confirmHold(offerID: offerID)) ?? renewed
+        case .canceled:
+            error = "The new authorization wasn\u{2019}t completed, so this offer still needs one."
+            return nil
+        case .failed(let failure):
+            error = CalibreStripe.failureMessage(for: failure)
+            return nil
+        }
+    }
+}
+
+// MARK: - What a seller would take home
+
+/// What a seller would take home on an offer, worked out from published
+/// figures: the amount, less the commission at their own effective rate
+/// (floored at the marketplace minimum), less the estimated label to
+/// authentication.
+///
+/// Nothing here invents a rate — an unknown rate produces no answer at all,
+/// because a made-up number next to "you'd take home" is worse than no
+/// number. It is an estimate and must be labelled as one wherever it is
+/// shown: the shipping figure is priced from a standard box nobody has
+/// measured, and the real label is bought after the sale.
+struct SellerNetProceeds {
+    let offerAmount: Decimal
+    /// The greater of the percentage and the marketplace minimum.
+    let commission: Decimal
+    /// True when the marketplace minimum charged instead of the percentage.
+    let minimumApplied: Bool
+    let shipping: Decimal
+    /// Amount less commission less shipping. Never below zero.
+    let takeHome: Decimal
+
+    init?(offerAmount: Decimal, feePercent: Decimal?, feeMinimum: Decimal?, shippingEstimate: Decimal?) {
+        guard offerAmount > 0, let feePercent else { return nil }
+        let percentageFee = offerAmount * feePercent / 100
+        let minimum = feeMinimum ?? 0
+        let commission = max(percentageFee, minimum)
+        let shipping = shippingEstimate ?? 0
+        self.offerAmount = offerAmount
+        self.commission = commission
+        // A floor that beat the percentage is the only honest explanation for
+        // a commission line that does not divide, so it is reported rather
+        // than left for the seller to wonder about.
+        self.minimumApplied = minimum > percentageFee
+        self.shipping = shipping
+        self.takeHome = max(0, offerAmount - commission - shipping)
     }
 }
 

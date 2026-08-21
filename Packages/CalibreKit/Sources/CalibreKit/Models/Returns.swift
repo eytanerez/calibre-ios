@@ -51,6 +51,57 @@ public struct ReturnWindow: Codable, Sendable {
     }
 }
 
+
+/// Why the buyer is sending the watch back. Exactly these seven, exactly
+/// these words: the first three say something about the seller, the two
+/// change-of-heart reasons say nothing about anybody, and `arrivedDamaged`
+/// says something about the journey. Collapsing them is what made returns
+/// unreadable before.
+public enum OrderReturnReason: String, Codable, Sendable, CaseIterable, Identifiable {
+    case conditionNotAsDescribed = "condition_not_as_described"
+    case wrongReference = "wrong_reference"
+    case missingBoxPapers = "missing_box_papers"
+    case doesNotFit = "does_not_fit"
+    case changedMind = "changed_mind"
+    case arrivedDamaged = "arrived_damaged"
+    case other
+
+    public var id: String { rawValue }
+
+    /// The buyer's own words for it. Pinned verbatim across web, iOS and
+    /// Android (admin-contracts §11.9): the first two share a "Not as
+    /// described" stem because they are one family of complaint about the
+    /// seller, and a buyer picking between them should see that.
+    public var label: String {
+        switch self {
+        case .conditionNotAsDescribed: "Not as described \u{2014} condition worse than listed"
+        case .wrongReference: "Not as described \u{2014} wrong reference, model, or year"
+        case .missingBoxPapers: "Missing box, papers, or accessories"
+        case .doesNotFit: "Doesn\u{2019}t fit / doesn\u{2019}t suit me"
+        case .changedMind: "Changed my mind"
+        case .arrivedDamaged: "Arrived damaged"
+        case .other: "Other"
+        }
+    }
+
+    /// The one reason a note is not optional: "other" without one says
+    /// nothing at all, and the server refuses it.
+    public var requiresNote: Bool { self == .other }
+}
+
+/// One return photograph, staged against the order or claimed by a return.
+public struct OrderReturnImage: Codable, Sendable, Identifiable {
+    public let id: String
+    /// One of the six listing photo categories.
+    public let category: String?
+    public let url: MediaURL?
+
+    /// The slot this photo fills, when the category is one we know.
+    public var slot: ListingImageCategory? {
+        category.flatMap(ListingImageCategory.init(rawValue:))
+    }
+}
+
 /// `GET /orders/{id}/return-quote` — the exact refund, itemized, before the
 /// buyer commits to anything. Never computed client-side.
 public struct ReturnQuote: Decodable, Sendable {
@@ -73,6 +124,9 @@ public struct ReturnQuote: Decodable, Sendable {
     public let window: ReturnWindow?
     /// Set when a return is already open on this order.
     public let existingReturn: OrderReturn?
+    /// What the buyer has photographed so far — one unclaimed row per angle,
+    /// so the six slots come back filled in after a relaunch.
+    public let stagedImages: [OrderReturnImage]
 
     public struct Fee: Decodable, Sendable {
         public let percent: APIDecimal
@@ -84,7 +138,7 @@ public struct ReturnQuote: Decodable, Sendable {
         case watchPrice, taxRefund, returnFee, outboundLabelDeduction
         case returnLabelDeduction
         case processingWithholding, processingWithholdingBasis
-        case refundTotal, currency, window, existingReturn
+        case refundTotal, currency, window, existingReturn, stagedImages
     }
 
     public init(from decoder: Decoder) throws {
@@ -100,6 +154,7 @@ public struct ReturnQuote: Decodable, Sendable {
         currency = try container.decodeIfPresent(String.self, forKey: .currency) ?? "USD"
         window = try? container.decodeIfPresent(ReturnWindow.self, forKey: .window)
         existingReturn = try? container.decodeIfPresent(OrderReturn.self, forKey: .existingReturn)
+        stagedImages = (try? container.decodeIfPresent([OrderReturnImage].self, forKey: .stagedImages)) ?? []
     }
 }
 
@@ -112,6 +167,12 @@ public struct OrderReturn: Decodable, Sendable {
     public let orderId: String?
     /// e.g. requested / in_transit / received / refunded / cancelled.
     public let status: String?
+    /// Why the buyer opened it. Required from the buyer, so it is only ever
+    /// nil on a payload written before reasons existed.
+    public let reason: OrderReturnReason?
+    public let reasonNote: String?
+    /// The six angles the return was opened with.
+    public let images: [OrderReturnImage]
     public let requestedAt: Date?
     public let shippedDeclaredAt: Date?
     public let receivedAt: Date?
@@ -129,7 +190,8 @@ public struct OrderReturn: Decodable, Sendable {
     public let relistDecision: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, orderId, status, requestedAt, shippedDeclaredAt, receivedAt
+        case id, orderId, status, reason, reasonNote, images
+        case requestedAt, shippedDeclaredAt, receivedAt
         case refundedAt, cancelledAt, shipDeadlineAt, refundTotal
         case returnLabelDeduction, currency
         case label, window, relistDecision
@@ -140,6 +202,9 @@ public struct OrderReturn: Decodable, Sendable {
         id = try? container.decodeIfPresent(String.self, forKey: .id)
         orderId = try? container.decodeIfPresent(String.self, forKey: .orderId)
         status = try? container.decodeIfPresent(String.self, forKey: .status)
+        reason = try? container.decodeIfPresent(OrderReturnReason.self, forKey: .reason)
+        reasonNote = try? container.decodeIfPresent(String.self, forKey: .reasonNote)
+        images = (try? container.decodeIfPresent([OrderReturnImage].self, forKey: .images)) ?? []
         requestedAt = try? container.decodeIfPresent(Date.self, forKey: .requestedAt)
         shippedDeclaredAt = try? container.decodeIfPresent(Date.self, forKey: .shippedDeclaredAt)
         receivedAt = try? container.decodeIfPresent(Date.self, forKey: .receivedAt)
@@ -233,10 +298,13 @@ public struct OrderPayout: Codable, Sendable {
     public let statusLabel: String?
     /// Set when a payout failed — the actual reason, to show as-is.
     public let failureReason: String?
+    /// The four lines the transfer is built from — sale price, commission,
+    /// the label Calibre bought, payout. No client assembles these itself.
+    public let breakdown: PayoutBreakdown?
 
     enum CodingKeys: String, CodingKey {
         case trigger, amount, releasedAt, expectedArrivalAt, firstPayoutHold
-        case statusLabel, failureReason
+        case statusLabel, failureReason, breakdown
     }
 
     public init(from decoder: Decoder) throws {
@@ -248,6 +316,51 @@ public struct OrderPayout: Codable, Sendable {
         firstPayoutHold = try? container.decodeIfPresent(Bool.self, forKey: .firstPayoutHold)
         statusLabel = try? container.decodeIfPresent(String.self, forKey: .statusLabel)
         failureReason = try? container.decodeIfPresent(String.self, forKey: .failureReason)
+        breakdown = try? container.decodeIfPresent(PayoutBreakdown.self, forKey: .breakdown)
+    }
+}
+
+/// The payout ledger, exactly as `services.payouts.payout_breakdown` states
+/// it: sale price, then the commission (with its rate, and whether the
+/// marketplace minimum applied instead), then what the label cost, then what
+/// is left. Every figure is the server's — nothing here is subtracted on the
+/// device, and a figure the payload omits is simply not a row.
+public struct PayoutBreakdown: Codable, Sendable {
+    public let salePrice: APIDecimal?
+    public let commission: Commission?
+    /// The actual cost of the to-auth label Calibre bought.
+    public let shippingLabel: APIDecimal?
+    /// What the seller receives.
+    public let amount: APIDecimal?
+
+    public struct Commission: Codable, Sendable {
+        public let percent: APIDecimal?
+        public let amount: APIDecimal?
+        /// True when the marketplace minimum charged instead of the rate.
+        public let minimumApplied: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case percent, amount, minimumApplied
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            percent = try? container.decodeIfPresent(APIDecimal.self, forKey: .percent)
+            amount = try? container.decodeIfPresent(APIDecimal.self, forKey: .amount)
+            minimumApplied = try? container.decodeIfPresent(Bool.self, forKey: .minimumApplied)
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case salePrice, commission, shippingLabel, amount
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        salePrice = try? container.decodeIfPresent(APIDecimal.self, forKey: .salePrice)
+        commission = try? container.decodeIfPresent(Commission.self, forKey: .commission)
+        shippingLabel = try? container.decodeIfPresent(APIDecimal.self, forKey: .shippingLabel)
+        amount = try? container.decodeIfPresent(APIDecimal.self, forKey: .amount)
     }
 }
 
@@ -256,6 +369,9 @@ public struct OrderPayout: Codable, Sendable {
 public struct OrderReturnSummary: Codable, Sendable {
     /// e.g. requested / in_transit / received / refunded / cancelled.
     public let state: String?
+    /// Why the buyer opened it, in the marketplace's own vocabulary.
+    public let reason: OrderReturnReason?
+    public let reasonNote: String?
     public let initiatedAt: Date?
     public let shipDeadlineAt: Date?
     /// Set once the carrier scans the parcel, which ends the grace period.
@@ -274,13 +390,15 @@ public struct OrderReturnSummary: Codable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case state, initiatedAt, shipDeadlineAt, carrierFirstScanAt
+        case state, reason, reasonNote, initiatedAt, shipDeadlineAt, carrierFirstScanAt
         case refundTotal, returnLabelDeduction, relistDecision, label
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         state = try? container.decodeIfPresent(String.self, forKey: .state)
+        reason = try? container.decodeIfPresent(OrderReturnReason.self, forKey: .reason)
+        reasonNote = try? container.decodeIfPresent(String.self, forKey: .reasonNote)
         initiatedAt = try? container.decodeIfPresent(Date.self, forKey: .initiatedAt)
         shipDeadlineAt = try? container.decodeIfPresent(Date.self, forKey: .shipDeadlineAt)
         carrierFirstScanAt = try? container.decodeIfPresent(Date.self, forKey: .carrierFirstScanAt)

@@ -37,6 +37,10 @@ public enum CheckoutPaymentMethod: String, Codable, Sendable {
 /// shipping-address snapshot.
 public struct Order: Codable, Sendable, Identifiable {
     public let id: String
+    /// The number a person says out loud, rendered `#1041`. The uuid above
+    /// stays the API identifier; this is display and support vocabulary, and
+    /// is nil only on payloads recorded before order numbers existed.
+    public let orderNumber: Int?
     public let buyerId: String
     public let listingId: String
     public let listing: ListingSummary?
@@ -61,6 +65,11 @@ public struct Order: Codable, Sendable, Identifiable {
     public let checkoutPaymentMethod: CheckoutPaymentMethod?
     /// Wire orders: pay-by deadline for the 24 h reservation.
     public let paymentDueAt: Date?
+    /// The $250 standing behind a wire, so the buyer can be told about the
+    /// authorization they can see on their statement. Null on every card
+    /// order, and on a wire paying off an offer whose deposit already covers
+    /// it.
+    public let wireHold: OrderWireHold?
     /// pending / pending_connect / released / reversed / refunded / …
     public let payoutStatus: String?
     public let payoutReleasedAt: Date?
@@ -92,7 +101,16 @@ public struct Order: Codable, Sendable, Identifiable {
     public let fulfillmentDeadlineAt: Date?
     public let sellerLabelPaidAt: Date?
     public let sellerLabelCreatedAt: Date?
+    /// What Calibre actually paid the carrier for the to-auth label. Deducted
+    /// from the payout; `seller_label_paid_at` now means "Calibre paid".
     public let sellerLabelPriceTotal: APIDecimal?
+    /// The box the seller measured, in the `box_*_in` names the order has
+    /// always stored. Empty until the shipping form is submitted.
+    public let sellerLabelPackage: SellerLabelPackage?
+    /// Carrier ceilings the shipping form validates against before asking the
+    /// server. Nil on payloads that predate the key — the form falls back to
+    /// the same defaults the backend uses.
+    public let shippingPackageLimits: ShippingPackageLimits?
 
     // Shipments & authentication.
     public let toAuthShipment: Shipment?
@@ -116,6 +134,13 @@ public struct Order: Codable, Sendable, Identifiable {
     /// only when there are two or more — a purchase of one watch has nothing
     /// for a "part of a purchase" affordance to point at.
     public let group: OrderGroup?
+
+    /// `#1041` — the order's identity everywhere a person reads it, falling
+    /// back to a short form of the uuid only when the server sent no number.
+    public var displayNumber: String {
+        if let orderNumber { return "#\(orderNumber)" }
+        return "#" + String(id.replacingOccurrences(of: "-", with: "").prefix(8)).uppercased()
+    }
 
     /// How many watches were bought in this purchase, this one included.
     /// Always at least 1, so a caller never has to special-case an ungrouped
@@ -254,4 +279,41 @@ public struct SellerReview: Codable, Sendable, Identifiable {
     public let comment: String?
     public let createdAt: Date?
     public let updatedAt: Date?
+}
+
+
+/// The $250 authorization behind a wire order, as the order payload reports
+/// it. There is no client-side release control anywhere: the hold is released
+/// when the transfer arrives and captured when the deadline passes.
+public struct OrderWireHold: Codable, Sendable {
+    public let amount: APIDecimal?
+    /// Stripe's own vocabulary — `requires_capture` is "authorized, waiting".
+    public let status: String?
+    public let authorizedAt: Date?
+    public let releasedAt: Date?
+    public let capturedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case amount, status, authorizedAt, releasedAt, capturedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        amount = try? container.decodeIfPresent(APIDecimal.self, forKey: .amount)
+        status = try? container.decodeIfPresent(String.self, forKey: .status)
+        authorizedAt = try? container.decodeIfPresent(Date.self, forKey: .authorizedAt)
+        releasedAt = try? container.decodeIfPresent(Date.self, forKey: .releasedAt)
+        capturedAt = try? container.decodeIfPresent(Date.self, forKey: .capturedAt)
+    }
+
+    /// The authorization is live on the card right now.
+    public var isLive: Bool {
+        releasedAt == nil && capturedAt == nil && authorizedAt != nil
+    }
+}
+
+/// Carrier ceilings the shipping form checks before it asks the server.
+public struct ShippingPackageLimits: Codable, Sendable {
+    public let maxLengthIn: Double?
+    public let maxGirthPlusLengthIn: Double?
 }

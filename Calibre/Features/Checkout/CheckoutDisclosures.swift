@@ -16,6 +16,33 @@ struct CardRefusal: Equatable {
     let serverMessage: String?
 }
 
+/// Why wire was refused before a deposit could be placed. Both are 402s, and
+/// both are things the buyer can act on without leaving checkout.
+enum WireCardRefusal: Equatable {
+    /// No credit card on file. The buyer adds one and wire is tried again.
+    case needsCard(String?)
+    /// A card is on file but it is debit or prepaid, which is exactly what a
+    /// deposit cannot be.
+    case mustBeCredit(String?)
+
+    /// Built from the backend's machine code. Any other code is not this
+    /// refusal and is left to the ordinary failure path.
+    init?(code: String?, serverMessage: String?) {
+        let message = serverMessage?.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch code {
+        case "wire_card_required": self = .needsCard(message?.isEmpty == false ? message : nil)
+        case "wire_card_must_be_credit": self = .mustBeCredit(message?.isEmpty == false ? message : nil)
+        default: return nil
+        }
+    }
+
+    /// Whether adding a card is the way through this one.
+    var offersAddCard: Bool {
+        if case .needsCard = self { return true }
+        return false
+    }
+}
+
 /// A checkout failure the buyer needs a truthful sentence about, plus what
 /// they can honestly do next.
 struct CheckoutProblem: Equatable {
@@ -162,10 +189,52 @@ enum CheckoutCopy {
         "Choosing wire holds the watch for \(wireReservationPhrase(configText)) while the transfer arrives."
     }
 
+    /// Unused today, and kept correct rather than kept as it was: with the
+    /// $250 authorization in the picture, "the hold releases" would read as
+    /// the deposit coming off, which is the opposite of what a missed
+    /// deadline does to it.
     static let wireArrivalSentence =
-        "The order advances automatically when the bank transfer lands. If funds do not arrive in time the hold releases automatically."
+        "The order advances automatically when the bank transfer lands. If the transfer isn\u{2019}t sent by the deadline the watch goes back on the market."
+
+    // MARK: - The wire deposit
+
+    /// The disclosure filed under `wire_hold.disclosure_key`
+    /// (`WireHold.disclosureKey`), shown at the moment wire is chosen and
+    /// before anything is committed. This wording is fixed and identical on
+    /// web, iOS and Android \u{2014} it is what decides a dispute.
+    static let wireHoldDisclosure =
+        "Choosing wire places a refundable $250 authorization on your card. It\u{2019}s released as soon as your transfer arrives. If the transfer isn\u{2019}t sent by the deadline, the $250 is charged and goes to the seller."
+
+    /// Said again on the instructions screen, where the buyer is looking at
+    /// the authorization on their statement.
+    static let wireHoldPlaced =
+        "$250 authorization placed \u{2014} released when your transfer arrives."
+
+    /// Why wire cannot start, and what to do about it. The backend's own
+    /// sentence wins when it wrote one.
+    static func wireCardRefusalMessage(_ refusal: WireCardRefusal) -> String {
+        switch refusal {
+        case .needsCard(let message):
+            return message ?? "Paying by wire needs a credit card on file for the refundable $250 authorization."
+        case .mustBeCredit(let message):
+            return message ?? "Paying by wire needs a credit card. Debit and prepaid cards can\u{2019}t be used \u{2014} a deposit has to be a promise a bank is standing behind, and a debit or prepaid balance can be spent elsewhere."
+        }
+    }
 
     // MARK: - Returns
+
+    /// The one line that decides the question, with the window in it where
+    /// there is one. Cancellation is named here because there is no longer
+    /// any such thing on the buyer's side: once a sale is final, it is final.
+    static func returnTermsHeadline(_ breakdown: CheckoutBreakdown) -> String {
+        guard let terms = breakdown.returns, terms.accepted else {
+            return "This is a final sale \u{2014} it cannot be returned or cancelled"
+        }
+        if let hours = terms.windowHours {
+            return "This seller accepts returns: \(hours)-hour window"
+        }
+        return "This seller accepts returns"
+    }
 
     /// The listing's return terms with the real numbers, before purchase.
     /// Any figure the payload doesn't carry simply drops out of the sentence.

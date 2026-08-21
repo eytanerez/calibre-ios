@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "data": {
+    "id": "c1c10000-0000-4000-8000-00000000c1c1",
+    "status": "waiting_on_calibre",
+    "created_at": "2026-08-18T09:00:00+00:00",
+    "last_message_at": "2026-08-18T09:04:00+00:00",
+    "assigned_contact": {
+      "key": "sam",
+      "display_name": "Sam"
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "sender": "customer",
+        "body": "Here's the scratch I mentioned, and the receipt.",
+        "created_at": "2026-08-18T09:04:00+00:00",
+        "attachments": [
+          {
+            "id": "a1",
+            "filename": "bezel.jpg",
+            "content_type": "image/jpeg",
+            "size_bytes": 812345,
+            "url": "https://files.example/signed/a1?exp=900"
+          },
+          {
+            "id": "a2",
+            "filename": "receipt.pdf",
+            "content_type": "application/pdf",
+            "size_bytes": 40211,
+            "url": "https://files.example/signed/a2?exp=900"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,104 +1,129 @@
 {
- "ok": true,
- "data": {
-  "id": "7e2e0000-0000-4000-8000-00000000e2e1",
-  "buyer_id": "b1",
-  "listing_id": "49e52179-1035-46f9-abe0-443d915d8c3b",
-  "listing": {
-   "id": "49e52179-1035-46f9-abe0-443d915d8c3b",
-   "listing_number": 3099,
-   "title": "Tudor Black Bay Pro",
-   "price": "10000.00",
-   "currency": "USD",
-   "status": "sold",
-   "production_year": 2024,
-   "image": "/media/listing_images/x/front.jpg",
-   "seller": {
-    "id": "s1",
-    "username": "johon",
-    "is_verified_dealer": true
-   }
-  },
-  "status": "delivered",
-  "subtotal": "10000.00",
-  "fees_total": "294.05",
-  "seller_fee_percent_applied": "6.00",
-  "seller_fee_amount": "600.00",
-  "tax_total": "625.00",
-  "shipping_base_total": "150.00",
-  "shipping_upcharge_percent": "0.00",
-  "shipping_upcharge_total": "0.00",
-  "shipping_quote_provider": "flat_rate",
-  "shipping_total": "150.00",
-  "grand_total": "11069.05",
-  "currency": "USD",
-  "checkout_payment_method": "card",
-  "payment_due_at": null,
-  "payout_status": "pending",
-  "payout_released_at": null,
-  "payout": {
-   "trigger": "return_window_close",
-   "released_at": null,
-   "expected_arrival_at": "2026-08-19T16:00:00+00:00",
-   "first_payout_hold": true,
-   "status_label": "Scheduled — releases when the return window closes",
-   "failure_reason": null,
-   "amount": "9400.00"
-  },
-  "returns": {
-   "accepted": true,
-   "window_hours": 48,
-   "window_started_at": "2026-08-13T16:04:00+00:00",
-   "window_ends_at": "2026-08-15T16:04:00+00:00"
-  },
-  "return": {
-   "state": "requested",
-   "initiated_at": "2026-08-14T10:20:00+00:00",
-   "ship_deadline_at": "2026-08-18T10:20:00+00:00",
-   "carrier_first_scan_at": null,
-   "refund_total": "9445.95",
-   "return_label_deduction": "35.00",
-   "relist_decision": null,
-   "label": {
-    "tracking_number": "794612345098",
-    "label_url": "https://labels.example/return-794612345098.pdf"
-   }
-  },
-  "expected": {
-   "authentication_verdict_by": "2026-08-09T12:00:00+00:00",
-   "shipped_to_you_by": "2026-08-10T12:00:00+00:00",
-   "delivered_by": "2026-08-13T12:00:00+00:00",
-   "return_window_ends_at": "2026-08-15T16:04:00+00:00",
-   "payout": {
-    "trigger": "return_window_close",
-    "released_at": null,
-    "expected_arrival_at": "2026-08-19T16:00:00+00:00",
-    "first_payout_hold": true,
-    "amount": "9400.00"
-   }
-  },
-  "seller_action_state": null,
-  "fulfillment_deadline_at": null,
-  "seller_label_paid_at": "2026-08-07T00:00:00+00:00",
-  "seller_label_created_at": "2026-08-07T00:05:00+00:00",
-  "seller_label_price_total": "24.10",
-  "to_auth_shipment": null,
-  "to_buyer_shipment": null,
-  "latest_shipment": null,
-  "auth_result": null,
-  "shipping_address": {
-   "full_name": "Test Buyer",
-   "phone": "5551234",
-   "line1": "1 Infinite Loop",
-   "line2": null,
-   "city": "Cupertino",
-   "region": "CA",
-   "postal_code": "95014",
-   "country": "US",
-   "source_address_id": "addr1"
-  },
-  "auth_center_address": null,
-  "created_at": "2026-08-01T20:00:00+00:00",
-  "updated_at": "2026-08-14T10:20:00+00:00"
- }
+  "ok": true,
+  "data": {
+    "id": "7e2e0000-0000-4000-8000-00000000e2e1",
+    "buyer_id": "b1",
+    "listing_id": "49e52179-1035-46f9-abe0-443d915d8c3b",
+    "listing": {
+      "id": "49e52179-1035-46f9-abe0-443d915d8c3b",
+      "listing_number": 3099,
+      "title": "Tudor Black Bay Pro",
+      "price": "10000.00",
+      "currency": "USD",
+      "status": "sold",
+      "production_year": 2024,
+      "image": "/media/listing_images/x/front.jpg",
+      "seller": {
+        "id": "s1",
+        "username": "johon",
+        "is_verified_dealer": true
+      }
+    },
+    "status": "delivered",
+    "subtotal": "10000.00",
+    "fees_total": "294.05",
+    "seller_fee_percent_applied": "6.00",
+    "seller_fee_amount": "600.00",
+    "tax_total": "625.00",
+    "shipping_base_total": "150.00",
+    "shipping_upcharge_percent": "0.00",
+    "shipping_upcharge_total": "0.00",
+    "shipping_quote_provider": "flat_rate",
+    "shipping_total": "150.00",
+    "grand_total": "11069.05",
+    "currency": "USD",
+    "checkout_payment_method": "card",
+    "payment_due_at": null,
+    "payout_status": "pending",
+    "payout_released_at": null,
+    "payout": {
+      "trigger": "return_window_close",
+      "released_at": null,
+      "expected_arrival_at": "2026-08-19T16:00:00+00:00",
+      "first_payout_hold": true,
+      "status_label": "Scheduled \u2014 releases when the return window closes",
+      "failure_reason": null,
+      "amount": "9400.00",
+      "breakdown": {
+        "sale_price": "10000.00",
+        "commission": {
+          "percent": "6.00",
+          "amount": "600.00",
+          "minimum_applied": false
+        },
+        "shipping_label": "38.40",
+        "amount": "9400.00"
+      }
+    },
+    "returns": {
+      "accepted": true,
+      "window_hours": 48,
+      "window_started_at": "2026-08-13T16:04:00+00:00",
+      "window_ends_at": "2026-08-15T16:04:00+00:00"
+    },
+    "return": {
+      "state": "requested",
+      "initiated_at": "2026-08-14T10:20:00+00:00",
+      "ship_deadline_at": "2026-08-18T10:20:00+00:00",
+      "carrier_first_scan_at": null,
+      "refund_total": "9445.95",
+      "return_label_deduction": "35.00",
+      "relist_decision": null,
+      "label": {
+        "tracking_number": "794612345098",
+        "label_url": "https://labels.example/return-794612345098.pdf"
+      },
+      "reason": "condition_not_as_described",
+      "reason_note": "The bezel has a chip that isn't in the photos."
+    },
+    "expected": {
+      "authentication_verdict_by": "2026-08-09T12:00:00+00:00",
+      "shipped_to_you_by": "2026-08-10T12:00:00+00:00",
+      "delivered_by": "2026-08-13T12:00:00+00:00",
+      "return_window_ends_at": "2026-08-15T16:04:00+00:00",
+      "payout": {
+        "trigger": "return_window_close",
+        "released_at": null,
+        "expected_arrival_at": "2026-08-19T16:00:00+00:00",
+        "first_payout_hold": true,
+        "amount": "9400.00"
+      }
+    },
+    "seller_action_state": null,
+    "fulfillment_deadline_at": null,
+    "seller_label_paid_at": "2026-08-07T00:00:00+00:00",
+    "seller_label_created_at": "2026-08-07T00:05:00+00:00",
+    "seller_label_price_total": "24.10",
+    "to_auth_shipment": null,
+    "to_buyer_shipment": null,
+    "latest_shipment": null,
+    "auth_result": null,
+    "shipping_address": {
+      "full_name": "Test Buyer",
+      "phone": "5551234",
+      "line1": "1 Infinite Loop",
+      "line2": null,
+      "city": "Cupertino",
+      "region": "CA",
+      "postal_code": "95014",
+      "country": "US",
+      "source_address_id": "addr1"
+    },
+    "auth_center_address": null,
+    "created_at": "2026-08-01T20:00:00+00:00",
+    "updated_at": "2026-08-14T10:20:00+00:00",
+    "order_number": 1041,
+    "wire_hold": null,
+    "seller_label_package": {
+      "box_length_in": "9.00",
+      "box_width_in": "7.00",
+      "box_height_in": "4.00",
+      "weight_lb": "2.00",
+      "notes": null
+    },
+    "shipping_package_limits": {
+      "max_length_in": 22.0,
+      "max_girth_plus_length_in": 130.0
+    }
+  }
 }

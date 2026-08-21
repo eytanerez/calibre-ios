@@ -127,6 +127,14 @@ private struct OfferDetailContent: View {
                 OfferResolutionBand(notice: notice)
             }
 
+            // The deposit is what the whole negotiation stands on. When it is
+            // close to running out — or the server has already refused an
+            // action because it has — replacing it is the first thing on
+            // screen, not a footnote.
+            if model.showsHoldRenewal {
+                holdRenewalBand(offer)
+            }
+
             if let holdCaption = model.holdCaption {
                 HStack(spacing: Space.s) {
                     Image(systemName: "lock.shield")
@@ -170,6 +178,37 @@ private struct OfferDetailContent: View {
         .padding(.bottom, Space.xxl)
         .animation(Motion.easeFast, value: model.actionError)
         .animation(Motion.easeMedium, value: model.showCounterForm)
+    }
+
+    // MARK: - Renewing the deposit
+
+    /// Only the buyer can renew their own card authorization, so the seller
+    /// sees the plain fact and no button they could not press.
+    @ViewBuilder
+    private func holdRenewalBand(_ offer: Offer) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            CalloutBand(
+                icon: "creditcard.trianglebadge.exclamationmark",
+                title: "Renew your deposit",
+                message: model.holdRenewalMessage(offer)
+            )
+
+            if !model.viewerIsSeller {
+                Button {
+                    Haptics.shared.play(.press)
+                    Task { await model.renewHold() }
+                } label: {
+                    BusyLabel(title: "Renew your deposit", busy: model.renewer.renewing)
+                }
+                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .disabled(model.renewer.renewing)
+            }
+
+            if let error = model.renewer.error {
+                InlineErrorLine(message: error)
+            }
+        }
+        .animation(Motion.easeFast, value: model.renewer.error)
     }
 
     // MARK: - Actions
@@ -422,6 +461,13 @@ final class OfferDetailModel {
     var confirmingCancel = false
     var confirmingBackOut = false
 
+    /// Runs the cancel-and-replace of the card authorization.
+    let renewer: OfferHoldRenewer
+    /// Set when the server has refused an action because the deposit aged
+    /// out. Sticks until a renewal succeeds, so the way through stays on
+    /// screen rather than disappearing with the error toast.
+    private(set) var holdRenewalDemanded = false
+
     init(
         offerID: String,
         catalog: CatalogStore,
@@ -438,6 +484,46 @@ final class OfferDetailModel {
         self.userID = userID
         self.toasts = toasts
         self.router = router
+        self.renewer = OfferHoldRenewer(commerce: commerce)
+    }
+
+    // MARK: The deposit
+
+    /// Either the hold is close enough to expiring to ask, or the server has
+    /// already said it is too late to act without a new one.
+    var showsHoldRenewal: Bool {
+        holdRenewalDemanded || offerHoldNeedsRenewal(offer)
+    }
+
+    /// The date is the offer's own `hold.captureBefore` — never a window
+    /// worked out here.
+    func holdRenewalMessage(_ offer: Offer) -> String {
+        let amount = offerHoldText(offer, config: config) ?? "the deposit"
+        if holdRenewalDemanded {
+            return viewerIsSeller
+                ? "The buyer\u{2019}s \(amount) authorization has run out, so this offer can\u{2019}t move until they place a new one. We\u{2019}ve let them know."
+                : "Your \(amount) authorization has run out. Place a new one and this offer picks up exactly where it left off."
+        }
+        let expiry = offer.hold?.captureBefore.map {
+            $0.formatted(date: .abbreviated, time: .shortened)
+        }
+        let when = expiry.map { " It runs out on \($0)." } ?? ""
+        return viewerIsSeller
+            ? "The buyer\u{2019}s \(amount) authorization is close to running out.\(when) We\u{2019}ve asked them to replace it."
+            : "Your \(amount) authorization is close to running out.\(when) Replacing it keeps this offer alive \u{2014} an offer must never sit accepted with nothing behind it."
+    }
+
+    func renewHold() async {
+        guard let renewed = await renewer.renew(offerID: offerID) else { return }
+        offer = renewed
+        holdRenewalDemanded = false
+        actionError = nil
+        toasts.show(
+            title: "Deposit renewed",
+            message: "Your offer is standing again.",
+            tone: .success
+        )
+        await load(quiet: true)
     }
 
     var viewerIsSeller: Bool {
@@ -564,6 +650,12 @@ final class OfferDetailModel {
             }
         } catch {
             Haptics.shared.play(.error)
+            // Not a refusal of the price: the deposit behind the offer has
+            // aged out. The renewal band is the answer, so it is put on
+            // screen rather than left as an error the buyer can only reread.
+            if offerHoldRenewalRequired(error) {
+                holdRenewalDemanded = true
+            }
             actionError = friendlyMessage(error)
         }
     }

@@ -31,6 +31,15 @@ enum PhotoPipeline {
         return nil
     }
 
+    /// The same downscale, encoded to JPEG in memory — for uploads that go
+    /// straight out rather than through the draft folder and the upload
+    /// queue. Return photographs take this path: they are staged against the
+    /// order the moment they are shot, and there is no draft to keep them in.
+    @MainActor
+    static func jpegData(_ image: UIImage, quality: CGFloat = 0.76) -> Data? {
+        downscale(image).jpegData(compressionQuality: quality)
+    }
+
     /// Re-render at target size — also bakes in EXIF orientation.
     private static func downscale(_ image: UIImage) -> UIImage {
         let size = image.size

@@ -184,6 +184,18 @@ public final class CommerceStore {
         try await client.send(Endpoint(method: .post, path: "/offers/\(offerID)/confirm-hold"))
     }
 
+    /// Replaces the deposit standing behind a live offer: the old
+    /// authorization is cancelled and a new one created, which the client
+    /// confirms with the returned `hold.clientSecret`.
+    ///
+    /// Card authorizations do not last forever and a negotiation can outlive
+    /// one. Acceptance is refused while the hold has aged out
+    /// (409 `offer_hold_renewal_required`), and this is what clears it.
+    @discardableResult
+    public func renewOfferHold(offerID: String) async throws -> Offer {
+        try await client.send(Endpoint(method: .post, path: "/offers/\(offerID)/renew-hold"))
+    }
+
     /// Withdraw an offer and release its hold (buyer only).
     @discardableResult
     public func cancelOffer(offerID: String) async throws -> Offer {
@@ -265,13 +277,61 @@ public final class CommerceStore {
         try await client.send(Endpoint(path: "/orders/\(orderID)/return-quote"))
     }
 
-    /// Opens the return: stops the window clock, generates the insured,
-    /// signature-required label, and sets the 48-business-hour ship
-    /// deadline. Errors (409): returns_not_accepted, order_not_delivered,
-    /// return_already_open, return_window_closed; 502 return_label_unavailable.
+    /// Stages one return photograph against the order, on capture. The row
+    /// is unclaimed until a return is opened out of it, and re-shooting an
+    /// angle replaces that angle rather than leaving two of them.
+    ///
+    /// Errors mirror the return itself, checked before a byte is written:
+    /// returns_not_accepted, order_not_delivered, return_already_open,
+    /// return_window_closed.
     @discardableResult
-    public func startReturn(orderID: String) async throws -> ReturnStartResult {
-        try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/return"))
+    public func uploadReturnImage(
+        orderID: String,
+        category: ListingImageCategory,
+        jpeg: Data,
+        filename: String? = nil
+    ) async throws -> OrderReturnImage {
+        var form = MultipartForm()
+        form.addField("category", value: category.rawValue)
+        form.addFile(
+            "file",
+            filename: filename ?? "\(category.rawValue).jpg",
+            contentType: "image/jpeg",
+            data: jpeg
+        )
+        return try await client.send(
+            Endpoint(method: .post, path: "/orders/\(orderID)/return/images", body: .multipart(form))
+        )
+    }
+
+    /// Opens the return: stops the window clock, generates the insured,
+    /// signature-required label, and sets the 48-business-hour ship deadline.
+    ///
+    /// A reason is required, a note is required when the reason is `other`,
+    /// and the six staged photographs are claimed by id. A refusal naming
+    /// missing angles (`return_photos_missing`) is the server's own sentence
+    /// and is shown verbatim. Errors (409): returns_not_accepted,
+    /// order_not_delivered, return_already_open, return_window_closed;
+    /// 502 return_label_unavailable.
+    @discardableResult
+    public func startReturn(
+        orderID: String,
+        reason: OrderReturnReason,
+        reasonNote: String?,
+        imageIDs: [String]
+    ) async throws -> ReturnStartResult {
+        struct Payload: Encodable {
+            let reason: String
+            let reasonNote: String?
+            let imageIds: [String]
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/orders/\(orderID)/return",
+                payload: Payload(reason: reason.rawValue, reasonNote: reasonNote, imageIds: imageIDs)
+            )
+        )
     }
 
     /// "I shipped it" — grants a short grace period for the carrier's first

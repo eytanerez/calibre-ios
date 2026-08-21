@@ -1,24 +1,56 @@
 {
- "ok": true,
- "data": {
-  "watch_price": "10000.00",
-  "tax_refund": "625.00",
-  "return_fee": {
-   "percent": "7.00",
-   "minimum": "250.00",
-   "amount": "700.00"
-  },
-  "outbound_label_deduction": "150.00",
-  "return_label_deduction": "35.00",
-  "processing_withholding": "294.05",
-  "processing_withholding_basis": "card_fee_never_refunded",
-  "refund_total": "9445.95",
-  "currency": "USD",
-  "window": {
-   "started_at": "2026-08-13T16:04:00+00:00",
-   "ends_at": "2026-08-15T16:04:00+00:00",
-   "open": true
-  },
-  "existing_return": null
- }
+  "ok": true,
+  "data": {
+    "watch_price": "10000.00",
+    "tax_refund": "625.00",
+    "return_fee": {
+      "percent": "7.00",
+      "minimum": "250.00",
+      "amount": "700.00"
+    },
+    "outbound_label_deduction": "150.00",
+    "return_label_deduction": "35.00",
+    "processing_withholding": "294.05",
+    "processing_withholding_basis": "card_fee_never_refunded",
+    "refund_total": "9445.95",
+    "currency": "USD",
+    "window": {
+      "started_at": "2026-08-13T16:04:00+00:00",
+      "ends_at": "2026-08-15T16:04:00+00:00",
+      "open": true
+    },
+    "existing_return": null,
+    "staged_images": [
+      {
+        "id": "img-1",
+        "category": "front",
+        "url": "/media/return_images/o1/front.jpg"
+      },
+      {
+        "id": "img-2",
+        "category": "caseback",
+        "url": "/media/return_images/o1/caseback.jpg"
+      },
+      {
+        "id": "img-3",
+        "category": "left_profile",
+        "url": "/media/return_images/o1/left_profile.jpg"
+      },
+      {
+        "id": "img-4",
+        "category": "right_profile",
+        "url": "/media/return_images/o1/right_profile.jpg"
+      },
+      {
+        "id": "img-5",
+        "category": "clasp",
+        "url": "/media/return_images/o1/clasp.jpg"
+      },
+      {
+        "id": "img-6",
+        "category": "full_set",
+        "url": "/media/return_images/o1/full_set.jpg"
+      }
+    ]
+  }
 }

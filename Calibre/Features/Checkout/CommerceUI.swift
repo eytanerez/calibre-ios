@@ -397,3 +397,46 @@ struct BusyLabel: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+
+/// A quiet bordered block for something checkout has to *say* before money
+/// moves: a title, and one or more plain sentences under it. Deliberately
+/// unshouty \u{2014} a disclosure that reads as an alert gets dismissed as one.
+struct DisclosureCard<Content: View>: View {
+    let icon: String
+    let title: String
+    @ViewBuilder var content: Content
+
+    init(icon: String, title: String, @ViewBuilder content: () -> Content) {
+        self.icon = icon
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Space.m) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.calibre.primary)
+                .frame(width: 20)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: Space.xs) {
+                Text(title)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                content
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Space.l)
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(Color.calibre.border, lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+    }
+}

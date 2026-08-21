@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "data": {
+    "session": {
+      "id": null,
+      "client_secret": null,
+      "expires_at": 1787000000
+    },
+    "wire": {
+      "payment_intent_id": "pi_3PxWire001",
+      "status": "requires_action",
+      "instructions": {
+        "type": "us_bank_transfer",
+        "reference": "CAL-3099-7C21",
+        "amount_remaining": "4472.00",
+        "currency": "USD",
+        "hosted_instructions_url": "https://payments.example/wire",
+        "financial_addresses": [
+          {
+            "type": "aba",
+            "supported_networks": [
+              "ach",
+              "domestic_wire_us"
+            ],
+            "aba": {
+              "bank_name": "Test Bank",
+              "routing_number": "110000000",
+              "account_number": "000123456789",
+              "account_holder_name": "Calibre",
+              "account_type": "checking"
+            }
+          }
+        ]
+      }
+    },
+    "wire_hold": {
+      "amount": "250.00",
+      "currency": "USD",
+      "status": "requires_action",
+      "payment_intent_id": "pi_3PxWireHold001",
+      "disclosure_key": "wire_hold_disclosure",
+      "client_secret": "pi_3PxWireHold001_secret_zzz",
+      "publishable_key": "pk_test_calibre"
+    },
+    "breakdown_group": {
+      "items": [],
+      "combined": null,
+      "checkout_group_id": null
+    }
+  }
+}

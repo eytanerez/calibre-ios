@@ -1,7 +1,9 @@
 import CalibreDesign
 import CalibreKit
 import Foundation
+import NukeUI
 import SwiftUI
+import UIKit
 
 // The buyer's return, start to finish: the exact refund itemized before
 // anything is committed, then the label, the ship-by clock, and the two
@@ -10,6 +12,24 @@ import SwiftUI
 // Every figure on this screen arrives from `ReturnQuote` or the order's own
 // `returnSummary`. Nothing about money, percentages or deadlines is worked
 // out on the device — if the payload leaves a line out, the line is left out.
+
+/// One of the six angles, from the moment it is shot to the moment the return
+/// claims it. A photograph is staged against the order the instant it is
+/// taken — a buyer who shoots six pictures and then loses the app should come
+/// back to six filled slots, not to six blanks.
+struct ReturnPhotoSlot {
+    /// The staged row's id, which is what opening the return claims.
+    var imageID: String?
+    /// The shot just taken, shown immediately while it uploads.
+    var preview: UIImage?
+    /// A photograph already on the server, from the quote's staged list.
+    var remoteURL: URL?
+    var uploading = false
+    var error: String?
+
+    /// The server has this angle.
+    var isStaged: Bool { imageID != nil }
+}
 
 // MARK: - Model
 
@@ -48,6 +68,17 @@ final class ReturnFlowModel {
 
     private(set) var busy = false
     var actionError: String?
+
+    // MARK: What the buyer has to say
+
+    /// Why the watch is going back. Required — the server refuses a return
+    /// without one, and the reason is what makes a seller's pattern of
+    /// returns readable at all.
+    var reason: OrderReturnReason?
+    /// Optional, except on "Other", where the server requires it.
+    var reasonNote = ""
+    /// The six angles, keyed by category.
+    var photos: [ListingImageCategory: ReturnPhotoSlot] = [:]
     /// Set when a cancelled return should close the sheet it was cancelled in.
     private(set) var requestsDismiss = false
 
@@ -93,6 +124,7 @@ final class ReturnFlowModel {
         do {
             let fetched = try await commerce.returnQuote(orderID: orderID)
             quote = fetched
+            adoptStagedImages(fetched.stagedImages)
             if let existing = fetched.existingReturn, !existing.isFinished {
                 phase = .open
                 return
@@ -111,15 +143,117 @@ final class ReturnFlowModel {
         }
     }
 
+    // MARK: Photographs
+
+    /// The slots the quote says are already filled. Re-uploading an angle
+    /// replaces it server-side, so a stale local preview never outlives the
+    /// row it stood for.
+    private func adoptStagedImages(_ images: [OrderReturnImage]) {
+        for image in images {
+            guard let category = image.slot else { continue }
+            var slot = photos[category] ?? ReturnPhotoSlot()
+            slot.imageID = image.id
+            slot.remoteURL = image.url?.url
+            slot.error = nil
+            photos[category] = slot
+        }
+    }
+
+    /// Stages one photograph the moment it is taken. Uploading on capture is
+    /// what makes the six slots survive a relaunch, and it means a refusal
+    /// (window closed, return already open) arrives on the first shot rather
+    /// than after all six.
+    func capture(_ image: UIImage, for category: ListingImageCategory) async {
+        var slot = photos[category] ?? ReturnPhotoSlot()
+        slot.preview = image
+        slot.uploading = true
+        slot.error = nil
+        photos[category] = slot
+
+        guard let data = PhotoPipeline.jpegData(image) else {
+            photos[category]?.uploading = false
+            photos[category]?.error = "That photo couldn\u{2019}t be processed. Please take it again."
+            return
+        }
+        do {
+            let staged = try await commerce.uploadReturnImage(
+                orderID: orderID,
+                category: category,
+                jpeg: data
+            )
+            photos[category]?.imageID = staged.id
+            photos[category]?.remoteURL = staged.url?.url
+            photos[category]?.uploading = false
+            Haptics.shared.play(.save)
+        } catch {
+            photos[category]?.uploading = false
+            let message = returnErrorMessage(error)
+            photos[category]?.error = message
+            // A refusal about the return itself is not about this photograph:
+            // the window has closed, or a return is already open.
+            switch (error as? APIError)?.serverCode {
+            case "return_window_closed":
+                phase = .closed(message)
+            case "return_already_open":
+                await refreshOrder()
+                phase = .open
+            default:
+                break
+            }
+        }
+    }
+
+    func photoPhase(_ category: ListingImageCategory) -> PhotoSlotPhase {
+        guard let slot = photos[category] else { return .empty }
+        if slot.error != nil { return .failed }
+        if slot.uploading { return .uploading(0) }
+        return slot.isStaged ? .done : .empty
+    }
+
+    /// The angles still to shoot, in the canonical order.
+    var missingAngles: [ListingImageCategory] {
+        ListingImageCategory.allCases.filter { photos[$0]?.isStaged != true }
+    }
+
+    var stagedImageIDs: [String] {
+        ListingImageCategory.allCases.compactMap { photos[$0]?.imageID }
+    }
+
+    /// Whether the note the chosen reason demands has actually been written.
+    var noteRequiredAndMissing: Bool {
+        guard let reason, reason.requiresNote else { return false }
+        return reasonNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// The local gate. The server has the last word and its refusal names the
+    /// missing angles itself — this only decides whether it is worth asking.
+    var canOpenReturn: Bool {
+        reason != nil && !noteRequiredAndMissing && missingAngles.isEmpty && !busy
+    }
+
     // MARK: Actions
 
     func start() async {
         guard !busy else { return }
+        guard let reason else {
+            actionError = "Choose a reason for the return."
+            return
+        }
+        if noteRequiredAndMissing {
+            actionError = "Tell us what happened: a note is required when the reason is other."
+            return
+        }
         busy = true
         actionError = nil
         defer { busy = false }
+        let note = reasonNote.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
-            let result = try await commerce.startReturn(orderID: orderID)
+            let result = try await commerce.startReturn(
+                orderID: orderID,
+                reason: reason,
+                reasonNote: note.isEmpty ? nil : note,
+                imageIDs: stagedImageIDs
+            )
             startResult = result
             phase = .open
             Haptics.shared.play(.success)
@@ -140,6 +274,10 @@ final class ReturnFlowModel {
                 phase = .open
             case "return_window_closed":
                 phase = .closed(message)
+            case "return_photos_missing":
+                // The server names the angles it is missing. That sentence is
+                // the answer, so it is shown exactly as written.
+                actionError = message
             default:
                 actionError = message
                 // Whatever the server did or didn't do, the order payload is
@@ -253,6 +391,11 @@ final class ReturnFlowModel {
     /// doesn't carry is simply not a row.
     var caseSummaryRows: [(String, String)] {
         var rows: [(String, String)] = []
+        // Why it was opened, in the marketplace's own words. Part of the
+        // record whether or not the return goes through.
+        if let reason = summary?.reason ?? liveReturn?.reason {
+            rows.append(("Reason", reason.label))
+        }
         if let deduction = returnLabelDeductionText {
             rows.append(("Return label", "− " + deduction))
         }
@@ -332,6 +475,8 @@ func returnErrorMessage(_ error: Error) -> String {
         return "You've already told us this one is on its way."
     case "return_in_transit":
         return "The watch is already on its way back, so the return can't be called off now."
+    case "return_photos_missing":
+        return "Some of the six photos are still missing."
     case "return_label_unavailable":
         return "We couldn't produce the return label just now. Please try again in a moment, or your Calibre contact can sort it out for you."
     default:
@@ -356,6 +501,8 @@ struct ReturnFlowSheet: View {
     let model: ReturnFlowModel
 
     @Environment(\.dismiss) private var dismiss
+    /// The angle currently being photographed.
+    @State private var captureTarget: CaptureTarget?
 
     var body: some View {
         NavigationStack {
@@ -366,7 +513,9 @@ struct ReturnFlowSheet: View {
                         loading
                     case .quote:
                         if let quote = model.quote {
-                            ReturnQuoteView(quote: quote, model: model)
+                            ReturnQuoteView(quote: quote, model: model) { category in
+                                captureTarget = CaptureTarget(category: category)
+                            }
                         }
                     case .open:
                         openedHeader
@@ -405,6 +554,16 @@ struct ReturnFlowSheet: View {
         .onChange(of: model.requestsDismiss) { _, requested in
             if requested { dismiss() }
         }
+        // The same camera the listing wizard uses, framed to the same six
+        // angles — a return photograph and a listing photograph are put side
+        // by side, and the comparison is only fair if both were shot the same
+        // way.
+        .fullScreenCover(item: $captureTarget) { target in
+            CaptureScreen(target: target) { image in
+                guard let category = target.category else { return }
+                Task { await model.capture(image, for: category) }
+            }
+        }
     }
 
     private var loading: some View {
@@ -440,6 +599,16 @@ struct ReturnFlowSheet: View {
 private struct ReturnQuoteView: View {
     let quote: ReturnQuote
     let model: ReturnFlowModel
+    let onCapture: (ListingImageCategory) -> Void
+
+    @Bindable private var bindable: ReturnFlowModel
+
+    init(quote: ReturnQuote, model: ReturnFlowModel, onCapture: @escaping (ListingImageCategory) -> Void) {
+        self.quote = quote
+        self.model = model
+        self.onCapture = onCapture
+        self.bindable = model
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
@@ -478,6 +647,10 @@ private struct ReturnQuoteView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            reasonSection
+
+            photoSection
+
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("How a return goes")
                     .font(CalibreType.sectionTitle)
@@ -508,12 +681,15 @@ private struct ReturnQuoteView: View {
                     BusyLabel(title: "Start the return", busy: model.busy)
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
-                .disabled(model.busy)
+                .disabled(!model.canOpenReturn)
 
-                Text("Nothing changes until you tap this.")
+                Text(model.canOpenReturn
+                    ? "Nothing changes until you tap this."
+                    : stillNeededSentence)
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if let actionError = model.actionError {
                     InlineErrorLine(message: actionError)
@@ -521,6 +697,160 @@ private struct ReturnQuoteView: View {
             }
             .animation(Motion.easeFast, value: model.actionError)
         }
+    }
+
+    // MARK: Why
+
+    /// One pick from a fixed list. The three "not as described" reasons say
+    /// something about the seller, so they are worth separating; the two
+    /// change-of-heart reasons say nothing about anybody and are just as
+    /// welcome.
+    private var reasonSection: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text("Why are you sending it back?")
+                .font(CalibreType.sectionTitle)
+                .foregroundStyle(Color.calibre.foreground)
+
+            VStack(spacing: 0) {
+                ForEach(Array(OrderReturnReason.allCases.enumerated()), id: \.element) { index, reason in
+                    reasonRow(reason)
+                    if index < OrderReturnReason.allCases.count - 1 {
+                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                    }
+                }
+            }
+            .returnCardSurface()
+
+            if model.reason?.requiresNote == true {
+                CalibreTextEditor(
+                    "Tell us what happened",
+                    text: $bindable.reasonNote,
+                    placeholder: "A sentence or two is plenty.",
+                    minHeight: 90,
+                    characterLimit: 1_000
+                )
+            } else if model.reason != nil {
+                CalibreTextEditor(
+                    "Anything you\u{2019}d like to add (optional)",
+                    text: $bindable.reasonNote,
+                    placeholder: "A sentence or two is plenty.",
+                    minHeight: 70,
+                    characterLimit: 1_000
+                )
+            }
+        }
+    }
+
+    private func reasonRow(_ reason: OrderReturnReason) -> some View {
+        Button {
+            Haptics.shared.play(.selection)
+            model.reason = reason
+        } label: {
+            HStack(spacing: Space.m) {
+                Image(systemName: model.reason == reason ? "inset.filled.circle" : "circle")
+                    .font(.system(size: 18))
+                    .foregroundStyle(model.reason == reason ? Color.calibre.primary : Color.calibre.borderBright)
+                Text(reason.label)
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, Space.l)
+            .frame(minHeight: Space.touchTarget)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityAddTraits(model.reason == reason ? .isSelected : [])
+    }
+
+    // MARK: The six photographs
+
+    /// The same six angles the listing carries, shot with the camera. This is
+    /// what lets us prove the watch that came back is the watch that went
+    /// out, so it is not optional and it is not a file picker.
+    private var photoSection: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text("Photograph the watch")
+                .font(CalibreType.sectionTitle)
+                .foregroundStyle(Color.calibre.foreground)
+
+            Text("Six shots, the same angles the listing carries. They are put side by side with the seller\u{2019}s photos when the watch arrives, which is what protects you if anything is disputed.")
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: Space.l) {
+                    ForEach(ListingImageCategory.allCases, id: \.self) { category in
+                        VStack(spacing: Space.s) {
+                            Button {
+                                Haptics.shared.play(.press)
+                                onCapture(category)
+                            } label: {
+                                PhotoSlotRing(phase: model.photoPhase(category), size: 64) {
+                                    slotThumbnail(category)
+                                }
+                            }
+                            .buttonStyle(PressableStyle())
+                            .accessibilityLabel("\(category.label) photo")
+                            .accessibilityValue(model.photos[category]?.isStaged == true ? "taken" : "not taken")
+                            Text(category.label)
+                                .font(CalibreType.caption)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .frame(width: 76)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            ForEach(ListingImageCategory.allCases, id: \.self) { category in
+                if let failure = model.photos[category]?.error {
+                    Text("\(category.label): \(failure)")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.destructive)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// The shot just taken, or the one already staged against this order.
+    @ViewBuilder
+    private func slotThumbnail(_ category: ListingImageCategory) -> some View {
+        if let preview = model.photos[category]?.preview {
+            Image(uiImage: preview).resizable().scaledToFill()
+        } else if let url = model.photos[category]?.remoteURL {
+            LazyImage(url: url) { state in
+                if let image = state.image {
+                    image.resizable().scaledToFill()
+                } else {
+                    Color.calibre.secondary.opacity(0.5)
+                }
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
+    /// What is still owed, named rather than implied — the same three things
+    /// the server would refuse for.
+    private var stillNeededSentence: String {
+        var waiting: [String] = []
+        if model.reason == nil { waiting.append("a reason") }
+        if model.noteRequiredAndMissing { waiting.append("a note") }
+        let missing = model.missingAngles
+        if !missing.isEmpty {
+            waiting.append(missing.count == 6
+                ? "all six photos"
+                : "\(missing.count) photo\(missing.count == 1 ? "" : "s") (\(missing.map(\.label).joined(separator: ", ")))")
+        }
+        guard !waiting.isEmpty else { return "Nothing changes until you tap this." }
+        return "Still needed: " + waiting.joined(separator: ", ") + "."
     }
 
     // MARK: Rows

@@ -49,6 +49,14 @@ struct WireInstructionsScreen: View {
                         CheckoutItemsCard(items: model.items)
                     }
 
+                    // The $250 the buyer can see on their statement, said
+                    // where they are looking for it. There is no release
+                    // control here or anywhere else: it comes off when the
+                    // transfer arrives.
+                    if model.wireHold != nil {
+                        depositBand
+                    }
+
                     if let instructions = checkout.wire.instructions {
                         detailRows(instructions, breakdown: breakdown)
                             .tutorialAnchor("wire.details")
@@ -135,6 +143,30 @@ struct WireInstructionsScreen: View {
     }
 
     // MARK: - Pieces
+
+    /// The authorization, and \u{2014} when the issuer wanted a challenge the buyer
+    /// walked away from \u{2014} the way to finish it. The same intent is retried;
+    /// a new checkout would place a second $250 and abandon this one.
+    @ViewBuilder
+    private var depositBand: some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            CalloutBand(
+                icon: "creditcard",
+                title: CheckoutCopy.wireHoldPlaced,
+                message: CheckoutCopy.wireHoldDisclosure
+            )
+
+            if let holdError = model.wireHoldError {
+                InlineErrorLine(message: holdError)
+                Button("Finish the check with your bank") {
+                    Haptics.shared.play(.press)
+                    Task { await model.confirmWireHoldChallenge() }
+                }
+                .buttonStyle(.calibre(.secondary, fullWidth: true))
+            }
+        }
+        .animation(Motion.easeFast, value: model.wireHoldError)
+    }
 
     private func header(_ checkout: WireCheckout, breakdown: CheckoutBreakdown) -> some View {
         VStack(alignment: .leading, spacing: Space.s) {

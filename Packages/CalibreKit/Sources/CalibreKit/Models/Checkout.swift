@@ -300,6 +300,10 @@ public struct NativeCheckoutIntent: Decodable, Sendable {
 public struct WireCheckout: Decodable, Sendable {
     public let session: SessionStub?
     public let wire: WireIntent
+    /// The refundable $250 placed on the buyer's credit card *before* the
+    /// bank details are shown. Null when an accepted offer's own deposit is
+    /// already standing behind this wire — Calibre never stacks two.
+    public let wireHold: WireHold?
     /// As on the card path: the single-watch breakdown when the checkout
     /// covers one watch, and nothing when it covers a set.
     public let breakdown: CheckoutBreakdown?
@@ -321,6 +325,55 @@ public struct WireCheckout: Decodable, Sendable {
             expiresAt.map { Date(timeIntervalSince1970: TimeInterval($0)) }
         }
     }
+}
+
+/// The refundable authorization behind a wire, as the checkout response
+/// states it.
+///
+/// A `clientSecret` means the issuer wants a challenge: confirm *that same*
+/// intent and then re-request the wire checkout. Never open a fresh checkout
+/// while a live hold exists — a new attempt mints a new hold and leaves the
+/// stale authorization sitting on the buyer's card until it expires
+/// (admin-contracts §11.6, binding).
+public struct WireHold: Decodable, Sendable {
+    /// The key every client files the disclosure copy under.
+    public static let disclosureKey = "wire_hold_disclosure"
+
+    public let amount: APIDecimal?
+    public let currency: String?
+    /// Stripe's own status word. `requires_capture` means authorized.
+    public let status: String?
+    public let paymentIntentId: String?
+    public let disclosureKey: String?
+    public let clientSecret: String?
+    /// Sent beside `clientSecret` on a challenge, because a native SDK has to
+    /// be keyed before it can confirm anything and the wire path may never
+    /// have priced a card (admin-contracts §11.9). Web ignores it.
+    public let publishableKey: String?
+
+    enum CodingKeys: String, CodingKey {
+        case amount, currency, status, paymentIntentId, disclosureKey
+        case clientSecret, publishableKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        amount = try? container.decodeIfPresent(APIDecimal.self, forKey: .amount)
+        currency = try? container.decodeIfPresent(String.self, forKey: .currency)
+        status = try? container.decodeIfPresent(String.self, forKey: .status)
+        paymentIntentId = try? container.decodeIfPresent(String.self, forKey: .paymentIntentId)
+        disclosureKey = try? container.decodeIfPresent(String.self, forKey: .disclosureKey)
+        clientSecret = try? container.decodeIfPresent(String.self, forKey: .clientSecret)
+        publishableKey = try? container.decodeIfPresent(String.self, forKey: .publishableKey)
+    }
+
+    /// The issuer wants a challenge before the authorization stands.
+    public var requiresAction: Bool {
+        status == "requires_action" || status == "requires_confirmation"
+    }
+
+    /// The authorization is in place and the bank details may be shown.
+    public var isAuthorized: Bool { status == "requires_capture" }
 }
 
 /// The wire PaymentIntent plus its displayable bank-transfer instructions.

@@ -169,6 +169,23 @@ final class CheckoutModel {
     private(set) var wireCheckout: WireCheckout?
     private(set) var preparingWire = false
 
+    // MARK: The wire deposit
+
+    /// The $250 authorization behind this wire, once one has been placed.
+    ///
+    /// Kept for the life of the checkout on purpose: while it is live no new
+    /// checkout may be opened, because a fresh checkout attempt mints a fresh
+    /// hold and leaves this one sitting on the buyer's card until it expires
+    /// (admin-contracts §11.6, binding).
+    private(set) var wireHold: WireHold?
+    /// The card gate refusing wire: no card on file, or one that is not a
+    /// credit card. Both are 402s the buyer can act on.
+    private(set) var wireCardRefusal: WireCardRefusal?
+    private(set) var addingWireCard = false
+    /// A challenge the buyer walked away from. The same intent is retried —
+    /// never a new one.
+    private(set) var wireHoldError: String?
+
     /// The watch the server would not reserve. Held separately from the
     /// pricing problem because the honest next step here isn't "try again" —
     /// it's "go on with the others".
@@ -393,6 +410,19 @@ final class CheckoutModel {
         await startWire()
     }
 
+    /// Opens the wire path, deposit first.
+    ///
+    /// Choosing wire is a statement that the buyer is buying the watch, and
+    /// the $250 authorization is where they make it — so the hold is placed
+    /// before the bank details exist. Two things follow from that, and both
+    /// are binding:
+    ///
+    /// * a wire checkout is opened exactly once. While a hold is live the
+    ///   existing checkout is re-shown rather than re-created, because a new
+    ///   attempt mints a second authorization and abandons the first on the
+    ///   buyer's card until it expires;
+    /// * a `requires_action` hold is confirmed *on that same intent* and the
+    ///   flow carries on with the instructions already in hand.
     private func startWire() async {
         if wireCheckout != nil {
             if path.last != .wire { path.append(.wire) }
@@ -402,6 +432,8 @@ final class CheckoutModel {
         preparingWire = true
         pricingError = nil
         pricingProblem = nil
+        wireCardRefusal = nil
+        wireHoldError = nil
         reservedWatch = nil
         defer { preparingWire = false }
         do {
@@ -411,11 +443,70 @@ final class CheckoutModel {
                 offerID: offerID
             )
             wireCheckout = wire
+            // An accepted offer's own deposit already stands behind this
+            // wire, in which case the server sends no hold and none is placed.
+            if let hold = wire.wireHold {
+                wireHold = hold
+                if hold.requiresAction {
+                    await confirmWireHoldChallenge()
+                }
+            }
             trackCheckoutStarted(.wire, group: wire.breakdownGroup, breakdown: wire.breakdown)
             path.append(.wire)
+        } catch let apiError as APIError {
+            if case .server(let message, let code, 402, _) = apiError,
+               let refusal = WireCardRefusal(code: code, serverMessage: message) {
+                wireCardRefusal = refusal
+                return
+            }
+            recordPricingFailure(apiError)
         } catch {
             recordPricingFailure(error)
         }
+    }
+
+    /// Confirms the hold's own PaymentIntent. Nothing is re-created here: the
+    /// wire checkout in hand already carries the bank instructions, and the
+    /// only thing outstanding is the issuer's challenge.
+    func confirmWireHoldChallenge() async {
+        guard let secret = wireHold?.clientSecret else { return }
+        wireHoldError = nil
+        // The wire path can reach a challenge without a card ever having been
+        // priced, so the SDK is keyed from the hold's own payload rather than
+        // from whatever a card intent happened to leave behind.
+        if let key = wireHold?.publishableKey {
+            STPAPIClient.shared.publishableKey = key
+        }
+        do {
+            try await handleNextAction(clientSecret: secret)
+        } catch {
+            wireHoldError = (error as? LocalizedError)?.errorDescription
+                ?? "Your bank didn\u{2019}t approve the $250 authorization. Try the check again."
+        }
+    }
+
+    /// Adds a credit card through the account's own saved-card flow, then
+    /// tries wire again. Reached only from a 402 — no hold has been placed at
+    /// that point, so opening the checkout afresh costs nothing.
+    func addCardForWire(presentSheet: @escaping (BillingSetupIntent) async -> Bool) async {
+        guard !addingWireCard else { return }
+        addingWireCard = true
+        defer { addingWireCard = false }
+        do {
+            let intent = try await commerce.setupIntent()
+            guard await presentSheet(intent) else { return }
+            wireCardRefusal = nil
+            await startWire()
+        } catch {
+            wireCardRefusal = WireCardRefusal(
+                code: "wire_card_required",
+                serverMessage: friendlyMessage(error)
+            )
+        }
+    }
+
+    func dismissWireCardRefusal() {
+        wireCardRefusal = nil
     }
 
     // MARK: - A watch someone else is checking out
@@ -474,7 +565,12 @@ final class CheckoutModel {
     /// set. Both quotes go, so neither can be paid against.
     private func invalidatePricing() {
         cardIntent = nil
-        wireCheckout = nil
+        // A wire checkout with a live authorization behind it is never thrown
+        // away: re-opening one would place a second $250 on the buyer's card
+        // and strand the first (admin-contracts §11.6, binding).
+        if wireHold == nil {
+            wireCheckout = nil
+        }
         pricingError = nil
         clearCardEntry()
     }

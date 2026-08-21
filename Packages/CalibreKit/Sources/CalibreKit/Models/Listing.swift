@@ -7,6 +7,10 @@ public enum ListingStatus: String, Codable, Sendable {
     case active
     case reserved
     case sold
+    /// Calibre took the listing down because the seller's guarantee card
+    /// lapsed. Never a seller action, and never the same thing as archived —
+    /// it comes back on its own once a valid credit card is on file.
+    case pausedCard = "paused_card"
     case archived
     case rejected
     case unknown
@@ -29,6 +33,10 @@ public struct Listing: Codable, Sendable, Identifiable {
     public let brand: String?
     public let model: String?
     public let referenceNumber: String?
+    /// The seller's own shelf label. Present only when the reader is the
+    /// seller — a buyer's payload omits the key entirely. Bulk import matches
+    /// on this and only this; `referenceNumber` never identifies a watch.
+    public let sellerSku: String?
     public let description: String?
     public let price: APIDecimal
     public let currency: String
@@ -58,7 +66,7 @@ public struct Listing: Codable, Sendable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id, listingNumber, sellerId, seller, variantId, title, brand, model
-        case referenceNumber, description, price, currency, condition, boxPapers
+        case referenceNumber, sellerSku, description, price, currency, condition, boxPapers
         case productionYear, status, reviewStatus, sellerStatus, reviewEvents
         case estimatedShipping, metrics, returns, countryOfOrigin, htsCode
         case createdAt, updatedAt

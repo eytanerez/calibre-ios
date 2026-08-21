@@ -1,18 +1,19 @@
 {
- "ok": true,
- "data": {
-  "application": {
-   "status": "pending",
-   "company_name": "Meridian Watch Co.",
-   "country": "US",
-   "applied_at": "2026-08-14T11:02:00+00:00",
-   "verified_at": null,
-   "revoked_reason": null,
-   "member_fee_percent": "6.00",
-   "dealer_fee_percent": "4.00"
-  },
-  "stripe": {
-   "client_secret": "accs_secret_1MxDealerOnboardingSession"
+  "ok": true,
+  "data": {
+    "application": {
+      "status": "pending",
+      "company_name": "Meridian Watch Co.",
+      "country": "US",
+      "applied_at": "2026-08-14T11:02:00+00:00",
+      "verified_at": null,
+      "revoked_reason": null,
+      "member_fee_percent": "6.00",
+      "dealer_fee_percent": "4.00",
+      "effective_fee_percent": "5.50"
+    },
+    "stripe": {
+      "client_secret": "accs_secret_1MxDealerOnboardingSession"
+    }
   }
- }
 }

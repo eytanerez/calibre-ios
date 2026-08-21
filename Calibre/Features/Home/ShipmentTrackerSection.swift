@@ -92,6 +92,10 @@ private struct TrackedOrderCard: View {
                         .font(CalibreType.bodyMedium)
                         .foregroundStyle(Color.calibre.foreground)
                         .lineLimit(1)
+                    Text(order.displayNumber)
+                        .font(CalibreType.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(Color.calibre.mutedForeground)
                     StatusBadge(order.statusLabel, tone: order.statusTone)
                 }
 

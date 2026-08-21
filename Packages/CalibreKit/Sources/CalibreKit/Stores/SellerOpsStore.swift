@@ -104,50 +104,45 @@ public final class SellerOpsStore {
         try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/fulfillment/shipped"))
     }
 
-    // MARK: - Seller shipping label
+    // MARK: - Seller fulfillment
 
-    /// Live quote for the to-auth label without creating any payment.
-    public func labelQuote(orderID: String, package: SellerLabelPackagePayload) async throws -> SellerLabelIntent {
-        try await client.send(
-            try Endpoint.json(method: .post, path: "/orders/\(orderID)/seller-label/quote", payload: package)
-        )
-    }
-
-    /// PaymentIntent for the label purchase (PaymentSheet fields included).
-    public func labelPaymentIntent(orderID: String, package: SellerLabelPackagePayload) async throws -> SellerLabelIntent {
-        try await client.send(
-            try Endpoint.json(method: .post, path: "/orders/\(orderID)/seller-label/payment-intent", payload: package)
-        )
-    }
-
-    /// Finalizes a paid label PaymentIntent — idempotent; the webhook races
-    /// this call and `alreadyCreated: true` is success.
-    @discardableResult
-    public func finalizeLabel(
+    /// `POST /orders/{id}/fulfillment/shipping-quote` — what this box costs,
+    /// and what it leaves the seller. Nothing is bought and nothing is
+    /// charged. An order that already has a label answers `alreadyCreated`.
+    public func shippingQuote(
         orderID: String,
-        paymentIntentID: String,
-        package: SellerLabelPackagePayload
-    ) async throws -> SellerLabelFinalizeResult {
+        package: FulfillmentPackagePayload
+    ) async throws -> FulfillmentShippingQuote {
         struct Payload: Encodable {
-            let paymentIntentId: String
-            let boxLengthIn: String
-            let boxWidthIn: String
-            let boxHeightIn: String
-            let weightLb: String
-            let notes: String?
+            let package: FulfillmentPackagePayload
         }
         return try await client.send(
             try Endpoint.json(
                 method: .post,
-                path: "/orders/\(orderID)/seller-label/finalize",
-                payload: Payload(
-                    paymentIntentId: paymentIntentID,
-                    boxLengthIn: package.boxLengthIn,
-                    boxWidthIn: package.boxWidthIn,
-                    boxHeightIn: package.boxHeightIn,
-                    weightLb: package.weightLb,
-                    notes: package.notes
-                )
+                path: "/orders/\(orderID)/fulfillment/shipping-quote",
+                payload: Payload(package: package)
+            )
+        )
+    }
+
+    /// `POST /orders/{id}/fulfillment/shipping-details` — the seller confirms
+    /// the box, Calibre buys the label, and the order moves to authentication.
+    /// `confirm` is explicit because pressing this spends Calibre's money and
+    /// takes the payout down by whatever the carrier charged.
+    @discardableResult
+    public func submitShippingDetails(
+        orderID: String,
+        package: FulfillmentPackagePayload
+    ) async throws -> FulfillmentShippingDetails {
+        struct Payload: Encodable {
+            let package: FulfillmentPackagePayload
+            let confirm: Bool
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/orders/\(orderID)/fulfillment/shipping-details",
+                payload: Payload(package: package, confirm: true)
             )
         )
     }

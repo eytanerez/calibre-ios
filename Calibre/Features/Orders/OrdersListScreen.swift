@@ -197,10 +197,17 @@ struct OrderRow: View {
             OrderThumb(url: order.listing?.image?.url)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(order.listing?.title ?? "Your watch")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .lineLimit(1)
+                HStack(spacing: Space.s) {
+                    Text(order.listing?.title ?? "Your watch")
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.foreground)
+                        .lineLimit(1)
+                    Text(order.displayNumber)
+                        .font(CalibreType.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .layoutPriority(1)
+                }
                 Text(order.statusSummary)
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
@@ -292,6 +299,16 @@ extension Order {
         case .authFail: .warning
         case .cancelled, .refunded: .danger
         case .unknown: .neutral
+        }
+    }
+}
+
+extension OrderStatus {
+    /// Nothing more is going to happen to this order.
+    var isFinished: Bool {
+        switch self {
+        case .delivered, .cancelled, .refunded: true
+        default: false
         }
     }
 }

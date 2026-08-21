@@ -231,8 +231,22 @@ public struct ListingImportJob: Codable, Sendable, Identifiable {
     public let updatedCount: Int?
     public let errorCount: Int?
     public let errorMessage: String?
+    /// How far the seller is through finishing what this import created,
+    /// counted server-side: "finished" means the row's listing has left
+    /// `draft`. Absent on a payload that predates the counters — in which
+    /// case the job simply has no progress to report, and no client may
+    /// reconstruct one from `created + updated`, which counts rows rather
+    /// than listings and ignores skipped ones entirely.
+    public let draftsTotal: Int?
+    public let draftsRemaining: Int?
     public let createdAt: Date?
     public let completedAt: Date?
+
+    /// Drafts already finished, when the server has stated both figures.
+    public var draftsFinished: Int? {
+        guard let draftsTotal, let draftsRemaining else { return nil }
+        return max(0, draftsTotal - draftsRemaining)
+    }
 }
 
 /// One imported listing still missing required data/photos
@@ -245,9 +259,19 @@ public struct ImportCompletionItem: Codable, Sendable, Identifiable {
     public let brand: String?
     public let model: String?
     public let reference: String?
+    /// The seller's own shelf label — the only key the import matched on.
+    public let sellerSku: String?
     public let price: APIDecimal?
     public let description: String?
     public let productionYear: Int?
+    public let conditionOverall: String?
+    public let conditionCase: String?
+    public let conditionBracelet: String?
+    public let conditionDial: String?
+    public let conditionBezel: String?
+    public let conditionCrystal: String?
+    public let conditionClasp: String?
+    public let conditionCaseback: String?
     public let imageCount: Int
     /// Field keys the listing still needs before submission.
     public let missing: [String]
@@ -262,6 +286,10 @@ public struct ListingDraftPayload: Encodable, Sendable {
     public var brand: String?
     public var model: String?
     public var reference: String?
+    /// The seller's unique shelf label. Unique per seller where set; the
+    /// server answers a collision with 409 `duplicate_sku`. Bulk import
+    /// matches on this and only this — `reference` is descriptive.
+    public var sellerSku: String?
     /// Serialized as a string to keep Decimal exactness on the wire.
     public var price: String?
     public var currency: String?
@@ -289,6 +317,7 @@ public struct ListingDraftPayload: Encodable, Sendable {
         brand: String? = nil,
         model: String? = nil,
         reference: String? = nil,
+        sellerSku: String? = nil,
         price: Decimal? = nil,
         currency: String? = nil,
         conditionOverall: String? = nil,
@@ -310,6 +339,7 @@ public struct ListingDraftPayload: Encodable, Sendable {
         self.brand = brand
         self.model = model
         self.reference = reference
+        self.sellerSku = sellerSku
         self.price = price.map { "\($0)" }
         self.currency = currency
         self.conditionOverall = conditionOverall

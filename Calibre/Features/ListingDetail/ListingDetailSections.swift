@@ -101,11 +101,17 @@ struct QuickSpecRow: View {
 struct ConditionGradingCard: View {
     let condition: ListingCondition
 
+    /// All eight parts, in the order the sell form asks for them — with the
+    /// overall grade first, because that is the one a buyer reads as the
+    /// summary. A part the seller left blank is simply not a row: nothing
+    /// here is filled in from a grade that belongs to something else.
     private var rows: [(label: String, value: String)] {
         [
             ("Overall", condition.overall),
-            ("Crystal", condition.crystal),
+            ("Case", condition.caseCondition),
+            ("Dial", condition.dial),
             ("Bezel", condition.bezel),
+            ("Crystal", condition.crystal),
             ("Bracelet", condition.bracelet),
             ("Clasp", condition.clasp),
             ("Caseback", condition.caseback),

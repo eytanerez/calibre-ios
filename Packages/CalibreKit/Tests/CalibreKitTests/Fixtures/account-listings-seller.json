@@ -1,0 +1,117 @@
+{
+  "ok": true,
+  "data": [
+    {
+      "seller_id": "s1",
+      "seller": {
+        "id": "s1",
+        "username": "johon",
+        "is_verified_dealer": true,
+        "reputation": {
+          "sales_count": 12,
+          "rating_count": 9,
+          "average_rating": 4.9
+        }
+      },
+      "variant_id": null,
+      "brand": "Tudor",
+      "model": "Black Bay Pro",
+      "reference_number": "M79470-0001",
+      "description": "Full set.",
+      "currency": "USD",
+      "box_papers": true,
+      "production_year": 2024,
+      "returns": {
+        "accepted": true,
+        "window_hours": 48
+      },
+      "country_of_origin": "CH",
+      "hts_code": "9102.21.70",
+      "review_events": [],
+      "images": [
+        "/media/listing_images/x/front.jpg"
+      ],
+      "estimated_shipping": null,
+      "metrics": {
+        "views": 41,
+        "watchers": 3
+      },
+      "created_at": "2026-08-01T10:00:00+00:00",
+      "updated_at": "2026-08-14T10:00:00+00:00",
+      "id": "49e52179-1035-46f9-abe0-443d915d8c3b",
+      "listing_number": 3099,
+      "title": "Tudor Black Bay Pro",
+      "seller_sku": "CAL-001",
+      "price": "10000.00",
+      "condition": {
+        "overall": "Very Good",
+        "crystal": "Like New",
+        "bezel": "Very Good",
+        "bracelet": "Good",
+        "clasp": "Good",
+        "caseback": "Very Good",
+        "case": "Very Good",
+        "dial": "Like New"
+      },
+      "status": "active",
+      "review_status": "active",
+      "seller_status": "live"
+    },
+    {
+      "seller_id": "s1",
+      "seller": {
+        "id": "s1",
+        "username": "johon",
+        "is_verified_dealer": true,
+        "reputation": {
+          "sales_count": 12,
+          "rating_count": 9,
+          "average_rating": 4.9
+        }
+      },
+      "variant_id": null,
+      "brand": "Tudor",
+      "model": "Black Bay Pro",
+      "reference_number": "M79470-0001",
+      "description": "Full set.",
+      "currency": "USD",
+      "box_papers": true,
+      "production_year": 2024,
+      "returns": {
+        "accepted": true,
+        "window_hours": 48
+      },
+      "country_of_origin": "CH",
+      "hts_code": "9102.21.70",
+      "review_events": [],
+      "images": [
+        "/media/listing_images/x/front.jpg"
+      ],
+      "estimated_shipping": null,
+      "metrics": {
+        "views": 41,
+        "watchers": 3
+      },
+      "created_at": "2026-08-01T10:00:00+00:00",
+      "updated_at": "2026-08-14T10:00:00+00:00",
+      "id": "5b7c0000-0000-4000-8000-0000000005b7",
+      "listing_number": 3100,
+      "title": "Omega Speedmaster Professional",
+      "seller_sku": "CAL-002",
+      "price": "7400.00",
+      "condition": {
+        "overall": "Very Good",
+        "crystal": "Like New",
+        "bezel": "Very Good",
+        "bracelet": "Good",
+        "clasp": null,
+        "caseback": null,
+        "case": "Very Good",
+        "dial": null
+      },
+      "status": "paused_card",
+      "review_status": "paused_card",
+      "seller_status": "paused_card"
+    }
+  ]
+}

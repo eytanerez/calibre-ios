@@ -1,5 +1,6 @@
 import CalibreDesign
 import CalibreKit
+import StripePaymentSheet
 import SwiftUI
 
 /// Step 2 — how to pay. Two quiet cards: card or Apple Pay (instant, with the
@@ -10,6 +11,9 @@ import SwiftUI
 struct CheckoutMethodStep: View {
     @Bindable var model: CheckoutModel
     @Environment(AppServices.self) private var services
+    /// The SDK holds the sheet weakly, so the view owns it for the life of
+    /// the add-card round trip.
+    @State private var cardSheet: PaymentSheet?
     @State private var tutorial = TutorialController(
         id: "checkout.method",
         steps: [
@@ -93,6 +97,20 @@ struct CheckoutMethodStep: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                // Before payment is committed, and on the one screen both
+                // routes pass through: what this seller's return terms
+                // actually are, and \u{2014} when wire is selected \u{2014} what the $250
+                // authorization means.
+                returnTermsDisclosure
+
+                if model.method == .wire {
+                    wireDepositDisclosure
+                }
+
+                if let refusal = model.wireCardRefusal {
+                    wireCardRefusalBlock(refusal)
+                }
+
                 if let problem = model.pricingProblem {
                     CheckoutProblemBlock(model: model, problem: problem) {
                         Task { await model.prepareCardIntent() }
@@ -130,6 +148,114 @@ struct CheckoutMethodStep: View {
         .task { await model.prepareCardIntent() }
         .task { try? await services.config.load() }
         .animation(Motion.easeFast, value: model.pricingError)
+    }
+
+    // MARK: - Disclosures
+
+    /// The seller's return terms, said plainly, before any payment. Terms are
+    /// the seller's, so a purchase covering several watches states them per
+    /// watch in the items card above rather than merging two into one
+    /// sentence that would be true of neither.
+    @ViewBuilder
+    private var returnTermsDisclosure: some View {
+        if !model.isMultiItem, let breakdown = model.breakdown {
+            let lines = CheckoutCopy.returnTermLines(breakdown)
+            if !lines.isEmpty {
+                DisclosureCard(
+                    icon: "arrow.uturn.backward",
+                    title: CheckoutCopy.returnTermsHeadline(breakdown)
+                ) {
+                    ForEach(lines, id: \.self) { line in
+                        Text(line)
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Shown the moment wire is selected, before the deposit is placed and
+    /// before any bank details exist. There is no release control anywhere:
+    /// the authorization comes off when the transfer arrives.
+    private var wireDepositDisclosure: some View {
+        DisclosureCard(icon: "creditcard", title: "A $250 authorization") {
+            Text(CheckoutCopy.wireHoldDisclosure)
+                .font(CalibreType.label)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("It has to be a credit card. Debit and prepaid cards can\u{2019}t hold a deposit.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The card gate, and the way through it. A refusal is never a dead end:
+    /// either a card can be added here, or card checkout is still one tap
+    /// away on the other option.
+    private func wireCardRefusalBlock(_ refusal: WireCardRefusal) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text(CheckoutCopy.wireCardRefusalMessage(refusal))
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if refusal.offersAddCard {
+                Button {
+                    Haptics.shared.play(.press)
+                    Task { await addCardForWire() }
+                } label: {
+                    BusyLabel(title: "Add a credit card", busy: model.addingWireCard)
+                }
+                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .disabled(model.addingWireCard)
+            }
+
+            Button("Pay by card instead") {
+                Haptics.shared.play(.selection)
+                model.dismissWireCardRefusal()
+                model.method = .card
+            }
+            .buttonStyle(.calibre(.secondary, fullWidth: true))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Space.l)
+        .background(
+            Color.calibre.destructive.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(Color.calibre.destructive.opacity(0.35), lineWidth: 1)
+        )
+    }
+
+    /// The account's own saved-card flow, run inline. The 402 arrives before
+    /// any deposit is placed, so re-opening the wire checkout afterwards
+    /// costs the buyer nothing.
+    private func addCardForWire() async {
+        await model.addCardForWire { intent in
+            await withCheckedContinuation { continuation in
+                STPAPIClient.shared.publishableKey = intent.publishableKey
+                let sheet = PaymentSheet(
+                    setupIntentClientSecret: intent.setupIntent.clientSecret,
+                    configuration: CalibreStripe.configuration(
+                        customerID: intent.customerId,
+                        customerSessionClientSecret: intent.customerSessionMobile?.clientSecret
+                    )
+                )
+                cardSheet = sheet
+                CalibreStripe.present(sheet) { result in
+                    if case .completed = result {
+                        continuation.resume(returning: true)
+                    } else {
+                        continuation.resume(returning: false)
+                    }
+                }
+            }
+        }
     }
 
     /// Which presentation this order is priced under. In discount mode the

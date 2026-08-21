@@ -37,10 +37,16 @@ public struct DealerApplication: Codable, Sendable {
     public let memberFeePercent: APIDecimal?
     /// The verified-dealer rate, e.g. "4.00".
     public let dealerFeePercent: APIDecimal?
+    /// The rate this seller is actually quoted, resolved the way checkout
+    /// resolves it — a negotiated override included. Always prefer this to
+    /// picking a published tier rate, which an override would contradict at
+    /// the sale.
+    public let effectiveFeePercentApplied: APIDecimal?
 
     enum CodingKeys: String, CodingKey {
         case status, companyName, country, appliedAt, verifiedAt, revokedReason
         case memberFeePercent, dealerFeePercent
+        case effectiveFeePercentApplied = "effectiveFeePercent"
     }
 
     /// Whether an application has ever been made.
@@ -59,9 +65,11 @@ public struct DealerApplication: Codable, Sendable {
 
     public var isRevoked: Bool { status == .revoked }
 
-    /// The rate that applies to this seller today, from the server.
+    /// The rate that applies to this seller today, from the server. The
+    /// server's own resolved figure wins; the tier rates only stand in for a
+    /// payload written before it existed.
     public var effectiveFeePercent: APIDecimal? {
-        isVerified ? dealerFeePercent : memberFeePercent
+        effectiveFeePercentApplied ?? (isVerified ? dealerFeePercent : memberFeePercent)
     }
 
     public init(from decoder: Decoder) throws {
@@ -74,6 +82,9 @@ public struct DealerApplication: Codable, Sendable {
         revokedReason = try container.decodeIfPresent(String.self, forKey: .revokedReason)
         memberFeePercent = try container.decodeIfPresent(APIDecimal.self, forKey: .memberFeePercent)
         dealerFeePercent = try container.decodeIfPresent(APIDecimal.self, forKey: .dealerFeePercent)
+        effectiveFeePercentApplied = try? container.decodeIfPresent(
+            APIDecimal.self, forKey: .effectiveFeePercentApplied
+        )
     }
 }
 

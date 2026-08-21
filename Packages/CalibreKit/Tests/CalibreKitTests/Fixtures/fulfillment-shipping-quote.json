@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "data": {
+    "amount": "38.40",
+    "currency": "USD",
+    "provider": "fedex",
+    "fallback_reason": null,
+    "package": {
+      "box_length_in": "9.00",
+      "box_width_in": "7.00",
+      "box_height_in": "4.00",
+      "weight_lb": "2.00",
+      "notes": null
+    },
+    "payout_preview": {
+      "sale_price": "10000.00",
+      "commission": {
+        "percent": "6.00",
+        "amount": "600.00",
+        "minimum_applied": false
+      },
+      "shipping_label": "38.40",
+      "amount": "9361.60"
+    }
+  }
+}

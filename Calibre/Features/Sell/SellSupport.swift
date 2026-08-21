@@ -51,13 +51,17 @@ enum SellerStatusDisplay {
         case "live", "active": ("Live", .success)
         case "reserved": ("Reserved", .info)
         case "awaiting_wire_transfer": ("Awaiting wire", .warning)
-        case "sold_awaiting_label_creation": ("Sold — label needed", .warning)
+        case "sold_awaiting_label_creation": ("Sold \u{2014} shipping details needed", .warning)
         case "in_transit": ("In transit", .info)
         case "delivered": ("Delivered", .success)
         case "refunded": ("Refunded", .danger)
         case "cancelled": ("Cancelled", .neutral)
         case "disputed": ("Disputed", .danger)
         case "rejected": ("Needs changes", .danger)
+        // Calibre took this one down, not the seller. Never folded into
+        // "archived": archiving is a deliberate seller action, and this one
+        // returns to the market by itself once a valid credit card is on file.
+        case "paused_card": ("Paused \u{2014} card lapsed", .warning)
         case "archived": ("Archived", .neutral)
         case "sold": ("Sold", .success)
         default: (listing.status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized, .neutral)
@@ -67,7 +71,7 @@ enum SellerStatusDisplay {
     /// Rows the "Needs action" inventory filter keeps.
     static func needsAction(_ listing: Listing) -> Bool {
         switch listing.sellerStatus ?? listing.status.rawValue {
-        case "draft", "rejected", "sold_awaiting_label_creation", "awaiting_wire_transfer": true
+        case "draft", "rejected", "paused_card", "sold_awaiting_label_creation", "awaiting_wire_transfer": true
         default: false
         }
     }
@@ -183,6 +187,123 @@ struct SellRowSkeleton: View {
             Spacer()
         }
         .padding(Space.l)
+    }
+}
+
+// MARK: - The payout ledger
+
+/// The four lines a payout is made of, exactly as the server states them:
+/// sale price, commission (with its rate, and a plain note when the
+/// marketplace minimum applied instead), the label Calibre bought, and what
+/// is left. Nothing here is arithmetic — a figure the payload omits is simply
+/// not a row, because a payout figure we can't stand behind is worse than
+/// none at all.
+///
+/// Money is never truncated or abbreviated: every figure is written out in
+/// full and wraps rather than shrinking.
+struct PayoutLedger: View {
+    let breakdown: PayoutBreakdown
+    var currency: String = "USD"
+    /// The heading, when the caller wants one.
+    var title: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            if let title {
+                Text(title)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    ledgerRow(row.label, row.value, emphasized: row.emphasized)
+                    if index < rows.count - 1 {
+                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                    }
+                }
+            }
+            .background(Color.calibre.card)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+            )
+
+            if breakdown.commission?.minimumApplied == true {
+                Text("Minimum applied \u{2014} the marketplace minimum commission was charged on this sale rather than the percentage.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private struct Row {
+        let label: String
+        let value: String
+        let emphasized: Bool
+    }
+
+    private var rows: [Row] {
+        var rows: [Row] = []
+        if let sale = breakdown.salePrice?.value {
+            rows.append(Row(label: "Sale price", value: money(sale), emphasized: false))
+        }
+        if let commission = breakdown.commission, let amount = commission.amount?.value {
+            let label = commission.percent.map { "Calibre\u{2019}s commission (\(feePercentText($0.value))%)" }
+                ?? "Calibre\u{2019}s commission"
+            rows.append(Row(label: label, value: "\u{2212} " + money(amount), emphasized: false))
+        }
+        if let label = breakdown.shippingLabel?.value {
+            rows.append(
+                Row(
+                    label: "Shipping label to authentication",
+                    value: "\u{2212} " + money(label),
+                    emphasized: false
+                )
+            )
+        }
+        if let payout = breakdown.amount?.value {
+            rows.append(Row(label: "Your payout", value: money(payout), emphasized: true))
+        }
+        return rows
+    }
+
+    private func money(_ value: Decimal) -> String {
+        PriceFormatter.format(value, currency: currency)
+    }
+
+    /// A money figure is never shortened to fit. When the two halves cannot
+    /// share a line they stack, and the number stays whole.
+    private func ledgerRow(_ label: String, _ value: String, emphasized: Bool) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.l) {
+                Text(label)
+                    .font(emphasized ? CalibreType.bodyMedium : CalibreType.body)
+                    .foregroundStyle(emphasized ? Color.calibre.foreground : Color.calibre.mutedForeground)
+                Spacer(minLength: Space.m)
+                Text(value)
+                    .font(emphasized ? CalibreType.price : CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            VStack(alignment: .leading, spacing: Space.xs) {
+                Text(label)
+                    .font(emphasized ? CalibreType.bodyMedium : CalibreType.body)
+                    .foregroundStyle(emphasized ? Color.calibre.foreground : Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(value)
+                    .font(emphasized ? CalibreType.price : CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .fixedSize()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, Space.l)
+        .padding(.vertical, Space.m)
+        .accessibilityElement(children: .combine)
     }
 }
 
