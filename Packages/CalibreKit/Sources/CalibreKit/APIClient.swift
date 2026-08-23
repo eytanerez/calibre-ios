@@ -150,6 +150,15 @@ public final class APIClient: Sendable {
     private func decodeEnvelope<Response: Decodable>(_ data: Data, status: Int, path: String) throws -> Response {
         let decoder = Self.makeDecoder(origin: configuration.baseURL)
 
+        // A 204 has no envelope to decode — `POST
+        // /account/notifications/{id}/opened` answers a bare "noted", because
+        // there is nothing to tell a tap handler. Only an `EmptyResponse`
+        // caller can be satisfied by nothing; anyone who asked for a payload
+        // and got none still fails, rather than being handed a silent default.
+        if data.isEmpty, (200..<300).contains(status), Response.self == EmptyResponse.self {
+            return EmptyResponse() as! Response
+        }
+
         let envelope: RawEnvelope
         do {
             envelope = try decoder.decode(RawEnvelope.self, from: data)

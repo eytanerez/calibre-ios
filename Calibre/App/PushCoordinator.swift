@@ -13,6 +13,10 @@ struct DecodedPush: Sendable {
     let body: String
     let route: String?
     let category: String
+    /// The server-side `Notification` row this push was sent for. Absent on a
+    /// push queued by a build that predates the field, which is the only
+    /// reason a tap would go unreported.
+    let notificationID: String?
 }
 
 /// One received notification, kept in the local Alerts inbox.
@@ -86,6 +90,7 @@ final class PushCoordinator: NSObject {
     @ObservationIgnored private var deviceToken: String?
     @ObservationIgnored weak var router: AppRouter?
     @ObservationIgnored weak var alerts: AlertsInbox?
+    @ObservationIgnored weak var serverAlerts: ServerAlertsStore?
 
     /// Whether we've already asked (so we prompt at most once ourselves).
     var hasRequestedPermission: Bool {
@@ -101,9 +106,10 @@ final class PushCoordinator: NSObject {
         super.init()
     }
 
-    func attach(router: AppRouter, alerts: AlertsInbox) {
+    func attach(router: AppRouter, alerts: AlertsInbox, serverAlerts: ServerAlertsStore) {
         self.router = router
         self.alerts = alerts
+        self.serverAlerts = serverAlerts
         UNUserNotificationCenter.current().delegate = self
     }
 
@@ -155,42 +161,81 @@ final class PushCoordinator: NSObject {
         Task { try? await account.unregisterDevice(token: token) }
     }
 
-    /// Records a decoded push (deduped by id) and, on a tap, navigates.
+    /// Records a decoded push (deduped by id) and, on a tap, reports the open
+    /// and navigates.
     func handle(_ push: DecodedPush, receivedAt: Date, foreground: Bool) {
         alerts?.record(id: push.id, category: push.category, title: push.title, body: push.body, route: push.route, at: receivedAt)
-        // A foreground push surfaces as a banner (via the delegate); a tap
-        // navigates.
-        if !foreground, let route = push.route { open(route: route) }
+        // A foreground push surfaces as a banner (via the delegate) and is not
+        // an open — seeing a banner is not reading the message.
+        guard !foreground else { return }
+        reportOpen(push)
+        // A push with no route, or a route this build has never heard of,
+        // still has to land somewhere: the inbox, where the notification
+        // itself is. Swallowing the tap is the one outcome that reads as the
+        // app being broken.
+        open(route: push.route ?? Self.inboxRoute)
+    }
+
+    /// The tap, told to both halves of the record: our own row (so the
+    /// push-first email delay knows the phone already delivered the news) and
+    /// PostHog (so an open joins the `push_delivered` the backend emitted).
+    ///
+    /// `notification_id` is the join key on both sides, so a push without one
+    /// reports nothing rather than inventing an id.
+    private func reportOpen(_ push: DecodedPush) {
+        guard let notificationID = push.notificationID else { return }
+        Analytics.pushOpened(notificationID: notificationID, category: push.category, route: push.route)
+        Task { [weak serverAlerts] in
+            // A failure here is not worth surfacing: the endpoint is
+            // idempotent, the next tap re-reports, and nothing the user can
+            // see depends on it.
+            try? await serverAlerts?.markOpened(id: notificationID)
+        }
     }
 
     /// Extracts the Sendable fields we need from a raw APNs payload. Runs in
     /// the nonisolated delegate so nothing non-Sendable crosses to the actor.
+    ///
+    /// `category` is read verbatim and never derived from the route
+    /// (contracts §12.3). The route cannot carry it: an `order/{id}` push is
+    /// an order update or a tracking update depending on what happened, and
+    /// guessing from the route is why every `tracking_updates` push used to
+    /// file itself under Orders.
     nonisolated static func decode(userInfo: [AnyHashable: Any], id: String) -> DecodedPush {
         let route = userInfo["route"] as? String
         let aps = userInfo["aps"] as? [AnyHashable: Any]
         let alert = aps?["alert"] as? [AnyHashable: Any]
         let title = (alert?["title"] as? String) ?? "Calibre"
         let body = (alert?["body"] as? String) ?? ""
-        let category = (userInfo["category"] as? String) ?? categoryFor(route: route)
-        return DecodedPush(id: id, title: title, body: body, route: route, category: category)
+        let category = (userInfo["category"] as? String) ?? unknownCategory
+        return DecodedPush(
+            id: id,
+            title: title,
+            body: body,
+            route: route,
+            category: category,
+            notificationID: userInfo["notification_id"] as? String
+        )
     }
 
-    nonisolated static func categoryFor(route: String?) -> String {
-        guard let route else { return "general" }
-        if route.hasPrefix("order") { return "order_updates" }
-        if route.hasPrefix("offer") { return "offer_updates" }
-        if route.hasPrefix("listing") { return "watchlist_alerts" }
-        if route.hasPrefix("support") { return "message_updates" }
-        return "general"
-    }
+    /// Filed under nothing in particular — a push that arrived without a
+    /// category, which now only happens to one queued before the server
+    /// started sending it. Deliberately not one of the real category names,
+    /// so a gap never masquerades as a classification.
+    nonisolated static let unknownCategory = "general"
+
+    /// Where a tap goes when its route means nothing here.
+    private static let inboxRoute = "alerts"
 
     /// Navigates to a route string like "order/123", "offer/45", "listing/9",
     /// "support", "alerts". Parked until the shell is ready if the router isn't
     /// attached yet (cold start).
     func open(route: String) {
         guard let router else { pendingRoute = route; return }
-        guard let parsed = Self.route(from: route) else { return }
-        router.open(parsed)
+        // An unparseable route opens the inbox rather than doing nothing: the
+        // notification is there either way, and a shipped build has no way of
+        // knowing what the server started sending after it.
+        router.open(Self.route(from: route) ?? .alerts)
     }
 
     /// Drains a cold-start route once the shell has attached the router.

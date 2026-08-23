@@ -28,14 +28,16 @@ public final class SupportStore {
     @discardableResult
     public func loadThread(authenticated: Bool) async throws -> SupportConversation? {
         var query: [URLQueryItem] = []
-        if authenticated {
-            // Once signed in, the account thread is authoritative — drop any
-            // lingering guest token so a shared device can't resurface the
-            // previous guest's conversation later.
-            forgetGuestToken()
-        } else if let token = guestToken {
+        if !authenticated, let token = guestToken {
             query.append(URLQueryItem(name: "token", value: token))
         }
+        // Signing in no longer throws the guest token away. The server merges
+        // a guest conversation into the account on signup, matched on the
+        // verified email (contracts §12.9), and a client that had already
+        // deleted its pointer left the thread stranded whenever that merge
+        // did not run — sign-in to an existing account, say. The token is now
+        // dropped at sign-out instead, which is the moment a shared handset
+        // actually changes hands.
         // The endpoint answers for guests too; only send auth when we have it.
         let thread: SupportConversation? = try await client.send(
             Endpoint(path: "/support/thread", query: query, requiresAuth: authenticated)
@@ -110,9 +112,24 @@ public final class SupportStore {
         return result.thread
     }
 
-    /// Clears the persisted guest token (e.g. on sign-in, when the thread
-    /// migrates to the account).
+    /// Clears the persisted guest token. Called at sign-out — not at sign-in,
+    /// where the server is the one that reconciles a guest thread with the
+    /// account it belongs to.
     public func forgetGuestToken() {
         defaults.removeObject(forKey: guestTokenKey)
+    }
+
+    /// Drops the thread held in memory — wired to
+    /// `AuthSession.onSessionCleared`, so the previous account's conversation
+    /// is not still on screen for whoever uses the app next.
+    ///
+    /// Deliberately leaves the guest token alone. A session can clear for
+    /// reasons that have nothing to do with a person leaving — a rejected
+    /// refresh token, a 401 on a guest's stray authenticated request — and
+    /// none of those should cost a guest the only pointer to their own
+    /// thread. Sign-out clears it, because that is the moment a device
+    /// actually changes hands.
+    public func reset() {
+        conversation = nil
     }
 }

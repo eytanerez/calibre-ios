@@ -16,6 +16,9 @@ import PostHog
 ///   nowhere else in the app.
 /// * A property whose value the client genuinely does not have is **omitted**,
 ///   never invented. `properties(for:)` drops nil rather than substituting.
+/// * `environment` rides on every event as a super property registered at
+///   start-up, not as an argument threaded through each call — see
+///   `environment` below.
 ///
 /// Emission must never break the product: an empty `CALIBRE_POSTHOG_KEY`
 /// disables the whole thing (the SDK is never even configured) and every entry
@@ -45,6 +48,33 @@ enum Analytics {
     /// displayed breakdown is quoting.
     enum PricingMode: String {
         case surcharge, discount
+    }
+
+    /// The `environment` super property (contracts §12.1a). Exactly these
+    /// three spellings on every platform — never `prod`, `dev` or `local` —
+    /// because one PostHog project holds all of it and a fourth spelling is a
+    /// year of production data quietly split in two.
+    enum Environment: String {
+        case production, staging, development
+    }
+
+    /// Resolved from the **build configuration**, which is the only thing that
+    /// knows what this binary is. Explicitly not the APNs sandbox/production
+    /// flag: that is push routing, and a TestFlight build is neither of those
+    /// while still being a production build of the app.
+    ///
+    /// There is no staging configuration in this project yet. `STAGING` is the
+    /// compilation condition a staging scheme would set, named here so the
+    /// answer is already correct on the day one is added, rather than
+    /// defaulting a staging build into production's funnels.
+    static var environment: Environment {
+        #if DEBUG
+        return .development
+        #elseif STAGING
+        return .staging
+        #else
+        return .production
+        #endif
     }
 
     /// The listing-shaped property group (`listing_id`, `brand`, `reference`,
@@ -114,15 +144,22 @@ enum Analytics {
         let host = infoValue("CalibrePostHogHost") ?? defaultHost
 
         let configuration = PostHogConfig(projectToken: token, host: host)
-        // Only the fourteen schema events may be emitted. PostHog's automatic
-        // capture would add screen views, lifecycle events and UI interactions
-        // on top of them, so it is all switched off deliberately.
+        // Only the schema's events may be emitted. PostHog's automatic capture
+        // would add screen views, lifecycle events and UI interactions on top
+        // of them, so it is all switched off deliberately.
         configuration.captureScreenViews = false
         configuration.captureApplicationLifecycleEvents = false
         configuration.captureElementInteractions = false
         configuration.sessionReplay = false
 
         PostHogSDK.shared.setup(configuration)
+
+        // Registered once, here, before anything can capture — a super
+        // property rather than an argument on every `send`. Passed per call it
+        // would eventually ship on an event that forgot it, and it would never
+        // reach `$identify` or any event PostHog raises on its own behalf.
+        PostHogSDK.shared.register(["environment": environment.rawValue])
+
         isEnabled = true
     }
 
@@ -141,6 +178,10 @@ enum Analytics {
             identifiedUserID = nil
             guard isEnabled else { return }
             PostHogSDK.shared.reset()
+            // reset() deletes registered properties with the stored identity,
+            // so the environment has to be re-registered or every event until
+            // the next cold launch ships without it.
+            PostHogSDK.shared.register(["environment": Environment.current.rawValue])
         }
     }
 
@@ -284,6 +325,23 @@ enum Analytics {
         ])
     }
 
+    /// The user tapped a push. `notification_id` is what joins this to the
+    /// `push_delivered` the backend emitted for the same row, so the pair
+    /// answers which categories are worth sending at all.
+    ///
+    /// Of the four messaging events the clients only ever emit this one — the
+    /// other three are the backend's, which is where delivery and bounces are
+    /// actually observed.
+    static func pushOpened(notificationID: String, category: String, route: String?) {
+        var properties: [String: Any] = [
+            "notification_id": notificationID,
+            "category": category,
+        ]
+        // Absent, not empty, on a push that carried no route.
+        if let route, !route.isEmpty { properties["route"] = route }
+        send(.pushOpened, properties)
+    }
+
     // MARK: - Listing provenance
 
     /// Remembers that these drafts arrived from a bulk CSV/XLSX import.
@@ -315,8 +373,9 @@ enum Analytics {
     // MARK: - Emission
 
     /// The schema's event names, verbatim. Nothing outside this enum may name
-    /// an event. `listing_approved` is intentionally missing: it is emitted by
-    /// the backend only.
+    /// an event. `listing_approved` is intentionally missing, as are
+    /// `push_delivered`, `email_delivered` and `email_bounced`: those are
+    /// emitted by the backend only, which is the side that can see them.
     private enum Event: String {
         case signupCompleted = "signup_completed"
         case sellerStarted = "seller_started"
@@ -331,6 +390,7 @@ enum Analytics {
         case watchAddedToCart = "watch_added_to_cart"
         case watchLiked = "watch_liked"
         case reviewLeft = "review_left"
+        case pushOpened = "push_opened"
     }
 
     /// Adds the common properties and hands the event to the SDK. Capture is

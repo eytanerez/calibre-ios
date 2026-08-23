@@ -40,6 +40,23 @@ public final class ServerAlertsStore {
         }
     }
 
+    /// Reports that the *push* for this notification was tapped.
+    ///
+    /// Deliberately not `markRead`: read means the row was seen in the inbox,
+    /// opened means the person tapped the notification itself, and the
+    /// server's push-first email delay only trusts the second. Idempotent
+    /// server-side — the same push lands on every device the account
+    /// registered, and one person reading one message once must stay one
+    /// open, so the first tap wins and later ones change nothing.
+    public func markOpened(id: String) async throws {
+        let _: EmptyResponse = try await client.send(
+            Endpoint(method: .post, path: "/account/notifications/\(id)/opened")
+        )
+        // `readAt` is left alone on purpose. Opened and read are two facts on
+        // the server, and a tap only establishes the first; the row stays
+        // unread in the inbox until it is opened there.
+    }
+
     public func markAllRead() async throws {
         struct Response: Decodable { let markedRead: Int }
         let _: Response = try await client.send(

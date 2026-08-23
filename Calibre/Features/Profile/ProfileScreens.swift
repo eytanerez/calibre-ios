@@ -707,12 +707,18 @@ struct NotificationSettingsScreen: View {
                     toggle("Saved watches", "Price drops on watches you've saved", prefs.watchlistAlerts) {
                         NotificationPreferencesPatch(watchlistAlerts: $0)
                     }
-                    toggle("Market", "New arrivals and market notes", prefs.marketUpdates) {
-                        NotificationPreferencesPatch(marketUpdates: $0)
-                    }
+                    // No "Market" row: nothing sends `market_updates`, and a
+                    // switch that controls nothing is worse than no switch.
+                    // The field stays in the stored preferences so existing
+                    // rows remain valid (contracts §12.4).
                     toggle("Security", "Sign-ins and account changes", prefs.securityAlerts) {
                         NotificationPreferencesPatch(securityAlerts: $0)
                     }
+                    Text("These control push notifications only. Whatever you switch off still lands in Alerts, so nothing goes missing.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, Space.s)
                 } else {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, Space.xxl)
                 }

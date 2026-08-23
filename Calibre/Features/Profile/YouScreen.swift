@@ -276,6 +276,11 @@ struct YouScreen: View {
     private func signOut() async {
         // Stop APNs delivery to this device before dropping the session.
         services.push.unregisterOnSignOut()
+        // The one moment a device genuinely changes hands, so the one place
+        // the guest support token is dropped. Signing *in* keeps it now — the
+        // server merges a guest thread into the account rather than the
+        // client throwing its pointer away.
+        services.support.forgetGuestToken()
         await session.logout()
         // Keep the shell open — the visitor continues as a guest.
         guestChosen = true

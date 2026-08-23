@@ -74,16 +74,22 @@ struct AlertsInboxScreen: View {
             }
         }
         .task {
-            await loadIfNeeded()
+            await reload()
         }
         .refreshable {
-            await loadIfNeeded(force: true)
+            await reload()
         }
     }
 
-    private func loadIfNeeded(force: Bool = false) async {
+    /// Refetches every time the inbox is opened, not only when it is empty.
+    /// A row now exists for events this device never got a push for — muted
+    /// categories still write the record (contracts §12.4), and so does every
+    /// event that arrived while another device held the session — so the
+    /// cached list is stale by default rather than by exception. The shimmer
+    /// is still reserved for a genuinely empty first load; a refresh over
+    /// rows already on screen replaces them in place.
+    private func reload() async {
         guard serverBacked else { return }
-        if !force, !services.serverAlerts.notifications.isEmpty { return }
         isLoading = services.serverAlerts.notifications.isEmpty
         defer { isLoading = false }
         try? await services.serverAlerts.load()
@@ -97,7 +103,11 @@ struct AlertsInboxScreen: View {
         } else {
             services.alerts.markRead(row.id)
         }
-        if let route = row.route, !route.isEmpty, route != "alerts" {
+        // Only a route this build can actually resolve navigates. A push tap
+        // falls back to the inbox when the route means nothing here, but from
+        // inside the inbox that fallback would push a second copy of this very
+        // screen, so an unknown route stays put instead.
+        if let route = row.route, let destination = PushCoordinator.route(from: route), destination != .alerts {
             services.push.open(route: route)
         }
     }

@@ -164,7 +164,11 @@ struct RootView: View {
             // Hand the live coordinator to the UIKit app delegate and let it
             // route pushes into the shell.
             PushAppDelegate.coordinator = services.push
-            services.push.attach(router: services.router, alerts: services.alerts)
+            services.push.attach(
+                router: services.router,
+                alerts: services.alerts,
+                serverAlerts: services.serverAlerts
+            )
         }
         // Environment injection stays OUTERMOST so sheet content (presented
         // from a node above the injection point otherwise) inherits it too.
@@ -295,10 +299,15 @@ final class AppServices {
         let commerce = self.commerce
         let vault = self.vault
         let serverAlerts = self.serverAlerts
-        auth.onSessionCleared = { [weak commerce, weak vault, weak serverAlerts] in
+        // Support joins them for the thread it is holding: it belongs to the
+        // account that just ended. Its guest token is deliberately *not*
+        // dropped here — see `SupportStore.reset()`.
+        let support = self.support
+        auth.onSessionCleared = { [weak commerce, weak vault, weak serverAlerts, weak support] in
             commerce?.reset()
             vault?.reset()
             serverAlerts?.reset()
+            support?.reset()
         }
     }
 }
