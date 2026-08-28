@@ -25,7 +25,7 @@ struct BrandScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle(brand)
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()

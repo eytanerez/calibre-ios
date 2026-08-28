@@ -27,9 +27,15 @@ grab listings-page GET "/listings?page_size=4&view=full&include_total=true"
 grab listings-card GET "/listings?page_size=4&view=card"
 grab listings-metadata GET "/listings/metadata"
 grab listings-home GET "/listings/home"
+grab market-reference-prices GET "/market/reference-prices"
 
 LISTING_ID=$(python3 -c "import json;print(json.load(open('$FIXTURES/listings-page.json'))['data']['results'][0]['id'])")
 grab listing-detail GET "/listings/$LISTING_ID"
+
+# A reference that actually publishes specs — most published references carry
+# a price and nothing else, and the spec sheet needs a filled one to pin.
+PRICED_SLUG=$(python3 -c "import json;refs=json.load(open('$FIXTURES/market-reference-prices.json'))['data']['references'];print(next(r['slug'] for r in refs if any(v is not None for v in r['specs'].values())))")
+grab market-reference-price GET "/market/reference-prices/$PRICED_SLUG"
 
 echo "Signing in demo buyer…"
 grab auth-login POST "/auth/login" "{\"identifier\": \"$BUYER_EMAIL\", \"password\": \"$BUYER_PASSWORD\"}"

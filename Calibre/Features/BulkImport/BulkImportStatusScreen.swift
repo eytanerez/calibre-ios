@@ -45,7 +45,7 @@ struct BulkImportStatusScreen: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.calibre.background.ignoresSafeArea())
+            .calibrePageBackground()
             .navigationTitle("Bulk imports")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

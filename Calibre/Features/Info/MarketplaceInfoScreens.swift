@@ -16,7 +16,7 @@ struct MarketplaceGuideScreen: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("How it works")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -212,7 +212,7 @@ struct FeeBreakdownScreen: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Fees and payments")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { services?.config.warm() }
@@ -403,7 +403,7 @@ struct AuthenticationGuideScreen: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Authentication")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -827,7 +827,7 @@ private struct PolicyScaffold<Content: View>: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
     }

@@ -52,7 +52,7 @@ struct AllBrandsScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("All brands")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "Search brands")

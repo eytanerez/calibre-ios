@@ -120,7 +120,7 @@ struct LoginScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .toolbar {
             if context == .modal {
                 ToolbarItem(placement: .topBarTrailing) {

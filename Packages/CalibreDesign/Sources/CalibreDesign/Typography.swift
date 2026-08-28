@@ -29,6 +29,15 @@ public enum CalibreType {
     public static var label: Font { sans(.medium, 13, relativeTo: .footnote) }
     /// Metadata and timestamps. Geist 12.
     public static var caption: Font { sans(.regular, 12, relativeTo: .caption) }
+    /// A person's own handwriting — a seller's note, an owner's nickname, an
+    /// aside. Caveat 17. The size runs above the Geist body on purpose: Caveat
+    /// draws small for its point size, and this is already the compensated
+    /// figure. Never on a price, a control, a label, or anything transactional.
+    public static var hand: Font { custom(CalibreFonts.Name.hand, 17, relativeTo: .body) }
+    /// The hand at the smaller register — an annotation caption under a photo.
+    /// Caveat 15, compensated the same way.
+    public static var handSmall: Font { custom(CalibreFonts.Name.hand, 15, relativeTo: .subheadline) }
+
     /// The single sanctioned uppercase style — apply via `Eyebrow`, not directly.
     public static var eyebrow: Font { sans(.medium, 11, relativeTo: .caption2) }
     /// Tracking that pairs with `eyebrow` (0.18em at 11pt).

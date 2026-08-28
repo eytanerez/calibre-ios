@@ -38,7 +38,7 @@ struct CheckoutShippingStep: View {
             .padding(.top, Space.m)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

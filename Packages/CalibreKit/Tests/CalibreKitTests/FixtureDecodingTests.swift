@@ -384,7 +384,11 @@ final class FixtureDecodingTests: XCTestCase {
             "account_id": "acct_1", "onboarding_complete": true, "details_submitted": true,
             "charges_enabled": true, "payouts_enabled": true,
             "last_checked_at": "2026-07-10T00:00:00+00:00",
-            "requirements_currently_due": [], "requirements_eventually_due": ["individual.id_number"]
+            "requirements_currently_due": [], "requirements_eventually_due": ["individual.id_number"],
+            "status": "complete", "status_basis": "live",
+            "missing_items": [], "review_items": [],
+            "upcoming_items": [{"key": "ssn", "label": "Social Security number — entered directly with Stripe"}],
+            "disabled_reason": null
           },
           "can_list": true
         }
@@ -392,6 +396,9 @@ final class FixtureDecodingTests: XCTestCase {
         let readiness = try apiDecoder().decode(SellerReadiness.self, from: Data(readinessJSON.utf8))
         XCTAssertTrue(readiness.canList)
         XCTAssertEqual(readiness.connect.requirementsEventuallyDue, ["individual.id_number"])
+        // The raw key and its humanized twin travel together — the raw list is
+        // Stripe's spelling, the items are the seller's.
+        XCTAssertEqual(readiness.connect.upcomingItems.map(\.key), ["ssn"])
     }
 
     func testCartWatchlistAddressSyntheticSamplesDecode() throws {
@@ -1026,6 +1033,183 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(article.sources.count, 4)
         XCTAssertFalse(article.sections[0].heading.isEmpty)
         XCTAssertFalse(article.sections[0].paragraphs.isEmpty)
+    }
+
+    // MARK: market reference prices
+
+    func testMarketReferencePricesFixtureDecodes() throws {
+        let payload = try apiDecoder().decode(
+            Envelope<MarketReferencePriceList>.self,
+            from: fixtureData("market-reference-prices")
+        ).data
+        XCTAssertEqual(payload.asOf, "2026-08-23T14:05:20.235013Z")
+
+        let priced = try XCTUnwrap(payload.references.first { $0.slug == "audemars-piguet-26574st-oo-1220st-02" })
+        XCTAssertEqual(priced.brand, "Audemars Piguet")
+        XCTAssertEqual(priced.reference, "26574ST.OO.1220ST.02")
+        XCTAssertEqual(priced.price.value, Decimal(string: "23506.35"))
+        XCTAssertEqual(priced.currency, "USD")
+        // History is change-points, oldest first, always landing on today's
+        // price — the chart depends on both ends of that promise.
+        let history = priced.history
+        XCTAssertEqual(history.first?.date, "2026-02-24")
+        XCTAssertEqual(history.last?.date, "2026-08-23")
+        XCTAssertEqual(history.last?.price.value, priced.price.value)
+    }
+
+    func testReferencePriceSpecsReadInSheetOrder() throws {
+        let payload = try apiDecoder().decode(
+            Envelope<MarketReferencePriceList>.self,
+            from: fixtureData("market-reference-prices")
+        ).data
+        let priced = try XCTUnwrap(payload.references.first { $0.slug == "audemars-piguet-26574st-oo-1220st-02" })
+        XCTAssertEqual(priced.specs.diameterMm, 41)
+        XCTAssertEqual(priced.specs.dial, "Blue Grande Tapisserie")
+        XCTAssertEqual(
+            priced.specs.rows.map(\.label),
+            ["Material", "Bezel", "Glass", "Back", "Shape", "Diameter", "Finish", "Dial", "Indexes", "Hands"]
+        )
+        // Millimetres render as one word, never a bare number.
+        XCTAssertEqual(priced.specs.rows.first { $0.label == "Diameter" }?.value, "41mm")
+    }
+
+    func testUnfilledSpecsProduceNoRowsAtAll() throws {
+        let payload = try apiDecoder().decode(
+            Envelope<MarketReferencePriceList>.self,
+            from: fixtureData("market-reference-prices")
+        ).data
+        // Most published references carry no specs yet. An empty sheet must
+        // come back empty rather than as a column of dashes.
+        let bare = try XCTUnwrap(payload.references.first { $0.slug == "a-lange-s-hne-191-032" })
+        XCTAssertTrue(bare.specs.isEmpty)
+        XCTAssertTrue(bare.specs.rows.isEmpty)
+        XCTAssertNil(bare.specs.diameterMm)
+    }
+
+    func testMarketReferencePriceFixtureDecodes() throws {
+        let price = try apiDecoder().decode(
+            Envelope<MarketReferencePrice>.self,
+            from: fixtureData("market-reference-price")
+        ).data
+        XCTAssertEqual(price.slug, "audemars-piguet-26574st-oo-1220st-02")
+        XCTAssertEqual(price.model, "Royal Oak Perpetual Calendar")
+        XCTAssertEqual(price.setAt, "2026-08-20T13:00:00Z")
+        XCTAssertEqual(price.specs.material, "Stainless steel")
+        XCTAssertEqual(price.history.last?.price.value, price.price.value)
+    }
+
+    // MARK: vault detail
+
+    func testVaultWatchDetailSyntheticSampleDecodes() throws {
+        let json = """
+        {
+          "id": "3f1c9d20-1111-4a1e-9f0c-2c9c0c0c0c0c",
+          "source": "calibre_order",
+          "authenticated": true,
+          "order_id": "o1",
+          "listing_id": "l1",
+          "passport_code": "CAL-7F3A2B",
+          "brand": "Audemars Piguet",
+          "model": "Royal Oak Perpetual Calendar",
+          "reference": "26574ST.OO.1220ST.02",
+          "production_year": 2021,
+          "nickname": null,
+          "notes": "Bought at the boutique.",
+          "photo_url": null,
+          "acquired_price": "23000.00",
+          "acquired_date": "2024-05-02",
+          "estimated_value": "23506.35",
+          "estimated_at": "2026-08-23T14:05:20Z",
+          "created_at": "2024-05-02T10:00:00Z",
+          "service_records": [
+            {
+              "id": "s1",
+              "vault_watch_id": "3f1c9d20-1111-4a1e-9f0c-2c9c0c0c0c0c",
+              "serviced_at": "2025-06-01",
+              "provider": "AP Service",
+              "details": "Full service.",
+              "cost": "900.00",
+              "created_at": "2025-06-02T09:00:00Z"
+            }
+          ],
+          "reference_row": {
+            "id": "70af3897-793a-40e6-99e9-0a3bed919425",
+            "slug": "audemars-piguet-26574st-oo-1220st-02",
+            "brand": "Audemars Piguet",
+            "model": "Royal Oak Perpetual Calendar",
+            "reference": "26574ST.OO.1220ST.02",
+            "specs": {
+              "material": "Stainless steel", "bezel": null, "glass": null, "back": null,
+              "shape": null, "diameter_mm": 41, "finish": null, "dial": null,
+              "indexes": null, "hands": null
+            },
+            "in_catalog": true
+          },
+          "pending_suggestion": false
+        }
+        """
+        let detail = try apiDecoder().decode(VaultWatchDetail.self, from: Data(json.utf8))
+        XCTAssertEqual(detail.id, detail.watch.id)
+        XCTAssertTrue(detail.watch.authenticated)
+        XCTAssertEqual(detail.watch.passportCode, "CAL-7F3A2B")
+        XCTAssertEqual(detail.serviceRecords.first?.provider, "AP Service")
+        XCTAssertEqual(detail.referenceRow?.slug, "audemars-piguet-26574st-oo-1220st-02")
+        XCTAssertEqual(detail.referenceRow?.inCatalog, true)
+        XCTAssertEqual(detail.referenceRow?.specs.rows.map(\.label), ["Material", "Diameter"])
+        XCTAssertFalse(detail.pendingSuggestion)
+    }
+
+    func testVaultWatchDetailWithoutACatalogRowDecodes() throws {
+        let json = """
+        {
+          "id": "aa11", "source": "manual", "authenticated": false, "order_id": null,
+          "listing_id": null, "passport_code": null, "brand": "Seiko", "model": null,
+          "reference": "SBGA211", "production_year": null, "nickname": "Snowflake",
+          "notes": null, "photo_url": null, "acquired_price": null, "acquired_date": null,
+          "estimated_value": null, "estimated_at": null, "created_at": null,
+          "service_records": [], "reference_row": null, "pending_suggestion": true
+        }
+        """
+        let detail = try apiDecoder().decode(VaultWatchDetail.self, from: Data(json.utf8))
+        XCTAssertNil(detail.referenceRow)
+        XCTAssertTrue(detail.pendingSuggestion)
+        XCTAssertTrue(detail.serviceRecords.isEmpty)
+        XCTAssertEqual(detail.watch.displayTitle, "Snowflake")
+    }
+
+    func testAuthenticatedComesFromTheServerNotFromSource() throws {
+        // The badge is the server's word. A client that re-derived it from
+        // `source` would light this row up, and this test is what stops that
+        // from being reintroduced quietly.
+        let json = """
+        {"id": "bb22", "source": "calibre_order", "authenticated": false, "order_id": "o9",
+         "listing_id": null, "passport_code": null, "brand": "Rolex", "model": null,
+         "reference": null, "production_year": null, "nickname": null, "notes": null,
+         "photo_url": null, "acquired_price": null, "acquired_date": null,
+         "estimated_value": null, "estimated_at": null, "created_at": null}
+        """
+        let watch = try apiDecoder().decode(VaultWatch.self, from: Data(json.utf8))
+        XCTAssertFalse(watch.authenticated)
+    }
+
+    func testReferenceSuggestionResultDecodes() throws {
+        let json = """
+        {
+          "id": "sug-1", "brand": "Seiko", "model": "Grand Seiko Snowflake",
+          "reference": "SBGA211", "production_year": 2019, "notes": "Titanium case.",
+          "specs": {
+            "material": "Titanium", "bezel": null, "glass": "Sapphire", "back": null,
+            "shape": "Round", "diameter_mm": 41, "finish": "Zaratsu", "dial": "Snowflake white",
+            "indexes": "Applied", "hands": "Polished"
+          },
+          "submitted_at": "2026-08-25T09:00:00Z", "resolved_at": null
+        }
+        """
+        let suggestion = try apiDecoder().decode(ReferenceSuggestion.self, from: Data(json.utf8))
+        XCTAssertEqual(suggestion.reference, "SBGA211")
+        XCTAssertEqual(suggestion.specs.diameterMm, 41)
+        XCTAssertNil(suggestion.resolvedAt)
+        XCTAssertEqual(suggestion.specs.rows.first?.value, "Titanium")
     }
 
     func testJournalArticleRoundTripsThroughTheOfflineCache() throws {

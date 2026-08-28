@@ -101,3 +101,52 @@ public struct DealerApplicationResult: Decodable, Sendable {
         public let clientSecret: String
     }
 }
+
+/// Where a verified dealer's storefront line stands.
+///
+/// `null` on the wire — not a word — when nothing was ever submitted, which
+/// is the state almost every dealer is in. It is what keeps them out of the
+/// moderation queue, and rendering "pending" for a dealer who has never
+/// written one would be the app inventing a state the server does not have.
+public enum DealerBioStatus: String, Codable, Sendable {
+    case pending
+    case approved
+    case rejected
+    case unknown
+
+    public init(from decoder: Decoder) throws {
+        self = try decodeWireStatus(from: decoder, fallback: .unknown)
+    }
+}
+
+/// `GET|PUT /account/dealer/bio` — the storefront line as its author sees it.
+///
+/// `bio` and `live` differ mid-edit and that is the point: the words waiting
+/// on a reviewer are the dealer's, and the words a buyer is reading are the
+/// last ones that cleared. The editor shows `bio`; a storefront shows `live`.
+public struct DealerBio: Decodable, Sendable {
+    /// What the dealer last submitted, reviewed or not.
+    public let bio: String?
+    /// Nil when nothing has ever been submitted.
+    public let status: DealerBioStatus?
+    /// What a buyer sees right now.
+    public let live: String?
+    public let submittedAt: Date?
+    public let reviewedAt: Date?
+    /// The reviewer's own sentence, on a rejection. Never written here.
+    public let rejectedReason: String?
+
+    /// One line, and the reviewer reads it before a buyer does.
+    public static let characterLimit = 160
+
+    /// A line is with a reviewer and cannot be edited into approval by
+    /// resubmitting it.
+    public var isAwaitingReview: Bool { status == .pending }
+
+    /// The dealer has written something the storefront is not showing —
+    /// either it is still in review, or it came back.
+    public var hasUnpublishedEdit: Bool {
+        guard let status else { return false }
+        return status != .approved
+    }
+}

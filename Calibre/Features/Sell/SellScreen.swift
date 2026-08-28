@@ -32,7 +32,7 @@ struct SellScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Sell")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(session.isAuthenticated)-\(retryToken)") {

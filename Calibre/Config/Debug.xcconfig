@@ -1,8 +1,12 @@
-// Local development — the simulator shares the Mac's loopback interface,
-// while a physical device reaches the same backend through Cloudflare Tunnel.
+// Local development — the simulator shares the Mac's loopback interface, while
+// a physical device reaches the same backend over the LAN. Plaintext to a
+// private address is admitted by NSAllowsLocalNetworking in Info.plist, so the
+// device build needs no tunnel and no certificate. If the Mac's IP moves,
+// re-check `ipconfig getifaddr en0` — the previous quick tunnel here had gone
+// dead and was still pointed at the retired :8000 compose stack.
 // Routes are served at the origin root (no /api prefix).
-API_BASE_URL[sdk=iphonesimulator*] = http:/$()/localhost:8000
-API_BASE_URL[sdk=iphoneos*] = https:/$()/selections-ooo-retreat-pix.trycloudflare.com
+API_BASE_URL[sdk=iphonesimulator*] = http:/$()/localhost:8010
+API_BASE_URL[sdk=iphoneos*] = http:/$()/192.168.86.22:8010
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
 
 // Shows Apple Pay in the payment sheet. Completing one additionally needs the

@@ -181,7 +181,7 @@ enum Analytics {
             // reset() deletes registered properties with the stored identity,
             // so the environment has to be re-registered or every event until
             // the next cold launch ships without it.
-            PostHogSDK.shared.register(["environment": Environment.current.rawValue])
+            PostHogSDK.shared.register(["environment": environment.rawValue])
         }
     }
 

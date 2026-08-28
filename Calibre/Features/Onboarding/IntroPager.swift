@@ -81,7 +81,7 @@ struct IntroPager: View {
             .padding(.bottom, Space.l)
             .animation(nil, value: page)
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
     }
 
     private func finish() {

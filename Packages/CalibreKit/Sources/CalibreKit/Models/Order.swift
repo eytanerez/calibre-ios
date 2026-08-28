@@ -118,6 +118,11 @@ public struct Order: Codable, Sendable, Identifiable {
     public let latestShipment: Shipment?
     public let authResult: OrderAuthResult?
 
+    /// The line the seller wrote when they handed the parcel over, shown to
+    /// the buyer once it arrives. Written once, at the declaration, and never
+    /// edited afterwards — it is a note in the box, not a message thread.
+    public let packingNote: String?
+
     // Addresses.
     public let shippingAddress: OrderShippingAddress?
     public let authCenterAddress: ShippingParty?

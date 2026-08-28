@@ -16,11 +16,32 @@ struct PhotoReplaceTarget: Identifiable {
 struct PhotoPreviewScreen: View {
     let target: PhotoReplaceTarget
     let slot: WizardPhotoSlot?
+    /// The seller's own mark on this photo, when there is one. A mark is
+    /// keyed on the photo's position, so replacing the picture drops it — the
+    /// server discards it rather than re-pointing it at a different shot.
+    var mark: ListingAnnotation?
     let onReplace: (UIImage) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var capturing = false
     @State private var pickerItem: PhotosPickerItem?
+    @State private var showingLibrary = false
+    /// Set when a replacement is one confirmation away from losing a mark.
+    @State private var pendingReplacement: Replacement?
+
+    /// Which way the seller chose to replace the photo, held while they are
+    /// asked about the mark it would take with it.
+    private enum Replacement: Identifiable {
+        case camera
+        case library
+
+        var id: Int {
+            switch self {
+            case .camera: 0
+            case .library: 1
+            }
+        }
+    }
 
     var body: some View {
         Group {
@@ -47,6 +68,54 @@ struct PhotoPreviewScreen: View {
                 pickerItem = nil
             }
         }
+        // Losing a line is visible; a line drawn across the wrong part of the
+        // watch is not. So the mark is cleared rather than moved, and the
+        // seller is told before it happens rather than after.
+        .alert(
+            "Your mark comes off",
+            isPresented: Binding(
+                get: { pendingReplacement != nil },
+                set: { if !$0 { pendingReplacement = nil } }
+            ),
+            presenting: pendingReplacement
+        ) { replacement in
+            Button("Replace the photo", role: .destructive) {
+                pendingReplacement = nil
+                proceed(with: replacement)
+            }
+            Button("Keep this one", role: .cancel) {
+                pendingReplacement = nil
+            }
+        } message: { _ in
+            Text(markWarning)
+        }
+    }
+
+    private var markWarning: String {
+        guard let note = mark?.note, !note.isEmpty else {
+            return "You drew on this photo. A new one comes in without the mark, and you can draw it again."
+        }
+        return "You drew on this photo and wrote \u{201C}\(note)\u{201D}. A new one comes in without the mark, and you can draw it again."
+    }
+
+    /// Every route to a new photo goes through here, so the mark can only be
+    /// lost on the far side of the question.
+    private func replace(with replacement: Replacement) {
+        guard mark != nil else {
+            proceed(with: replacement)
+            return
+        }
+        pendingReplacement = replacement
+    }
+
+    private func proceed(with replacement: Replacement) {
+        switch replacement {
+        case .camera:
+            Haptics.shared.play(.press)
+            capturing = true
+        case .library:
+            showingLibrary = true
+        }
     }
 
     private var preview: some View {
@@ -59,12 +128,16 @@ struct PhotoPreviewScreen: View {
 
                 VStack(spacing: Space.m) {
                     Button("Take a new photo") {
-                        Haptics.shared.play(.press)
-                        capturing = true
+                        replace(with: .camera)
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
 
-                    PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
+                    // A button rather than a `PhotosPicker` label: the picker
+                    // opens the instant its label is tapped, and the question
+                    // about the mark has to come first.
+                    Button {
+                        replace(with: .library)
+                    } label: {
                         Text("Choose from library")
                             .font(CalibreType.bodyMedium)
                             .foregroundStyle(Color(white: 1))
@@ -74,6 +147,12 @@ struct PhotoPreviewScreen: View {
                                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                             )
                     }
+                    .photosPicker(
+                        isPresented: $showingLibrary,
+                        selection: $pickerItem,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    )
                 }
                 .padding(.horizontal, Space.margin)
                 .padding(.vertical, Space.l)

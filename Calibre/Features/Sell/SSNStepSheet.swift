@@ -2,9 +2,18 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// Native SSN step before Stripe Connect onboarding. The number is masked,
-/// auto-formats as 123-45-6789, and goes straight to Stripe — Calibre keeps
-/// only a one-way fingerprint.
+/// Native SSN step before Stripe Connect onboarding. The number is masked and
+/// auto-formats as 123-45-6789.
+///
+/// It is asked for one reason: the backend digests it and checks that digest
+/// against banned and suspended accounts before creating a Connect account
+/// (`StripeConnectAccountSessionView.post`). **The number is not forwarded to
+/// Stripe** — it is absent from the individual prefill and from the account
+/// create payload, and `_normalize_v2_individual_prefill` strips an
+/// `id_numbers` key even if a future caller adds one back. That is why a fresh
+/// Connect account lists the SSN among its own Stripe requirements: the seller
+/// types it again inside Stripe's form. This screen must say so, because the
+/// screen that said the opposite was telling sellers something untrue.
 struct SSNStepSheet: View {
     let onSession: (ConnectAccountSession) -> Void
 
@@ -16,8 +25,13 @@ struct SSNStepSheet: View {
     @State private var busy = false
 
     var body: some View {
-        SheetScaffold(title: "Verify your identity", detents: [.medium]) {
+        SheetScaffold(title: "One quick check", detents: [.large]) {
             VStack(alignment: .leading, spacing: Space.xl) {
+                Text("Before we open a payouts account, we check that this number doesn't match any banned or suspended Calibre account.")
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 CalibreTextField(
                     "Social Security number",
                     text: $ssn,
@@ -39,7 +53,8 @@ struct SSNStepSheet: View {
 
                 CalloutBand(
                     icon: "lock.shield",
-                    message: "Your SSN is sent securely to Stripe to verify your identity. Calibre never stores it — only a one-way fingerprint that keeps previously banned sellers off the marketplace."
+                    title: "Where this number goes",
+                    message: "We don't send your Social Security number to Stripe — only a one-way fingerprint stays with us. Stripe will ask for it again inside their own form."
                 )
 
                 Button {

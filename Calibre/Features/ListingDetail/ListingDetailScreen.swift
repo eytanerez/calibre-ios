@@ -54,7 +54,7 @@ struct ListingDetailScreen: View {
                 skeleton
             }
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .accessibilityIdentifier("listing-detail-screen")
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
@@ -103,9 +103,13 @@ struct ListingDetailScreen: View {
     private func content(_ listing: Listing) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
+                // The marks travel on this payload already; asking for them
+                // separately would give the gallery a source that can
+                // disagree with the photos it is drawing over.
                 ListingGallery(
                     images: listing.images.map(\.url),
-                    condition: listing.condition?.overall
+                    condition: listing.condition?.overall,
+                    annotations: listing.annotations
                 ) { page in
                     lightbox = LightboxContext(page: page)
                 }

@@ -1,10 +1,27 @@
 import CalibreDesign
+import CalibreKit
 import SwiftUI
 
-/// Reference-level market board: the Calibre Index, a filterable/sortable
-/// grid of tickers, and a tap-through to each watch's detail chart. Mirrors
-/// the web app's Market Data page — same figures, same interactions.
+/// Reference-level market board: every reference Calibre publishes a price
+/// for, filterable and sortable, with a tap-through to the reference's own
+/// chart and spec sheet.
+///
+/// The set is whatever `/market/reference-prices` says it is. A reference
+/// only publishes once there is enough of Calibre's own trade behind it, so
+/// an empty board is a real answer — "nothing published yet" — and reads as
+/// one rather than as a screen that failed to load.
 struct MarketBoardView: View {
+    /// One reference plus the series drawn from its change-points, built once
+    /// per load rather than per render — resampling every card's history on
+    /// every scroll tick is work nobody asked for.
+    private struct BoardRow: Identifiable {
+        let price: MarketReferencePrice
+        let series: MarketSeries
+
+        var id: String { price.id }
+        var change: Double { series.change }
+    }
+
     enum SortKey: String, CaseIterable, Identifiable {
         case gainers, losers, price, name
         var id: String { rawValue }
@@ -30,61 +47,30 @@ struct MarketBoardView: View {
         }
     }
 
-    private static let usd: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter
-    }()
+    @Environment(AppServices.self) private var services
 
-    private static func usdCompact(_ value: Double) -> String {
-        if value >= 1000 {
-            let thousands = value / 1000
-            return String(format: thousands >= 100 ? "$%.0fk" : "$%.1fk", thousands)
-        }
-        return "$\(Int(value.rounded()))"
-    }
-
-    private static func usdFull(_ value: Double) -> String {
-        usd.string(from: NSNumber(value: value)) ?? "$\(Int(value))"
-    }
-
-    private static func formatPercent(_ fraction: Double) -> String {
-        let pct = abs(fraction * 100)
-        let sign = fraction >= 0 ? "+" : "\u{2212}"
-        return "\(sign)\(String(format: "%.2f", pct))%"
-    }
-
-    private let markets = MarketData.buildMarkets()
-    private let dates = MarketData.buildHistoryDates()
-    private var indexSeries: [Double] { MarketData.buildIndexSeries(markets) }
+    @State private var rows: [BoardRow] = []
+    @State private var asOf: String?
+    @State private var isLoading = true
+    @State private var loadFailed = false
 
     @State private var searchText = ""
     @State private var selectedBrand: String?
     @State private var trend: TrendFilter = .all
     @State private var sort: SortKey = .gainers
-    @State private var selectedMarket: MarketData.Market?
+    @State private var selectedReference: MarketReferencePrice?
 
     private var brands: [String] {
-        Array(Set(markets.map(\.brand))).sorted()
+        Array(Set(rows.map(\.price.brand))).sorted()
     }
 
-    private var indexCurrent: Double { indexSeries.last ?? 100 }
-    private var indexChange: Double {
-        guard let first = indexSeries.first, first != 0 else { return 0 }
-        return indexCurrent / first - 1
-    }
-    private var advancingCount: Int { markets.filter { $0.change >= 0 }.count }
-    private var decliningCount: Int { markets.count - advancingCount }
-    private var topMover: MarketData.Market? {
-        markets.max { $0.change < $1.change }
-    }
+    private var advancingCount: Int { rows.filter { $0.change >= 0 }.count }
+    private var decliningCount: Int { rows.count - advancingCount }
 
-    private var visibleMarkets: [MarketData.Market] {
-        var filtered = markets
+    private var visibleRows: [BoardRow] {
+        var filtered = rows
         if let selectedBrand {
-            filtered = filtered.filter { $0.brand == selectedBrand }
+            filtered = filtered.filter { $0.price.brand == selectedBrand }
         }
         switch trend {
         case .all: break
@@ -93,15 +79,21 @@ struct MarketBoardView: View {
         }
         let term = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if !term.isEmpty {
-            filtered = filtered.filter { "\($0.brand) \($0.model) \($0.reference)".lowercased().contains(term) }
+            filtered = filtered.filter {
+                "\($0.price.brand) \($0.price.model ?? "") \($0.price.reference)".lowercased().contains(term)
+            }
         }
         switch sort {
         case .gainers: filtered.sort { $0.change > $1.change }
         case .losers: filtered.sort { $0.change < $1.change }
-        case .price: filtered.sort { $0.price > $1.price }
-        case .name: filtered.sort { "\($0.brand) \($0.model)" < "\($1.brand) \($1.model)" }
+        case .price: filtered.sort { $0.price.currentValue > $1.price.currentValue }
+        case .name: filtered.sort { name(for: $0) < name(for: $1) }
         }
         return filtered
+    }
+
+    private func name(for row: BoardRow) -> String {
+        "\(row.price.brand) \(row.price.model ?? row.price.reference)"
     }
 
     private var hasActiveFilters: Bool {
@@ -109,13 +101,64 @@ struct MarketBoardView: View {
     }
 
     var body: some View {
+        Group {
+            if isLoading, rows.isEmpty {
+                skeleton
+            } else if rows.isEmpty, loadFailed {
+                EmptyState(
+                    icon: "wifi.slash",
+                    title: "Couldn't load market prices",
+                    message: "Check your connection and try again.",
+                    actionTitle: "Try again"
+                ) {
+                    Task { await load() }
+                }
+            } else if rows.isEmpty {
+                EmptyState(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "No prices published yet",
+                    message: "Calibre publishes a reference price once there's enough of its own trade behind it. Nothing is published today \u{2014} check back."
+                )
+            } else {
+                board
+            }
+        }
+        .task {
+            guard rows.isEmpty else { return }
+            await load()
+        }
+        .sheet(item: $selectedReference) { price in
+            MarketDetailSheet(price: price)
+        }
+    }
+
+    private func load() async {
+        loadFailed = false
+        do {
+            let prices = try await services.community.loadReferencePrices()
+            rows = prices.map { BoardRow(price: $0, series: MarketSeries(history: $0.history)) }
+            asOf = services.community.referencePricesAsOf
+        } catch {
+            if rows.isEmpty { loadFailed = true }
+        }
+        isLoading = false
+    }
+
+    private var board: some View {
         VStack(alignment: .leading, spacing: Space.xxl) {
             summaryTiles
-            indexOverview
             watchBoard
         }
-        .sheet(item: $selectedMarket) { market in
-            MarketDetailSheet(market: market, dates: dates)
+    }
+
+    private var skeleton: some View {
+        VStack(spacing: Space.l) {
+            ForEach(0..<4, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(Color.calibre.card)
+                    .frame(height: 140)
+                    .shimmer()
+            }
         }
     }
 
@@ -123,21 +166,21 @@ struct MarketBoardView: View {
 
     private var summaryTiles: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.m), GridItem(.flexible(), spacing: Space.m)], spacing: Space.m) {
-            statTile(label: "Calibre Index", value: String(format: "%.2f", indexCurrent), tone: indexChange >= 0 ? .up : .down) {
-                ChangePillView(change: indexChange)
-            }
             statTile(label: "Advancing", value: "\(advancingCount)", tone: .up) {
-                Text("of \(markets.count) references").font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                Text("since first published price")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
             }
             statTile(label: "Declining", value: "\(decliningCount)", tone: .down) {
-                Text("of \(markets.count) references").font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                Text("since first published price")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
             }
-            if let topMover {
-                statTile(label: "Top mover (\(MarketData.historyDays)d)", value: Self.formatPercent(topMover.change), tone: .up) {
-                    Text("\(topMover.brand) \(topMover.model)")
+            if let updated = MarketFormat.day(iso: asOf) {
+                statTile(label: "Last updated", value: updated, tone: .neutral) {
+                    Text("Calibre's own trade")
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
-                        .lineLimit(1)
                 }
             }
         }
@@ -161,72 +204,6 @@ struct MarketBoardView: View {
         .padding(Space.l)
         .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
-    }
-
-    // MARK: - Index overview
-
-    private var indexOverview: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: Space.xs) {
-                    Text("CALIBRE INDEX")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
-                    Text("Market Overview")
-                        .font(CalibreType.serif(.semiBold, 22, relativeTo: .title2))
-                        .foregroundStyle(Color.calibre.foreground)
-                    Text("Equal-weighted across all \(markets.count) references")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: Space.xs) {
-                    ShareLink(
-                        item: URL(string: "https://buycalibre.com/community?room=market")!,
-                        message: Text(
-                            "The Calibre Index is at \(String(format: "%.2f", indexCurrent)) "
-                                + "(\(Self.formatPercent(indexChange))) over \(MarketData.historyDays) days."
-                        )
-                    ) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                    }
-                    .accessibilityLabel("Share the Calibre Index")
-                    Text(String(format: "%.2f", indexCurrent))
-                        .font(CalibreType.serif(.semiBold, 24, relativeTo: .title2))
-                        .foregroundStyle(Color.calibre.foreground)
-                        .monospacedDigit()
-                    ChangePillView(change: indexChange)
-                }
-            }
-
-            MarketAreaChart(
-                series: indexSeries,
-                dates: dates,
-                color: MarketTrend.color(for: indexChange),
-                formatValue: { String(format: "%.1f", $0) }
-            )
-
-            HStack(spacing: 0) {
-                indexMetric(label: "Period high", value: String(format: "%.2f", indexSeries.max() ?? indexCurrent))
-                Divider().frame(height: 32)
-                indexMetric(label: "Period low", value: String(format: "%.2f", indexSeries.min() ?? indexCurrent))
-                Divider().frame(height: 32)
-                indexMetric(label: "Window", value: "\(MarketData.historyDays) days")
-            }
-        }
-        .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
-    }
-
-    private func indexMetric(label: String, value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(label.uppercased()).font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.calibre.mutedForeground)
-            Text(value).font(CalibreType.bodyMedium).foregroundStyle(Color.calibre.foreground).monospacedDigit()
-        }
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Watch board (filters + grid)
@@ -257,15 +234,15 @@ struct MarketBoardView: View {
             }
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.l), GridItem(.flexible(), spacing: Space.l)], spacing: Space.l) {
-                ForEach(visibleMarkets) { market in
-                    TickerCard(market: market, formatPrice: Self.usdFull) {
+                ForEach(visibleRows) { row in
+                    TickerCard(price: row.price, series: row.series) {
                         Haptics.shared.play(.selection)
-                        selectedMarket = market
+                        selectedReference = row.price
                     }
                 }
             }
 
-            if visibleMarkets.isEmpty {
+            if visibleRows.isEmpty {
                 VStack(spacing: Space.s) {
                     Text("No references match your filters.")
                         .font(CalibreType.body)
@@ -284,7 +261,7 @@ struct MarketBoardView: View {
                 .padding(.vertical, Space.xxl)
             }
 
-            Text("Reference-level market pricing across the most-traded references. Figures reflect secondary-market estimates, not offers to buy or sell \u{2014} individual listings set their own asking prices.")
+            Text("Reference-level pricing from Calibre's own listings and completed sales \u{2014} not offers to buy or sell. Individual listings set their own asking prices.")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .padding(.top, Space.s)
@@ -338,7 +315,7 @@ struct MarketBoardView: View {
         .accessibilityLabel("Sort, \(sort.label)")
     }
 
-    /// Shared pill for the board's two dropdowns: icon, current value, caret.
+    /// Shared pill for the board's dropdowns: icon, current value, caret.
     private func dropdownLabel(icon: String, title: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: icon).font(.system(size: 12, weight: .medium))
@@ -368,7 +345,7 @@ struct ChangePillView: View {
         HStack(spacing: 3) {
             Image(systemName: positive ? "arrow.up.right" : "arrow.down.right")
                 .font(.system(size: 10, weight: .semibold))
-            Text(formatted)
+            Text(MarketFormat.percent(change))
                 .font(.system(size: 12, weight: .semibold))
                 .monospacedDigit()
         }
@@ -377,17 +354,11 @@ struct ChangePillView: View {
         .padding(.vertical, 3)
         .background((positive ? Color.calibre.success : Color.calibre.destructive).opacity(0.1), in: Capsule())
     }
-
-    private var formatted: String {
-        let pct = abs(change * 100)
-        let sign = change >= 0 ? "+" : "\u{2212}"
-        return "\(sign)\(String(format: "%.2f", pct))%"
-    }
 }
 
 private struct TickerCard: View {
-    let market: MarketData.Market
-    let formatPrice: (Double) -> String
+    let price: MarketReferencePrice
+    let series: MarketSeries
     let onSelect: () -> Void
 
     var body: some View {
@@ -395,25 +366,37 @@ private struct TickerCard: View {
             VStack(alignment: .leading, spacing: Space.m) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(market.brand.uppercased())
+                        Text(price.brand.uppercased())
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(Color.calibre.mutedForeground)
-                        Text(market.model)
+                        Text(price.model ?? price.reference)
                             .font(CalibreType.serif(.semiBold, 15, relativeTo: .subheadline))
                             .foregroundStyle(Color.calibre.foreground)
                             .lineLimit(1)
-                        Text("Ref. \(market.reference)")
+                        Text("Ref. \(price.reference)")
                             .font(.system(size: 11))
                             .foregroundStyle(Color.calibre.mutedForeground)
                             .lineLimit(1)
                     }
                     Spacer(minLength: Space.s)
-                    ChangePillView(change: market.change)
+                    if series.isDrawable {
+                        ChangePillView(change: series.change)
+                    }
                 }
 
-                MarketSparkline(series: market.series, change: market.change)
+                if series.isDrawable {
+                    MarketSparkline(series: series.values, change: series.change)
+                } else {
+                    // One published price has no shape to draw. The card says
+                    // what it knows and leaves the chart's height alone, so a
+                    // grid of cards still lines up.
+                    Text("First published price")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .frame(height: 44, alignment: .leading)
+                }
 
-                Text(formatPrice(market.price))
+                Text(MarketFormat.usdFull(price.currentValue))
                     .font(CalibreType.serif(.semiBold, 17, relativeTo: .headline))
                     .foregroundStyle(Color.calibre.foreground)
                     .monospacedDigit()

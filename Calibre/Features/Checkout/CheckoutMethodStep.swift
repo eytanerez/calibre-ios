@@ -121,7 +121,7 @@ struct CheckoutMethodStep: View {
             .padding(.top, Space.m)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .tutorialOverlay(tutorial)
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)

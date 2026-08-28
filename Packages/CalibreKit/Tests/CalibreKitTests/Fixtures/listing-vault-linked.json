@@ -1,0 +1,59 @@
+{
+    "ok": true,
+    "data": {
+        "id": "03034396-7c16-5739-8746-ec6c735060f9",
+        "listing_number": 542,
+        "seller_id": "88adad78-96a9-53a8-8ea8-cee5b43befe4",
+        "seller": {
+            "id": "88adad78-96a9-53a8-8ea8-cee5b43befe4",
+            "username": "bourdon_fils",
+            "is_verified_dealer": false,
+            "reputation": {
+                "sales_count": 0,
+                "rating_count": 0,
+                "average_rating": null
+            }
+        },
+        "variant_id": null,
+        "title": "Citizen Promaster Diver NY0086-83E",
+        "brand": "Citizen",
+        "model": "Promaster Diver",
+        "reference_number": "NY0086-83E",
+        "seller_sku": "CITIZEN-NY0086-83E-00422",
+        "vault_watch_id": "943e858d-334e-555e-985c-13026a9a96f4",
+        "description": "Brand: Citizen\nModel: Promaster Diver\nReference: NY0086-83E\nCase Material: Stainless steel\nDial: Blue\nCase Size: 42mm\nMovement: Automatic\nCaliber: Miyota 8204\nBracelet: Rubber strap\nThickness: 13.6mm\nLug Width: 20mm\nWater Resistance: 200m\n\nWorn a handful of times and kept in the box between outings. No marks under a loupe. Traded in against a newer reference by a long-standing client of ours. New gaskets and a crystal polish at intake.",
+        "price": "450.00",
+        "currency": "USD",
+        "condition": {
+            "overall": "Like New",
+            "crystal": "Like New",
+            "bezel": "Like New",
+            "bracelet": "Like New",
+            "clasp": "Like New",
+            "caseback": "Like New",
+            "case": "Like New",
+            "dial": "Like New"
+        },
+        "box_papers": true,
+        "production_year": 2010,
+        "returns": {
+            "accepted": false,
+            "window_hours": null
+        },
+        "country_of_origin": null,
+        "hts_code": null,
+        "status": "active",
+        "review_status": "active",
+        "seller_status": "live",
+        "review_events": [],
+        "images": [],
+        "annotations": [],
+        "estimated_shipping": null,
+        "metrics": {
+            "views": 0,
+            "watchers": 0
+        },
+        "created_at": "2026-08-28T11:30:49.811464+00:00",
+        "updated_at": "2026-08-28T11:30:49.811464+00:00"
+    }
+}

@@ -9,6 +9,7 @@ import SwiftUI
 struct SaleDetailScreen: View {
     let orderID: String
 
+    @Environment(AppServices.self) private var services
     @Environment(SellSession.self) private var sell
     @Environment(ToastCenter.self) private var toasts
     @Environment(\.dismiss) private var dismiss
@@ -28,6 +29,7 @@ struct SaleDetailScreen: View {
     @State private var declaringShipped = false
     @State private var outboundDeclaration: FulfillmentShipped?
     @State private var declareError: String?
+    @State private var packingNote = ""
     /// Payout details, opened from a failed payout.
     @State private var openingPayoutDetails = false
     @State private var payoutDetailsError: String?
@@ -52,7 +54,7 @@ struct SaleDetailScreen: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.calibre.background.ignoresSafeArea())
+            .calibrePageBackground()
             .navigationTitle("Your sale")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -106,10 +108,26 @@ struct SaleDetailScreen: View {
     private func load() async {
         loadError = nil
         do {
-            order = try await sell.ops.order(id: orderID)
+            let order = try await sell.ops.order(id: orderID)
+            self.order = order
+            // Only a failed payout needs to know how the payouts account
+            // stands, and only then is the round trip worth taking: it decides
+            // whether the recovery on this screen is a form or a person.
+            if order.payoutBlock?.failureReason?.isEmpty == false {
+                _ = try? await services.seller.loadReadiness()
+            }
         } catch {
             loadError = sellErrorMessage(error)
         }
+    }
+
+    /// Stripe has rejected the account this payout would have landed in.
+    ///
+    /// Nil readiness is not a rejection — an unanswered question is not a "no",
+    /// and treating it as one would hide the working recovery from a seller
+    /// whose only problem is a wrong routing number.
+    private var payoutAccountRejected: Bool {
+        services.seller.readiness?.connect.status == .rejected
     }
 
     private var awaitingLabel: Bool {
@@ -287,6 +305,22 @@ struct SaleDetailScreen: View {
                         .foregroundStyle(Color.calibre.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
+                    // Written here or not at all: the declaration is the one
+                    // moment the seller is holding the parcel, and only the
+                    // first one records a note. It travels with the watch and
+                    // the buyer reads it when the box arrives.
+                    CalibreTextField(
+                        "A line for the buyer (optional)",
+                        text: $packingNote,
+                        placeholder: "Set it running before I boxed it \u{2014} enjoy.",
+                        kind: .sentence
+                    )
+                    .onChange(of: packingNote) { _, newValue in
+                        if newValue.count > FulfillmentShipped.packingNoteLimit {
+                            packingNote = String(newValue.prefix(FulfillmentShipped.packingNoteLimit))
+                        }
+                    }
+
                     Button {
                         Haptics.shared.play(.press)
                         Task { await declareOutboundShipped(order) }
@@ -300,6 +334,22 @@ struct SaleDetailScreen: View {
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // Read back from the server rather than from the field, so
+                // what is shown is what was actually recorded. The field is
+                // gone by now and there is no second chance to write one.
+                if let note = outboundDeclaration?.packingNote, !note.isEmpty {
+                    VStack(alignment: .leading, spacing: Space.xs) {
+                        Text("Going with the watch")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.secondaryForeground)
+                        Text(note)
+                            .font(CalibreType.hand)
+                            .foregroundStyle(Color.calibre.foreground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, Space.xs)
                 }
 
                 if let declareError {
@@ -316,7 +366,10 @@ struct SaleDetailScreen: View {
         declareError = nil
         defer { declaringShipped = false }
         do {
-            outboundDeclaration = try await sell.ops.declareOutboundShipped(orderID: order.id)
+            outboundDeclaration = try await sell.ops.declareOutboundShipped(
+                orderID: order.id,
+                packingNote: InputValidation.isNonBlank(packingNote) ? InputValidation.trimmed(packingNote) : nil
+            )
             Haptics.shared.play(.success)
             toasts.show(
                 title: "Thank you — noted",
@@ -368,30 +421,54 @@ struct SaleDetailScreen: View {
                     title: "This payout didn't go through",
                     message: failure
                 )
-                // The reason alone isn't guidance. This says what to do about
-                // it, and the button opens the place to do it.
-                Text(payoutFixSentence(failure))
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
 
-                Button {
-                    Haptics.shared.play(.press)
-                    Task { await openPayoutDetails() }
-                } label: {
-                    BusyLabel(title: "Update payout details", busy: openingPayoutDetails)
+                if payoutAccountRejected {
+                    // Stripe has rejected the account behind this payout, and
+                    // that is terminal. "Update payout details" would mint a
+                    // session into an account no set of details can revive —
+                    // so the recovery here is a person, not a form.
+                    Text("Stripe wasn't able to approve payouts for this account. Correcting your bank details won't release this payout.")
+                        .font(CalibreType.body)
+                        .foregroundStyle(Color.calibre.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    NavigationLink {
+                        SupportChatScreen(seed: payoutRejectedSupportMessage)
+                    } label: {
+                        Text("Talk to us about this").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.calibre(.primary, fullWidth: true))
+
+                    Text("Someone from our team may already be reaching out about it.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    // The reason alone isn't guidance. This says what to do
+                    // about it, and the button opens the place to do it.
+                    Text(payoutFixSentence(failure))
+                        .font(CalibreType.body)
+                        .foregroundStyle(Color.calibre.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Button {
+                        Haptics.shared.play(.press)
+                        Task { await openPayoutDetails() }
+                    } label: {
+                        BusyLabel(title: "Update payout details", busy: openingPayoutDetails)
+                    }
+                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .disabled(openingPayoutDetails)
+
+                    if let payoutDetailsError {
+                        InlineErrorLine(message: payoutDetailsError)
+                    }
+
+                    Text("Changing your bank details never affects a payout already on its way — new payouts use the new account.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
-                .disabled(openingPayoutDetails)
-
-                if let payoutDetailsError {
-                    InlineErrorLine(message: payoutDetailsError)
-                }
-
-                Text("Changing your bank details never affects a payout already on its way — new payouts use the new account.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Text("If a buyer disputes a sale after you've been paid, that's ours to handle. You keep your money.")

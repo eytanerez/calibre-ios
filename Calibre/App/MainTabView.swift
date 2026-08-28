@@ -6,6 +6,12 @@ import SwiftUI
 /// the shared router, so deep links and pushes work from anywhere.
 struct MainTabView: View {
     @Environment(AppRouter.self) private var router
+    @Environment(AuthSession.self) private var session
+
+    /// The vault's biometric gate lives here, above the Vault tab's whole
+    /// navigation stack, so everything the tab can show is behind it — see
+    /// `vaultGate`.
+    @State private var vaultLock = VaultLock()
 
     var body: some View {
         @Bindable var router = router
@@ -36,6 +42,8 @@ struct MainTabView: View {
                 CollectionScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
+            .environment(vaultLock)
+            .vaultGate(vaultLock, signedIn: session.isAuthenticated)
             .tabItem { Label("Vault", systemImage: "latch.2.case") }
             .tag(AppTab.collection)
 
@@ -74,7 +82,7 @@ struct RouteDestinationView: View {
     var body: some View {
         destination
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.calibre.background)
+            .calibrePageBackground()
     }
 
     @ViewBuilder
@@ -96,6 +104,10 @@ struct RouteDestinationView: View {
                 .browseStackNode()
         case .poll(let prompt):
             PollDetailScreen(prompt: prompt)
+        case .vaultWatch(let id):
+            VaultWatchDetailScreen(vaultID: id)
+        case .passport(let code):
+            PassportScreen(publicCode: code)
         case .order(let id):
             OrderDetailScreen(orderID: id)
         case .offer(let id):

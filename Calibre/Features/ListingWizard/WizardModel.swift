@@ -169,6 +169,11 @@ struct WizardSnapshot: Codable {
     /// otherwise throw away a seller's whole in-progress draft.
     var returnsAccepted: Bool? = nil
     var returnWindowHours: Int? = nil
+    /// The seller already said this listing is not a watch in their
+    /// collection. Carried across a force-quit so resuming the draft doesn't
+    /// ask them a second time. Optional for the same reason as the fields
+    /// above; absent means they were never asked.
+    var vaultAskDeclined: Bool? = nil
     var updatedAt: Date
 }
 
@@ -242,6 +247,7 @@ final class WizardModel {
     @ObservationIgnored private let seller: SellerStore
     @ObservationIgnored private let sell: SellSession
     @ObservationIgnored private let config: ConfigStore
+    @ObservationIgnored private let vault: VaultStore
 
     private(set) var bootstrap: Bootstrap = .working
     private(set) var listing: Listing?
@@ -272,6 +278,11 @@ final class WizardModel {
     // Photos
     var slots: [ListingImageCategory: WizardPhotoSlot] = [:]
     var extraPhotos: [WizardPhotoSlot] = []
+    /// The listing's photos in the order the server publishes them. A mark is
+    /// keyed on a photo's position in this array and on nothing else.
+    var orderedPhotos: [ListingImage] = []
+    /// The marks currently on the listing, as the server last stated them.
+    var annotations: [ListingAnnotation] = []
 
     // Payout
     private(set) var estimate: ShippingEstimate?
@@ -291,16 +302,41 @@ final class WizardModel {
 
     var fulfillRequestID: String?
 
+    // The vault question — "is this a watch you already own?"
+
+    /// Watches in the seller's own collection at the reference they typed,
+    /// as the server last stated them. Only ever a question: a reference is a
+    /// model, not a watch, so nothing here links anything by itself.
+    private(set) var vaultMatches: [VaultMatch] = []
+    /// The seller's yes — the watch this listing is. Travels on the create
+    /// call, and on every save after it.
+    private(set) var linkedVaultWatchID: String?
+    /// The match behind that yes, kept for the confirmation line. Nil on a
+    /// listing that arrived already linked: the payload carries the id and
+    /// the match lookup deliberately excludes a watch already spoken for.
+    private(set) var linkedVaultWatch: VaultMatch?
+    /// The seller's no. One listing, one asking — declining is free, and a
+    /// seller who declines is not nagged again for this listing.
+    private(set) var vaultAskDeclined = false
+
     @ObservationIgnored private var patchTask: Task<Void, Never>?
+    @ObservationIgnored private var vaultMatchTask: Task<Void, Never>?
     @ObservationIgnored private var estimateTask: Task<Void, Never>?
     @ObservationIgnored private var previewTask: Task<Void, Never>?
     @ObservationIgnored private var previewGeneration = 0
 
-    init(kind: WizardContext.Kind, seller: SellerStore, sell: SellSession, config: ConfigStore) {
+    init(
+        kind: WizardContext.Kind,
+        seller: SellerStore,
+        sell: SellSession,
+        config: ConfigStore,
+        vault: VaultStore
+    ) {
         self.kind = kind
         self.seller = seller
         self.sell = sell
         self.config = config
+        self.vault = vault
     }
 
     var isEdit: Bool {
@@ -439,6 +475,9 @@ final class WizardModel {
             // wizard and backing out never leaves an "Untitled watch"
             // behind on the dashboard.
             bootstrap = .ready
+            // A prefill can arrive with the reference already filled in, and
+            // the question is worth asking before the seller touches anything.
+            scheduleVaultMatchLookup()
         case .finishDraft(let existing), .edit(let existing):
             listing = existing
             populate(from: existing)
@@ -446,6 +485,7 @@ final class WizardModel {
                 restore(from: snapshot)
             }
             bootstrap = .ready
+            scheduleVaultMatchLookup()
             await loadServerImages()
             // A resumed draft usually already has a price, and the seller is
             // entitled to see their net proceeds without touching the field.
@@ -474,6 +514,10 @@ final class WizardModel {
             return true
         } catch {
             submitError = sellErrorMessage(error)
+            // A refused link would be sent again by every retry, so the draft
+            // could never be created at all. The seller keeps the server's
+            // sentence; the listing goes on without the link.
+            if isVaultLinkRefusal(error) { releaseRefusedVaultLink() }
             return false
         }
     }
@@ -483,6 +527,9 @@ final class WizardModel {
         model = listing.model ?? ""
         reference = listing.referenceNumber ?? ""
         sellerSku = listing.sellerSku ?? ""
+        // A listing that already knows which watch it is has been asked and
+        // answered; the ask stays off the screen from here.
+        linkedVaultWatchID = listing.vaultWatchId
         if let year = listing.productionYear {
             yearText = String(year)
         } else {
@@ -526,6 +573,9 @@ final class WizardModel {
             returnsAccepted = accepted
             returnWindowHours = snapshot.returnWindowHours
         }
+        // Absent on snapshots written before the vault question existed, which
+        // is a seller who was never asked rather than one who said no.
+        vaultAskDeclined = snapshot.vaultAskDeclined ?? false
         step = min(max(snapshot.step, 0), 3)
         fulfillRequestID = snapshot.fulfillRequestID
         for (key, grade) in snapshot.conditions {
@@ -550,16 +600,62 @@ final class WizardModel {
         }
     }
 
-    /// Marks slots whose photos already live on the server (edit / resume).
+    /// Marks slots whose photos already live on the server (edit / resume),
+    /// and records the order the server keeps them in.
     func loadServerImages() async {
         guard let listing else { return }
         guard let images = try? await seller.images(listingID: listing.id) else { return }
+        // The same ordering the listing payload publishes, which is what
+        // makes a photo's position here the `image_index` a mark is keyed on.
+        orderedPhotos = images
         for image in images {
             guard let raw = image.category, let category = ListingImageCategory(rawValue: raw) else { continue }
             var slot = slots[category] ?? WizardPhotoSlot()
             slot.serverImageID = image.id
             slot.remoteURL = image.url.url
             slots[category] = slot
+        }
+    }
+
+    // MARK: Marks on the photos
+
+    /// Where a photo sits in the listing, which is the only thing a mark is
+    /// keyed on. Nil while the slot's photo is still uploading — there is no
+    /// position for a picture the listing does not have yet.
+    func photoIndex(of category: ListingImageCategory) -> Int? {
+        orderedPhotos.firstIndex { $0.category == category.rawValue }
+    }
+
+    func annotation(atIndex index: Int) -> ListingAnnotation? {
+        annotations.first { $0.imageIndex == index }
+    }
+
+    /// The mark on this slot's photo, if the seller drew one.
+    func annotation(of category: ListingImageCategory) -> ListingAnnotation? {
+        photoIndex(of: category).flatMap { annotation(atIndex: $0) }
+    }
+
+    var canDrawAnotherMark: Bool {
+        annotations.count < ListingAnnotation.maxPerListing
+    }
+
+    /// Records what the server stored, so the wizard's copy is the listing's
+    /// copy rather than a hopeful local one.
+    func recordAnnotation(_ annotation: ListingAnnotation?, atIndex index: Int) {
+        annotations.removeAll { $0.imageIndex == index }
+        if let annotation { annotations.append(annotation) }
+        annotations.sort { $0.imageIndex < $1.imageIndex }
+    }
+
+    /// Re-reads the photo order and the marks currently on the listing.
+    ///
+    /// The marks come off the listing payload the wizard already holds — they
+    /// travel on it, so asking for them again would introduce a second source
+    /// that can disagree with the photos being drawn on.
+    func refreshPhotoBoard() async {
+        await loadServerImages()
+        if let published = listing?.annotations {
+            annotations = published
         }
     }
 
@@ -590,6 +686,10 @@ final class WizardModel {
             model: InputValidation.isNonBlank(model) ? InputValidation.trimmed(model) : nil,
             reference: InputValidation.isNonBlank(reference) ? InputValidation.trimmed(reference) : nil,
             sellerSku: InputValidation.isNonBlank(sellerSku) ? InputValidation.trimmed(sellerSku) : nil,
+            // Only ever the seller's own yes. Nil is the absence of an answer,
+            // and the field is left out of the request entirely — which is
+            // what a decline looks like on the wire, and writes nothing.
+            vaultWatchId: linkedVaultWatchID,
             price: price,
             // Each grade is sent as the seller graded it. There is no
             // back-fill: the case is not the caseback, the dial is not the
@@ -618,6 +718,9 @@ final class WizardModel {
             saveError = nil
         } catch {
             saveError = sellErrorMessage(error)
+            // Same reason as on create: a link the server won't take rides on
+            // every save after it, and would block them all.
+            if isVaultLinkRefusal(error) { releaseRefusedVaultLink() }
         }
     }
 
@@ -647,8 +750,112 @@ final class WizardModel {
             sellerSku: sellerSku,
             returnsAccepted: returnsAccepted,
             returnWindowHours: returnWindowHours,
+            vaultAskDeclined: vaultAskDeclined,
             updatedAt: .now
         ))
+    }
+
+    // MARK: The vault question
+
+    /// Call after the reference field changes: saves like any other edit, then
+    /// asks — debounced — whether this is a watch the seller already owns.
+    func referenceChanged() {
+        fieldChanged()
+        scheduleVaultMatchLookup()
+    }
+
+    /// Looks for the seller's own watches at this reference, on the shipping
+    /// estimate's timing so the question settles rather than flickering while
+    /// a reference is typed.
+    ///
+    /// Nothing is asked once the question has an answer: a yes is recorded on
+    /// the listing, a no is final for this listing, and neither is worth a
+    /// round trip.
+    private func scheduleVaultMatchLookup() {
+        vaultMatchTask?.cancel()
+        guard linkedVaultWatchID == nil, !vaultAskDeclined else { return }
+        let asked = InputValidation.trimmed(reference)
+        guard !asked.isEmpty else {
+            // Clearing the field takes the question with it — the server
+            // answers a blank reference with nothing anyway.
+            vaultMatches = []
+            return
+        }
+        vaultMatchTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled else { return }
+            await self?.loadVaultMatches(reference: asked)
+        }
+    }
+
+    private func loadVaultMatches(reference asked: String) async {
+        do {
+            let found = try await vault.matches(reference: asked)
+            // The seller may have typed on, or answered, while this was in
+            // flight; a late reply must not raise a question about a
+            // reference they've left behind or already dealt with.
+            guard asked == InputValidation.trimmed(reference),
+                  linkedVaultWatchID == nil,
+                  !vaultAskDeclined else { return }
+            vaultMatches = found
+        } catch {
+            // A lookup that didn't come back is silence, not a prompt. The ask
+            // is only ever made from a match the server actually stated, and a
+            // seller who never sees it publishes exactly as they did before.
+            vaultMatches = []
+        }
+    }
+
+    /// The seller's yes: this listing is that watch. Saved straight away
+    /// rather than on the debounce — it is the answer to a question that is
+    /// about to leave the screen — or carried on the create call when the
+    /// draft doesn't exist yet.
+    func linkVaultWatch(_ match: VaultMatch) async {
+        vaultMatchTask?.cancel()
+        linkedVaultWatchID = match.vaultWatchId
+        linkedVaultWatch = match
+        vaultMatches = []
+        persistSnapshot()
+        guard listing != nil else { return }
+        patchTask?.cancel()
+        await pushPatch()
+    }
+
+    /// The seller's no. Nothing is written anywhere — not to the listing, not
+    /// to their collection — and the question is not asked again.
+    func declineVaultMatch() {
+        vaultMatchTask?.cancel()
+        vaultAskDeclined = true
+        vaultMatches = []
+        persistSnapshot()
+    }
+
+    /// True when the server refused the link the seller just made, which is
+    /// the one refusal the wizard cannot leave standing: the answer is stuck
+    /// on every save from here on, and a seller cannot un-say it.
+    ///
+    /// The 409 names itself. The 404 is deliberately unnamed on the server —
+    /// it answers "somebody else's row" and "no row at all" identically, so it
+    /// can't be used to probe strangers' collections — so a 404 on a call that
+    /// carried a link is read as that refusal. A patch can also 404 because
+    /// the listing itself is gone; dropping the link there costs nothing,
+    /// since there is no longer a listing to write it to and the seller is
+    /// shown the server's own sentence either way.
+    private func isVaultLinkRefusal(_ error: Error) -> Bool {
+        guard linkedVaultWatchID != nil, let apiError = error as? APIError else { return false }
+        if sellErrorCode(apiError, is: "vault_watch_already_listed") { return true }
+        guard case .server(_, _, let status, _) = apiError else { return false }
+        return status == 404
+    }
+
+    /// Drops a link the server refused, so the listing can still be written.
+    /// The seller keeps the server's own sentence about why, and is not asked
+    /// again — the same watch would be refused the same way.
+    private func releaseRefusedVaultLink() {
+        linkedVaultWatchID = nil
+        linkedVaultWatch = nil
+        vaultMatches = []
+        vaultAskDeclined = true
     }
 
     // MARK: Photos

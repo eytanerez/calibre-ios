@@ -275,6 +275,12 @@ public struct FulfillmentShipped: Decodable, Sendable {
     public let orderId: String?
     public let sellerShippedDeclaredAt: Date?
     public let autoCancelGraceUntil: Date?
+    /// Echoed back so the seller sees the line that went with the parcel.
+    /// Only the first declaration writes one; a repeat leaves it as it was.
+    public let packingNote: String?
+
+    /// What fits on the card in the box.
+    public static let packingNoteLimit = 280
 }
 
 /// The payout block on an order and on `/account/payouts` rows.

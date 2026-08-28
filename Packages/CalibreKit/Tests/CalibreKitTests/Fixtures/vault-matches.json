@@ -1,0 +1,15 @@
+{
+    "ok": true,
+    "data": {
+        "results": [
+            {
+                "vault_watch_id": "943e858d-334e-555e-985c-13026a9a96f4",
+                "brand": "Rolex",
+                "model": "Datejust 41",
+                "reference": "126300",
+                "acquired_date": "2026-08-13",
+                "passport_code": "do3bgntrgzgphfml"
+            }
+        ]
+    }
+}

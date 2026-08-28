@@ -50,7 +50,7 @@ struct HomeScreen: View {
             }
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .tutorialOverlay(tutorial)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $pushed) { destination in

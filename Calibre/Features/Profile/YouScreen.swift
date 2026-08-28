@@ -6,6 +6,9 @@ import SwiftUI
 /// placeholders until their builds land; sign-in (guest) and sign-out
 /// (member) work for real. DEBUG builds get a Developer section.
 struct YouScreen: View {
+    #if DEBUG
+    @State private var tutorialsReplayed = false
+    #endif
     @Environment(AuthSession.self) private var session
     @Environment(AppServices.self) private var services
     @Environment(ToastCenter.self) private var toasts
@@ -107,7 +110,7 @@ struct YouScreen: View {
             .padding(.top, Space.l)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("You")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: ProfileDestination.self) { destination in
@@ -309,6 +312,26 @@ struct YouScreen: View {
                     developerRow(icon: "antenna.radiowaves.left.and.right", label: "API console")
                 }
                 .buttonStyle(PressableStyle())
+
+                Divider().overlay(Color.calibre.border)
+
+                // The ledger has always documented a "Replay tips" control;
+                // until now there wasn't one, so replaying meant a launch
+                // argument (which a sideloaded build cannot pass) or deleting
+                // the app. Clears only the tutorial ledger — auth, intro and
+                // guest state are untouched.
+                Button {
+                    TutorialLedger.shared.resetAll()
+                    tutorialsReplayed = true
+                } label: {
+                    developerRow(
+                        icon: tutorialsReplayed ? "checkmark" : "arrow.counterclockwise",
+                        label: tutorialsReplayed ? "Tips will show again" : "Replay tips",
+                        showsChevron: false
+                    )
+                }
+                .buttonStyle(PressableStyle())
+                .disabled(tutorialsReplayed)
             }
             .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(
@@ -318,7 +341,7 @@ struct YouScreen: View {
         }
     }
 
-    private func developerRow(icon: String, label: String) -> some View {
+    private func developerRow(icon: String, label: String, showsChevron: Bool = true) -> some View {
         HStack(spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
@@ -328,9 +351,11 @@ struct YouScreen: View {
                 .font(CalibreType.bodyMedium)
                 .foregroundStyle(Color.calibre.foreground)
             Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.calibre.mutedForeground)
+            }
         }
         .padding(.horizontal, Space.l)
         .frame(minHeight: Space.touchTarget + 8)

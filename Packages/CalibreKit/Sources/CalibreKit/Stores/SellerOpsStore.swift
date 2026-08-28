@@ -99,9 +99,29 @@ public final class SellerOpsStore {
     /// "I shipped it" for the seller's own outbound leg — the same rule as
     /// the buyer's return: declaring buys a grace period for the carrier's
     /// first scan.
+    ///
+    /// `packingNote` is the one line the seller sends with the parcel, kept
+    /// on the order and shown to the buyer when it arrives. It is written
+    /// here or not at all — only the first declaration records one.
+    ///
+    /// A note longer than the card in the box is refused rather than cut:
+    /// truncation would take the end of a sentence away without saying so.
     @discardableResult
-    public func declareOutboundShipped(orderID: String) async throws -> FulfillmentShipped {
-        try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/fulfillment/shipped"))
+    public func declareOutboundShipped(
+        orderID: String,
+        packingNote: String? = nil
+    ) async throws -> FulfillmentShipped {
+        struct Payload: Encodable { let packingNote: String }
+        guard let packingNote else {
+            return try await client.send(Endpoint(method: .post, path: "/orders/\(orderID)/fulfillment/shipped"))
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/orders/\(orderID)/fulfillment/shipped",
+                payload: Payload(packingNote: packingNote)
+            )
+        )
     }
 
     // MARK: - Seller fulfillment

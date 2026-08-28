@@ -44,7 +44,7 @@ struct RequestsScreen: View {
                 }
             }
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Requests")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

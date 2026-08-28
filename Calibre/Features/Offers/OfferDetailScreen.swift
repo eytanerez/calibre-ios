@@ -23,7 +23,7 @@ struct OfferDetailScreen: View {
                 loadingSkeleton
             }
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Offer")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -98,7 +98,7 @@ private struct OfferDetailContent: View {
                 }
             }
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .tutorialOverlay(tutorial)
         .onChange(of: model.offer?.id) { _, id in
             if id != nil { tutorial.startIfNeeded() }

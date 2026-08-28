@@ -1,7 +1,10 @@
 import Foundation
 import Observation
 
-/// Community: the daily question, polls, and the own-data market overview.
+/// Community: the day's questions, and the market room's two reads —
+/// the brand-level overview and the published reference prices behind the
+/// board. Both live here because both are `/market/*` and both are read from
+/// the same room; a second store would only split one screen's fetches.
 @MainActor
 @Observable
 public final class CommunityStore {
@@ -9,12 +12,17 @@ public final class CommunityStore {
 
     public private(set) var today: CommunityToday?
     public private(set) var market: MarketOverview?
+    /// Every reference that publishes a price. Empty until loaded — and
+    /// legitimately empty afterwards if nothing publishes yet.
+    public private(set) var referencePrices: [MarketReferencePrice] = []
+    /// When the published set was last recomputed, as the server states it.
+    public private(set) var referencePricesAsOf: String?
 
     public init(client: APIClient) {
         self.client = client
     }
 
-    /// Loads today's prompts. Pass `authenticated: true` for signed-in members
+    /// Loads today's questions, one per kind. Pass `authenticated: true` for signed-in members
     /// so the response carries their votes — the client only attaches the auth
     /// header when an endpoint requires it, and without it the feed comes back
     /// as a guest's (no `my_vote`, questions re-ask after every reload).
@@ -27,8 +35,8 @@ public final class CommunityStore {
         return payload
     }
 
-    /// Votes (or changes a vote) and folds the refreshed prompt back into
-    /// whatever section it lives in.
+    /// Votes (or changes a vote) and folds the refreshed question back into
+    /// whichever lane — or the history — it came from.
     @discardableResult
     public func vote(promptID: String, option: String) async throws -> CommunityPrompt {
         struct Payload: Encodable { let option: String }
@@ -39,18 +47,7 @@ public final class CommunityStore {
                 payload: Payload(option: option)
             )
         )
-        if var current = today {
-            if current.daily?.id == updated.id {
-                current = CommunityToday(daily: updated, polls: current.polls, recent: current.recent)
-            } else {
-                current = CommunityToday(
-                    daily: current.daily,
-                    polls: current.polls.map { $0.id == updated.id ? updated : $0 },
-                    recent: current.recent.map { $0.id == updated.id ? updated : $0 }
-                )
-            }
-            today = current
-        }
+        today = today?.replacing(updated)
         return updated
     }
 
@@ -61,5 +58,35 @@ public final class CommunityStore {
         )
         market = payload
         return payload
+    }
+
+    /// The board's whole dataset: what each reference is worth today plus the
+    /// change-points behind it.
+    @discardableResult
+    public func loadReferencePrices() async throws -> [MarketReferencePrice] {
+        let payload: MarketReferencePriceList = try await client.send(
+            Endpoint(path: "/market/reference-prices", requiresAuth: false)
+        )
+        referencePrices = payload.references
+        referencePricesAsOf = payload.asOf
+        return payload.references
+    }
+
+    /// One reference's price, or nil when it publishes none.
+    ///
+    /// Most references in the catalog have no published price, so the 404 is
+    /// an ordinary answer here rather than a failure — it is the difference
+    /// between "we don't price this" and "we couldn't reach Calibre", and the
+    /// screen says something different for each.
+    public func referencePrice(slug: String) async throws -> MarketReferencePrice? {
+        let endpoint = Endpoint<MarketReferencePrice>(
+            path: "/market/reference-prices/\(slug)",
+            requiresAuth: false
+        )
+        do {
+            return try await client.send(endpoint)
+        } catch let APIError.server(_, _, status, _) where status == 404 {
+            return nil
+        }
     }
 }

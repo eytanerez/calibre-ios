@@ -112,6 +112,72 @@ public final class SupportStore {
         return result.thread
     }
 
+    /// The records this customer may name in a message (contracts §12.9b).
+    ///
+    /// Scoped by the server, twice, and the scoping is the feature rather than
+    /// a detail: `/buyer/orders` answers only orders whose `buyer_id` is the
+    /// caller, and `/account/listings` only listings whose `seller_id` is. The
+    /// admin console's own record search is deliberately not used — it can
+    /// reach anybody's order, and this code runs on a customer's handset.
+    ///
+    /// Listings are narrowed to the live ones here: a draft or an archived
+    /// listing has no page to send a reader to, so naming one would produce a
+    /// chip that means nothing to whoever opens the thread.
+    ///
+    /// Only for a signed-in member. A guest has no records and no session to
+    /// scope them by, so the caller does not offer the control at all.
+    public func linkableRecords(query: String) async throws -> [RecordRefOption] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        var orderQuery = [
+            URLQueryItem(name: "page", value: "1"),
+            URLQueryItem(name: "page_size", value: "20"),
+        ]
+        if !trimmed.isEmpty {
+            orderQuery.append(URLQueryItem(name: "search", value: trimmed))
+        }
+
+        async let ordersTask: PageResponse<Order> = client.send(
+            Endpoint(path: "/buyer/orders", query: orderQuery)
+        )
+        async let listingsTask: [Listing] = client.send(Endpoint(path: "/account/listings"))
+        let (orders, listings) = try await (ordersTask, listingsTask)
+
+        let orderOptions = orders.results.map { order in
+            RecordRefOption(
+                ref: RecordRef(kind: .order, recordID: order.id, label: Self.orderLabel(order)),
+                detail: order.listing?.title
+            )
+        }
+        let listingOptions = listings
+            .filter { $0.status == .active }
+            .map { listing in
+                RecordRefOption(
+                    ref: RecordRef(kind: .listing, recordID: listing.id, label: listing.title),
+                    detail: "#\(listing.listingNumber)"
+                )
+            }
+
+        let all = orderOptions + listingOptions
+        guard !trimmed.isEmpty else { return all }
+        return all.filter { option in
+            option.ref.label.localizedCaseInsensitiveContains(trimmed)
+                || (option.detail ?? "").localizedCaseInsensitiveContains(trimmed)
+        }
+    }
+
+    /// `Order #13` when there is a number, and something a person still reads
+    /// when there is not — the label is what the message says, so it is never
+    /// allowed to be empty.
+    private static func orderLabel(_ order: Order) -> String {
+        if let number = order.orderNumber {
+            return "Order #\(number)"
+        }
+        if let title = order.listing?.title, !title.isEmpty {
+            return "Order for \(title)"
+        }
+        return "Your order"
+    }
+
     /// Clears the persisted guest token. Called at sign-out — not at sign-in,
     /// where the server is the one that reconciles a guest thread with the
     /// account it belongs to.

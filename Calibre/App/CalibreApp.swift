@@ -237,7 +237,7 @@ private struct BootSplash: View {
     var body: some View {
         CalibreWordmark(size: 40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.calibre.background)
+            .calibrePageBackground()
     }
 }
 

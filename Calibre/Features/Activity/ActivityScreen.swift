@@ -35,7 +35,7 @@ struct ActivityScreen: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Activity")
         .navigationBarTitleDisplayMode(.inline)
     }

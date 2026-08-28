@@ -32,7 +32,7 @@ struct ForgotPasswordScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Reset password")
         .navigationBarTitleDisplayMode(.inline)
         .animation(Motion.easeMedium, value: sent)
@@ -188,7 +188,7 @@ struct ResetPasswordScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("New password")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -1,7 +1,8 @@
 import CoreText
 import SwiftUI
 
-/// Registers the bundled brand fonts (Playfair Display + Geist) with Core Text.
+/// Registers the bundled brand fonts (Playfair Display, Geist, Caveat) with
+/// Core Text.
 /// Idempotent; call once at app launch. Token accessors also trigger it lazily
 /// so package previews work without app-side setup.
 public enum CalibreFonts {
@@ -16,6 +17,7 @@ public enum CalibreFonts {
         static let sansRegular = "Geist-Regular"
         static let sansMedium = "Geist-Medium"
         static let sansSemiBold = "Geist-SemiBold"
+        static let hand = "Caveat-Regular"
     }
 
     private static let registration: Void = {

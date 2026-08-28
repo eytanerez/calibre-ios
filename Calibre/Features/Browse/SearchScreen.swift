@@ -44,7 +44,7 @@ struct SearchScreen: View {
             }
             .scrollDismissesKeyboard(.immediately)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
@@ -186,11 +186,7 @@ struct SearchScreen: View {
                 .buttonStyle(PressableStyle())
             }
         } else if !isSearching, !trimmedQuery.isEmpty, suggestions.isEmpty {
-            EmptyState(
-                icon: "magnifyingglass",
-                title: "Nothing matches yet",
-                message: "No watches answer to \u{201C}\(trimmedQuery)\u{201D} right now. Try a brand, model, or reference."
-            )
+            NoMatchesYet(query: trimmedQuery)
         }
     }
 
@@ -258,6 +254,66 @@ struct SearchScreen: View {
             guard !Task.isCancelled else { return }
             listingHits = page?.results ?? []
             isSearching = false
+        }
+    }
+}
+
+// MARK: - Nothing matched
+
+/// The zero-result state, said the way a person would say it — and the offer
+/// in it is real. Saved searches are shipped product: the backend replays one
+/// against every newly active listing and notifies on a match, so "want me to
+/// watch for one?" is something the app can actually do rather than a line
+/// written to soften an empty screen.
+///
+/// The information does not change here, only the register. What was searched
+/// and that nothing answers to it stay in the sans; only the offer is in the
+/// hand, and the button under it stays a button.
+private struct NoMatchesYet: View {
+    let query: String
+
+    @Environment(AppServices.self) private var services
+    @Environment(AuthSession.self) private var session
+
+    @State private var saving = false
+    @State private var watching = false
+
+    var body: some View {
+        EmptyState(
+            icon: "magnifyingglass",
+            title: "Nothing matches yet",
+            message: "No watches answer to \u{201C}\(query)\u{201D} right now.",
+            aside: watching
+                ? "I'll keep an eye out. You'll hear from me."
+                : "Want me to watch for one?",
+            actionTitle: watching ? nil : (saving ? "Saving\u{2026}" : "Watch for one"),
+            action: watching ? nil : { watchForOne() }
+        )
+        // The query changing makes this a different question, so the answer
+        // to the old one does not carry over.
+        .onChange(of: query) {
+            watching = false
+        }
+        .animation(Motion.easeFast, value: watching)
+    }
+
+    private func watchForOne() {
+        guard !saving else { return }
+        guard session.isAuthenticated else {
+            services.auth.require("Sign in and we'll watch for one") {}
+            return
+        }
+        saving = true
+        Task {
+            defer { saving = false }
+            do {
+                _ = try await services.serverAlerts.createSavedSearch(filters: ["search": query])
+                Analytics.savedSearchCreated(query: query, hasFilters: false)
+                Haptics.shared.play(.success)
+                watching = true
+            } catch {
+                services.toasts.show(title: "Couldn't save that watch", message: "Please try again.")
+            }
         }
     }
 }

@@ -2,7 +2,7 @@
 // through a Cloudflare Tunnel (quick tunnels rotate on restart; update this
 // alongside Debug.xcconfig's iphoneos entry when the tunnel URL changes).
 // Routes are served at the origin root (no /api prefix).
-API_BASE_URL = https:/$()/selections-ooo-retreat-pix.trycloudflare.com
+API_BASE_URL = https:/$()/candidate-accessible-transportation-abs.trycloudflare.com
 
 // Shows Apple Pay in the payment sheet. Completing one additionally needs the
 // com.apple.developer.in-app-payments entitlement and merchant id

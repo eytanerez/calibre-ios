@@ -45,6 +45,7 @@ struct SellerDashboardScreen: View {
     @State private var confirmDelete: Listing?
     @State private var showAllInventory = false
     @State private var showDealerApplication = false
+    @State private var showStorefrontLine = false
     @State private var showSellerCard = false
     /// The card a counterfeit or misrepresentation charge would land on.
     /// Nil until the first load answers; a banner appears only when the
@@ -136,7 +137,7 @@ struct SellerDashboardScreen: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .tutorialOverlay(tutorial)
         .environment(\.defaultMinListRowHeight, 1)
         .refreshable {
@@ -185,6 +186,9 @@ struct SellerDashboardScreen: View {
             DealerApplicationScreen(application: dashboard?.dealerApplication) {
                 Task { await load() }
             }
+        }
+        .sheet(isPresented: $showStorefrontLine) {
+            StorefrontLineScreen()
         }
         .sheet(isPresented: $showSellerCard) {
             SellerCardScreen { saved in
@@ -529,10 +533,18 @@ struct SellerDashboardScreen: View {
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
+
+                // Offered only to a verified dealer, because the line is
+                // published beside the badge and there is no version of it
+                // for a name Calibre has not verified as a business.
+                Button("Your storefront line") {
+                    showStorefrontLine = true
+                }
+                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .padding(.top, Space.xs)
             }
             .padding(Space.l)
         }
-        .accessibilityElement(children: .combine)
     }
 
     private func dealerStatusCard(

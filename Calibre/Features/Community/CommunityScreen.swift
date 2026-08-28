@@ -2,9 +2,10 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// The Community tab, split into three quiet rooms: Today (the daily question
-/// and polls), Market (reference-level pricing), and the Journal. Guests can
-/// read everything; voting funnels through the sign-in gate.
+/// The Community tab, split into three quiet rooms: Today (the day's two
+/// questions — one about watches, one about Calibre), Market (reference-level
+/// pricing), and the Journal. Guests can read everything; voting funnels
+/// through the sign-in gate.
 struct CommunityScreen: View {
     enum Section: Hashable {
         case today, market, journal
@@ -46,7 +47,7 @@ struct CommunityScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Community")
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
@@ -87,7 +88,7 @@ struct CommunityScreen: View {
         } else if today == nil, loadFailed {
             EmptyState(
                 icon: "wifi.slash",
-                title: "Couldn't load today's question",
+                title: "Couldn't load today's questions",
                 message: "Check your connection and try again.",
                 actionTitle: "Try again"
             ) {
@@ -95,22 +96,28 @@ struct CommunityScreen: View {
             }
         } else {
             VStack(alignment: .leading, spacing: Space.xxl) {
-                if let daily = today?.daily {
-                    CommunityPromptCard(prompt: daily, featured: true)
-                } else {
-                    Text("Today's question is being wound. Check back soon.")
+                // Both lanes, in asking order. A lane with nothing in it says
+                // so in its own words rather than being left out — a reader
+                // who came back for the watch question should be told it is
+                // the watch question that ran dry.
+                let live = today?.liveLanes ?? []
+                if live.isEmpty {
+                    Text("Today's questions are being wound. Check back soon.")
                         .font(CalibreType.body)
                         .foregroundStyle(Color.calibre.mutedForeground)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.vertical, Space.xxl)
-                }
-
-                if let polls = today?.polls, !polls.isEmpty {
-                    VStack(alignment: .leading, spacing: Space.l) {
-                        sectionHeader("Open polls")
-                        ForEach(polls) { poll in
-                            CommunityPromptCard(prompt: poll, featured: false)
+                } else {
+                    ForEach(live) { lane in
+                        if let prompt = lane.prompt {
+                            CommunityPromptCard(prompt: prompt, featured: true)
                         }
+                    }
+                    ForEach(today?.dryLanes ?? []) { lane in
+                        Text(lane.voice.emptyLane)
+                            .font(CalibreType.body)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
 
@@ -244,8 +251,9 @@ private struct RecentResultRow: View {
     }
 }
 
-/// A live question or poll: options while unanswered, refined result bars
-/// after. The featured daily gets the serif spotlight.
+/// A live question: options while unanswered, refined result bars after. The
+/// eyebrow names which lane it belongs to, because the day asks two and they
+/// are two different invitations.
 struct CommunityPromptCard: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -261,7 +269,7 @@ struct CommunityPromptCard: View {
         VStack(alignment: .leading, spacing: Space.l) {
             VStack(alignment: .leading, spacing: Space.s) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(prompt.kind == "daily" ? "QUESTION OF THE DAY" : "POLL")
+                    Text((prompt.closed ? prompt.voice.closedEyebrow : prompt.voice.eyebrow).uppercased())
                         .font(CalibreType.label)
                         .foregroundStyle(Color.calibre.primary)
                     Spacer()
@@ -270,12 +278,18 @@ struct CommunityPromptCard: View {
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(Color.calibre.mutedForeground)
                     }
-                    .accessibilityLabel("Share this poll")
+                    .accessibilityLabel("Share this question")
                 }
                 Text(prompt.question)
                     .font(CalibreType.serif(.semiBold, featured ? 24 : 18, relativeTo: featured ? .title2 : .title3))
                     .foregroundStyle(Color.calibre.foreground)
                     .fixedSize(horizontal: false, vertical: true)
+                if !prompt.closed, !prompt.voice.invitation.isEmpty {
+                    Text(prompt.voice.invitation)
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             if showResults {

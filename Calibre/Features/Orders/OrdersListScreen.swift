@@ -31,7 +31,7 @@ struct OrdersListScreen: View {
                 content
             }
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .task(id: session.isAuthenticated) {
             if session.isAuthenticated, phase == .idle { await load() }
         }

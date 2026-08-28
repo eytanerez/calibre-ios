@@ -2,42 +2,35 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// Full-screen(ish) detail for a single watch on the market board: the big
-/// chart, trailing performance windows, a stat grid, and a way to go find
-/// the real thing on the marketplace.
+/// One reference from the board: the published price, the chart drawn from
+/// its change-points, what Calibre knows about the watch itself, and a way to
+/// go find the real thing on the marketplace.
 struct MarketDetailSheet: View {
-    let market: MarketData.Market
-    let dates: [Date]
+    let price: MarketReferencePrice
+    /// Resampled once here rather than per body pass — the sheet reads it
+    /// from half a dozen places.
+    private let series: MarketSeries
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppRouter.self) private var router
 
-    private static let usd: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter
-    }()
-
-    private static func usdFull(_ value: Double) -> String {
-        usd.string(from: NSNumber(value: value)) ?? "$\(Int(value))"
+    init(price: MarketReferencePrice) {
+        self.price = price
+        self.series = MarketSeries(history: price.history)
     }
 
-    private static func usdCompact(_ value: Double) -> String {
-        if value >= 1000 {
-            let thousands = value / 1000
-            return String(format: thousands >= 100 ? "$%.0fk" : "$%.1fk", thousands)
-        }
-        return "$\(Int(value.rounded()))"
-    }
+    private var title: String { price.model ?? price.reference }
 
+    /// Only the windows the published history actually reaches back over. A
+    /// 30-day figure on a reference first priced last week would be a number
+    /// nobody could stand behind.
     private var performanceWindows: [(label: String, value: Double)] {
-        [
-            ("7-day", MarketData.windowChange(market.series, days: 7)),
-            ("30-day", MarketData.windowChange(market.series, days: 30)),
-            ("\(MarketData.historyDays)-day", market.change),
-        ]
+        var windows: [(label: String, value: Double)] = []
+        if let month = series.change(overDays: 30) { windows.append(("30-day", month)) }
+        if let quarter = series.change(overDays: 90) { windows.append(("90-day", quarter)) }
+        if let year = series.change(overDays: 365) { windows.append(("1-year", year)) }
+        if series.isDrawable { windows.append(("All time", series.change)) }
+        return windows
     }
 
     var body: some View {
@@ -45,34 +38,30 @@ struct MarketDetailSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xl) {
                     priceHeader
-                    MarketAreaChart(
-                        series: market.series,
-                        dates: dates,
-                        color: MarketTrend.color(for: market.change),
-                        formatValue: Self.usdCompact
-                    )
-                    performanceRow
+                    chart
+                    if !performanceWindows.isEmpty {
+                        performanceRow
+                    }
                     statGrid
+                    specSheet
                     footer
                 }
                 .padding(Space.l)
             }
-            .background(Color.calibre.background)
-            .navigationTitle(market.model)
+            .calibrePageBackground()
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     ShareLink(
-                        item: URL(string: "https://buycalibre.com/community?room=market&watch=\(market.id)")
+                        item: URL(string: "https://buycalibre.com/community?room=market&reference=\(price.slug)")
                             ?? URL(string: "https://buycalibre.com/community?room=market")!,
-                        message: Text(
-                            "\(market.brand) \(market.model) (Ref. \(market.reference)) on Calibre."
-                        )
+                        message: Text("\(price.brand) \(title) (Ref. \(price.reference)) on Calibre.")
                     ) {
                         Image(systemName: "square.and.arrow.up")
                     }
                     .tint(Color.calibre.primary)
-                    .accessibilityLabel("Share \(market.brand) \(market.model)")
+                    .accessibilityLabel("Share \(price.brand) \(title)")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -89,27 +78,56 @@ struct MarketDetailSheet: View {
 
     private var priceHeader: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            Text(market.brand.uppercased())
+            Text(price.brand.uppercased())
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.mutedForeground)
-            Text(market.model)
+            Text(title)
                 .font(CalibreType.serif(.semiBold, 26, relativeTo: .title))
                 .foregroundStyle(Color.calibre.foreground)
-            Text("Ref. \(market.reference)")
+            Text("Ref. \(price.reference)")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
 
             HStack(alignment: .lastTextBaseline, spacing: Space.m) {
-                Text(Self.usdFull(market.price))
+                Text(MarketFormat.usdFull(price.currentValue))
                     .font(CalibreType.serif(.semiBold, 32, relativeTo: .largeTitle))
                     .foregroundStyle(Color.calibre.foreground)
                     .monospacedDigit()
-                ChangePillView(change: market.change)
+                if series.isDrawable {
+                    ChangePillView(change: series.change)
+                }
             }
             .padding(.top, Space.xs)
-            Text("Estimated market value \u{00B7} past \(MarketData.historyDays) days")
+            Text(publishedLine)
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
+        }
+    }
+
+    private var publishedLine: String {
+        if let day = MarketFormat.day(iso: price.setAt) {
+            return "Calibre reference price \u{00B7} set \(day)"
+        }
+        return "Calibre reference price"
+    }
+
+    @ViewBuilder
+    private var chart: some View {
+        if series.isDrawable {
+            MarketAreaChart(
+                series: series.values,
+                dates: series.dates,
+                color: MarketTrend.color(for: series.change),
+                formatValue: MarketFormat.usdCompact
+            )
+        } else {
+            Text("This is the first price we've published for this reference, so there's no history to chart yet.")
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Space.l)
+                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
         }
     }
 
@@ -132,16 +150,33 @@ struct MarketDetailSheet: View {
 
     private var statGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.m), GridItem(.flexible(), spacing: Space.m)], spacing: Space.m) {
-            statCell(label: "Current value", value: Self.usdFull(market.price))
-            statCell(label: "\(MarketData.historyDays)-day high", value: Self.usdFull(market.high))
-            statCell(label: "\(MarketData.historyDays)-day low", value: Self.usdFull(market.low))
-            statCell(
-                label: "Net change",
-                value: "\(market.changeAbs >= 0 ? "+" : "\u{2212}")\(Self.usdFull(abs(market.changeAbs)))",
-                tone: market.changeAbs >= 0 ? .up : .down
-            )
-            statCell(label: "Period range", value: Self.usdFull(market.high - market.low))
-            statCell(label: "Reference", value: market.reference)
+            statCell(label: "Current price", value: MarketFormat.usdFull(price.currentValue))
+            statCell(label: "Reference", value: price.reference)
+            if series.isDrawable {
+                statCell(label: "Published high", value: MarketFormat.usdFull(series.high))
+                statCell(label: "Published low", value: MarketFormat.usdFull(series.low))
+                statCell(
+                    label: "Net change",
+                    value: "\(series.changeAbs >= 0 ? "+" : "\u{2212}")\(MarketFormat.usdFull(abs(series.changeAbs)))",
+                    tone: series.changeAbs >= 0 ? .up : .down
+                )
+                if let first = series.firstDate {
+                    statCell(label: "First published", value: MarketFormat.day(first))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var specSheet: some View {
+        let rows = price.specs.rows
+        if !rows.isEmpty {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Text("The watch")
+                    .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
+                    .foregroundStyle(Color.calibre.foreground)
+                SpecList(rows)
+            }
         }
     }
 
@@ -170,7 +205,7 @@ struct MarketDetailSheet: View {
                 .foregroundStyle(Color.calibre.mutedForeground)
 
             Button {
-                let brand = market.brand
+                let brand = price.brand
                 dismiss()
                 router.open(.brand(brand))
             } label: {

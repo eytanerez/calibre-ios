@@ -1,12 +1,20 @@
 import Foundation
 
-// FIXTURE-PENDING: authenticated captures blocked by the backend
-// mid-migration; shape from `_readiness_payload` in app/api/views/stripe.py.
+// FIXTURE-PENDING: authenticated captures need a signed-in seller; shape read
+// off `_readiness_payload` in app/api/views/stripe.py and the status ladder in
+// app/services/connect_status.py.
 /// `/stripe/seller-readiness` — Connect status, synced from Stripe on read.
 public struct SellerReadiness: Codable, Sendable {
     public let connect: ConnectStatus
-    /// True once onboarding is complete and payouts are enabled.
+    /// True once onboarding is complete, payouts are enabled and the card on
+    /// file is valid. The gate reads this and nothing else — `connect.status`
+    /// says how setup is going, never whether it is allowed to proceed.
     public let canList: Bool
+
+    public init(connect: ConnectStatus, canList: Bool) {
+        self.connect = connect
+        self.canList = canList
+    }
 }
 
 public struct ConnectStatus: Codable, Sendable {
@@ -16,8 +24,57 @@ public struct ConnectStatus: Codable, Sendable {
     public let chargesEnabled: Bool
     public let payoutsEnabled: Bool
     public let lastCheckedAt: Date?
+    /// The raw Stripe requirement keys. `missingItems` is the same list said
+    /// in words a seller can read; these stay for anything that needs to match
+    /// Stripe's own spelling.
     public let requirementsCurrentlyDue: [String]
     public let requirementsEventuallyDue: [String]
+    /// The six-state answer — see `ConnectSetupStatus`.
+    public let status: ConnectSetupStatus
+    /// Whether `status` came from a live Stripe read or from the seller row.
+    public let statusBasis: ConnectStatusBasis
+    /// What Stripe is waiting on now, in words. Empty on a cached read by
+    /// design: the row remembers that something was outstanding, not what.
+    public let missingItems: [ConnectRequirementItem]
+    /// What Stripe will likely ask for after this round.
+    public let upcomingItems: [ConnectRequirementItem]
+    /// What Stripe is reading right now. Only ever populated by a live read.
+    public let reviewItems: [ConnectRequirementItem]
+    /// Stripe's own machine reason, unhumanized. For support, never for the
+    /// seller — `payoutStep` writes what the seller is shown.
+    public let disabledReason: String?
+
+    public init(
+        accountId: String?,
+        onboardingComplete: Bool,
+        detailsSubmitted: Bool,
+        chargesEnabled: Bool,
+        payoutsEnabled: Bool,
+        lastCheckedAt: Date? = nil,
+        requirementsCurrentlyDue: [String] = [],
+        requirementsEventuallyDue: [String] = [],
+        status: ConnectSetupStatus,
+        statusBasis: ConnectStatusBasis = .live,
+        missingItems: [ConnectRequirementItem] = [],
+        upcomingItems: [ConnectRequirementItem] = [],
+        reviewItems: [ConnectRequirementItem] = [],
+        disabledReason: String? = nil
+    ) {
+        self.accountId = accountId
+        self.onboardingComplete = onboardingComplete
+        self.detailsSubmitted = detailsSubmitted
+        self.chargesEnabled = chargesEnabled
+        self.payoutsEnabled = payoutsEnabled
+        self.lastCheckedAt = lastCheckedAt
+        self.requirementsCurrentlyDue = requirementsCurrentlyDue
+        self.requirementsEventuallyDue = requirementsEventuallyDue
+        self.status = status
+        self.statusBasis = statusBasis
+        self.missingItems = missingItems
+        self.upcomingItems = upcomingItems
+        self.reviewItems = reviewItems
+        self.disabledReason = disabledReason
+    }
 }
 
 // FIXTURE-PENDING: shape from `SellerDashboardView.get` in
@@ -290,6 +347,11 @@ public struct ListingDraftPayload: Encodable, Sendable {
     /// server answers a collision with 409 `duplicate_sku`. Bulk import
     /// matches on this and only this — `reference` is descriptive.
     public var sellerSku: String?
+    /// The watch in the seller's own Collection that this listing is — their
+    /// answer to "is this that watch?", and the only thing that links the two.
+    /// Omitting it is a decline and writes nothing, which is why every payload
+    /// that isn't carrying an answer leaves it nil.
+    public var vaultWatchId: String?
     /// Serialized as a string to keep Decimal exactness on the wire.
     public var price: String?
     public var currency: String?
@@ -318,6 +380,7 @@ public struct ListingDraftPayload: Encodable, Sendable {
         model: String? = nil,
         reference: String? = nil,
         sellerSku: String? = nil,
+        vaultWatchId: String? = nil,
         price: Decimal? = nil,
         currency: String? = nil,
         conditionOverall: String? = nil,
@@ -340,6 +403,7 @@ public struct ListingDraftPayload: Encodable, Sendable {
         self.model = model
         self.reference = reference
         self.sellerSku = sellerSku
+        self.vaultWatchId = vaultWatchId
         self.price = price.map { "\($0)" }
         self.currency = currency
         self.conditionOverall = conditionOverall

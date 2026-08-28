@@ -40,7 +40,7 @@ struct DiscoverScreen: View {
         .padding(.horizontal, Space.margin)
         .padding(.bottom, Space.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .tutorialOverlay(tutorial)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $showSaved) {

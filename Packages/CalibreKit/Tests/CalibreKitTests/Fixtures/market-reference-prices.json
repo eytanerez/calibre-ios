@@ -1,0 +1,4492 @@
+{
+    "ok": true,
+    "data": {
+        "as_of": "2026-08-23T14:05:20.235013Z",
+        "references": [
+            {
+                "id": "e9bae9c8-4596-4640-8933-4b8ae8c6a5e5",
+                "brand": "A. Lange & S\u00f6hne",
+                "model": "Lange 1",
+                "reference": "191.032",
+                "slug": "a-lange-s-hne-191-032",
+                "price": "3450.00",
+                "currency": "USD",
+                "set_at": "2026-08-23T14:05:20.235013Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "3008.00"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "3136.00"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "3296.00"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "3360.00"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "3450.00"
+                    }
+                ]
+            },
+            {
+                "id": "c6b5ba6d-ae8d-4a46-abe5-e14b47d102b7",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak Jumbo Extra-Thin",
+                "reference": "15202ST.OO.1240ST.01",
+                "slug": "audemars-piguet-15202st-oo-1240st-01",
+                "price": "6238.05",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "5584.54"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "5822.18"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "6119.23"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "6238.05"
+                    }
+                ]
+            },
+            {
+                "id": "22a62d83-1084-4f12-840e-adbdf8499914",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak Selfwinding 37",
+                "reference": "15450ST.OO.1256ST.03",
+                "slug": "audemars-piguet-15450st-oo-1256st-03",
+                "price": "9116.10",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "8161.08"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "8508.36"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "8942.46"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "9116.10"
+                    }
+                ]
+            },
+            {
+                "id": "2b18bd9c-9afb-45c2-bb56-c38443181b9f",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak",
+                "reference": "15500ST.OO.1220ST.01",
+                "slug": "audemars-piguet-15500st-oo-1220st-01",
+                "price": "11994.15",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "10737.62"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "11194.54"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "11765.69"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "11994.15"
+                    }
+                ]
+            },
+            {
+                "id": "cbfaa9ba-7da0-4b42-81f9-2e07c677e596",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak Chronograph 41",
+                "reference": "26240ST.OO.1320ST.03",
+                "slug": "audemars-piguet-26240st-oo-1320st-03",
+                "price": "14872.20",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "13314.16"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "13880.72"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "14588.92"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "14872.20"
+                    }
+                ]
+            },
+            {
+                "id": "cd3ba500-faba-4d3a-adab-b7b3be587f0b",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak Chronograph",
+                "reference": "26331ST.OO.1220ST.03",
+                "slug": "audemars-piguet-26331st-oo-1220st-03",
+                "price": "17750.25",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "15890.70"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "16566.90"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "17412.15"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "17750.25"
+                    }
+                ]
+            },
+            {
+                "id": "620674b6-b936-4b79-aeb9-cab6686a6b73",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak Offshore",
+                "reference": "26470ST.OO.A027CA.01",
+                "slug": "audemars-piguet-26470st-oo-a027ca-01",
+                "price": "20628.30",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "18467.24"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "19253.08"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "20235.38"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "20628.30"
+                    }
+                ]
+            },
+            {
+                "id": "70af3897-793a-40e6-99e9-0a3bed919425",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak Perpetual Calendar",
+                "reference": "26574ST.OO.1220ST.02",
+                "slug": "audemars-piguet-26574st-oo-1220st-02",
+                "price": "23506.35",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "Fixed octagonal, eight screws",
+                    "glass": "Sapphire",
+                    "back": "Exhibition sapphire",
+                    "shape": "Octagonal",
+                    "diameter_mm": 41,
+                    "finish": "Satin-brushed with polished chamfers",
+                    "dial": "Blue Grande Tapisserie",
+                    "indexes": "Applied white gold baton",
+                    "hands": "Royal Oak baton"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "21043.78"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "21939.26"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "23058.61"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "23506.35"
+                    }
+                ]
+            },
+            {
+                "id": "758b328b-5b21-4bf9-8018-5c30446a13a0",
+                "brand": "Audemars Piguet",
+                "model": "Royal Oak",
+                "reference": "5402ST",
+                "slug": "audemars-piguet-5402st",
+                "price": "26384.40",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "23620.32"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "24625.44"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "25881.84"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "26384.40"
+                    }
+                ]
+            },
+            {
+                "id": "39e1d00d-16b1-4a26-be88-6fb67893ea21",
+                "brand": "Breitling",
+                "model": "Chronomat",
+                "reference": "81950",
+                "slug": "breitling-81950",
+                "price": "29262.45",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "26196.86"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "27311.62"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "28705.07"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "29262.45"
+                    }
+                ]
+            },
+            {
+                "id": "0a23d389-108a-415b-9047-8e6039451855",
+                "brand": "Breitling",
+                "model": "Avenger Automatic 43",
+                "reference": "A17318101B1X2",
+                "slug": "breitling-a17318101b1x2",
+                "price": "32140.50",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "28773.40"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "29997.80"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "31528.30"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "32140.50"
+                    }
+                ]
+            },
+            {
+                "id": "4af0c47c-7237-4e86-9651-02d0452f7616",
+                "brand": "Breitling",
+                "model": "Navitimer 8 B01",
+                "reference": "AB0117131C1A1",
+                "slug": "breitling-ab0117131c1a1",
+                "price": "35018.55",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "31349.94"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "32683.98"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "34351.53"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "35018.55"
+                    }
+                ]
+            },
+            {
+                "id": "89b67827-0dd9-4e91-84c2-9a246966b508",
+                "brand": "Breitling",
+                "model": "Premier B01",
+                "reference": "AB0118221C1P1",
+                "slug": "breitling-ab0118221c1p1",
+                "price": "37896.60",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "33926.48"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "35370.16"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "37174.76"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "37896.60"
+                    }
+                ]
+            },
+            {
+                "id": "bb6d4871-2216-4eee-83d5-49d1fea01613",
+                "brand": "Breitling",
+                "model": "Chronomat B01 42",
+                "reference": "AB0134101C1A1",
+                "slug": "breitling-ab0134101c1a1",
+                "price": "40774.65",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "36503.02"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "38056.34"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "39997.99"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "40774.65"
+                    }
+                ]
+            },
+            {
+                "id": "215de2bd-eb1b-4423-8dbe-f30640f7b41b",
+                "brand": "Breitling",
+                "model": "Navitimer B01",
+                "reference": "AB0137211B1A1",
+                "slug": "breitling-ab0137211b1a1",
+                "price": "43652.70",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "39079.56"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "40742.52"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "42821.22"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "43652.70"
+                    }
+                ]
+            },
+            {
+                "id": "1b9d4aa3-9fc0-40d2-b0f3-87aff5b3aca0",
+                "brand": "Breitling",
+                "model": "Superocean Heritage B20",
+                "reference": "AB2010121B1A1",
+                "slug": "breitling-ab2010121b1a1",
+                "price": "46530.75",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "41656.10"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "43428.70"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "45644.45"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "46530.75"
+                    }
+                ]
+            },
+            {
+                "id": "44c64fc1-7318-4879-8369-acf051ef18f0",
+                "brand": "Breitling",
+                "model": "Superocean Heritage",
+                "reference": "AB2010161C1A1",
+                "slug": "breitling-ab2010161c1a1",
+                "price": "49408.80",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "44232.64"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "46114.88"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "48467.68"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "49408.80"
+                    }
+                ]
+            },
+            {
+                "id": "10fd490b-2008-4642-8788-94d8abd8f1cb",
+                "brand": "Cartier",
+                "model": "Crash",
+                "reference": "CRWGCH0006",
+                "slug": "cartier-crwgch0006",
+                "price": "52286.85",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "46809.18"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "48801.06"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "51290.91"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "52286.85"
+                    }
+                ]
+            },
+            {
+                "id": "f0010e4d-c118-4abe-a797-faf031c04bb6",
+                "brand": "Cartier",
+                "model": "Santos Galbee",
+                "reference": "W20011C4",
+                "slug": "cartier-w20011c4",
+                "price": "55164.90",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "49385.72"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "51487.24"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "54114.14"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "55164.90"
+                    }
+                ]
+            },
+            {
+                "id": "cab9c457-82c0-4a78-9622-19dbf3eb1a6f",
+                "brand": "Cartier",
+                "model": "Ballon Bleu 42mm",
+                "reference": "W69012Z4",
+                "slug": "cartier-w69012z4",
+                "price": "58042.95",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "51962.26"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "54173.42"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "56937.37"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "58042.95"
+                    }
+                ]
+            },
+            {
+                "id": "3c1bf9d4-d9cb-4ef4-aed8-ad629e8a4a7b",
+                "brand": "Cartier",
+                "model": "Tank Louis Cartier",
+                "reference": "WGTA0011",
+                "slug": "cartier-wgta0011",
+                "price": "60921.00",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "54538.80"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "56859.60"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "59760.60"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "60921.00"
+                    }
+                ]
+            },
+            {
+                "id": "6c9ea991-1a80-40b9-9fda-816c4a13fcaf",
+                "brand": "Cartier",
+                "model": "Tank Cintr\u00e9e",
+                "reference": "WGTA0027",
+                "slug": "cartier-wgta0027",
+                "price": "63799.05",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "57115.34"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "59545.78"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "62583.83"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "63799.05"
+                    }
+                ]
+            },
+            {
+                "id": "ad744153-955a-480f-806d-6de409444cd6",
+                "brand": "Cartier",
+                "model": "Panth\u00e8re de Cartier Medium",
+                "reference": "WSPN0007",
+                "slug": "cartier-wspn0007",
+                "price": "66677.10",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "59691.88"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "62231.96"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "65407.06"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "66677.10"
+                    }
+                ]
+            },
+            {
+                "id": "21eda09d-3bcb-43a6-ad98-6c36019b0980",
+                "brand": "Cartier",
+                "model": "Santos Chronograph",
+                "reference": "WSSA0017",
+                "slug": "cartier-wssa0017",
+                "price": "69555.15",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "Fixed",
+                    "glass": "Sapphire",
+                    "back": "Solid",
+                    "shape": "Square",
+                    "diameter_mm": 43,
+                    "finish": "Polished and brushed",
+                    "dial": "Silvered opaline",
+                    "indexes": "Painted Roman numerals",
+                    "hands": "Blued sword"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "62268.42"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "64918.14"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "68230.29"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "69555.15"
+                    }
+                ]
+            },
+            {
+                "id": "7386b84f-5cdd-482e-95e4-1c47d84eba9f",
+                "brand": "Cartier",
+                "model": "Santos de Cartier Large",
+                "reference": "WSSA0018",
+                "slug": "cartier-wssa0018",
+                "price": "72433.20",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "64844.96"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "67604.32"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "71053.52"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "72433.20"
+                    }
+                ]
+            },
+            {
+                "id": "62e88d74-2c33-4dbb-a34d-76f8922039f7",
+                "brand": "Cartier",
+                "model": "Santos de Cartier",
+                "reference": "WSSA0029",
+                "slug": "cartier-wssa0029",
+                "price": "75311.25",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "67421.50"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "70290.50"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "73876.75"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "75311.25"
+                    }
+                ]
+            },
+            {
+                "id": "26a9d6f2-f46b-4fa7-b604-ff533be2c2a3",
+                "brand": "Cartier",
+                "model": "Santos-Dumont Large",
+                "reference": "WSSA0032",
+                "slug": "cartier-wssa0032",
+                "price": "78189.30",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "69998.04"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "72976.68"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "76699.98"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "78189.30"
+                    }
+                ]
+            },
+            {
+                "id": "fd3d5bac-80a1-466d-b4c0-d7fb0ec757d2",
+                "brand": "Cartier",
+                "model": "Tank Must Large",
+                "reference": "WSTA0041",
+                "slug": "cartier-wsta0041",
+                "price": "81067.35",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "72574.58"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "75662.86"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "79523.21"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "81067.35"
+                    }
+                ]
+            },
+            {
+                "id": "43316d08-3fb1-41e4-87fc-a5b567537c83",
+                "brand": "Cartier",
+                "model": "Tank Fran\u00e7aise Medium",
+                "reference": "WSTA0074",
+                "slug": "cartier-wsta0074",
+                "price": "83945.40",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "75151.12"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "78349.04"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "82346.44"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "83945.40"
+                    }
+                ]
+            },
+            {
+                "id": "d7c95c40-f3cb-4b20-ad4d-04961c70b27b",
+                "brand": "Grand Seiko",
+                "model": "Snowflake",
+                "reference": "SBGA211",
+                "slug": "grand-seiko-sbga211",
+                "price": "86823.45",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "77727.66"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "81035.22"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "85169.67"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "86823.45"
+                    }
+                ]
+            },
+            {
+                "id": "1ef20099-1d34-45a7-b272-41081b69d79f",
+                "brand": "Heuer",
+                "model": "Autavia",
+                "reference": "2446",
+                "slug": "heuer-2446",
+                "price": "89701.50",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "80304.20"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "83721.40"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "87992.90"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "89701.50"
+                    }
+                ]
+            },
+            {
+                "id": "d77064a5-bfa9-44c0-8ce8-1515e4e8b4a9",
+                "brand": "IWC",
+                "model": "Mark XII",
+                "reference": "IW324105",
+                "slug": "iwc-iw324105",
+                "price": "92579.55",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "82880.74"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "86407.58"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "90816.13"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "92579.55"
+                    }
+                ]
+            },
+            {
+                "id": "05fab21d-1486-43b4-b959-1535a861b400",
+                "brand": "IWC",
+                "model": "Pilot's Watch Mark XVIII",
+                "reference": "IW327011",
+                "slug": "iwc-iw327011",
+                "price": "95457.60",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "85457.28"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "89093.76"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "93639.36"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "95457.60"
+                    }
+                ]
+            },
+            {
+                "id": "076a9a1b-6b5f-4541-bc05-05ead792795c",
+                "brand": "IWC",
+                "model": "Ingenieur Automatic 40",
+                "reference": "IW328901",
+                "slug": "iwc-iw328901",
+                "price": "98335.65",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "88033.82"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "91779.94"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "96462.59"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "98335.65"
+                    }
+                ]
+            },
+            {
+                "id": "5730b763-5395-438a-9c45-2c596b34e149",
+                "brand": "IWC",
+                "model": "Big Pilot 43",
+                "reference": "IW329301",
+                "slug": "iwc-iw329301",
+                "price": "4613.70",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "4130.36"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "4306.12"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "4525.82"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "4613.70"
+                    }
+                ]
+            },
+            {
+                "id": "d09b35aa-c3a2-4790-9cdd-e0418931f7c1",
+                "brand": "IWC",
+                "model": "Portofino Automatic 40",
+                "reference": "IW356523",
+                "slug": "iwc-iw356523",
+                "price": "7491.75",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "6706.90"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "6992.30"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "7349.05"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "7491.75"
+                    }
+                ]
+            },
+            {
+                "id": "adbac2d3-2437-4d97-8e38-6371a1badebe",
+                "brand": "IWC",
+                "model": "Portugieser Chronograph",
+                "reference": "IW371605",
+                "slug": "iwc-iw371605",
+                "price": "10369.80",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "9283.44"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "9678.48"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "10172.28"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "10369.80"
+                    }
+                ]
+            },
+            {
+                "id": "35c8a509-4dfb-4b81-a130-fee9ca70e01e",
+                "brand": "IWC",
+                "model": "Portugieser Chronograph",
+                "reference": "IW371617",
+                "slug": "iwc-iw371617",
+                "price": "13247.85",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "11859.98"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "12364.66"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "12995.51"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "13247.85"
+                    }
+                ]
+            },
+            {
+                "id": "02405b53-f4d5-4032-a180-5275edb2e020",
+                "brand": "IWC",
+                "model": "Portugieser Automatic 42",
+                "reference": "IW501705",
+                "slug": "iwc-iw501705",
+                "price": "16125.90",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "14436.52"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "15050.84"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "15818.74"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "16125.90"
+                    }
+                ]
+            },
+            {
+                "id": "511bdcf2-4a74-4137-99b8-015da86d8f2f",
+                "brand": "Jaeger-LeCoultre",
+                "model": "Master Ultra Thin Moon",
+                "reference": "Q1368420",
+                "slug": "jaeger-lecoultre-q1368420",
+                "price": "19003.95",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "17013.06"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "17737.02"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "18641.97"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "19003.95"
+                    }
+                ]
+            },
+            {
+                "id": "83d86c99-333d-4461-8fcb-cb614a1f787c",
+                "brand": "Jaeger-LeCoultre",
+                "model": "Reverso Classic Large Duoface",
+                "reference": "Q3848420",
+                "slug": "jaeger-lecoultre-q3848420",
+                "price": "21882.00",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "19589.60"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "20423.20"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "21465.20"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "21882.00"
+                    }
+                ]
+            },
+            {
+                "id": "2fbff3ee-4bee-47d2-95c6-453e226cc8f2",
+                "brand": "Jaeger-LeCoultre",
+                "model": "Reverso Duoface",
+                "reference": "Q3908420",
+                "slug": "jaeger-lecoultre-q3908420",
+                "price": "24760.05",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "22166.14"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "23109.38"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "24288.43"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "24760.05"
+                    }
+                ]
+            },
+            {
+                "id": "eea404c6-2bf4-4b98-becb-894f18d11c2c",
+                "brand": "Jaeger-LeCoultre",
+                "model": "Reverso Tribute",
+                "reference": "Q3978480",
+                "slug": "jaeger-lecoultre-q3978480",
+                "price": "27638.10",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "None",
+                    "glass": "Sapphire",
+                    "back": "Reversible solid",
+                    "shape": "Rectangular",
+                    "diameter_mm": 46,
+                    "finish": "Polished with sunray dial",
+                    "dial": "Silver sunray",
+                    "indexes": "Applied Arabic and baton",
+                    "hands": "Dauphine"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "24742.68"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "25795.56"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "27111.66"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "27638.10"
+                    }
+                ]
+            },
+            {
+                "id": "f1a7c307-0b3b-434d-8b96-5dc5763854de",
+                "brand": "Jaeger-LeCoultre",
+                "model": "Polaris Automatic",
+                "reference": "Q9008471",
+                "slug": "jaeger-lecoultre-q9008471",
+                "price": "30516.15",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "27319.22"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "28481.74"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "29934.89"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "30516.15"
+                    }
+                ]
+            },
+            {
+                "id": "31665598-2bc8-45b4-888a-fc24c745faf2",
+                "brand": "Omega",
+                "model": "Speedmaster Ed White",
+                "reference": "105.003",
+                "slug": "omega-105-003",
+                "price": "33394.20",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "29895.76"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "31167.92"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "32758.12"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "33394.20"
+                    }
+                ]
+            },
+            {
+                "id": "d79fc1be-4fae-4cea-9ca6-3469a1e34874",
+                "brand": "Omega",
+                "model": "Constellation Co-Axial",
+                "reference": "131.10.39.20.06.001",
+                "slug": "omega-131-10-39-20-06-001",
+                "price": "36272.25",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "32472.30"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "33854.10"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "35581.35"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "36272.25"
+                    }
+                ]
+            },
+            {
+                "id": "0a31e86d-f57c-4c4a-9565-6c33463f32ce",
+                "brand": "Omega",
+                "model": "Seamaster 300",
+                "reference": "165.024",
+                "slug": "omega-165-024",
+                "price": "39150.30",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "35048.84"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "36540.28"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "38404.58"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "39150.30"
+                    }
+                ]
+            },
+            {
+                "id": "9636d28e-35ed-45b6-b05f-65c35b332aa7",
+                "brand": "Omega",
+                "model": "Seamaster 300M Bond",
+                "reference": "210.22.42.20.01.004",
+                "slug": "omega-210-22-42-20-01-004",
+                "price": "42028.35",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "37625.38"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "39226.46"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "41227.81"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "42028.35"
+                    }
+                ]
+            },
+            {
+                "id": "1fe0c05e-7d36-40da-b156-b69d48ed98d8",
+                "brand": "Omega",
+                "model": "Seamaster Diver 300M",
+                "reference": "210.30.42.20.01.001",
+                "slug": "omega-210-30-42-20-01-001",
+                "price": "44906.40",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "40201.92"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "41912.64"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "44051.04"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "44906.40"
+                    }
+                ]
+            },
+            {
+                "id": "67090865-a47f-4632-9ade-4e3c2354c655",
+                "brand": "Omega",
+                "model": "Seamaster Diver 300M",
+                "reference": "210.30.42.20.03.001",
+                "slug": "omega-210-30-42-20-03-001",
+                "price": "47784.45",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "42778.46"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "44598.82"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "46874.27"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "47784.45"
+                    }
+                ]
+            },
+            {
+                "id": "07be1c30-e10b-49ed-b98a-594da143e416",
+                "brand": "Omega",
+                "model": "Seamaster Planet Ocean 600M",
+                "reference": "215.30.44.21.01.001",
+                "slug": "omega-215-30-44-21-01-001",
+                "price": "50662.50",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "45355.00"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "47285.00"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "49697.50"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "50662.50"
+                    }
+                ]
+            },
+            {
+                "id": "8f767c6a-4ffd-498b-a3b2-f7df25782db1",
+                "brand": "Omega",
+                "model": "Seamaster Aqua Terra 150M",
+                "reference": "220.10.38.20.03.001",
+                "slug": "omega-220-10-38-20-03-001",
+                "price": "53540.55",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "47931.54"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "49971.18"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "52520.73"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "53540.55"
+                    }
+                ]
+            },
+            {
+                "id": "4900a5ae-c442-4a75-8290-ed996ce44e51",
+                "brand": "Omega",
+                "model": "Seamaster Aqua Terra",
+                "reference": "220.12.41.21.03.004",
+                "slug": "omega-220-12-41-21-03-004",
+                "price": "56418.60",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "50508.08"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "52657.36"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "55343.96"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "56418.60"
+                    }
+                ]
+            },
+            {
+                "id": "37534903-b1cc-45dc-831c-59da1fb2640e",
+                "brand": "Omega",
+                "model": "Seamaster 300",
+                "reference": "234.30.41.21.01.001",
+                "slug": "omega-234-30-41-21-01-001",
+                "price": "59296.65",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "53084.62"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "55343.54"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "58167.19"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "59296.65"
+                    }
+                ]
+            },
+            {
+                "id": "33f7056e-b6a3-4d83-8226-61486124b9c4",
+                "brand": "Omega",
+                "model": "Speedmaster Moonwatch",
+                "reference": "310.30.42.50.01.001",
+                "slug": "omega-310-30-42-50-01-001",
+                "price": "62174.70",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "55661.16"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "58029.72"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "60990.42"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "62174.70"
+                    }
+                ]
+            },
+            {
+                "id": "524ec494-51cd-4dea-94a5-70d88f80ffc4",
+                "brand": "Omega",
+                "model": "Speedmaster Professional",
+                "reference": "310.30.42.50.01.002",
+                "slug": "omega-310-30-42-50-01-002",
+                "price": "65052.75",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "Fixed tachymeter",
+                    "glass": "Hesalite",
+                    "back": "Solid screw-in",
+                    "shape": "Round",
+                    "diameter_mm": 42,
+                    "finish": "Brushed",
+                    "dial": "Black step",
+                    "indexes": "Applied baton",
+                    "hands": "Baton"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "58237.70"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "60715.90"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "63813.65"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "65052.75"
+                    }
+                ]
+            },
+            {
+                "id": "31a955d1-a6f1-4efa-bbb8-69895e98b108",
+                "brand": "Omega",
+                "model": "Speedmaster Moonwatch",
+                "reference": "311.30.42.30.01.005",
+                "slug": "omega-311-30-42-30-01-005",
+                "price": "67930.80",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "60814.24"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "63402.08"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "66636.88"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "67930.80"
+                    }
+                ]
+            },
+            {
+                "id": "318d5b71-ee48-4e34-8f1b-66eed1e99ea1",
+                "brand": "Omega",
+                "model": "Speedmaster Racing",
+                "reference": "329.30.44.51.01.001",
+                "slug": "omega-329-30-44-51-01-001",
+                "price": "70808.85",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "63390.78"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "66088.26"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "69460.11"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "70808.85"
+                    }
+                ]
+            },
+            {
+                "id": "9826af93-d4c2-4e10-9ebf-d8c13d521dc5",
+                "brand": "Omega",
+                "model": "Speedmaster '57",
+                "reference": "331.10.42.51.01.002",
+                "slug": "omega-331-10-42-51-01-002",
+                "price": "73686.90",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "Fixed tachymeter",
+                    "glass": "Sapphire",
+                    "back": "Exhibition sapphire",
+                    "shape": "Round",
+                    "diameter_mm": 41,
+                    "finish": "Brushed and polished",
+                    "dial": "Blue",
+                    "indexes": "Applied baton",
+                    "hands": "Broad arrow"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "65967.32"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "68774.44"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "72283.34"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "73686.90"
+                    }
+                ]
+            },
+            {
+                "id": "920ac780-7193-434a-96fb-97004ad1fec4",
+                "brand": "Omega",
+                "model": "Speedmaster Reduced",
+                "reference": "3510.50.00",
+                "slug": "omega-3510-50-00",
+                "price": "76564.95",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "68543.86"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "71460.62"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "75106.57"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "76564.95"
+                    }
+                ]
+            },
+            {
+                "id": "537f1a09-5c21-4a94-bd2a-095fc87e21f5",
+                "brand": "Omega",
+                "model": "Speedmaster Professional",
+                "reference": "3570.50.00",
+                "slug": "omega-3570-50-00",
+                "price": "79443.00",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "71120.40"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "74146.80"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "77929.80"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "79443.00"
+                    }
+                ]
+            },
+            {
+                "id": "4ab94fa6-77f1-4581-b955-d96e41c131b1",
+                "brand": "Omega",
+                "model": "De Ville Tr\u00e9sor",
+                "reference": "435.13.40.21.02.001",
+                "slug": "omega-435-13-40-21-02-001",
+                "price": "82321.05",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "73696.94"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "76832.98"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "80753.03"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "82321.05"
+                    }
+                ]
+            },
+            {
+                "id": "48f59be8-2bb4-46ab-b556-7fa7b2f4b0c2",
+                "brand": "Panerai",
+                "model": "Luminor Marina",
+                "reference": "PAM01312",
+                "slug": "panerai-pam01312",
+                "price": "85199.10",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "76273.48"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "79519.16"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "83576.26"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "85199.10"
+                    }
+                ]
+            },
+            {
+                "id": "fcf49f18-0e56-497c-ad47-952ed12a6097",
+                "brand": "Patek Philippe",
+                "model": "Nautilus",
+                "reference": "3700/1A",
+                "slug": "patek-philippe-3700-1a",
+                "price": "88077.15",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "78850.02"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "82205.34"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "86399.49"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "88077.15"
+                    }
+                ]
+            },
+            {
+                "id": "2bd2338d-2f9b-4200-8d39-809718d61f13",
+                "brand": "Patek Philippe",
+                "model": "Aquanaut Travel Time",
+                "reference": "5164A-001",
+                "slug": "patek-philippe-5164a-001",
+                "price": "90955.20",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "81426.56"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "84891.52"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "89222.72"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "90955.20"
+                    }
+                ]
+            },
+            {
+                "id": "a07d9c76-099a-42af-beb8-3abd6a7e96a3",
+                "brand": "Patek Philippe",
+                "model": "Aquanaut",
+                "reference": "5167A-001",
+                "slug": "patek-philippe-5167a-001",
+                "price": "93833.25",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "84003.10"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "87577.70"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "92045.95"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "93833.25"
+                    }
+                ]
+            },
+            {
+                "id": "b1c523db-315f-42fd-9550-5fb13c77b564",
+                "brand": "Patek Philippe",
+                "model": "Calatrava",
+                "reference": "5227G-001",
+                "slug": "patek-philippe-5227g-001",
+                "price": "96711.30",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "86579.64"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "90263.88"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "94869.18"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "96711.30"
+                    }
+                ]
+            },
+            {
+                "id": "9f60c088-9a13-471c-845b-ed1f20641700",
+                "brand": "Patek Philippe",
+                "model": "Nautilus",
+                "reference": "5711/1A-010",
+                "slug": "patek-philippe-5711-1a-010",
+                "price": "99589.35",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "89156.18"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "92950.06"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "97692.41"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "99589.35"
+                    }
+                ]
+            },
+            {
+                "id": "8079563c-52ef-413d-a0c8-aacaa35d59ed",
+                "brand": "Patek Philippe",
+                "model": "Nautilus",
+                "reference": "5712/1A-001",
+                "slug": "patek-philippe-5712-1a-001",
+                "price": "5867.40",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "5252.72"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "5476.24"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "5755.64"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "5867.40"
+                    }
+                ]
+            },
+            {
+                "id": "4ba2796c-2b05-4514-a143-797c2010c2f5",
+                "brand": "Patek Philippe",
+                "model": "Nautilus Chronograph",
+                "reference": "5980/1A-014",
+                "slug": "patek-philippe-5980-1a-014",
+                "price": "8745.45",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "Fixed octagonal",
+                    "glass": "Sapphire",
+                    "back": "Solid screw-down",
+                    "shape": "Rounded octagon",
+                    "diameter_mm": 41,
+                    "finish": "Satin-brushed with polished chamfers",
+                    "dial": "Blue embossed",
+                    "indexes": "Applied gold baton",
+                    "hands": "Baton"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "7829.26"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "8162.42"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "8578.87"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "8745.45"
+                    }
+                ]
+            },
+            {
+                "id": "f1983a93-c9fa-4c13-8a8e-583be02cb283",
+                "brand": "Patek Philippe",
+                "model": "Calatrava",
+                "reference": "96",
+                "slug": "patek-philippe-96",
+                "price": "11623.50",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "10405.80"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "10848.60"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "11402.10"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "11623.50"
+                    }
+                ]
+            },
+            {
+                "id": "e458c85d-1a04-42c7-83de-4c585b90dd45",
+                "brand": "Rolex",
+                "model": "Milgauss",
+                "reference": "116400GV",
+                "slug": "rolex-116400gv",
+                "price": "14501.55",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "12982.34"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "13534.78"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "14225.33"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "14501.55"
+                    }
+                ]
+            },
+            {
+                "id": "02c8416b-c652-4abe-8a09-b5f0dacb6fa1",
+                "brand": "Rolex",
+                "model": "Daytona",
+                "reference": "116500LN",
+                "slug": "rolex-116500ln",
+                "price": "17379.60",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Oystersteel",
+                    "bezel": "Fixed Cerachrom tachymeter",
+                    "glass": "Sapphire",
+                    "back": "Solid screw-down",
+                    "shape": "Round",
+                    "diameter_mm": 40,
+                    "finish": "Polished and brushed",
+                    "dial": "White",
+                    "indexes": "Applied baton",
+                    "hands": "Baton"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "15558.88"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "16220.96"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "17048.56"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "17379.60"
+                    }
+                ]
+            },
+            {
+                "id": "7225bc04-3a9c-4527-9e06-00a5ba505a1e",
+                "brand": "Rolex",
+                "model": "Daytona",
+                "reference": "116506",
+                "slug": "rolex-116506",
+                "price": "20257.65",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "18135.42"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "18907.14"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "19871.79"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "20257.65"
+                    }
+                ]
+            },
+            {
+                "id": "87c83b8e-028d-456b-9890-13f06ecd880a",
+                "brand": "Rolex",
+                "model": "Submariner",
+                "reference": "116610LN",
+                "slug": "rolex-116610ln",
+                "price": "23135.70",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "20711.96"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "21593.32"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "22695.02"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "23135.70"
+                    }
+                ]
+            },
+            {
+                "id": "2c531a75-95a2-4682-9a18-1fd6eb93bf98",
+                "brand": "Rolex",
+                "model": "Oyster Perpetual 36",
+                "reference": "126000",
+                "slug": "rolex-126000",
+                "price": "26013.75",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "23288.50"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "24279.50"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "25518.25"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "26013.75"
+                    }
+                ]
+            },
+            {
+                "id": "b16c57bf-ccee-4964-ad9c-8f911226a078",
+                "brand": "Rolex",
+                "model": "Datejust 36",
+                "reference": "126200",
+                "slug": "rolex-126200",
+                "price": "28891.80",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "25865.04"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "26965.68"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "28341.48"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "28891.80"
+                    }
+                ]
+            },
+            {
+                "id": "ad3825d5-4aac-4191-bac5-2161b0d404c5",
+                "brand": "Rolex",
+                "model": "Datejust 36",
+                "reference": "126234",
+                "slug": "rolex-126234",
+                "price": "31769.85",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "28441.58"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "29651.86"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "31164.71"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "31769.85"
+                    }
+                ]
+            },
+            {
+                "id": "22f9c57d-9d54-4a0a-91d0-5a4c30bd20b4",
+                "brand": "Rolex",
+                "model": "Datejust 41",
+                "reference": "126300",
+                "slug": "rolex-126300",
+                "price": "34647.90",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Oystersteel",
+                    "bezel": "Fluted white gold",
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": 41,
+                    "finish": null,
+                    "dial": "Wimbledon slate grey",
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "31018.12"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "32338.04"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "33987.94"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "34647.90"
+                    }
+                ]
+            },
+            {
+                "id": "041ad9f8-7226-4f51-9046-243dbf421a54",
+                "brand": "Rolex",
+                "model": "Datejust 41",
+                "reference": "126334",
+                "slug": "rolex-126334",
+                "price": "37525.95",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "33594.66"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "35024.22"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "36811.17"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "37525.95"
+                    }
+                ]
+            },
+            {
+                "id": "babb6165-7708-4cb6-9f75-48bba8e118c8",
+                "brand": "Rolex",
+                "model": "Sea-Dweller",
+                "reference": "126600",
+                "slug": "rolex-126600",
+                "price": "40404.00",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "36171.20"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "37710.40"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "39634.40"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "40404.00"
+                    }
+                ]
+            },
+            {
+                "id": "4c710309-712d-4520-a157-ae80d5b045e7",
+                "brand": "Rolex",
+                "model": "Submariner Date",
+                "reference": "126610LN",
+                "slug": "rolex-126610ln",
+                "price": "43282.05",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Oystersteel",
+                    "bezel": "Unidirectional Cerachrom",
+                    "glass": "Sapphire",
+                    "back": "Solid screw-down",
+                    "shape": "Round",
+                    "diameter_mm": 41,
+                    "finish": "Polished and brushed",
+                    "dial": "Black",
+                    "indexes": "Applied dot and baton",
+                    "hands": "Mercedes"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "38747.74"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "40396.58"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "42457.63"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "43282.05"
+                    }
+                ]
+            },
+            {
+                "id": "7a766ca9-5e20-4176-af2f-235d131ede5e",
+                "brand": "Rolex",
+                "model": "Submariner Date",
+                "reference": "126610LV",
+                "slug": "rolex-126610lv",
+                "price": "46160.10",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "41324.28"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "43082.76"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "45280.86"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "46160.10"
+                    }
+                ]
+            },
+            {
+                "id": "f3928de2-65f2-4881-8ea6-1b75a73b664c",
+                "brand": "Rolex",
+                "model": "Yacht-Master 40",
+                "reference": "126622",
+                "slug": "rolex-126622",
+                "price": "49038.15",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "43900.82"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "45768.94"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "48104.09"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "49038.15"
+                    }
+                ]
+            },
+            {
+                "id": "8158e081-f524-4287-b7bb-bb63875737de",
+                "brand": "Rolex",
+                "model": "GMT-Master II",
+                "reference": "126710BLRO",
+                "slug": "rolex-126710blro",
+                "price": "51916.20",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Oystersteel",
+                    "bezel": "Bidirectional Cerachrom 24-hour",
+                    "glass": "Sapphire with Cyclops",
+                    "back": "Solid screw-down",
+                    "shape": "Round",
+                    "diameter_mm": 40,
+                    "finish": "Polished and brushed",
+                    "dial": "Black",
+                    "indexes": "Applied dot and baton",
+                    "hands": "Mercedes with 24-hour"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "46477.36"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "48455.12"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "50927.32"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "51916.20"
+                    }
+                ]
+            },
+            {
+                "id": "6e4a93af-5d83-4777-9307-806a1a4e84fc",
+                "brand": "Rolex",
+                "model": "Air-King",
+                "reference": "126900",
+                "slug": "rolex-126900",
+                "price": "54794.25",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "49053.90"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "51141.30"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "53750.55"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "54794.25"
+                    }
+                ]
+            },
+            {
+                "id": "d85f7f53-a379-4b04-8374-d59fd5fb2f8c",
+                "brand": "Rolex",
+                "model": "Datejust",
+                "reference": "1601",
+                "slug": "rolex-1601",
+                "price": "57672.30",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "51630.44"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "53827.48"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "56573.78"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "57672.30"
+                    }
+                ]
+            },
+            {
+                "id": "657a3543-25ff-4e71-aabc-1a5b46824252",
+                "brand": "Rolex",
+                "model": "GMT-Master",
+                "reference": "1675",
+                "slug": "rolex-1675",
+                "price": "60550.35",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "54206.98"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "56513.66"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "59397.01"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "60550.35"
+                    }
+                ]
+            },
+            {
+                "id": "5354eb56-6b68-45bd-8254-e915d0b4e9a8",
+                "brand": "Rolex",
+                "model": "Oysterquartz Datejust",
+                "reference": "17000",
+                "slug": "rolex-17000",
+                "price": "63428.40",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "56783.52"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "59199.84"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "62220.24"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "63428.40"
+                    }
+                ]
+            },
+            {
+                "id": "941123db-c75b-45b7-a762-676bb4f806df",
+                "brand": "Rolex",
+                "model": "Explorer",
+                "reference": "214270",
+                "slug": "rolex-214270",
+                "price": "66306.45",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "59360.06"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "61886.02"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "65043.47"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "66306.45"
+                    }
+                ]
+            },
+            {
+                "id": "69bb1ed6-a17a-4e30-95b0-d609343ac95c",
+                "brand": "Rolex",
+                "model": "Explorer II",
+                "reference": "226570",
+                "slug": "rolex-226570",
+                "price": "69184.50",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "61936.60"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "64572.20"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "67866.70"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "69184.50"
+                    }
+                ]
+            },
+            {
+                "id": "b1f83d3b-3c16-4435-a0f1-2ac7b4cfca7a",
+                "brand": "Rolex",
+                "model": "Day-Date 40",
+                "reference": "228238",
+                "slug": "rolex-228238",
+                "price": "72062.55",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "18ct yellow gold",
+                    "bezel": "Fixed fluted",
+                    "glass": "Sapphire with Cyclops",
+                    "back": "Solid screw-down",
+                    "shape": "Round",
+                    "diameter_mm": 40,
+                    "finish": "Polished",
+                    "dial": "Champagne",
+                    "indexes": "Applied baton",
+                    "hands": "Baton"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "64513.14"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "67258.38"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "70689.93"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "72062.55"
+                    }
+                ]
+            },
+            {
+                "id": "157fd930-06ff-4bdd-bb54-7d39e59739dd",
+                "brand": "Rolex",
+                "model": "Submariner",
+                "reference": "5513",
+                "slug": "rolex-5513",
+                "price": "74940.60",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "67089.68"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "69944.56"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "73513.16"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "74940.60"
+                    }
+                ]
+            },
+            {
+                "id": "5edf3fea-cad5-4b53-abc4-18626ca3ebec",
+                "brand": "Rolex",
+                "model": "Daytona",
+                "reference": "6263",
+                "slug": "rolex-6263",
+                "price": "77818.65",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "69666.22"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "72630.74"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "76336.39"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "77818.65"
+                    }
+                ]
+            },
+            {
+                "id": "5d588f6e-9a95-4588-af22-928b5c2c59bb",
+                "brand": "Tag Heuer",
+                "model": "Monaco Chronograph",
+                "reference": "CBL2111.FC6453",
+                "slug": "tag-heuer-cbl2111-fc6453",
+                "price": "80696.70",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "72242.76"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "75316.92"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "79159.62"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "80696.70"
+                    }
+                ]
+            },
+            {
+                "id": "3fe218d9-fb2a-4ee5-95f4-b325429c15e4",
+                "brand": "Tag Heuer",
+                "model": "Carrera",
+                "reference": "CBN2010.BA0642",
+                "slug": "tag-heuer-cbn2010-ba0642",
+                "price": "83574.75",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "Fixed",
+                    "glass": "Sapphire",
+                    "back": "Exhibition sapphire",
+                    "shape": "Round",
+                    "diameter_mm": 42,
+                    "finish": "Brushed and polished",
+                    "dial": "Black",
+                    "indexes": "Applied baton",
+                    "hands": "Baton"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "74819.30"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "78003.10"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "81982.85"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "83574.75"
+                    }
+                ]
+            },
+            {
+                "id": "1b936e3a-b2e1-4814-8f48-18020a2e5c41",
+                "brand": "Tudor",
+                "model": "Heritage Chrono",
+                "reference": "70330N",
+                "slug": "tudor-70330n",
+                "price": "86452.80",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "77395.84"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "80689.28"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "84806.08"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "86452.80"
+                    }
+                ]
+            },
+            {
+                "id": "3a286341-73d6-461b-9fda-6898b55aa040",
+                "brand": "Tudor",
+                "model": "Submariner",
+                "reference": "79090",
+                "slug": "tudor-79090",
+                "price": "89330.85",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "79972.38"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "83375.46"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "87629.31"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "89330.85"
+                    }
+                ]
+            },
+            {
+                "id": "e78d31fe-6760-4e3b-94fe-81ec51686ac6",
+                "brand": "Tudor",
+                "model": "Pelagos 39",
+                "reference": "M25407N-0001",
+                "slug": "tudor-m25407n-0001",
+                "price": "92208.90",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "82548.92"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "86061.64"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "90452.54"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "92208.90"
+                    }
+                ]
+            },
+            {
+                "id": "3a9e55e9-5dc8-4293-bc08-d647618e6390",
+                "brand": "Tudor",
+                "model": "Black Bay 54",
+                "reference": "M79000N-0001",
+                "slug": "tudor-m79000n-0001",
+                "price": "95086.95",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "85125.46"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "88747.82"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "93275.77"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "95086.95"
+                    }
+                ]
+            },
+            {
+                "id": "9e6202fb-094b-433a-938a-58090b6eedb6",
+                "brand": "Tudor",
+                "model": "Black Bay Fifty-Eight Navy Blue",
+                "reference": "M79030B-0001",
+                "slug": "tudor-m79030b-0001",
+                "price": "97965.00",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": "Stainless steel",
+                    "bezel": "Unidirectional anodised aluminium",
+                    "glass": "Sapphire",
+                    "back": "Solid screw-down",
+                    "shape": "Round",
+                    "diameter_mm": 39,
+                    "finish": "Satin-brushed and polished",
+                    "dial": "Blue",
+                    "indexes": "Applied luminous",
+                    "hands": "Snowflake"
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "87702.00"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "91434.00"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "96099.00"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "97965.00"
+                    }
+                ]
+            },
+            {
+                "id": "35c6b058-5200-4c24-8850-0c735612432c",
+                "brand": "Tudor",
+                "model": "Black Bay Fifty-Eight",
+                "reference": "M79030N-0001",
+                "slug": "tudor-m79030n-0001",
+                "price": "4243.05",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "3798.54"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "3960.18"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "4162.23"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "4243.05"
+                    }
+                ]
+            },
+            {
+                "id": "c07f67e4-98ee-4806-8d15-56b9c811cc52",
+                "brand": "Tudor",
+                "model": "Black Bay Chrono",
+                "reference": "M79360N-0007",
+                "slug": "tudor-m79360n-0007",
+                "price": "7121.10",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "6375.08"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "6646.36"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "6985.46"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "7121.10"
+                    }
+                ]
+            },
+            {
+                "id": "734873ef-fe25-4c11-9e64-472af5b6a53e",
+                "brand": "Tudor",
+                "model": "Black Bay Pro",
+                "reference": "M79470-0001",
+                "slug": "tudor-m79470-0001",
+                "price": "9999.15",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "8951.62"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "9332.54"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "9808.69"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "9999.15"
+                    }
+                ]
+            },
+            {
+                "id": "f9f3960e-1548-422c-9f18-ad0627047a7c",
+                "brand": "Tudor",
+                "model": "Black Bay GMT",
+                "reference": "M79830RB-0001",
+                "slug": "tudor-m79830rb-0001",
+                "price": "12877.20",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "11528.16"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "12018.72"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "12631.92"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "12877.20"
+                    }
+                ]
+            },
+            {
+                "id": "d9a38a68-51e4-4ba9-b0cd-f5c6b8bb3d56",
+                "brand": "Tudor",
+                "model": "Black Bay GMT",
+                "reference": "M79830RB-0002",
+                "slug": "tudor-m79830rb-0002",
+                "price": "15755.25",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "14104.70"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "14704.90"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "15455.15"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "15755.25"
+                    }
+                ]
+            },
+            {
+                "id": "87dc7652-ef6b-40bc-86f2-8b0951ea5353",
+                "brand": "Tudor",
+                "model": "Ranger",
+                "reference": "M79950-0001",
+                "slug": "tudor-m79950-0001",
+                "price": "18633.30",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "16681.24"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "17391.08"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "18278.38"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "18633.30"
+                    }
+                ]
+            },
+            {
+                "id": "90de79ae-ae5e-4400-a83b-e4de6224f152",
+                "brand": "Vacheron Constantin",
+                "model": "222",
+                "reference": "4200H/222J-B935",
+                "slug": "vacheron-constantin-4200h-222j-b935",
+                "price": "21511.35",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "19257.78"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "20077.26"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "21101.61"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "21511.35"
+                    }
+                ]
+            },
+            {
+                "id": "2a55ab4e-33b3-40bf-a943-b8c6370ad5cc",
+                "brand": "Vacheron Constantin",
+                "model": "Overseas",
+                "reference": "4500V/110A-B128",
+                "slug": "vacheron-constantin-4500v-110a-b128",
+                "price": "24389.40",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "21834.32"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "22763.44"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "23924.84"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "24389.40"
+                    }
+                ]
+            },
+            {
+                "id": "09f9af02-7147-4b3a-8392-fb06d4adb33d",
+                "brand": "Vacheron Constantin",
+                "model": "Traditionnelle",
+                "reference": "82172/000G-9383",
+                "slug": "vacheron-constantin-82172-000g-9383",
+                "price": "27267.45",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "24410.86"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "25449.62"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "26748.07"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "27267.45"
+                    }
+                ]
+            },
+            {
+                "id": "91aa7981-b76a-447c-99b4-0d3f8a26d043",
+                "brand": "Vacheron Constantin",
+                "model": "Patrimony Self-Winding",
+                "reference": "85180/000R-9248",
+                "slug": "vacheron-constantin-85180-000r-9248",
+                "price": "30145.50",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "26987.40"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "28135.80"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "29571.30"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "30145.50"
+                    }
+                ]
+            },
+            {
+                "id": "3791c5c8-c4fe-4356-afb2-a31bc86fcbc5",
+                "brand": "Zenith",
+                "model": "El Primero",
+                "reference": "A386",
+                "slug": "zenith-a386",
+                "price": "33023.55",
+                "currency": "USD",
+                "set_at": "2026-08-20T13:00:00Z",
+                "specs": {
+                    "material": null,
+                    "bezel": null,
+                    "glass": null,
+                    "back": null,
+                    "shape": null,
+                    "diameter_mm": null,
+                    "finish": null,
+                    "dial": null,
+                    "indexes": null,
+                    "hands": null
+                },
+                "history": [
+                    {
+                        "date": "2026-02-24",
+                        "price": "29563.94"
+                    },
+                    {
+                        "date": "2026-04-25",
+                        "price": "30821.98"
+                    },
+                    {
+                        "date": "2026-06-24",
+                        "price": "32394.53"
+                    },
+                    {
+                        "date": "2026-08-23",
+                        "price": "33023.55"
+                    }
+                ]
+            }
+        ]
+    }
+}

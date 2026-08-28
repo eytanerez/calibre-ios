@@ -9,8 +9,24 @@
             "payouts_enabled": false,
             "last_checked_at": null,
             "requirements_currently_due": [],
-            "requirements_eventually_due": []
+            "requirements_eventually_due": [],
+            "status": "not_started",
+            "status_basis": "cached",
+            "missing_items": [],
+            "upcoming_items": [],
+            "review_items": [],
+            "disabled_reason": null
         },
+        "seller_card": {
+            "present": false,
+            "valid": false,
+            "expiring_soon": false
+        },
+        "missing_requirements": [
+            "connect_onboarding",
+            "payouts_enabled",
+            "seller_card"
+        ],
         "can_list": false
     }
 }

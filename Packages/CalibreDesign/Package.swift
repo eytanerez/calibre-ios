@@ -10,7 +10,15 @@ let package = Package(
     targets: [
         .target(
             name: "CalibreDesign",
-            resources: [.copy("Fonts")]
+            resources: [
+                .copy("Fonts"),
+                // Named file rather than the directory: a folder called
+                // "Resources" at the root of a resource bundle collides with
+                // the reserved bundle layout and codesign rejects it. `.copy`
+                // rather than `.process` so the bytes stay the bytes — the same
+                // tile ships to web and Android and being identical is the point.
+                .copy("Resources/paper-grain.png"),
+            ]
         ),
         .testTarget(
             name: "CalibreDesignTests",

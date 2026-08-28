@@ -28,7 +28,7 @@ struct JournalScreen: View {
             .padding(.horizontal, Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Journal")
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await store.refresh() }

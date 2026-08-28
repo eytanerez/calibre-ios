@@ -1,9 +1,7 @@
 import CalibreDesign
 import CalibreKit
-import StripePayments
-import StripePaymentsUI
+import StripePaymentSheet
 import SwiftUI
-import UIKit
 
 /// The credit card a seller keeps on file. Credit only, said before anyone
 /// types, and explained honestly: this is the card a counterfeit or
@@ -19,7 +17,6 @@ struct SellerCardScreen: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var model: SellerCardModel?
-    @ScaledMetric(relativeTo: .body) private var cardFieldHeight: CGFloat = 48
 
     var body: some View {
         SheetScaffold(title: "Your card on file", detents: [.large]) {
@@ -62,7 +59,6 @@ struct SellerCardScreen: View {
             }
             .padding(.bottom, Space.xxl)
         }
-        .scrollDismissesKeyboard(.interactively)
         .animation(Motion.easeMedium, value: model.error)
         .onChange(of: model.saved) { _, saved in
             guard saved, let card = model.card else { return }
@@ -145,22 +141,16 @@ struct SellerCardScreen: View {
                 .font(CalibreType.sectionTitle)
                 .foregroundStyle(Color.calibre.foreground)
 
-            SellerCardEntryField { isValid, params in
-                model.updateEntry(isValid: isValid, params: params)
-            }
-            .frame(height: cardFieldHeight)
-            .accessibilityLabel("Card number, expiry, security code and postal code")
-
             Button {
                 model.save()
             } label: {
                 BusyLabel(
-                    title: model.card?.present == true ? "Replace card" : "Save card",
+                    title: model.card?.present == true ? "Replace card" : "Add card",
                     busy: model.busy
                 )
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
-            .disabled(model.busy || !model.entryValid)
+            .disabled(model.busy)
 
             Text("Your card details go straight to our payments partner. Calibre stores the brand, the last four digits and the expiry date, and nothing more.")
                 .font(CalibreType.caption)
@@ -183,15 +173,11 @@ final class SellerCardModel {
     private(set) var busy = false
     private(set) var saved = false
     var error: String?
-    /// True once the network form holds a complete, well-formed card.
-    private(set) var entryValid = false
 
     @ObservationIgnored private let seller: SellerStore
     @ObservationIgnored private let sell: SellSession
-    @ObservationIgnored private let authContext = SellerCardAuthContext()
-    /// Deliberately unobserved: reading these during a body pass would redraw
-    /// the form on every keystroke.
-    @ObservationIgnored private var cardParams: STPPaymentMethodParams?
+    /// Kept for the life of the call: Stripe holds the sheet weakly.
+    @ObservationIgnored private var paymentSheet: PaymentSheet?
 
     init(seller: SellerStore, sell: SellSession) {
         self.seller = seller
@@ -202,44 +188,23 @@ final class SellerCardModel {
         card = try? await seller.sellerCard()
     }
 
-    func updateEntry(isValid: Bool, params: STPPaymentMethodParams?) {
-        cardParams = params
-        if entryValid != isValid {
-            entryValid = isValid
-        }
-        if error != nil {
-            error = nil
-        }
-    }
-
     func save() {
-        guard !busy, let params = cardParams else { return }
+        guard !busy else { return }
         busy = true
         error = nil
         Task {
             do {
                 STPAPIClient.shared.publishableKey = try await sell.stripeKey()
                 let intent = try await seller.sellerCardSetupIntent()
-                let confirmParams = STPSetupIntentConfirmParams(clientSecret: intent.clientSecret)
-                confirmParams.paymentMethodParams = params
-                confirmParams.returnURL = CalibreStripe.returnURL
-                STPPaymentHandler.shared().confirmSetupIntent(
-                    confirmParams,
-                    with: authContext
-                ) { status, _, confirmError in
-                    // Only Sendable values cross back, so the hop to the main
-                    // actor is safe whichever thread the SDK finishes on.
-                    let succeeded = status == .succeeded
-                    let cancelled = status == .canceled
-                    let message = confirmError?.localizedDescription
-                    Task { @MainActor [weak self] in
-                        await self?.finishConfirm(
-                            succeeded: succeeded,
-                            cancelled: cancelled,
-                            message: message
-                        )
-                    }
+                let sheet = PaymentSheet(
+                    setupIntentClientSecret: intent.clientSecret,
+                    configuration: sheetConfiguration()
+                )
+                paymentSheet = sheet
+                let result: PaymentSheetResult = await withCheckedContinuation { continuation in
+                    CalibreStripe.present(sheet) { continuation.resume(returning: $0) }
                 }
+                await finish(result)
             } catch {
                 busy = false
                 self.error = sellErrorMessage(error)
@@ -247,16 +212,39 @@ final class SellerCardModel {
         }
     }
 
-    private func finishConfirm(succeeded: Bool, cancelled: Bool, message: String?) async {
-        defer { busy = false }
-        guard succeeded else {
-            if !cancelled {
-                error = message ?? "That card couldn't be saved. Please try again."
-                Haptics.shared.play(.error)
-            }
-            return
-        }
+    /// The shared sheet dressed for a guarantee card rather than a purchase.
+    ///
+    /// Apple Pay is dropped: this card has to be chargeable weeks later with
+    /// nobody present, and an Apple Pay credential is bound to the device that
+    /// authorized it. The sheet also runs customer-less — the setup-intent
+    /// endpoint sends no Stripe customer id or customer-session secret — which
+    /// suits a screen whose whole purpose is entering a new card.
+    private func sheetConfiguration() -> PaymentSheet.Configuration {
+        var configuration = CalibreStripe.configuration(
+            customerID: nil,
+            customerSessionClientSecret: nil
+        )
+        configuration.applePay = nil
+        return configuration
+    }
 
+    private func finish(_ result: PaymentSheetResult) async {
+        defer { busy = false }
+        switch result {
+        case .canceled:
+            return
+        case .failed(let failure):
+            // Not `CalibreStripe.failureMessage`: its fallback talks about a
+            // payment that didn't go through, and nothing is being paid here.
+            let text = failure.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            error = text.isEmpty ? "That card couldn't be saved. Please try again." : text
+            Haptics.shared.play(.error)
+        case .completed:
+            await readBackCard()
+        }
+    }
+
+    private func readBackCard() async {
         do {
             let state = try await seller.sellerCard()
             card = state
@@ -264,88 +252,13 @@ final class SellerCardModel {
                 saved = true
                 Haptics.shared.play(.success)
             } else {
-                // The server detached it. Say why plainly and leave the form
+                // The server detached it. Say why plainly and leave the screen
                 // ready for another card.
-                entryValid = false
                 error = "That wasn't a credit card, so it wasn't kept. Calibre needs a credit card on file — debit and prepaid cards can't be used. Please try another card."
                 Haptics.shared.play(.warning)
             }
         } catch {
             self.error = sellErrorMessage(error)
         }
-    }
-}
-
-// MARK: - Card entry
-
-/// Stripe's card field, bridged into SwiftUI and dressed in brand tokens.
-/// The card details never reach Calibre — the field hands back params the
-/// SDK exchanges for a PaymentMethod directly.
-private struct SellerCardEntryField: UIViewRepresentable {
-    let onChange: (Bool, STPPaymentMethodParams?) -> Void
-
-    func makeUIView(context: Context) -> STPPaymentCardTextField {
-        let field = STPPaymentCardTextField(frame: .zero)
-        field.delegate = context.coordinator
-        field.postalCodeEntryEnabled = true
-        field.backgroundColor = UIColor(Color.calibre.card)
-        field.textColor = UIColor(Color.calibre.foreground)
-        field.textErrorColor = UIColor(Color.calibre.destructive)
-        field.placeholderColor = UIColor(Color.calibre.placeholder)
-        field.borderColor = UIColor(Color.calibre.border)
-        field.borderWidth = 1
-        field.cornerRadius = Radius.control
-        field.cursorColor = UIColor(Color.calibre.primary)
-        if let base = UIFont(name: "Geist-Regular", size: 15) {
-            field.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: base)
-        }
-        field.setContentCompressionResistancePriority(.required, for: .vertical)
-        return field
-    }
-
-    func updateUIView(_ uiView: STPPaymentCardTextField, context: Context) {
-        context.coordinator.onChange = onChange
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onChange: onChange)
-    }
-
-    @MainActor
-    final class Coordinator: NSObject, STPPaymentCardTextFieldDelegate {
-        var onChange: (Bool, STPPaymentMethodParams?) -> Void
-
-        init(onChange: @escaping (Bool, STPPaymentMethodParams?) -> Void) {
-            self.onChange = onChange
-        }
-
-        func paymentCardTextFieldDidChange(_ textField: STPPaymentCardTextField) {
-            let isValid = textField.isValid
-            onChange(isValid, isValid ? textField.paymentMethodParams : nil)
-        }
-    }
-}
-
-// MARK: - Authentication context
-
-/// Where Stripe presents a 3-D Secure challenge from. Walks the active
-/// scene's key window down its presentation chain so the challenge lands
-/// above whatever sheet the seller is already in.
-@MainActor
-final class SellerCardAuthContext: NSObject, STPAuthenticationContext {
-    func authenticationPresentingViewController() -> UIViewController {
-        let scene = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }
-            ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
-
-        let window = scene?.windows.first { $0.isKeyWindow } ?? scene?.windows.first
-        guard let root = window?.rootViewController else { return UIViewController() }
-
-        var top = root
-        while let next = top.presentedViewController, !next.isBeingDismissed {
-            top = next
-        }
-        return top
     }
 }

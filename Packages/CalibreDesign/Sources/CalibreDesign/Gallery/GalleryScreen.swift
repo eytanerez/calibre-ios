@@ -15,6 +15,7 @@ public struct GalleryScreen: View {
     @State private var referenceField = ""
     @State private var emailField = "not-an-email"
     @State private var passwordField = "hunter2!"
+    @State private var markPlay = 0
 
     private enum DealTab: CaseIterable {
         case offers, orders, saved
@@ -37,6 +38,8 @@ public struct GalleryScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xxl) {
                     typographySection
+                    handSection
+                    marksSection
                     buttonsSection
                     badgesSection
                     listingCardSection
@@ -58,7 +61,7 @@ public struct GalleryScreen: View {
                 }
                 .padding(Space.margin)
             }
-            .background(Color.calibre.background)
+            .calibrePageBackground()
             .navigationTitle("Gallery")
             .toastHost(toastCenter)
             .sheet(isPresented: $offerSheetShown) { offerSheet }
@@ -79,6 +82,75 @@ public struct GalleryScreen: View {
                     .foregroundStyle(Color.calibre.foreground)
                 Eyebrow("Rolex · 2019")
             }
+        }
+    }
+
+    private var handSection: some View {
+        section("The hand") {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Text("Wore it every day for six years — it has the scars to prove it.")
+                    .font(CalibreType.hand)
+                    .foregroundStyle(Color.calibre.foreground)
+                Text("hairline on the bezel edge, only catches the light at an angle")
+                    .font(CalibreType.handSmall)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+            }
+        }
+    }
+
+    private var marksSection: some View {
+        section("Marks") {
+            VStack(alignment: .leading, spacing: Space.xl) {
+                Text("The logo the vocabulary is measured from.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                CalibreLogoMark(size: 96)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: Space.l)], spacing: Space.xl) {
+                    mark("balanceWheel") { CalibreMark.balanceWheel(size: 88) }
+                    mark("stamp") { CalibreMark.stamp(size: 88, trigger: markPlay) }
+                    mark("waxSeal") { CalibreMark.waxSeal(size: 88, trigger: markPlay) }
+                    mark("loupe") { CalibreMark.loupe(size: 88, trigger: markPlay) }
+                    mark("dialArc") { CalibreMark.dialArc(0.62, size: 88, trigger: markPlay) }
+                    mark("powerReserve") { CalibreMark.powerReserve(0.78, size: 88, trigger: markPlay) }
+                    mark("crown") { CalibreMark.crown(size: 88, trigger: markPlay) }
+                    mark("box") { CalibreMark.box(size: 88, trigger: markPlay) }
+                }
+
+                // What the surface does when a press mark lands on it. The
+                // mark stays rigid; the card takes the hit.
+                HStack(spacing: Space.l) {
+                    CalibreMark.stamp(size: 56, trigger: markPlay)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Authenticated").font(CalibreType.bodyMedium)
+                        Text("Ref. 116610LN · in-house")
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(Space.l)
+                .background(Color.calibre.card)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        .strokeBorder(Color.calibre.border, lineWidth: 1)
+                )
+                .markImpact(trigger: markPlay)
+
+                Button("Fire the marks") { markPlay += 1 }
+                    .buttonStyle(.calibreSecondary)
+            }
+        }
+    }
+
+    private func mark(_ name: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(spacing: Space.s) {
+            content()
+                .frame(height: 88)
+            Text(name)
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
         }
     }
 

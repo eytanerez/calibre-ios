@@ -129,7 +129,7 @@ struct ResultsScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()

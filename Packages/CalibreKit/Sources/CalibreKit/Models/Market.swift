@@ -80,3 +80,33 @@ public struct PricingGuidance: Decodable, Equatable, Sendable {
         self.medianDaysToSell = medianDaysToSell
     }
 }
+
+/// A reference's published price, as `GET /market/reference-prices` sends it.
+///
+/// `history` is sparse: one point per change, oldest first, always ending on
+/// the current price. Between two points the price simply held — it is a step
+/// series, not a daily one, and anything that draws it has to say so.
+public struct MarketReferencePrice: Decodable, Equatable, Sendable, Identifiable {
+    public struct HistoryPoint: Decodable, Equatable, Sendable {
+        /// "YYYY-MM-DD" — a calendar day, not a timestamp.
+        public let date: String
+        public let price: APIDecimal
+    }
+
+    public let id: String
+    public let brand: String
+    public let model: String?
+    public let reference: String
+    public let slug: String
+    public let price: APIDecimal
+    public let currency: String
+    public let setAt: String?
+    public let specs: WatchReferenceSpecs
+    public let history: [HistoryPoint]
+}
+
+/// `GET /market/reference-prices` — every reference that publishes a price.
+public struct MarketReferencePriceList: Decodable, Equatable, Sendable {
+    public let asOf: String?
+    public let references: [MarketReferencePrice]
+}

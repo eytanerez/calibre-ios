@@ -23,6 +23,13 @@ enum Route: Hashable {
     case checkout(String, offerID: String?)
     /// A past poll's own page, carried by value — there's no fetch-by-id yet.
     case poll(CommunityPrompt)
+    /// One watch in the member's vault. The id, not the model: the detail
+    /// route refetches, and a route that carried a stale copy of the watch
+    /// would keep showing it after an edit.
+    case vaultWatch(String)
+    /// A watch's public Passport, by its printed code. Anonymized and
+    /// readable without a session — it is the page an owner sends to a buyer.
+    case passport(String)
 }
 
 /// A checkout the app is presenting as a full-screen cover. Checkout owns its
@@ -158,6 +165,8 @@ final class AppRouter {
             .community
         case .order, .offer, .alerts, .supportChat:
             .you
+        case .vaultWatch, .passport:
+            .collection
         }
     }
 
@@ -206,6 +215,9 @@ final class AppRouter {
             } else {
                 open(.journal)
             }
+        case "passport":
+            guard let code = segments.first else { return false }
+            open(.passport(code))
         case "support":
             open(.supportChat)
         case "alerts":
@@ -247,6 +259,11 @@ final class AppRouter {
             } else {
                 open(.journal)
             }
+        // The link an owner sends a buyer. It now opens the booklet in the
+        // app rather than bouncing the reader out to Safari.
+        case "passport", "passports":
+            guard segments.count > 1 else { return false }
+            open(.passport(segments[1]))
         case "support":
             open(.supportChat)
         case "auth":

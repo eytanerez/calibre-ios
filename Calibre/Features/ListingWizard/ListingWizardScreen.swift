@@ -33,7 +33,7 @@ struct ListingWizardScreen: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.calibre.background.ignoresSafeArea())
+            .calibrePageBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -75,7 +75,8 @@ struct ListingWizardScreen: View {
             kind: context.kind,
             seller: services.seller,
             sell: sell,
-            config: services.config
+            config: services.config,
+            vault: services.vault
         )
         model = created
         Task { await created.start() }
@@ -266,7 +267,7 @@ struct ListingWizardScreen: View {
         .multilineTextAlignment(.center)
         .padding(Space.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .transition(.opacity)
     }
 

@@ -70,7 +70,7 @@ struct OpenBuyerRequestsScreen: View {
                     .refreshable { await load() }
                 }
             }
-            .background(Color.calibre.background)
+            .calibrePageBackground()
             .navigationTitle("Buyers are looking for")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

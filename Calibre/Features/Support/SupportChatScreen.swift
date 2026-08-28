@@ -10,8 +10,19 @@ import UniformTypeIdentifiers
 struct SupportChatScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(AppRouter.self) private var router
 
-    @State private var draft = ""
+    @State private var draft: String
+
+    /// `seed` is a first message written on the customer's behalf, for the
+    /// screens that send someone here from a dead end rather than from a
+    /// question of their own. It lands in the composer as a draft they can
+    /// edit or delete — never as a message already sent, because the send is
+    /// theirs to make.
+    init(seed: String = "") {
+        _draft = State(initialValue: seed)
+    }
+
     @State private var guestEmail = ""
     @State private var sending = false
     @State private var errorText: String?
@@ -22,6 +33,15 @@ struct SupportChatScreen: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var showingPhotoPicker = false
     @State private var showingFileImporter = false
+    /// Records the customer has named in the message they are writing.
+    ///
+    /// A text field holds characters, not objects, so the picker writes the
+    /// record's label into the draft — the words the customer then reads and
+    /// edits — and the reference is reattached at send by matching that label
+    /// back up (`RecordRefs.compose`). Editing the words away drops the link
+    /// and leaves the words, which is the degrade the format promises anyway.
+    @State private var linkedRecords: [RecordRef] = []
+    @State private var showingRecordPicker = false
 
     private var conversation: SupportConversation? { services.support.conversation }
     private var needsGuestEmail: Bool {
@@ -42,7 +62,7 @@ struct SupportChatScreen: View {
             messages
             composer
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Support")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadAndPoll() }
@@ -104,7 +124,10 @@ struct SupportChatScreen: View {
                 ScrollView {
                     LazyVStack(spacing: Space.m) {
                         ForEach(conversation.messages) { message in
-                            SupportBubble(message: message).id(message.id)
+                            SupportBubble(message: message) { url in
+                                router.handle(url: url)
+                            }
+                            .id(message.id)
                         }
                     }
                     .padding(Space.margin)
@@ -139,8 +162,13 @@ struct SupportChatScreen: View {
                 stagedAttachments
             }
 
+            if !linkedRecords.isEmpty {
+                linkedRecordStrip
+            }
+
             HStack(alignment: .bottom, spacing: Space.s) {
                 attachButton
+                if canLinkRecords { linkRecordButton }
                 CalibreTextField("Write a message", text: $draft, kind: .sentence)
                 Button {
                     Task { await send() }
@@ -178,6 +206,72 @@ struct SupportChatScreen: View {
                 Task { await stagePickedPDF(url) }
             }
         }
+        .sheet(isPresented: $showingRecordPicker) {
+            RecordPickerSheet { option in
+                link(option.ref)
+                showingRecordPicker = false
+            }
+        }
+    }
+
+    /// Only a signed-in member may name a record. The picker is scoped by the
+    /// session — their orders, their listings — and a guest has neither, so the
+    /// control is absent rather than present and empty.
+    private var canLinkRecords: Bool {
+        session.isAuthenticated
+    }
+
+    private var linkRecordButton: some View {
+        Button {
+            showingRecordPicker = true
+        } label: {
+            Image(systemName: "link")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(Color.calibre.primary)
+                .frame(width: 40, height: 40)
+        }
+        .disabled(sending || uploading)
+        .accessibilityLabel("Link an order or listing")
+    }
+
+    /// What this message will carry as chips, and the way to take one back off.
+    /// Removing one leaves the words in the draft: the customer wrote them, and
+    /// deleting somebody's sentence to undo a link is not what the ✕ means.
+    private var linkedRecordStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s) {
+                ForEach(linkedRecords) { ref in
+                    HStack(spacing: Space.xs) {
+                        Image(systemName: ref.kind == .order ? "shippingbox" : "tag")
+                            .font(.system(size: 12, weight: .medium))
+                        Text(ref.label)
+                            .font(CalibreType.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button {
+                            linkedRecords.removeAll { $0.id == ref.id }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                        }
+                        .accessibilityLabel("Unlink \(ref.label)")
+                    }
+                    .padding(.horizontal, Space.s)
+                    .padding(.vertical, Space.xs)
+                    .background(Color.calibre.secondary, in: Capsule())
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Writes the record's own name into the draft where the customer is
+    /// writing, and remembers the reference behind it.
+    private func link(_ ref: RecordRef) {
+        let needsSpace = !draft.isEmpty && !draft.hasSuffix(" ") && !draft.hasSuffix("\n")
+        draft += (needsSpace ? " " : "") + ref.label + " "
+        linkedRecords.append(ref)
+        Haptics.shared.play(.selection)
     }
 
     /// An upload cannot start a conversation — the server refuses one until a
@@ -322,13 +416,14 @@ struct SupportChatScreen: View {
         defer { sending = false }
         do {
             _ = try await services.support.send(
-                body,
+                RecordRefs.compose(text: body, refs: linkedRecords),
                 authenticated: session.isAuthenticated,
                 guestEmail: needsGuestEmail ? InputValidation.trimmed(guestEmail).lowercased() : nil,
                 attachmentIDs: attachments.map(\.id)
             )
             draft = ""
             attachments = []
+            linkedRecords = []
             Haptics.shared.play(.selection)
         } catch {
             errorText = (error as? APIError)?.errorDescription ?? "Couldn't send. Please try again."
@@ -348,6 +443,10 @@ struct SupportChatScreen: View {
 
 private struct SupportBubble: View {
     let message: SupportMessage
+    /// Where a chip goes. The reference serialises to `calibre://order/<id>`,
+    /// which `AppRouter.handle(url:)` already understands, so a chip carries no
+    /// route table of its own.
+    let onOpen: (URL) -> Void
 
     private var isCustomer: Bool { message.sender == .customer }
 
@@ -359,15 +458,24 @@ private struct SupportBubble: View {
                     Text("Calibre").font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
                 }
                 if !message.body.isEmpty {
-                    Text(message.body)
+                    Text(attributedBody)
                         .font(CalibreType.body)
                         .foregroundStyle(isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground)
+                        .tint(isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground)
                         .padding(.horizontal, Space.m)
                         .padding(.vertical, Space.s)
                         .background(
                             isCustomer ? Color.calibre.primary : Color.calibre.secondary,
                             in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                         )
+                        .environment(\.openURL, OpenURLAction { url in
+                            onOpen(url)
+                            return .handled
+                        })
+                        // The chips are decoration to a screen reader; what it
+                        // should read is the sentence, which is exactly the
+                        // body with every reference flattened to its label.
+                        .accessibilityLabel(RecordRefs.flatten(message.body))
                 }
 
                 // Signed, time-limited links, so they open in the browser
@@ -378,6 +486,33 @@ private struct SupportBubble: View {
             }
             if !isCustomer { Spacer(minLength: 40) }
         }
+    }
+
+    /// The body with its record references drawn as chips.
+    ///
+    /// A run can carry a background and a link but not a corner radius, so the
+    /// thin spaces stand in for the padding a drawn chip would have. Anything
+    /// the format degrades — a kind this build has never heard of, a legacy
+    /// console path — never reaches here as a reference at all: `RecordRefs`
+    /// has already turned it into the words it says.
+    private var attributedBody: AttributedString {
+        var out = AttributedString("")
+        for part in RecordRefs.parts(message.body) {
+            switch part {
+            case .text(let value):
+                out.append(AttributedString(value))
+            case .reference(let ref):
+                var chip = AttributedString("\u{2009}\(ref.label)\u{2009}")
+                chip.font = CalibreType.bodySemiBold
+                chip.foregroundColor = isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground
+                chip.backgroundColor = isCustomer
+                    ? Color.calibre.primaryForeground.opacity(0.22)
+                    : Color.calibre.primary.opacity(0.14)
+                chip.link = ref.route
+                out.append(chip)
+            }
+        }
+        return out
     }
 
     @ViewBuilder
@@ -403,6 +538,94 @@ private struct SupportBubble: View {
             Link(destination: url) { label }
         } else {
             label
+        }
+    }
+}
+
+
+/// The customer's own orders and live listings, to name one in a message.
+///
+/// Everything offered here is scoped to the signed-in customer by the server:
+/// `/buyer/orders` filters on `buyer_id`, `/account/listings` on `seller_id`,
+/// and the live filter is applied on top. There is no path from this screen to
+/// anybody else's record, which is the point — this runs on a customer's phone.
+private struct RecordPickerSheet: View {
+    @Environment(AppServices.self) private var services
+    @Environment(\.dismiss) private var dismiss
+    let onPick: (RecordRefOption) -> Void
+
+    @State private var query = ""
+    @State private var options: [RecordRefOption] = []
+    @State private var loading = false
+    @State private var errorText: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let errorText {
+                    Text(errorText)
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.destructive)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                ForEach(options) { option in
+                    Button {
+                        onPick(option)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(option.ref.label)
+                                .font(CalibreType.body)
+                                .foregroundStyle(Color.calibre.foreground)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if let detail = option.detail, !detail.isEmpty {
+                                Text(detail)
+                                    .font(CalibreType.caption)
+                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                if options.isEmpty && !loading && errorText == nil {
+                    Text("Your own orders and live listings are what can be named here — nothing matches that yet.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .listStyle(.plain)
+            .searchable(text: $query, prompt: "Search your orders and listings")
+            .navigationTitle("Link a record")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .overlay {
+                if loading && options.isEmpty {
+                    ProgressView().tint(Color.calibre.primary)
+                }
+            }
+        }
+        .task(id: query) {
+            // A keystroke is not a query. The pause is what keeps a search of
+            // somebody's whole order history off every letter they type.
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            await load()
+        }
+    }
+
+    private func load() async {
+        loading = true
+        defer { loading = false }
+        do {
+            options = try await services.support.linkableRecords(query: query)
+            errorText = nil
+        } catch {
+            errorText = (error as? APIError)?.errorDescription ?? "Couldn\u{2019}t load your records."
         }
     }
 }

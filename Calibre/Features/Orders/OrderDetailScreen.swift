@@ -45,7 +45,7 @@ struct OrderDetailScreen: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Order")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: orderID) { await load() }
@@ -88,6 +88,8 @@ struct OrderDetailScreen: View {
                 }
 
                 listingCard(order)
+
+                packingNoteCard(order)
 
                 purchaseGroupNote(order)
 
@@ -279,6 +281,32 @@ struct OrderDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
         .cardSurface()
+    }
+
+    // MARK: - What the seller sent with it
+
+    /// The seller's own line, held back until the parcel is actually in the
+    /// buyer's hands.
+    ///
+    /// A note that reads "enjoy it" while the watch is still in transit is a
+    /// spoiler; the same words next to a watch on the table are the person
+    /// who packed it. Delivery is the moment it means what it says, so it is
+    /// gated on the order being delivered rather than on the note existing.
+    @ViewBuilder
+    private func packingNoteCard(_ order: Order) -> some View {
+        if order.status == .delivered, let note = order.packingNote, !note.isEmpty {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Text("From the seller").font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+                Text(note)
+                    .font(CalibreType.hand)
+                    .foregroundStyle(Color.calibre.foreground)
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Space.l)
+                    .cardSurface()
+            }
+        }
     }
 
     private func shipmentCard(_ shipment: Shipment) -> some View {

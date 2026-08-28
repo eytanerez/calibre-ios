@@ -58,7 +58,7 @@ struct OffersListScreen: View {
                 Color.calibre.background
             }
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .tutorialOverlay(tutorial)
         .navigationTitle("Offers")
         .navigationBarTitleDisplayMode(.inline)

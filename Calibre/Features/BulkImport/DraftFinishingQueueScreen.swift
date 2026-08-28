@@ -103,7 +103,7 @@ struct DraftFinishingQueueScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Finish drafts")
         .navigationBarTitleDisplayMode(.inline)
         .task {

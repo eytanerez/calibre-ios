@@ -65,7 +65,7 @@ struct RegisterScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Create account")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

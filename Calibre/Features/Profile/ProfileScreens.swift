@@ -61,7 +61,7 @@ struct AboutScreen: View {
             }
             .padding(Space.margin)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -114,7 +114,7 @@ struct ProfileScreen: View {
             }
             .padding(Space.margin)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
@@ -173,7 +173,7 @@ struct AddressesScreen: View {
                 }
             }
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Addresses")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -469,7 +469,7 @@ struct PaymentMethodScreen: View {
             guard !isSyncingAfterSetup else { return }
             await loadMethod()
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Payment methods")
         .navigationBarTitleDisplayMode(.inline)
         .alert(
@@ -725,7 +725,7 @@ struct NotificationSettingsScreen: View {
             }
             .padding(Space.margin)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -844,7 +844,7 @@ struct ChangePasswordScreen: View {
             }
             .padding(Space.margin)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Change password")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -886,41 +886,19 @@ struct DeleteAccountScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
-                Text("Delete your account")
-                    .font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
-                Text("Your account is scheduled for deletion after a 30-day grace period. Sign in any time within those 30 days to cancel and keep your account.")
-                    .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if let state, !state.obligations.isEmpty {
-                    obligations(state)
+                if let state, state.isPending {
+                    scheduled(state)
                 } else {
-                    CalloutBand(
-                        icon: "exclamationmark.triangle",
-                        message: "Anything still in flight — a live order, a payout on its way, an active return, an accepted offer — has to finish before your account can be removed."
-                    )
+                    request
                 }
-
-                if let scheduled = state?.scheduledDate {
-                    CalloutBand(
-                        icon: "calendar",
-                        title: "Deletion scheduled",
-                        message: "Your account is due to be removed on \(scheduled.formatted(date: .abbreviated, time: .omitted)). Sign in before then to cancel."
-                    )
-                }
-
-                Button(role: .destructive) { confirming = true } label: {
-                    Text(working ? "Working…" : "Request account deletion").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.calibre(.destructive, fullWidth: true))
-                .disabled(working)
             }
             .padding(Space.margin)
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Delete account")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadState() }
+        .animation(Motion.easeFast, value: state?.isPending)
         .animation(Motion.easeFast, value: state?.obligations.count)
         .alert("Delete your Calibre account?", isPresented: $confirming) {
             Button("Delete my account", role: .destructive) { Task { await requestDeletion() } }
@@ -928,6 +906,64 @@ struct DeleteAccountScreen: View {
         } message: {
             Text("You'll have 30 days to change your mind before it's permanent.")
         }
+    }
+
+    /// Nothing asked for yet.
+    @ViewBuilder
+    private var request: some View {
+        Text("Delete your account")
+            .font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+        Text("Your account is scheduled for deletion after a 30-day grace period. Sign in any time within those 30 days to cancel and keep your account.")
+            .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+
+        if let state, !state.obligations.isEmpty {
+            obligations(state)
+        } else {
+            CalloutBand(
+                icon: "exclamationmark.triangle",
+                message: "Anything still in flight — a live order, a payout on its way, an active return, an accepted offer — has to finish before your account can be removed."
+            )
+        }
+
+        Button(role: .destructive) { confirming = true } label: {
+            Text(working ? "Working…" : "Request account deletion").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.calibre(.destructive, fullWidth: true))
+        .disabled(working)
+    }
+
+    /// A request already in flight — made here, or on another device, which is
+    /// why the screen reads the backend before it offers anything. The grace
+    /// window is the promise the other branch makes, so this is where it is
+    /// kept: the way out of it is a button, not a support ticket.
+    @ViewBuilder
+    private func scheduled(_ state: AccountDeletionState) -> some View {
+        Text("Deletion scheduled")
+            .font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+        // The date is the honest version and the one the backend nearly always
+        // sends; the grace window is what is left to say when it doesn't.
+        let removal = if let date = state.scheduledDate {
+            "on \(date.formatted(date: .abbreviated, time: .omitted))"
+        } else {
+            "once the 30-day grace period is up"
+        }
+        Text("Your account is due to be removed \(removal). Cancel any time before then to keep it.")
+            .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+
+        // A request can be accepted and still be waiting on something. Saying
+        // so here is the difference between "we're working on it" and the
+        // customer wondering whether it took at all.
+        if !state.obligations.isEmpty {
+            obligations(state)
+        }
+
+        Button { Task { await cancelDeletion() } } label: {
+            Text(working ? "Working…" : "Cancel deletion").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.calibre(.primary, fullWidth: true))
+        .disabled(working)
     }
 
     /// Exactly what is outstanding, in the backend's own words. Deletion is
@@ -1019,5 +1055,24 @@ struct DeleteAccountScreen: View {
             }
             toasts.show(title: "Couldn't schedule deletion", message: error.orderMessage, tone: .error)
         }
+    }
+
+    private func cancelDeletion() async {
+        guard !working else { return }
+        working = true
+        defer { working = false }
+        do {
+            try await services.account.cancelDeletion()
+        } catch {
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't cancel deletion", message: error.orderMessage, tone: .error)
+            return
+        }
+        // Read back rather than clear locally: the cancel is what was asked
+        // for, and a re-read that fails is a stale screen rather than a
+        // deletion that is still scheduled.
+        await loadState()
+        Haptics.shared.play(.success)
+        toasts.show(title: "Deletion cancelled", message: "Welcome back — your account stays put.", tone: .success)
     }
 }

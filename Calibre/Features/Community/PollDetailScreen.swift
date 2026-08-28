@@ -2,9 +2,10 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// A single poll on its own page: the question, what everyone answered, what
-/// *you* answered, and a way to pass it on. Reached by tapping any past poll
-/// in "How the community answered".
+/// A single question on its own page: what everyone answered, what *you*
+/// answered, and a way to pass it on. Reached by tapping any past question in
+/// "How the community answered", where both lanes' history is interleaved —
+/// hence the eyebrow naming which lane this one was asked in.
 struct PollDetailScreen: View {
     let prompt: CommunityPrompt
 
@@ -20,7 +21,7 @@ struct PollDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.s) {
-                    Eyebrow(prompt.kind == "daily" ? "Question of the day" : "Poll")
+                    Eyebrow(prompt.closed ? prompt.voice.closedEyebrow : prompt.voice.eyebrow)
                     Text(prompt.question)
                         .font(CalibreType.title)
                         .foregroundStyle(Color.calibre.foreground)
@@ -43,7 +44,7 @@ struct PollDetailScreen: View {
                 }
 
                 ShareLink(item: prompt.shareURL, message: Text(prompt.shareText)) {
-                    Label("Share this poll", systemImage: "square.and.arrow.up")
+                    Label("Share this question", systemImage: "square.and.arrow.up")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
@@ -51,8 +52,8 @@ struct PollDetailScreen: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background)
-        .navigationTitle("Poll")
+        .calibrePageBackground()
+        .navigationTitle("Question")
         .navigationBarTitleDisplayMode(.inline)
     }
 

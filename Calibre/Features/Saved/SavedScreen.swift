@@ -51,14 +51,15 @@ struct SavedScreen: View {
                 EmptyState(
                     icon: "heart",
                     title: "Nothing saved yet",
-                    message: "Watches you save appear here so you can compare and act when the moment is right."
+                    message: "Watches you save appear here so you can compare and act when the moment is right.",
+                    aside: "The one you keep going back to counts."
                 )
             } else {
                 grid
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Saved")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()

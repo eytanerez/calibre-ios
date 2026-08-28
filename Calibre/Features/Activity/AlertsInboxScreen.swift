@@ -61,7 +61,7 @@ struct AlertsInboxScreen: View {
                 }
             }
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Alerts")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

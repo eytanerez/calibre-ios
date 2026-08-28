@@ -34,7 +34,7 @@ struct DetailsStep: View {
                     placeholder: "116610LN",
                     kind: .reference
                 )
-                .onChange(of: model.reference) { _, _ in model.fieldChanged() }
+                .onChange(of: model.reference) { _, _ in model.referenceChanged() }
                 CalibreTextField(
                     "Seller SKU (optional)",
                     text: $model.sellerSku,
@@ -53,6 +53,8 @@ struct DetailsStep: View {
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
+
+            VaultMatchAsk(model: model)
 
             VStack(alignment: .leading, spacing: Space.m) {
                 CalibreTextField(
@@ -210,12 +212,134 @@ private struct GradeGuideSheet: View {
     }
 }
 
+// MARK: - The vault question
+
+/// "Is this one you already own?" — asked on Details when the reference the
+/// seller typed matches a watch in their own collection.
+///
+/// A reference is a model, not a watch: a collector may own two of the same
+/// one, so a match is only ever a question. The seller's yes is the single
+/// thing that links this listing to that watch, and the link is what keeps a
+/// relisted watch on ONE Passport instead of minting a second for the same
+/// object. Silent when there is nothing to ask about, and gone for good once
+/// it has been answered.
+private struct VaultMatchAsk: View {
+    let model: WizardModel
+
+    var body: some View {
+        Group {
+            if model.linkedVaultWatchID != nil {
+                CalloutBand(
+                    icon: "checkmark.seal",
+                    title: "Linked to your collection",
+                    message: confirmation
+                )
+            } else if !model.vaultMatches.isEmpty {
+                ask
+            }
+        }
+        .animation(Motion.easeMedium, value: model.vaultMatches)
+        .animation(Motion.easeMedium, value: model.linkedVaultWatchID)
+    }
+
+    /// Named where we can name it. A listing that arrived already linked
+    /// carries the id and nothing else — the match lookup excludes a watch
+    /// that is already spoken for — so the sentence stands on its own.
+    private var confirmation: String {
+        let continuity = "When it sells, this listing carries on that watch's Passport instead of starting a second one."
+        guard let watch = model.linkedVaultWatch else { return continuity }
+        return "\(watch.displayTitle). \(continuity)"
+    }
+
+    private var ask: some View {
+        SellCard {
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: Space.l) {
+                    VStack(alignment: .leading, spacing: Space.s) {
+                        Text("Is this one you already own?")
+                            .font(CalibreType.sectionTitle)
+                            .foregroundStyle(Color.calibre.foreground)
+                        Text("That reference matches a watch in your collection. If it's the same watch, this listing carries on its Passport rather than starting a second one for it.")
+                            .font(CalibreType.body)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    VStack(spacing: 0) {
+                        ForEach(Array(model.vaultMatches.enumerated()), id: \.element.id) { index, match in
+                            if index > 0 {
+                                Rectangle()
+                                    .fill(Color.calibre.border)
+                                    .frame(height: 1)
+                                    .padding(.vertical, Space.m)
+                            }
+                            matchRow(match)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Space.l)
+
+                // The decline runs the width of the card, under a rule: it
+                // answers the whole question rather than any one watch on it.
+                Rectangle().fill(Color.calibre.border).frame(height: 1)
+                Button("No, this is a different watch") {
+                    Haptics.shared.play(.selection)
+                    model.declineVaultMatch()
+                }
+                .buttonStyle(.calibre(.ghost, fullWidth: true))
+            }
+        }
+    }
+
+    private func matchRow(_ match: VaultMatch) -> some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            Text(match.displayTitle)
+                .font(CalibreType.bodyMedium)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let provenance = provenance(match) {
+                Text(provenance)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Button("Yes, that's it") {
+                Haptics.shared.play(.selection)
+                Task { await model.linkVaultWatch(match) }
+            }
+            .buttonStyle(.calibre(.secondary))
+            .padding(.top, Space.xs)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Everything the seller needs to recognise their own watch, and nothing
+    /// invented: a date that doesn't parse is left out rather than guessed at,
+    /// and a reference is skipped when it is already the watch's whole name.
+    private func provenance(_ match: VaultMatch) -> String? {
+        var parts: [String] = []
+        if let reference = match.reference,
+           !reference.isEmpty,
+           reference != match.displayTitle {
+            parts.append("Ref. \(reference)")
+        }
+        if let acquired = MarketFormat.day(iso: match.acquiredDate) {
+            parts.append("Acquired \(acquired)")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " \u{00B7} ")
+    }
+}
+
 // MARK: - Step 2 · Photos
 
 struct PhotosStep: View {
     @Bindable var model: WizardModel
     @State private var captureTarget: CaptureTarget?
     @State private var previewTarget: PhotoReplaceTarget?
+    @State private var annotationTarget: AnnotationTarget?
     @State private var tutorial = TutorialController(
         id: "sell.wizard.photos",
         steps: [
@@ -268,6 +392,8 @@ struct PhotosStep: View {
 
             morePhotos
 
+            markSection
+
             #if DEBUG
             Button("Use sample photos") {
                 Task {
@@ -289,11 +415,117 @@ struct PhotosStep: View {
             }
         }
         .fullScreenCover(item: $previewTarget) { target in
-            PhotoPreviewScreen(target: target, slot: model.slots[target.category]) { image in
-                Task { await model.attach(image: image, to: target.category) }
+            PhotoPreviewScreen(
+                target: target,
+                slot: model.slots[target.category],
+                mark: model.annotation(of: target.category)
+            ) { image in
+                Task {
+                    await model.attach(image: image, to: target.category)
+                    // Replacing the picture drops the mark that was on it —
+                    // the server discards it, so the wizard must not go on
+                    // showing one. The seller was told before they chose.
+                    if let index = model.photoIndex(of: target.category) {
+                        model.recordAnnotation(nil, atIndex: index)
+                    }
+                    await model.refreshPhotoBoard()
+                }
                 tutorial.fire("photo")
             }
         }
+        .sheet(item: $annotationTarget) { target in
+            if let listing = model.listing {
+                PhotoAnnotationScreen(listingID: listing.id, target: target) { stored in
+                    model.recordAnnotation(stored, atIndex: target.imageIndex)
+                }
+            }
+        }
+        .task { await model.refreshPhotoBoard() }
+    }
+
+    // MARK: Marks
+
+    /// Marking a detail is the seller answering the question a buyer would
+    /// ask on the phone — "what's that on the bezel?" — before they ask it.
+    ///
+    /// Offered on the edit pass and not on the first run. A mark is filed
+    /// against a photo's *position*, and on a first listing the positions are
+    /// still moving: every slot filled, replaced or reshot while the seller
+    /// works through this step renumbers the set, and the server drops the
+    /// marks that were pointing into it. Asking someone to draw on a
+    /// photograph that is about to be renumbered is asking them to lose the
+    /// work. By the time a listing is being edited the photo set has settled,
+    /// which is when a mark is worth making.
+    @ViewBuilder
+    private var markSection: some View {
+        if model.isEdit, !model.orderedPhotos.isEmpty {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Text("Mark a detail")
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+
+                Text("Draw on a photo and say what it is. A scratch you point at yourself reads better than one a buyer finds.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Space.m) {
+                        ForEach(Array(model.orderedPhotos.enumerated()), id: \.element.id) { index, photo in
+                            markThumbnail(index: index, photo: photo)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+
+                if !model.canDrawAnotherMark {
+                    Text("That's as many marks as one listing takes. Remove one to draw somewhere else.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func markThumbnail(index: Int, photo: ListingImage) -> some View {
+        let mark = model.annotation(atIndex: index)
+        // A photo with no mark on it is only tappable while there is room for
+        // another one; the one already drawn is always reachable, so it can
+        // be edited or removed.
+        let reachable = mark != nil || model.canDrawAnotherMark
+        return Button {
+            annotationTarget = AnnotationTarget(imageIndex: index, url: photo.url.url, existing: mark)
+        } label: {
+            ListingImageWell(url: photo.url.url, targetWidth: 160)
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                        .strokeBorder(
+                            mark == nil ? Color.calibre.border : Color.calibre.primary,
+                            lineWidth: mark == nil ? 1 : 2
+                        )
+                )
+                .overlay(alignment: .bottomTrailing) {
+                    if mark != nil {
+                        Image(systemName: "hand.draw.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.calibre.primaryForeground)
+                            .padding(3)
+                            .background(Color.calibre.primary, in: Circle())
+                            .offset(x: 3, y: 3)
+                    }
+                }
+                .opacity(reachable ? 1 : 0.4)
+        }
+        .buttonStyle(PressableStyle())
+        .disabled(!reachable)
+        .accessibilityLabel(
+            mark == nil
+                ? "Mark photo \(index + 1)"
+                : "Edit the mark on photo \(index + 1)"
+        )
     }
 
     private func slotCell(_ category: ListingImageCategory) -> some View {

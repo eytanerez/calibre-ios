@@ -16,7 +16,14 @@ public final class TutorialLedger: @unchecked Sendable {
     /// Schema version of the ledger itself — bump only if the tutorial
     /// *format* changes and every lesson must genuinely be re-taught. This is
     /// deliberately independent of the app version.
-    private static let keyPrefix = "tutorial.seen.v1."
+    ///
+    /// TEMPORARY — bumped to v2 on 2026-08-27 purely to force the tutorials
+    /// back on a sideloaded Release build, where neither `-resetTutorials` nor
+    /// the Developer section exists (both are DEBUG-only) and a reinstall is an
+    /// update rather than a fresh install, so the ledger survives.
+    /// **Revert to v1 before any real release** — left as-is it re-teaches
+    /// every existing user exactly once, for no reason they would understand.
+    private static let keyPrefix = "tutorial.seen.v2."
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

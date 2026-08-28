@@ -37,6 +37,10 @@ public struct Listing: Codable, Sendable, Identifiable {
     /// seller — a buyer's payload omits the key entirely. Bulk import matches
     /// on this and only this; `referenceNumber` never identifies a watch.
     public let sellerSku: String?
+    /// The watch in the seller's own Collection this listing is, when they
+    /// said so. Like `sellerSku`, present only when the reader is the seller —
+    /// a buyer's payload omits the key entirely.
+    public let vaultWatchId: String?
     public let description: String?
     public let price: APIDecimal
     public let currency: String
@@ -55,6 +59,14 @@ public struct Listing: Codable, Sendable, Identifiable {
     public let returns: ListingReturnTerms?
     public let countryOfOrigin: String?
     public let htsCode: String?
+    /// The seller's own marks on their photos, keyed to photo position.
+    ///
+    /// Nil and empty are different answers and the gallery needs both: the
+    /// card view does not carry this key at all, so nil means "this payload
+    /// was not asked about marks" while `[]` means "this seller drew none".
+    /// Reading nil as none would blank the marks off every card-sourced
+    /// gallery without anything going wrong.
+    public let annotations: [ListingAnnotation]?
     public let createdAt: Date?
     public let updatedAt: Date?
 
@@ -66,10 +78,10 @@ public struct Listing: Codable, Sendable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id, listingNumber, sellerId, seller, variantId, title, brand, model
-        case referenceNumber, sellerSku, description, price, currency, condition, boxPapers
+        case referenceNumber, sellerSku, vaultWatchId, description, price, currency, condition, boxPapers
         case productionYear, status, reviewStatus, sellerStatus, reviewEvents
         case estimatedShipping, metrics, returns, countryOfOrigin, htsCode
-        case createdAt, updatedAt
+        case annotations, createdAt, updatedAt
         case imageList = "images"
     }
 }

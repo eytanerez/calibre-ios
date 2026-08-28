@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Observation
 
@@ -147,6 +148,70 @@ public final class SellerStore {
         let _: EmptyResponse = try await client.send(
             Endpoint(method: .delete, path: "/account/listings/\(listingID)/images/\(imageID)")
         )
+    }
+
+    // MARK: - Photo annotations
+
+    /// Writes the seller's mark on one photo, replacing whatever was on it.
+    ///
+    /// There is no read here on purpose: the annotations already travel on
+    /// every listing detail payload, and a second request for them would give
+    /// the gallery a source that can disagree with the listing it is drawing.
+    ///
+    /// The path arrives simplified and normalised — see `AnnotationPath`.
+    /// Refusals come back as `APIError.server` carrying the server's own
+    /// sentence (too short a mark, too many points, a photo that no longer
+    /// exists, the per-listing limit); show that rather than writing a second
+    /// wording for the same rule.
+    @discardableResult
+    public func saveAnnotation(
+        listingID: String,
+        imageIndex: Int,
+        path: [CGPoint],
+        note: String?
+    ) async throws -> ListingAnnotation {
+        let document = ListingAnnotation(imageIndex: imageIndex, path: path, note: note)
+        return try await client.send(
+            try Endpoint.json(
+                method: .put,
+                path: "/account/listings/\(listingID)/annotations/\(imageIndex)",
+                payload: document
+            )
+        )
+    }
+
+    public func deleteAnnotation(listingID: String, imageIndex: Int) async throws {
+        struct Response: Decodable { let deleted: Bool }
+        let _: Response = try await client.send(
+            Endpoint(method: .delete, path: "/account/listings/\(listingID)/annotations/\(imageIndex)")
+        )
+    }
+
+    // MARK: - The storefront line
+
+    /// The dealer's own line, as its author sees it — their submitted words,
+    /// what a buyer is currently reading, and where review got to.
+    ///
+    /// A seller who is not a verified dealer is refused with
+    /// `dealer_required`: the line sits beside a verified-business badge, so
+    /// there is no version of it for an unverified name.
+    public func dealerBio() async throws -> DealerBio {
+        struct Response: Decodable { let bio: DealerBio }
+        let response: Response = try await client.send(Endpoint(path: "/account/dealer/bio"))
+        return response.bio
+    }
+
+    /// Submits a line for review. Always returns it to `pending`, an edit of
+    /// an already-approved line included — and the previously approved words
+    /// stay on the storefront meanwhile, so editing never blanks it.
+    @discardableResult
+    public func updateDealerBio(_ bio: String) async throws -> DealerBio {
+        struct Payload: Encodable { let bio: String }
+        struct Response: Decodable { let bio: DealerBio }
+        let response: Response = try await client.send(
+            try Endpoint.json(method: .put, path: "/account/dealer/bio", payload: Payload(bio: bio))
+        )
+        return response.bio
     }
 
     // MARK: - Shipping

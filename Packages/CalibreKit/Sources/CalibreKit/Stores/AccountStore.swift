@@ -148,6 +148,16 @@ public struct AccountDeletionState: Codable, Sendable {
     /// When deletion is expected to complete, from whichever field the
     /// backend filled in.
     public var scheduledDate: Date? { deletionScheduledFor ?? scheduledFor }
+
+    /// Whether a deletion is standing against this account, and so whether the
+    /// grace window is running and there is something to cancel.
+    ///
+    /// `requested` comes back from the read and from the request that schedules
+    /// one; the request made against an account that is *already* scheduled
+    /// answers with the date and the legacy `status` instead, and leaves
+    /// `requested` out. A date is only ever set while one is pending — cancel
+    /// clears it — so the two together are the whole answer.
+    public var isPending: Bool { requested || scheduledDate != nil }
 }
 
 /// A partial notification-preferences update. Only non-nil fields are sent, so

@@ -74,7 +74,7 @@ struct CheckoutSuccessMoment: View {
             .opacity(arrived ? 1 : 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .onAppear {
             Haptics.shared.play(.paymentSuccess)
             withAnimation(reduceMotion ? Motion.easeMedium : Motion.easeSlow) {

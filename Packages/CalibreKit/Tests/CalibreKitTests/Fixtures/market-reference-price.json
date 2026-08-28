@@ -1,0 +1,43 @@
+{
+    "ok": true,
+    "data": {
+        "id": "70af3897-793a-40e6-99e9-0a3bed919425",
+        "brand": "Audemars Piguet",
+        "model": "Royal Oak Perpetual Calendar",
+        "reference": "26574ST.OO.1220ST.02",
+        "slug": "audemars-piguet-26574st-oo-1220st-02",
+        "price": "23506.35",
+        "currency": "USD",
+        "set_at": "2026-08-20T13:00:00Z",
+        "specs": {
+            "material": "Stainless steel",
+            "bezel": "Fixed octagonal, eight screws",
+            "glass": "Sapphire",
+            "back": "Exhibition sapphire",
+            "shape": "Octagonal",
+            "diameter_mm": 41,
+            "finish": "Satin-brushed with polished chamfers",
+            "dial": "Blue Grande Tapisserie",
+            "indexes": "Applied white gold baton",
+            "hands": "Royal Oak baton"
+        },
+        "history": [
+            {
+                "date": "2026-02-24",
+                "price": "21043.78"
+            },
+            {
+                "date": "2026-04-25",
+                "price": "21939.26"
+            },
+            {
+                "date": "2026-06-24",
+                "price": "23058.61"
+            },
+            {
+                "date": "2026-08-23",
+                "price": "23506.35"
+            }
+        ]
+    }
+}

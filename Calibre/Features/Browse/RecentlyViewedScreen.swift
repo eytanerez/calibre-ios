@@ -75,7 +75,7 @@ struct RecentlyViewedScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("Recently Viewed")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()

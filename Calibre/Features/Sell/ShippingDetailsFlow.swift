@@ -76,7 +76,7 @@ struct ShippingDetailsFlow: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Shipping details")
         .navigationBarTitleDisplayMode(.inline)
         .animation(Motion.easeFast, value: validationError)
@@ -399,7 +399,7 @@ struct LabelReadyScreen: View {
             .padding(.top, Space.l)
             .padding(.bottom, Space.xxl)
         }
-        .background(Color.calibre.background.ignoresSafeArea())
+        .calibrePageBackground()
         .navigationTitle("Shipping label")
         .navigationBarTitleDisplayMode(.inline)
     }

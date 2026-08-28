@@ -540,7 +540,7 @@ struct ReturnFlowSheet: View {
                 .padding(.top, Space.l)
                 .padding(.bottom, Space.xxl)
             }
-            .background(Color.calibre.background.ignoresSafeArea())
+            .calibrePageBackground()
             .navigationTitle("Return this watch")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

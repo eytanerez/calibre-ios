@@ -33,7 +33,7 @@ struct SellerStorefrontScreen: View {
                 skeleton
             }
         }
-        .background(Color.calibre.background)
+        .calibrePageBackground()
         .navigationTitle("@\(username)")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
@@ -118,12 +118,34 @@ struct SellerStorefrontScreen: View {
                 Spacer(minLength: 0)
             }
 
-            if let bio = storefront.bio, !bio.isEmpty {
-                Text(bio)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-                    .lineSpacing(5)
-            }
+            storefrontLine(storefront)
+        }
+    }
+
+    /// The one place on Calibre where a seller speaks in their own voice
+    /// rather than through a listing form, so it is set in their hand.
+    ///
+    /// The server sends the line a buyer is allowed to read — the last words
+    /// that cleared review, not whatever the dealer has typed since — so this
+    /// renders what arrives and never reasons about approval itself.
+    ///
+    /// A verified dealer who has not written one gets a plain sentence in the
+    /// sans instead: that is Calibre describing an absence, not the dealer
+    /// talking, and putting it in the hand would put words in their mouth.
+    /// A seller who is not a dealer has no line to be missing.
+    @ViewBuilder
+    private func storefrontLine(_ storefront: SellerStorefront) -> some View {
+        if let bio = storefront.bio, !bio.isEmpty {
+            Text(bio)
+                .font(CalibreType.hand)
+                .foregroundStyle(Color.calibre.secondaryForeground)
+                .lineSpacing(5)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if storefront.isVerifiedDealer {
+            Text("@\(storefront.username) hasn't written a storefront line yet.")
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

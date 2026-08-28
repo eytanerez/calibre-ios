@@ -2,6 +2,16 @@ import SwiftUI
 
 /// Brand motion. Ease-out only — motion confirms state change, never performs.
 /// No springs, no bounce, transform + opacity only.
+///
+/// That rule covers the interface: sheets, buttons, navigation, cards, toasts,
+/// list transitions. It is not relaxed anywhere, and nothing here has changed.
+///
+/// The illustrated marks are the one exception, and they are carved out rather
+/// than carved into this: a mark is not a control, and their grammar —
+/// anticipation, acceleration into contact, follow-through — lives in
+/// `MarkMotion` where it cannot leak onto anything you would tap. If you came
+/// here wondering why the stamp bounces, see `CALIBRE_BY_HAND_CONTRACTS.md`
+/// §1.2 and §5.
 public enum Motion {
     /// Hover/press feedback.
     public static let fast: TimeInterval = 0.16
