@@ -1,11 +1,18 @@
 import CalibreDesign
 import CalibreKit
-import NukeUI
 import SwiftUI
 
-/// The seller's shop — tab root once `can_list` is true. Header, the card on
-/// file, the dealer application, the prioritized action queue, buyer
-/// requests, inventory, recent sales and received offers.
+/// The seller's shop — tab root once `can_list` is true.
+///
+/// Four tabs, in the order of the seller's day: what am I selling, who wants
+/// it, how is it going, who am I. This screen owns the loads, the state the
+/// tabs share and every verb they can reach for; each tab owns its own
+/// reading of it.
+///
+/// Two things deliberately sit *above* the tabs rather than inside one: the
+/// card-on-file banner, and the queue of what needs the seller next. Both are
+/// true whichever tab is open, and an offer that needs answering must not be
+/// something you only find by picking the right room.
 struct SellerDashboardScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -13,16 +20,10 @@ struct SellerDashboardScreen: View {
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
 
-    enum InventoryTab: String, CaseIterable {
-        case all = "All"
-        case needsAction = "Needs action"
-        case live = "Live"
-        case draft = "Draft"
-        case pending = "Pending"
-        case sold = "Sold"
-        case paused = "Paused"
-        case archived = "Archived"
-    }
+    /// The tab survives a reload and a back-navigation: a seller who opens an
+    /// offer and comes back lands on Offers, not on Listings.
+    @AppStorage("sellerShopTab") private var tab: SellerTab = .listings
+    @State private var listingFilter: SellerListingFilter = .all
 
     @State private var loading = true
     @State private var loadError: String?
@@ -32,7 +33,6 @@ struct SellerDashboardScreen: View {
     /// content in place rather than hiding it behind the skeleton again.
     @State private var hasRevealedContent = false
     @State private var requests: [WatchRequest] = []
-    @State private var inventoryTab: InventoryTab = .all
     @State private var wizardContext: WizardContext?
     @State private var saleDetailOrderID: String?
     @State private var showBulkImports = false
@@ -43,14 +43,19 @@ struct SellerDashboardScreen: View {
     @State private var showOpenRequests = false
     @State private var confirmSubmit: Listing?
     @State private var confirmDelete: Listing?
-    @State private var showAllInventory = false
     @State private var showDealerApplication = false
-    @State private var showStorefrontLine = false
     @State private var showSellerCard = false
+    @State private var showAllQueue = false
     /// The card a counterfeit or misrepresentation charge would land on.
     /// Nil until the first load answers; a banner appears only when the
     /// server says it needs attention.
     @State private var sellerCard: SellerCardState?
+
+    /// How much of the queue stands above the tabs before it is folded. The
+    /// tab bar has to stay in reach on the first screen — a queue that pushed
+    /// it below the fold would put the whole shop behind a scroll.
+    private static let queuePreviewCount = 3
+
     /// Bulk import is dealer-only, so the lesson that points at it is too.
     /// Two controllers over the same ledger id: whichever one matches the
     /// seller's status is the one that starts, and completing either retires
@@ -68,7 +73,7 @@ struct SellerDashboardScreen: View {
     private static let shopStep = TutorialStep(
         id: "shop",
         title: "Running your shop",
-        message: "Swipe any inventory row left — or press and hold it — for its quick actions: Edit, Submit for review, or Delete. And the queue up top always surfaces whatever needs you next: an offer to answer, a sale to ship, a draft to finish.",
+        message: "Your shop is four tabs: what you're selling, who wants it, how it's going, and how buyers see you. Swipe any listing left — or press and hold it — for Edit, Submit and Delete. And whatever needs you next stays above the tabs, whichever one you're in.",
         advance: .tapToContinue
     )
 
@@ -103,35 +108,13 @@ struct SellerDashboardScreen: View {
                 .sellRow()
             } else if loading, !hasRevealedContent {
                 loadingRows
-            } else {
-                if let application = dashboard?.dealerApplication {
-                    dealerCard(application).sellRow()
-                }
-                if let queue = dashboard?.actionQueue, !queue.isEmpty {
-                    actionQueueHeader.sellRow(bottom: Space.s)
-                    ForEach(Array(queue.prefix(6).enumerated()), id: \.element.stableID) { index, action in
-                        actionRow(action)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                    .strokeBorder(Color.calibre.border, lineWidth: 1)
-                            )
-                            .sellRow(bottom: index == min(queue.count, 6) - 1 ? Space.xl : Space.s)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                actionRowSwipeActions(action)
-                            }
-                    }
-                }
-                if !unfinishedImports.isEmpty {
-                    continueBulkImport.sellRow()
-                }
-                if !requests.isEmpty {
-                    buyerRequests.sellRow()
-                }
-                inventorySection
-                recentSales.sellRow()
-                if let offers = dashboard?.offers, !offers.isEmpty {
-                    offersSection(offers).sellRow()
+            } else if let dashboard {
+                actionQueue(dashboard.actionQueue)
+
+                Section {
+                    tabContent(dashboard)
+                } header: {
+                    tabBar
                 }
             }
         }
@@ -180,15 +163,12 @@ struct SellerDashboardScreen: View {
                 DraftFinishingQueueScreen(jobID: job.id)
             }
         }
-        // Applying is a real path from this card: two fields here, then the
-        // embedded verification step that collects the EIN.
+        // Applying is a real path from the Storefront tab: two fields here,
+        // then the embedded verification step that collects the EIN.
         .sheet(isPresented: $showDealerApplication) {
             DealerApplicationScreen(application: dashboard?.dealerApplication) {
                 Task { await load() }
             }
-        }
-        .sheet(isPresented: $showStorefrontLine) {
-            StorefrontLineScreen()
         }
         .sheet(isPresented: $showSellerCard) {
             SellerCardScreen { saved in
@@ -260,6 +240,101 @@ struct SellerDashboardScreen: View {
 
     private var deleteBinding: Binding<Bool> {
         Binding(get: { confirmDelete != nil }, set: { if !$0 { confirmDelete = nil } })
+    }
+
+    // MARK: - The tabs
+
+    /// Pinned by the plain list style, so switching rooms is one tap from
+    /// anywhere in a long inventory.
+    private var tabBar: some View {
+        SellerTabBar(selection: $tab, badges: tabBadges)
+            .padding(.horizontal, Space.margin)
+            .padding(.top, Space.s)
+            .background(Color.calibre.background)
+            .listRowInsets(EdgeInsets())
+    }
+
+    /// A count only where work is actually waiting — `SellerTabBadge` has no
+    /// zero-valued form, so a tab either promises something or says nothing.
+    ///
+    /// The Listings count is the same predicate its "Needs action" filter
+    /// uses, so tapping the badge lands on exactly that many rows.
+    private var tabBadges: [SellerTab: SellerTabBadge] {
+        var badges: [SellerTab: SellerTabBadge] = [:]
+        let needsAction = listings.filter(SellerStatusDisplay.needsAction).count
+        if let badge = SellerTabBadge(
+            count: needsAction,
+            spoken: { $0 == 1 ? "1 needs your attention" : "\($0) need your attention" }
+        ) {
+            badges[.listings] = badge
+        }
+        if let dashboard, let badge = SellerTabBadge(
+            count: dashboard.metrics.offersWaiting,
+            spoken: { $0 == 1 ? "1 waiting on you" : "\($0) waiting on you" }
+        ) {
+            badges[.offers] = badge
+        }
+        return badges
+    }
+
+    @ViewBuilder
+    private func tabContent(_ dashboard: SellerDashboard) -> some View {
+        switch tab {
+        case .listings:
+            SellerListingsTab(
+                listings: listings,
+                unfinishedImports: unfinishedImports,
+                filter: $listingFilter,
+                actions: shopActions
+            )
+        case .offers:
+            SellerOffersTab(
+                offers: dashboard.offers,
+                listings: listings,
+                actions: shopActions
+            )
+        case .performance:
+            SellerPerformanceTab(
+                metrics: dashboard.metrics,
+                whatToList: dashboard.whatToList,
+                sales: sell.ops.sales,
+                requests: requests,
+                actions: shopActions
+            )
+        case .storefront:
+            SellerStorefrontTab(
+                username: session.user?.username ?? "",
+                application: dashboard.dealerApplication,
+                actions: shopActions
+            )
+        }
+    }
+
+    /// The shop's verbs, defined once and handed to every tab.
+    private var shopActions: SellerShopActions {
+        SellerShopActions(
+            listWatch: { openWizard(.new(prefill: $0)) },
+            openWizard: { openWizard($0) },
+            openListing: { openListing($0) },
+            confirmSubmit: { confirmSubmit = $0 },
+            confirmDelete: { confirmDelete = $0 },
+            openSale: { saleDetailOrderID = $0 },
+            openOffer: { router.push(.offer($0)) },
+            openCardOnFile: { showSellerCard = true },
+            continueImport: { continueImportJob = $0 },
+            openBuyerRequests: { showOpenRequests = true },
+            openStorefrontPage: {
+                if let username = session.user?.username, !username.isEmpty {
+                    router.push(.seller(username))
+                }
+            },
+            openDealerApplication: { showDealerApplication = true },
+            showListings: { filter in
+                listingFilter = filter
+                withAnimation(Motion.easeMedium) { tab = .listings }
+            },
+            reload: { await load() }
+        )
     }
 
     // MARK: - Loading
@@ -401,7 +476,7 @@ struct SellerDashboardScreen: View {
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
         }
-        .sellRow(top: Space.l)
+        .sellRow(top: Space.l, bottom: Space.l)
     }
 
     // MARK: - Card on file
@@ -439,196 +514,53 @@ struct SellerDashboardScreen: View {
         return "\(card.displayName) is close to expiring. Replace it before it lapses."
     }
 
-    // MARK: - Dealer application
+    // MARK: - What needs you next
 
-    /// A dealer is a verified business — no inventory threshold, no queue.
-    /// Every rate on this card is quoted from the application payload; when
-    /// the server hasn't stated one, the sentence runs without the number.
-    @ViewBuilder
-    private func dealerCard(_ application: DealerApplication) -> some View {
-        switch application.status {
-        case .none:
-            dealerApplyCard(application)
-        case .pending:
-            dealerStatusCard(
-                badgeText: "Verification in progress",
-                badgeTone: .info,
-                headline: "Your business details are being verified",
-                lines: [
-                    "Nothing more is needed from you. There is no approval queue and no one to wait on — when verification clears, dealer status turns on by itself."
-                ]
-            )
-        case .verified:
-            dealerVerifiedCard(application)
-        case .revoked:
-            dealerStatusCard(
-                badgeText: "Dealer status ended",
-                badgeTone: .neutral,
-                headline: "You're selling as a private seller again",
-                lines: dealerRevokedLines(application)
-            )
-        case .unknown:
-            EmptyView()
-        }
-    }
-
-    private func dealerApplyCard(_ application: DealerApplication) -> some View {
-        SellCard {
-            VStack(alignment: .leading, spacing: Space.m) {
-                Eyebrow("Dealer program")
-
-                Text("Apply as a dealer")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
-
-                Text("A dealer is a verified business. We collect your business legal name and EIN, verified through Stripe, so buyers know they are dealing with a real business. Calibre never sees your banking details — they stay with Stripe.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                VStack(alignment: .leading, spacing: Space.s) {
-                    dealerBenefit(dealerRateLine(application))
-                    dealerBenefit("A dealer badge buyers can see")
-                    dealerBenefit("Bulk import and volume tools — bulk import is dealer-only")
-                }
-
-                Text("There is no approval queue and no waiting on a person. When verification clears, you are a dealer automatically.")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Button {
-                    showDealerApplication = true
-                } label: {
-                    Text("Apply as a dealer")
-                }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
-                .padding(.top, Space.xs)
-            }
-            .padding(Space.l)
-        }
-    }
-
-    private func dealerVerifiedCard(_ application: DealerApplication) -> some View {
-        SellCard {
-            VStack(alignment: .leading, spacing: Space.m) {
-                HStack {
-                    Eyebrow("Dealer program")
-                    Spacer()
-                    DealerBadge()
-                }
-
-                if let name = application.companyName, InputValidation.isNonBlank(name) {
-                    Text(name)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                }
-
-                Text(verifiedDealerRateLine(application))
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text("Dealer status does not expire, and it isn't tied to how much you have listed.")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                // Offered only to a verified dealer, because the line is
-                // published beside the badge and there is no version of it
-                // for a name Calibre has not verified as a business.
-                Button("Your storefront line") {
-                    showStorefrontLine = true
-                }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
-                .padding(.top, Space.xs)
-            }
-            .padding(Space.l)
-        }
-    }
-
-    private func dealerStatusCard(
-        badgeText: String,
-        badgeTone: StatusBadge.Tone,
-        headline: String,
-        lines: [String]
-    ) -> some View {
-        SellCard {
-            VStack(alignment: .leading, spacing: Space.m) {
-                HStack {
-                    Eyebrow("Dealer program")
-                    Spacer()
-                    StatusBadge(badgeText, tone: badgeTone)
-                }
-
-                Text(headline)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                    Text(line)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(Space.l)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private func dealerBenefit(_ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-            Image(systemName: "checkmark")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.calibre.primary)
-            Text(text)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.foreground)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// "The 4% dealer rate, instead of 6%" — both figures from the payload,
-    /// and the sentence still works when neither has arrived.
-    private func dealerRateLine(_ application: DealerApplication) -> String {
-        switch (application.dealerFeePercent?.value, application.memberFeePercent?.value) {
-        case (.some(let dealerRate), .some(let memberRate)):
-            return "The \(feePercentText(dealerRate))% dealer rate, instead of \(feePercentText(memberRate))%"
-        case (.some(let dealerRate), .none):
-            return "The \(feePercentText(dealerRate))% dealer rate on every sale"
-        default:
-            return "The lower dealer rate on every sale"
-        }
-    }
-
-    private func verifiedDealerRateLine(_ application: DealerApplication) -> String {
-        guard let dealerRate = application.dealerFeePercent?.value else {
-            return "Your sales are commissioned at the dealer rate."
-        }
-        return "Your sales are commissioned at the \(feePercentText(dealerRate))% dealer rate."
-    }
-
-    private func dealerRevokedLines(_ application: DealerApplication) -> [String] {
-        var lines: [String] = []
-        if let reason = application.revokedReason, InputValidation.isNonBlank(reason) {
-            lines.append(reason)
-        }
-        lines.append("The badge, the bulk tools and the dealer rate have reverted. Your existing listings stay live and nothing about them changes.")
-        return lines
-    }
-
-    // MARK: - Action queue
-
+    /// Above the tabs, because it is the one thing that should reach the
+    /// seller whichever tab they are on.
+    ///
     /// Each queued action is its own `List` row (rather than one merged card
     /// of stacked rows) so a draft entry here can carry the same native
     /// swipe-to-delete as an inventory row — the only way a seller who never
-    /// scrolls to Inventory can still delete a draft.
-    private var actionQueueHeader: some View {
-        SellSectionHeader("Waiting on you")
+    /// opens Listings can still delete a draft.
+    @ViewBuilder
+    private func actionQueue(_ queue: [DashboardAction]) -> some View {
+        if !queue.isEmpty {
+            let shown = showAllQueue ? queue : Array(queue.prefix(Self.queuePreviewCount))
+            SellSectionHeader("Waiting on you").sellRow(bottom: Space.s)
+            ForEach(Array(shown.enumerated()), id: \.element.stableID) { index, action in
+                actionRow(action)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    )
+                    .sellRow(bottom: index == shown.count - 1 ? Space.l : Space.s)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        actionRowSwipeActions(action)
+                    }
+            }
+            if queue.count > Self.queuePreviewCount {
+                queueToggle(queue.count).sellRow(bottom: Space.l)
+            }
+        }
+    }
+
+    private func queueToggle(_ total: Int) -> some View {
+        Button {
+            withAnimation(Motion.easeMedium) { showAllQueue.toggle() }
+        } label: {
+            HStack(spacing: Space.s) {
+                Text(showAllQueue ? "Show less" : "Show all \(total)")
+                    .font(CalibreType.label)
+                Image(systemName: showAllQueue ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(Color.calibre.primary)
+            .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
     }
 
     private func actionRow(_ action: DashboardAction) -> some View {
@@ -668,8 +600,8 @@ struct SellerDashboardScreen: View {
     }
 
     /// A draft queue row can be deleted with the same swipe, confirmation
-    /// dialog, and `deleteDraft(_:)` call as an inventory row — no
-    /// duplicated deletion path.
+    /// dialog, and deletion call as an inventory row — no duplicated
+    /// deletion path.
     @ViewBuilder
     private func actionRowSwipeActions(_ action: DashboardAction) -> some View {
         if action.kind == "draft", let listingId = action.listingId, let draft = listing(for: listingId) {
@@ -732,341 +664,7 @@ struct SellerDashboardScreen: View {
         }
     }
 
-    // MARK: - Continue bulk import
-
-    /// An import creates drafts and nothing else, so the drafts it left are
-    /// work waiting for a person. This is where that work starts on a phone —
-    /// which is where most of it happens, because the photographs need a
-    /// camera.
-    private var continueBulkImport: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("Finish what you imported")
-
-            Text("Each draft goes to review as you finish it. Photos are quickest here \u{2014} the camera is already in your hand.")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(spacing: Space.m) {
-                ForEach(unfinishedImports) { entry in
-                    Button {
-                        Haptics.shared.play(.press)
-                        continueImportJob = ImportJobRef(id: entry.job.id)
-                    } label: {
-                        importRow(entry)
-                    }
-                    .buttonStyle(PressableStyle())
-                }
-            }
-        }
-    }
-
-    private func importRow(_ entry: UnfinishedImport) -> some View {
-        SellCard {
-            HStack(alignment: .top, spacing: Space.m) {
-                IconTile(systemName: "camera")
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Continue bulk import \u{2014} \(entry.finished) of \(entry.total) finished")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(entry.remainderLine)
-                        .font(CalibreType.caption)
-                        .monospacedDigit()
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                    if let filename = entry.job.originalFilename, !filename.isEmpty {
-                        Text(filename)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                            .lineLimit(1)
-                    }
-                    importProgressBar(entry)
-                        .padding(.top, Space.xs)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.calibre.primary)
-            }
-            .padding(Space.l)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private func importProgressBar(_ entry: UnfinishedImport) -> some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.calibre.border)
-                Capsule()
-                    .fill(Color.calibre.primary)
-                    .frame(width: proxy.size.width * entry.fraction)
-            }
-        }
-        .frame(height: 4)
-    }
-
-    // MARK: - Buyer requests
-
-    /// A single summary row rather than the requests themselves — the shop's
-    /// front page stays scannable; the full list lives one tap away.
-    private var buyerRequests: some View {
-        Button {
-            showOpenRequests = true
-        } label: {
-            HStack(spacing: Space.m) {
-                IconTile(systemName: "sparkle.magnifyingglass")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Buyers are looking for \(requests.count) watch\(requests.count == 1 ? "" : "es")")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                    Text("List against an open request")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.calibre.mutedForeground)
-            }
-            .padding(Space.l)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
-            )
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityHint("Shows every open buyer request")
-    }
-
-    // MARK: - Inventory
-
-    private var filteredListings: [Listing] {
-        switch inventoryTab {
-        case .all: listings
-        case .needsAction: listings.filter(SellerStatusDisplay.needsAction)
-        case .live: listings.filter { $0.status == .active || $0.status == .reserved }
-        case .draft: listings.filter { $0.status == .draft }
-        case .pending: listings.filter { $0.status == .pendingReview }
-        case .sold: listings.filter { $0.status == .sold }
-        case .paused: listings.filter { $0.status == .pausedCard }
-        // Never includes the paused ones: Calibre took those down, and the
-        // seller has to be able to tell the two apart.
-        case .archived: listings.filter { $0.status == .archived || $0.status == .rejected }
-        }
-    }
-
-    /// Only the first few rows show until the seller taps "Show all" — a busy
-    /// shop otherwise buries recent sales and offers under a long inventory.
-    private static let inventoryPreviewCount = 5
-
-    private var visibleListings: [Listing] {
-        if showAllInventory { return filteredListings }
-        return Array(filteredListings.prefix(Self.inventoryPreviewCount))
-    }
-
-    @ViewBuilder
-    private var inventorySection: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("Inventory")
-            // A trailing fade + chevron makes it obvious the filter bar scrolls
-            // to more tabs than fit the screen.
-            ScrollView(.horizontal, showsIndicators: false) {
-                SegmentedTabs(
-                    selection: $inventoryTab,
-                    items: InventoryTab.allCases.map { ($0, $0.rawValue) }
-                )
-                .frame(width: 760)
-                .padding(.trailing, Space.xl)
-            }
-            .overlay(alignment: .trailing) {
-                HStack(spacing: 0) {
-                    LinearGradient(
-                        colors: [Color.calibre.background.opacity(0), Color.calibre.background],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: 28)
-                    Image(systemName: "chevron.compact.right")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                        .padding(.trailing, 2)
-                        .background(Color.calibre.background)
-                }
-                .allowsHitTesting(false)
-            }
-            .onChange(of: inventoryTab) { showAllInventory = false }
-        }
-        .sellRow(bottom: Space.s)
-
-        if filteredListings.isEmpty {
-            emptyInventory.sellRow()
-        } else {
-            ForEach(visibleListings) { listing in
-                inventoryRow(listing, actions: inventoryRowActions(listing))
-                    .sellRow(bottom: Space.m)
-                    .rowActions(inventoryRowActions(listing))
-            }
-            if filteredListings.count > Self.inventoryPreviewCount {
-                inventoryToggle.sellRow(bottom: Space.m)
-            }
-        }
-    }
-
-    private var inventoryToggle: some View {
-        Button {
-            withAnimation(Motion.easeMedium) { showAllInventory.toggle() }
-        } label: {
-            HStack(spacing: Space.s) {
-                Text(showAllInventory
-                    ? "Show less"
-                    : "Show all \(filteredListings.count)")
-                    .font(CalibreType.bodyMedium)
-                Image(systemName: showAllInventory ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
-            }
-            .foregroundStyle(Color.calibre.primary)
-            .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressableStyle())
-    }
-
-    private var emptyInventory: some View {
-        Group {
-            if listings.isEmpty {
-                EmptyState(
-                    icon: "camera",
-                    title: "Your shop is ready for its first watch",
-                    message: "Six photos, one calm flow — most sellers list in under five minutes.",
-                    actionTitle: "List a watch",
-                    action: { openWizard(.new(prefill: nil)) }
-                )
-            } else {
-                Text(emptyTabMessage)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, Space.xl)
-            }
-        }
-    }
-
-    private var emptyTabMessage: String {
-        switch inventoryTab {
-        case .needsAction: "Nothing needs your attention right now."
-        case .live: "No live listings at the moment."
-        case .draft: "No drafts — everything you started is out the door."
-        case .pending: "Nothing waiting on review."
-        case .sold: "No sales yet — they'll appear here."
-        case .paused: "Nothing paused."
-        case .archived: "Nothing archived."
-        case .all: "No listings here yet."
-        }
-    }
-
-    private func inventoryRow(_ listing: Listing, actions: [RowAction] = []) -> some View {
-        let badge = SellerStatusDisplay.badge(for: listing)
-        let rejectionNote = rejectionReason(listing)
-        return Button {
-            openListing(listing)
-        } label: {
-            VStack(alignment: .leading, spacing: Space.s) {
-                HStack(spacing: Space.m) {
-                    SellThumb(url: listing.images.first?.url)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(listing.title)
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
-                            .lineLimit(1)
-                        StatusBadge(badge.text, tone: badge.tone)
-                        HStack(spacing: Space.s) {
-                            Text("#\(listing.listingNumber) · \(PriceFormatter.format(listing.price.value))")
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
-                            if let metrics = listing.metrics, metrics.views + metrics.watchers > 0 {
-                                Label("\(metrics.views)", systemImage: "eye")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
-                                Label("\(metrics.watchers)", systemImage: "heart")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
-                            }
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    RowActionsMenu(actions: actions, label: "Options for \(listing.title)")
-                }
-                if let rejectionNote {
-                    CalloutBand(icon: "exclamationmark.bubble", message: rejectionNote)
-                }
-            }
-            .padding(Space.m)
-            .background(Color.calibre.card)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressableStyle())
-    }
-
-    /// The moderator's words, shown on rejected rows — and, on a paused one,
-    /// the reason Calibre took it down and what brings it back.
-    private func rejectionReason(_ listing: Listing) -> String? {
-        if listing.status == .pausedCard {
-            return "We took this off the market because your card on file lapsed. Add a valid credit card and it goes back up automatically — no re-review, nothing to resubmit."
-        }
-        guard listing.status == .rejected else { return nil }
-        let note = listing.reviewEvents?
-            .first { $0.toStatus == "rejected" && !($0.notes ?? "").isEmpty }?
-            .notes
-        return note ?? "Our review team asked for changes. Edit and resubmit when ready."
-    }
-
-    /// One definition per listing. The swipe rail, the ⋯ menu and long-press
-    /// are all built from this, so a row can't offer different things
-    /// depending on how you reach for it.
-    private func inventoryRowActions(_ listing: Listing) -> [RowAction] {
-        var actions: [RowAction] = [
-            RowAction("Edit", systemImage: "square.and.pencil") {
-                openWizard(listing.status == .draft ? .finishDraft(listing) : .edit(listing))
-            }
-        ]
-        if listing.status == .draft {
-            actions.append(
-                RowAction("Submit", systemImage: "paperplane", tint: Color.calibre.success) {
-                    confirmSubmit = listing
-                }
-            )
-        }
-        // Nothing about the listing changed, so there is nothing to resubmit:
-        // the card is the whole of what is wrong with it.
-        if listing.status == .pausedCard {
-            actions.append(
-                RowAction("Card on file", systemImage: "creditcard", tint: Color.calibre.primary) {
-                    showSellerCard = true
-                }
-            )
-        }
-        // Sold listings are attached to an order and can't be removed.
-        if listing.status != .sold {
-            actions.append(
-                RowAction("Delete", systemImage: "trash", isDestructive: true) {
-                    confirmDelete = listing
-                }
-            )
-        }
-        return actions
-    }
+    // MARK: - Listing actions
 
     private func openListing(_ listing: Listing) {
         switch listing.status {
@@ -1124,145 +722,6 @@ struct SellerDashboardScreen: View {
         }
     }
 
-    // MARK: - Recent sales
-
-    private var recentSales: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("Recent sales")
-            if sell.ops.sales.isEmpty {
-                Text("When a watch sells, everything you need to ship it lands here.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-            } else {
-                SellCard {
-                    VStack(spacing: 0) {
-                        ForEach(Array(sell.ops.sales.prefix(5).enumerated()), id: \.element.id) { index, order in
-                            saleRow(order)
-                            if index < min(sell.ops.sales.count, 5) - 1 {
-                                Rectangle().fill(Color.calibre.border).frame(height: 1)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func saleRow(_ order: Order) -> some View {
-        let badge = SellerStatusDisplay.badge(forOrder: order.status)
-        let needsLabel = order.sellerActionState == "sold_awaiting_label_creation"
-        return Button {
-            saleDetailOrderID = order.id
-        } label: {
-            HStack(spacing: Space.m) {
-                SellThumb(url: order.listing?.image?.url, size: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(order.listing?.title ?? "Sold watch")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                        .lineLimit(1)
-                    StatusBadge(badge.text, tone: badge.tone)
-                }
-                Spacer(minLength: Space.s)
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(PriceFormatter.format(order.subtotal.value, currency: order.currency))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
-                    // The compact payout line: what this sale pays and where
-                    // that payout stands. The full ledger is one tap away on
-                    // the sale itself.
-                    if let payout = payoutLine(order) {
-                        Text(payout)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                            .multilineTextAlignment(.trailing)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Text(needsLabel ? "Add shipping details" : "View sale")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
-                }
-            }
-            .padding(.horizontal, Space.l)
-            .padding(.vertical, Space.m)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressableStyle())
-    }
-
-    /// "You receive $9,400 \u{00B7} Scheduled" \u{2014} both halves the server's, and
-    /// the line is simply absent when it has not stated the amount.
-    private func payoutLine(_ order: Order) -> String? {
-        guard let amount = order.payoutBlock?.amount?.value else { return nil }
-        let money = PriceFormatter.format(amount, currency: order.currency)
-        guard let status = order.payoutBlock?.statusLabel, !status.isEmpty else {
-            return "You receive \(money)"
-        }
-        return "You receive \(money) \u{00B7} \(status)"
-    }
-
-    // MARK: - Offers
-
-    private func offersSection(_ offers: [Offer]) -> some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("Offers on your watches") {
-                Text("Respond in Offers")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-            }
-            SellCard {
-                VStack(spacing: 0) {
-                    ForEach(Array(offers.prefix(4).enumerated()), id: \.element.id) { index, offer in
-                        offerRow(offer)
-                        if index < min(offers.count, 4) - 1 {
-                            Rectangle().fill(Color.calibre.border).frame(height: 1)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func offerRow(_ offer: Offer) -> some View {
-        Button {
-            // The Offers track owns response UI — link, don't rebuild.
-            router.push(.offer(offer.id))
-        } label: {
-            HStack(spacing: Space.m) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(offer.listing?.title ?? "Your listing")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                        .lineLimit(1)
-                    Text(offerStatusLine(offer))
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                }
-                Spacer(minLength: Space.s)
-                Text(PriceFormatter.format(offer.amount.value))
-                    .font(CalibreType.priceSmall)
-                    .foregroundStyle(Color.calibre.foreground)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
-            }
-            .padding(.horizontal, Space.l)
-            .padding(.vertical, Space.m)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressableStyle())
-    }
-
-    private func offerStatusLine(_ offer: Offer) -> String {
-        switch offer.status {
-        case .pendingSeller: "Waiting for your response"
-        case .countered: "You countered — waiting on the buyer"
-        case .acceptedPendingPayment: "Accepted — awaiting payment"
-        case .paid: "Paid"
-        default: offer.status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
-        }
-    }
-
     // MARK: - Wizard
 
     private func consumePendingPrefill() {
@@ -1291,19 +750,6 @@ private extension DashboardAction {
         kind + "-" + (listingId ?? orderId ?? offerId ?? href ?? title)
     }
 }
-
-// MARK: - List row plumbing
-
-private extension View {
-    /// Plain-list row chrome: no separators, quiet background, brand margins.
-    func sellRow(top: CGFloat = 0, bottom: CGFloat = Space.xl) -> some View {
-        self
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: top, leading: Space.margin, bottom: bottom, trailing: Space.margin))
-    }
-}
-
 
 /// One import that still has drafts waiting, and how far through it the
 /// seller is.

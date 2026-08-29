@@ -41,13 +41,17 @@ struct SellerCardScreen: View {
     private func content(_ model: SellerCardModel) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
-                creditOnly
+                // A card already on file is the answer to this screen, so it
+                // leads. The credit-only briefing is instruction for someone
+                // about to type a number, and re-reading it to a seller who
+                // has already finished turns a done step back into a chore.
+                if let card = model.card, card.present {
+                    onFile(card)
+                } else {
+                    creditOnly
+                }
 
                 why
-
-                if let card = model.card, card.present {
-                    currentCard(card)
-                }
 
                 entry(model)
 
@@ -105,52 +109,120 @@ struct SellerCardScreen: View {
 
     // MARK: - What's on file now
 
-    private func currentCard(_ card: SellerCardState) -> some View {
-        SellCard {
-            HStack(spacing: Space.m) {
-                IconTile(systemName: "creditcard")
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(card.displayName)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                    if let expiry = card.expiryLabel {
-                        Text("Expires \(expiry)")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                    }
+    /// The card as an object, with the words about it beside rather than on
+    /// it. Stripe hands back four facts and no image, so the card is drawn.
+    private func onFile(_ card: SellerCardState) -> some View {
+        VStack(alignment: .leading, spacing: Space.l) {
+            GuaranteeCard(
+                brand: GuaranteeCard.Brand(stripeBrand: card.brand),
+                last4: card.last4,
+                expiry: card.expiryLabel,
+                status: cardStatus(card)
+            )
+
+            VStack(alignment: .leading, spacing: Space.s) {
+                if let badge = standingBadge(card) {
+                    StatusBadge(badge.text, tone: badge.tone)
                 }
-                Spacer(minLength: Space.s)
-                StatusBadge(currentBadge(card).text, tone: currentBadge(card).tone)
+                Text(standingTitle(card))
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(
+                        card.valid == false ? Color.calibre.destructive : Color.calibre.foreground
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(standingBody(card))
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(Space.l)
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
     }
 
-    private func currentBadge(_ card: SellerCardState) -> (text: String, tone: StatusBadge.Tone) {
+    /// The server's verdict, never a date compared here.
+    private func cardStatus(_ card: SellerCardState) -> GuaranteeCard.Status {
+        if card.valid == false { return .lapsed }
+        if card.expiringSoon == true { return .expiringSoon }
+        return .onFile
+    }
+
+    private func standingTitle(_ card: SellerCardState) -> String {
+        if card.valid == false { return "This card can't be charged any more." }
+        if card.expiringSoon == true { return "This card expires soon." }
+        return "Your guarantee is in place."
+    }
+
+    /// Names the card in prose as well as on it. The drawn card is a picture
+    /// of an object and grows only so far; these words scale all the way, so
+    /// the brand and the last four are readable at any type size.
+    private func standingBody(_ card: SellerCardState) -> String {
+        if card.valid == false {
+            return "\(card.displayName) has expired. Replacing it puts your listings back on the market."
+        }
+        if card.expiringSoon == true {
+            return "\(card.displayName) expires soon. Replace it before it lapses — a lapsed card takes your listings off the market until a valid one replaces it."
+        }
+        return "\(card.displayName) is on file. An ordinary sale never touches it."
+    }
+
+    /// No badge on a healthy card: the card face already says "card on file",
+    /// and a second green chip beside it only adds noise.
+    private func standingBadge(_ card: SellerCardState) -> (text: String, tone: StatusBadge.Tone)? {
         if card.valid == false { return ("Needs replacing", .danger) }
         if card.expiringSoon == true { return ("Expires soon", .warning) }
-        return ("On file", .success)
+        return nil
     }
 
     // MARK: - Entry
 
+    /// Adding is the ask; replacing a card that is working is an option. A
+    /// settled card gets the quiet inline control, not a full-width CTA that
+    /// reads as the next thing to do.
     private func entry(_ model: SellerCardModel) -> some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            Text(model.card?.present == true ? "Replace it" : "Add your card")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+        let present = model.card?.present == true
+        let settled = present && model.card?.needsAttention == false
 
-            Button {
-                model.save()
-            } label: {
-                BusyLabel(
-                    title: model.card?.present == true ? "Replace card" : "Add card",
-                    busy: model.busy
-                )
+        return VStack(alignment: .leading, spacing: Space.m) {
+            if !settled {
+                Text(present ? "Replace it" : "Add your card")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
-            .disabled(model.busy)
+
+            if settled {
+                Button {
+                    model.save()
+                } label: {
+                    HStack(spacing: Space.s) {
+                        if model.busy {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(Color.calibre.primary)
+                        }
+                        Text("Replace card")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.primary)
+                    }
+                    .frame(minHeight: Space.touchTarget, alignment: .leading)
+                }
+                .buttonStyle(PressableStyle())
+                .disabled(model.busy)
+            } else {
+                Button {
+                    model.save()
+                } label: {
+                    BusyLabel(title: present ? "Replace card" : "Add card", busy: model.busy)
+                }
+                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .disabled(model.busy)
+            }
+
+            if settled {
+                Text("A replacement has to be a credit card too — debit and prepaid can't be used.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Text("Your card details go straight to our payments partner. Calibre stores the brand, the last four digits and the expiry date, and nothing more.")
                 .font(CalibreType.caption)

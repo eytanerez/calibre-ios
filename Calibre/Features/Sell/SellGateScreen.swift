@@ -387,15 +387,41 @@ struct SellGateScreen: View {
             number: 2,
             of: 2,
             name: "Card on file",
-            state: onFile ? .done : (payoutsComplete ? .current : .waiting)
+            state: cardStepState(payoutsComplete: payoutsComplete)
         ) {
             VStack(alignment: .leading, spacing: Space.m) {
+                // A card already on file is shown rather than described. The
+                // step is finished, and the seller should see the thing they
+                // put there instead of being asked for it a second time.
+                if let card = sellerCard, card.present {
+                    GuaranteeCard(
+                        brand: GuaranteeCard.Brand(stripeBrand: card.brand),
+                        last4: card.last4,
+                        expiry: card.expiryLabel,
+                        status: cardStepStatus(card),
+                        size: .compact
+                    )
+                }
+
                 Text(cardStepBody)
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if !onFile {
+                if onFile {
+                    // Still reachable, but as an option rather than an ask: a
+                    // finished step with a full-width CTA under it reads as
+                    // unfinished no matter what the marker says.
+                    Button {
+                        showCardStep = true
+                    } label: {
+                        Text("Replace card")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.primary)
+                            .frame(minHeight: Space.touchTarget, alignment: .leading)
+                    }
+                    .buttonStyle(PressableStyle())
+                } else {
                     Button {
                         showCardStep = true
                     } label: {
@@ -406,6 +432,24 @@ struct SellGateScreen: View {
                 }
             }
         }
+    }
+
+    /// A card that is on file and working is a finished step. A lapsed one is
+    /// the only card state that gets the alarm marker: an expiring card is
+    /// work to do, not something already broken.
+    private func cardStepState(payoutsComplete: Bool) -> SetupStepState {
+        guard let sellerCard, sellerCard.present else {
+            return payoutsComplete ? .current : .waiting
+        }
+        if sellerCard.valid == false { return .attention }
+        if sellerCard.expiringSoon == true { return .current }
+        return .done
+    }
+
+    private func cardStepStatus(_ card: SellerCardState) -> GuaranteeCard.Status {
+        if card.valid == false { return .lapsed }
+        if card.expiringSoon == true { return .expiringSoon }
+        return .onFile
     }
 
     private var cardStepBody: String {
@@ -495,24 +539,27 @@ struct SellGateScreen: View {
 
 // MARK: - One numbered step
 
+/// Where a setup step stands. Outside the card because the card is generic
+/// over its content, and a step's state is worth naming in a function's return
+/// type without dragging that generic along.
+private enum SetupStepState {
+    /// Finished.
+    case done
+    /// The step to take now.
+    case current
+    /// Reachable, but not what we're asking for yet.
+    case waiting
+    /// Something is wrong with this step.
+    case attention
+}
+
 /// A step in seller setup, said as "Step 1 of 2" so neither half looks like
 /// the whole job. The marker carries the state; the content is the step's own.
 private struct SetupStepCard<Content: View>: View {
-    enum State {
-        /// Finished.
-        case done
-        /// The step to take now.
-        case current
-        /// Reachable, but not what we're asking for yet.
-        case waiting
-        /// Something is wrong with this step.
-        case attention
-    }
-
     let number: Int
     let of: Int
     let name: String
-    let state: State
+    let state: SetupStepState
     @ViewBuilder var content: Content
 
     var body: some View {

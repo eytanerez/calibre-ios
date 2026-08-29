@@ -43,6 +43,7 @@ public struct GalleryScreen: View {
                     buttonsSection
                     badgesSection
                     listingCardSection
+                    guaranteeCardSection
                     specListSection
                     calloutSection
                     countdownSection
@@ -401,6 +402,43 @@ public struct GalleryScreen: View {
                 AvatarInitial(name: "Geneva Watch Co.", size: .s)
                 AvatarInitial(name: "Geneva Watch Co.", size: .m)
                 AvatarInitial(name: "Eytan Erez", size: .l)
+            }
+        }
+    }
+
+    /// Every state and every brand mark on one screen — the seam and the dead
+    /// chip are the kind of thing a passing test cannot check.
+    private var guaranteeCardSection: some View {
+        section("Guarantee card") {
+            VStack(alignment: .leading, spacing: Space.xl) {
+                GuaranteeCard(brand: .visa, last4: "4242", expiry: "04/29", status: .onFile)
+                GuaranteeCard(
+                    brand: .mastercard,
+                    last4: "0916",
+                    expiry: "08/26",
+                    status: .expiringSoon
+                )
+                GuaranteeCard(brand: .amex, last4: "0005", expiry: "06/26", status: .lapsed)
+
+                Text("Compact — the size that sits inside a setup step.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                HStack(alignment: .top, spacing: Space.m) {
+                    GuaranteeCard(
+                        brand: .discover,
+                        last4: "6011",
+                        expiry: "11/28",
+                        status: .onFile,
+                        size: .compact
+                    )
+                }
+                GuaranteeCard(
+                    brand: GuaranteeCard.Brand(stripeBrand: "jcb"),
+                    last4: nil,
+                    expiry: nil,
+                    status: .onFile,
+                    size: .compact
+                )
             }
         }
     }
