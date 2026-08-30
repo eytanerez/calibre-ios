@@ -138,7 +138,7 @@ struct CollectionScreen: View {
         ScrollView {
             VStack(spacing: Space.l) {
                 ForEach(0..<3, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         .fill(Color.calibre.card)
                         .frame(height: 120)
                         .shimmer()
@@ -282,11 +282,11 @@ private struct CollectionWatchCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             Color.calibre.card,
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .contextMenu { rowActions }
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }
@@ -372,6 +372,7 @@ private struct AddCollectionWatchSheet: View {
                         placeholder: "9,500",
                         kind: .money
                     )
+                    .moneyFormatted($priceText)
                     // Optional, and skipped more often than not — it sits
                     // after the facts rather than in front of them. Where an
                     // owner does fill it in, it becomes the vault's primary

@@ -3,8 +3,17 @@ import SwiftUI
 /// Warm shimmer sweep for skeleton loading states. Apply to placeholder
 /// shapes while content loads. Respects Reduce Motion (static fill).
 public struct Shimmer: ViewModifier {
+    /// The sweep clips to the shape it is standing in for, so a skeleton that
+    /// is a listing card has to be able to say so. Defaulting to `box` keeps
+    /// every existing `shimmer()` drawing exactly the corner it drew before.
+    let radius: CGFloat
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var phase: CGFloat = -1
+
+    public init(radius: CGFloat = Radius.box) {
+        self.radius = radius
+    }
 
     public func body(content: Content) -> some View {
         content
@@ -28,13 +37,13 @@ public struct Shimmer: ViewModifier {
                     }
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
 }
 
 public extension View {
-    func shimmer() -> some View {
-        modifier(Shimmer())
+    func shimmer(radius: CGFloat = Radius.box) -> some View {
+        modifier(Shimmer(radius: radius))
     }
 }
 
@@ -44,9 +53,12 @@ public struct ListingCardSkeleton: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
+            // Matches `ListingCard`'s photo well, which is the card tier —
+            // the sweep clips to the same corner or the skeleton is a
+            // different shape from the thing it is standing in for.
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .aspectRatio(1, contentMode: .fit)
-                .shimmer()
+                .shimmer(radius: Radius.card)
             VStack(alignment: .leading, spacing: 3) {
                 Rectangle().frame(width: 70, height: 10).shimmer()
                 Rectangle().frame(width: 120, height: 14).shimmer()

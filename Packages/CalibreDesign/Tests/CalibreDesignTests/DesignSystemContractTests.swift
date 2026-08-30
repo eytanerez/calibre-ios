@@ -13,9 +13,51 @@ final class DesignSystemContractTests: XCTestCase {
         XCTAssertLessThan(Space.l, Space.xl)
         XCTAssertLessThan(Space.xl, Space.xxl)
 
-        XCTAssertLessThan(Radius.control, Radius.card)
-        XCTAssertLessThan(Radius.card, Radius.overlay)
         XCTAssertGreaterThanOrEqual(Space.touchTarget, 44)
+    }
+
+    /// The ladder used to be three rungs assigned by component *type* —
+    /// control 8, card 12, overlay 16 — and it was the reason the product read
+    /// boxy at the corners: a 350pt panel and a 60pt chip were drawn at the
+    /// same 12, so the big one looked square. It is now five rungs assigned by
+    /// the *size* of the surface (CALIBRE_FINAL_PUSH_CONTRACTS.md §1), and the
+    /// two names that survived changed meaning: `card` is the 20pt top of the
+    /// ladder rather than the 12pt middle, and the 16pt tier is `panel`.
+    ///
+    /// The three small rungs then moved up again — chip 6→8, control 8→12,
+    /// box 12→14 — after the round-2 review looked at the shipped result:
+    /// once the cards were round, buttons and text fields were the squarest
+    /// thing left on the screen, and `control` is the token every one of them
+    /// takes. `panel` and `card` did not move, so the ladder still climbs with
+    /// surface size; it just starts higher. These are the same five numbers
+    /// the site's `--radius-*` tokens carry, which is the whole point of
+    /// pinning them here: a silent drift between the two is invisible in
+    /// either codebase alone.
+    ///
+    /// The numbers are pinned, not just their order. Ordering alone passed for
+    /// the old ladder too, and passes for both of these, so it could not have
+    /// caught either move.
+    func testTheRadiusLadderIsFiveTiersSortedBySurfaceSize() {
+        XCTAssertEqual(Radius.chip, 8)
+        XCTAssertEqual(Radius.control, 12)
+        XCTAssertEqual(Radius.box, 14)
+        XCTAssertEqual(Radius.panel, 16)
+        XCTAssertEqual(Radius.card, 20)
+
+        XCTAssertLessThan(Radius.chip, Radius.control)
+        XCTAssertLessThan(Radius.control, Radius.box)
+        XCTAssertLessThan(Radius.box, Radius.panel)
+        XCTAssertLessThan(Radius.panel, Radius.card)
+    }
+
+    /// The focus ring rides 3pt outside the control it surrounds. It was
+    /// written longhand as `Radius.control + 3` at three call sites, which is
+    /// three places to forget when `control` moves — and `control` has now
+    /// moved twice. The ring followed it to 15pt without any of those sites
+    /// being touched, which is the property this pins.
+    func testTheFocusRingStaysThreePointsOutsideItsControl() {
+        XCTAssertEqual(Radius.focusRing, Radius.control + 3)
+        XCTAssertEqual(Radius.focusRing, 15)
     }
 
     func testMotionCascadeCapsItsTail() {
@@ -55,23 +97,155 @@ final class DesignSystemContractTests: XCTestCase {
         XCTAssertNotNil(url.flatMap { UIImage(contentsOfFile: $0.path) })
     }
 
-    /// The card surface carries the warmth. Pure white here is the one cold
-    /// pixel in the app and it sits under everything.
+    /// The card surface carries the warmth in light. In dark it no longer
+    /// does: the dark ramp was a warm-brown one (page 0x141110, card 0x1C1815)
+    /// and it read brown, so §3 replaced it with the admin console's neutral
+    /// ramp — page 0x0E0D0B, card 0x151412 — leaving copper as the only warm
+    /// voice in the theme. Pure white in light is still the one cold pixel in
+    /// the app and it still sits under everything.
     @MainActor
-    func testCardSurfaceIsWarmInLightAndStaysDarkInDark() {
+    func testTheCardIsWarmInLightAndNeutralNearBlackInDark() {
         let card = UIColor(Color.calibre.card)
 
         var light = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
         card.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
             .getRed(&light.r, green: &light.g, blue: &light.b, alpha: &light.a)
-        XCTAssertEqual(light.r, 254 / 255, accuracy: 0.002)
-        XCTAssertEqual(light.g, 252 / 255, accuracy: 0.002)
-        XCTAssertEqual(light.b, 248 / 255, accuracy: 0.002)
+        XCTAssertEqual(light.r, 0xFE / 255, accuracy: 0.002)
+        XCTAssertEqual(light.g, 0xFC / 255, accuracy: 0.002)
+        XCTAssertEqual(light.b, 0xF8 / 255, accuracy: 0.002)
 
         var dark = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
         card.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
             .getRed(&dark.r, green: &dark.g, blue: &dark.b, alpha: &dark.a)
-        XCTAssertEqual(dark.r, 0x1C / 255, accuracy: 0.002)
+        XCTAssertEqual(dark.r, 0x15 / 255, accuracy: 0.002)
+        XCTAssertEqual(dark.g, 0x14 / 255, accuracy: 0.002)
+        XCTAssertEqual(dark.b, 0x12 / 255, accuracy: 0.002)
+    }
+
+    /// What "reads brown" actually was, measured. Red-minus-blue across the
+    /// four dark grounds, in 0–255 steps:
+    ///
+    ///     old  background 0x141110 → 4   card 0x1C1815 → 7
+    ///          secondary  0x211C18 → 9   accent 0x2A231D → 13
+    ///     new  background 0x0E0D0B → 3   card 0x151412 → 3
+    ///          secondary  0x151412 → 3   accent 0x1B1917 → 4
+    ///
+    /// The old ramp warmed up as it rose, which is why the raised surfaces —
+    /// the chips and callouts — were the brownest things on the page. Pinning
+    /// the spread rather than the hexes is what catches a well-meaning
+    /// re-warming that picks different numbers.
+    @MainActor
+    func testTheDarkGroundsStayNeutralRatherThanBrown() {
+        let grounds: [(String, Color)] = [
+            ("background", Color.calibre.background),
+            ("card", Color.calibre.card),
+            ("secondary", Color.calibre.secondary),
+            ("accent", Color.calibre.accent),
+        ]
+
+        for (name, token) in grounds {
+            var c = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
+            UIColor(token).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
+                .getRed(&c.r, green: &c.g, blue: &c.b, alpha: &c.a)
+            XCTAssertLessThanOrEqual((c.r - c.b) * 255, 4.5, "\(name) has warmed back up")
+        }
+    }
+
+    /// Copper is the one warm hue the neutral ramp keeps, and the wax seal
+    /// keeps a colour of its own (CALIBRE_BY_HAND_CONTRACTS.md §17). Both were
+    /// standing next to twelve tokens being swept to neutral.
+    @MainActor
+    func testCopperAndWaxSurvivedTheNeutralSweep() {
+        for (name, token, expected) in [
+            ("primary", Color.calibre.primary, (0xC7, 0x92, 0x74)),
+            ("primaryDeep", Color.calibre.primaryDeep, (0xB5, 0x80, 0x63)),
+            ("wax", Color.calibre.wax, (0xB4, 0x48, 0x3D)),
+            ("waxHighlight", Color.calibre.waxHighlight, (0xD0, 0x65, 0x5A)),
+        ] {
+            var c = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
+            UIColor(token).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
+                .getRed(&c.r, green: &c.g, blue: &c.b, alpha: &c.a)
+            XCTAssertEqual(c.r, CGFloat(expected.0) / 255, accuracy: 0.002, name)
+            XCTAssertEqual(c.g, CGFloat(expected.1) / 255, accuracy: 0.002, name)
+            XCTAssertEqual(c.b, CGFloat(expected.2) / 255, accuracy: 0.002, name)
+        }
+    }
+
+    /// The palette had `success` and `destructive` and nothing for pending or
+    /// expiring, so `StatusBadge.Tone.warning` invented its own amber as a raw
+    /// sRGB literal and was the one tone in the app that ignored dark mode.
+    /// This asserts the token resolves to two different colours, which the
+    /// literal could not have done.
+    @MainActor
+    func testWarningIsARealTokenAndNotAFrozenAmber() {
+        let warning = UIColor(Color.calibre.warning)
+
+        var light = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
+        warning.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
+            .getRed(&light.r, green: &light.g, blue: &light.b, alpha: &light.a)
+        XCTAssertEqual(light.r, 0x8A / 255, accuracy: 0.002)
+        XCTAssertEqual(light.g, 0x62 / 255, accuracy: 0.002)
+        XCTAssertEqual(light.b, 0x20 / 255, accuracy: 0.002)
+
+        var dark = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
+        warning.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
+            .getRed(&dark.r, green: &dark.g, blue: &dark.b, alpha: &dark.a)
+        XCTAssertEqual(dark.r, 0xDF / 255, accuracy: 0.002)
+        XCTAssertEqual(dark.g, 0xAE / 255, accuracy: 0.002)
+        XCTAssertEqual(dark.b, 0x5E / 255, accuracy: 0.002)
+
+        XCTAssertEqual(UIColor(StatusBadge.Tone.warning.tint), warning)
+    }
+
+    /// The four tokens with an Increase Contrast pair have to clear their
+    /// target on the *worst* ground they land on, and the dark grounds all
+    /// moved. Text wants 4.5:1, a stroke someone has to find wants 3:1. The
+    /// darkest-contrast dark ground is `accent`, so that is what these are
+    /// measured against.
+    @MainActor
+    func testTheIncreaseContrastPairsClearTheirTargetsOnTheNewGrounds() {
+        let highContrastDark = UITraitCollection(traitsFrom: [
+            UITraitCollection(userInterfaceStyle: .dark),
+            UITraitCollection(accessibilityContrast: .high),
+        ])
+        let highContrastLight = UITraitCollection(traitsFrom: [
+            UITraitCollection(userInterfaceStyle: .light),
+            UITraitCollection(accessibilityContrast: .high),
+        ])
+
+        let checks: [(String, Color, Color, UITraitCollection, CGFloat)] = [
+            ("mutedForeground/dark", Color.calibre.mutedForeground, Color.calibre.accent, highContrastDark, 4.5),
+            ("placeholder/dark", Color.calibre.placeholder, Color.calibre.card, highContrastDark, 4.5),
+            ("border/dark", Color.calibre.border, Color.calibre.accent, highContrastDark, 3),
+            ("borderBright/dark", Color.calibre.borderBright, Color.calibre.accent, highContrastDark, 3),
+            ("mutedForeground/light", Color.calibre.mutedForeground, Color.calibre.background, highContrastLight, 4.5),
+            ("placeholder/light", Color.calibre.placeholder, Color.calibre.card, highContrastLight, 4.5),
+            ("border/light", Color.calibre.border, Color.calibre.card, highContrastLight, 3),
+            ("borderBright/light", Color.calibre.borderBright, Color.calibre.card, highContrastLight, 3),
+        ]
+
+        for (name, ink, ground, traits, target) in checks {
+            let ratio = Self.contrast(
+                UIColor(ink).resolvedColor(with: traits),
+                UIColor(ground).resolvedColor(with: traits)
+            )
+            XCTAssertGreaterThanOrEqual(ratio, target, "\(name) resolves to \(ratio):1")
+        }
+    }
+
+    /// WCAG 2.1 relative luminance.
+    private static func contrast(_ a: UIColor, _ b: UIColor) -> CGFloat {
+        func luminance(_ color: UIColor) -> CGFloat {
+            var c = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
+            color.getRed(&c.r, green: &c.g, blue: &c.b, alpha: &c.a)
+            func channel(_ v: CGFloat) -> CGFloat {
+                v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b)
+        }
+        let high = max(luminance(a), luminance(b))
+        let low = min(luminance(a), luminance(b))
+        return (high + 0.05) / (low + 0.05)
     }
 }
 

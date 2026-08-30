@@ -27,7 +27,7 @@ struct CheckoutMethodStep: View {
                 // difference is in dollars on this screen, before paying.
                 message: "Card or Apple Pay clears instantly. Paying by wire comes to less, and the difference is shown to you in dollars on this screen before you pay. Choosing wire holds the watch while the transfer lands.",
                 advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card)
+                cutout: .roundedRect(Radius.box)
             )
         ]
     )
@@ -224,10 +224,10 @@ struct CheckoutMethodStep: View {
         .padding(Space.l)
         .background(
             Color.calibre.destructive.opacity(0.06),
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.destructive.opacity(0.35), lineWidth: 1)
         )
     }
@@ -376,10 +376,10 @@ private struct MethodCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 isSelected ? Color.calibre.primary.opacity(0.06) : Color.calibre.card,
-                in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(
                         isSelected ? Color.calibre.primary.opacity(0.5) : Color.calibre.border,
                         lineWidth: 1

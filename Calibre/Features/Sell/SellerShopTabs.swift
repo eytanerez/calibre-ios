@@ -57,8 +57,8 @@ struct SellerTabBadge: Equatable {
 
 // MARK: - The bar
 
-/// The shop's tab bar: four peers over a hairline, a sliding underline under
-/// the selected one, and a count on the ones with work waiting.
+/// The shop's tab bar: four peers over a hairline, a copper rule that wipes in
+/// under the selected label, and a count on the ones with work waiting.
 ///
 /// Equal-width segments while the four labels fit, and a content-sized
 /// scrolling rail when they don't — which happens at the larger Dynamic Type
@@ -66,21 +66,24 @@ struct SellerTabBadge: Equatable {
 /// measuring, so no breakpoint is guessed and no label is shrunk to keep a
 /// layout that stopped working.
 ///
-/// The two layouts carry their own underline namespaces on purpose:
-/// `ViewThatFits` builds both candidates, and one `matchedGeometryEffect` id
-/// living in both would be two views inserted into the same group.
+/// It draws exactly what `SegmentedTabs` draws — every label at full strength,
+/// one weight, and the rule sized to the word rather than to the segment — but
+/// it cannot *be* one: these tabs carry count badges. See that component for
+/// why the rule is a scale and not a fade. It no longer slides between
+/// segments via `matchedGeometryEffect`, so `ViewThatFits` building both
+/// candidates is no longer a namespace problem: each segment now owns its own
+/// rule and animates only its own x-scale.
 struct SellerTabBar: View {
     @Binding var selection: SellerTab
     let badges: [SellerTab: SellerTabBadge]
 
-    @Namespace private var wideUnderline
-    @Namespace private var railUnderline
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 0) {
                 ForEach(SellerTab.allCases) { tab in
-                    segment(tab, in: wideUnderline)
+                    segment(tab)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -88,7 +91,7 @@ struct SellerTabBar: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.xl) {
                     ForEach(SellerTab.allCases) { tab in
-                        segment(tab, in: railUnderline)
+                        segment(tab)
                     }
                 }
                 .padding(.horizontal, Space.xs)
@@ -103,7 +106,7 @@ struct SellerTabBar: View {
         .accessibilityElement(children: .contain)
     }
 
-    private func segment(_ tab: SellerTab, in namespace: Namespace.ID) -> some View {
+    private func segment(_ tab: SellerTab) -> some View {
         let isSelected = tab == selection
         let badge = badges[tab]
         return Button {
@@ -115,9 +118,15 @@ struct SellerTabBar: View {
         } label: {
             HStack(spacing: Space.s) {
                 Text(tab.title)
-                    .font(isSelected ? CalibreType.bodySemiBold : CalibreType.bodyMedium)
-                    .foregroundStyle(isSelected ? Color.calibre.foreground : Color.calibre.mutedForeground)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
                     .lineLimit(1)
+                    // Under the word only. Hung off the HStack it would run
+                    // under the count badge too, and off the padded frame it
+                    // would run the width of the segment.
+                    .overlay(alignment: .bottom) {
+                        TabUnderline(isSelected: isSelected, reduceMotion: reduceMotion)
+                    }
                 if let badge {
                     countPill(badge.count)
                 }
@@ -127,14 +136,6 @@ struct SellerTabBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
-        .overlay(alignment: .bottom) {
-            if isSelected {
-                Rectangle()
-                    .fill(Color.calibre.primary)
-                    .frame(height: 2)
-                    .matchedGeometryEffect(id: "underline", in: namespace)
-            }
-        }
         .accessibilityLabel(tab.title)
         .accessibilityValue(badge?.spoken ?? "")
         .accessibilityHint(tab.accessibilityHint)

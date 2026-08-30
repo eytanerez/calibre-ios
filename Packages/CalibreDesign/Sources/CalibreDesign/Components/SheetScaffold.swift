@@ -48,7 +48,7 @@ public struct SheetScaffold<Content: View>: View {
         .presentationDetents(detents)
         .presentationDragIndicator(.hidden)
         .presentationBackground(Color.calibre.card)
-        .presentationCornerRadius(Radius.overlay)
+        .presentationCornerRadius(Radius.panel)
     }
 }
 

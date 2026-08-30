@@ -25,7 +25,7 @@ struct WireInstructionsScreen: View {
                 message: "Every field has a copy button — tap one to drop it straight onto your clipboard for your bank's transfer form.",
                 advance: .perform(event: "copy"),
                 hint: .tap,
-                cutout: .roundedRect(Radius.card),
+                cutout: .roundedRect(Radius.box),
                 actionPrompt: "Tap a copy button"
             ),
             TutorialStep(
@@ -34,7 +34,7 @@ struct WireInstructionsScreen: View {
                 title: "Two things that matter",
                 message: "Include the reference or your transfer can't be matched to this order. And “I've sent the wire” only tells us to expect it — tap that after you've actually sent the money from your bank.",
                 advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card)
+                cutout: .roundedRect(Radius.box)
             ),
         ]
     )
@@ -255,9 +255,9 @@ struct WireInstructionsScreen: View {
             }
         }
         .background(Color.calibre.card)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }

@@ -99,8 +99,14 @@ public struct GuaranteeCard: View {
         .overlay(alignment: .top) { litEdge }
         .overlay(alignment: .bottom) { seam }
         .clipShape(
+            // Physical geometry, not the size ladder: a real ID-1 card's
+            // corner is 3.18mm on an 85.6mm edge, so 250pt reads ~9pt and
+            // 320pt reads ~12pt. `box` and `panel` are the two rungs those
+            // land on, and the object is not a UI surface to be re-sorted
+            // with the rest of them (the same reason `Stock` sits outside
+            // the palette below).
             RoundedRectangle(
-                cornerRadius: size == .compact ? Radius.card : Radius.overlay,
+                cornerRadius: size == .compact ? Radius.box : Radius.panel,
                 style: .continuous
             )
         )

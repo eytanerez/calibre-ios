@@ -186,7 +186,7 @@ struct OrderDetailScreen: View {
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
     }
 
     /// The amount is the payload's own — never a remembered $250.
@@ -512,8 +512,10 @@ struct OrderDetailScreen: View {
     }
 
     private func pendingWindowDetail(_ terms: OrderReturnTerms) -> String {
+        // Item 1.22 — the duration leads, because it is what the buyer is
+        // actually deciding against.
         let opening = terms.windowHours.map {
-            "This seller accepts returns for \($0) hours after delivery."
+            "\($0)-hour returns, starting at delivery."
         } ?? "This seller accepts returns after delivery."
         return opening
             + " The window starts when you sign for the watch, or two business days after the first delivery attempt, whichever comes first."
@@ -674,9 +676,9 @@ struct OrderDetailScreen: View {
 private extension View {
     /// Standard bordered card surface used throughout the order detail.
     func cardSurface() -> some View {
-        background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
     }

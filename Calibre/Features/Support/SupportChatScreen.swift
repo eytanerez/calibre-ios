@@ -504,7 +504,7 @@ private struct SupportBubble: View {
                         .padding(.vertical, Space.s)
                         .background(
                             isCustomer ? Color.calibre.primary : Color.calibre.secondary,
-                            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         )
                         .environment(\.openURL, OpenURLAction { url in
                             onOpen(url)

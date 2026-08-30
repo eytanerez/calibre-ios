@@ -35,7 +35,7 @@ struct CartSheet: View {
                 title: "As many or as few",
                 message: "Pick the watches you want to buy now and leave the rest for later. Whatever you choose is one payment — and one order per watch, each tracked on its own.",
                 advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card)
+                cutout: .roundedRect(Radius.box)
             )
         ]
     )
@@ -241,9 +241,9 @@ struct CartSheet: View {
         }
         .padding(Space.m)
         .background(Color.calibre.card)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(
                     selected && checkoutableItems.count > 1
                         ? Color.calibre.primary.opacity(0.45)
@@ -404,9 +404,9 @@ struct CartSheet: View {
         }
         .padding(Space.m)
         .background(Color.calibre.card)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }

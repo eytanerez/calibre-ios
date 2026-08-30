@@ -217,9 +217,9 @@ struct YouScreen: View {
         VStack(alignment: .leading, spacing: Space.m) {
             if let title { Eyebrow(title) }
             VStack(spacing: 0) { content() }
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         .strokeBorder(Color.calibre.border, lineWidth: 1)
                 )
         }
@@ -266,9 +266,9 @@ struct YouScreen: View {
             .foregroundStyle(Color.calibre.destructive)
             .padding(.horizontal, Space.l)
             .frame(minHeight: Space.touchTarget + 8)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
             .contentShape(Rectangle())
@@ -333,9 +333,9 @@ struct YouScreen: View {
                 .buttonStyle(PressableStyle())
                 .disabled(tutorialsReplayed)
             }
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
         }

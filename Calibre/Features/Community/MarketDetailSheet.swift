@@ -126,8 +126,8 @@ struct MarketDetailSheet: View {
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Space.l)
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
         }
     }
 
@@ -144,8 +144,8 @@ struct MarketDetailSheet: View {
             }
         }
         .padding(.vertical, Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     private var statGrid: some View {

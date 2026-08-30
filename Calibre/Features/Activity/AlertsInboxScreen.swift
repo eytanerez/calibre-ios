@@ -32,7 +32,7 @@ struct AlertsInboxScreen: View {
                     ScrollView {
                         VStack(spacing: Space.s) {
                             ForEach(0..<4, id: \.self) { _ in
-                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                                     .fill(Color.calibre.card)
                                     .frame(height: 76)
                                     .shimmer()
@@ -52,9 +52,11 @@ struct AlertsInboxScreen: View {
                 ScrollView {
                     LazyVStack(spacing: Space.s) {
                         ForEach(rows) { row in
-                            AlertRow(row: row) {
-                                open(row)
-                            }
+                            AlertRow(
+                                row: row,
+                                onTap: { open(row) },
+                                onMarkRead: row.read ? nil : { markRead(row) }
+                            )
                         }
                     }
                     .padding(Space.margin)
@@ -112,6 +114,20 @@ struct AlertsInboxScreen: View {
         }
     }
 
+    /// Item 1.12: reading a row and going to the thing it is about are two
+    /// different intentions, and the inbox has to offer both. Tapping the row
+    /// does both (navigate and mark read); this control does only the second,
+    /// so a member can clear a notification they have already dealt with
+    /// without being thrown into an order they did not ask to open.
+    private func markRead(_ row: AlertRowData) {
+        Haptics.shared.play(.press)
+        if serverBacked {
+            Task { try? await services.serverAlerts.markRead(id: row.id) }
+        } else {
+            services.alerts.markRead(row.id)
+        }
+    }
+
     private func markAllRead() {
         if serverBacked {
             Task { try? await services.serverAlerts.markAllRead() }
@@ -165,6 +181,8 @@ struct AlertRowData: Identifiable {
 private struct AlertRow: View {
     let row: AlertRowData
     let onTap: () -> Void
+    /// Nil once the row is read — there is nothing left for it to do.
+    let onMarkRead: (() -> Void)?
 
     var body: some View {
         Button(action: onTap) {
@@ -191,17 +209,17 @@ private struct AlertRow: View {
 
                 Spacer(minLength: 0)
 
+                // The dot's own footprint, reserved inside the row button so
+                // the text does not run under the control that sits on top of
+                // it. The control itself is the overlay below.
                 if !row.read {
-                    Circle()
-                        .fill(Color.calibre.primary)
-                        .frame(width: 8, height: 8)
-                        .padding(.top, 6)
+                    Color.clear.frame(width: 20, height: 20)
                 }
             }
             .padding(Space.l)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
         }
@@ -209,6 +227,44 @@ private struct AlertRow: View {
         // Unread is drawn as an 8pt dot and nothing else, so without this a row
         // reads identically whether it has been opened or not.
         .accessibilityValue(row.read ? "" : "Unread")
+        .accessibilityHint(row.read ? "" : "Opens it and marks it read")
+        // VoiceOver reaches the mark-read control through the row's actions
+        // rather than by hunting for a small target inside a full-width row.
+        .accessibilityAction(named: "Mark as read") {
+            onMarkRead?()
+        }
+        // Item 1.12: a separate control that marks the row read *without*
+        // navigating. It has to be a sibling of the row button, not a child of
+        // its label — a Button inside another Button's label is drawn but
+        // never tapped, so nesting it would have produced a control that looks
+        // right and does nothing.
+        .overlay(alignment: .topTrailing) {
+            unreadControl
+        }
+    }
+
+    @ViewBuilder
+    private var unreadControl: some View {
+        if let onMarkRead {
+            Button(action: onMarkRead) {
+                Circle()
+                    .fill(Color.calibre.primary)
+                    .frame(width: 8, height: 8)
+                    .frame(width: Space.touchTarget, height: Space.touchTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel("Mark as read")
+            // The row above already offers this as a named action, and a 44pt
+            // element floating over the row would otherwise be a second thing
+            // for VoiceOver to find in the same place.
+            .accessibilityHidden(true)
+            // The 8pt dot sits at the centre of a 44pt target, so the target
+            // is offset to put the dot back where it was drawn (row padding
+            // 16 + 6) rather than where a 44pt box would centre it. Nothing
+            // overhangs the card: 4pt down, flush right.
+            .padding(.top, 4)
+        }
     }
 
     private var icon: String {

@@ -30,4 +30,24 @@ public enum APIError: Error, LocalizedError, Sendable {
         if case .server(_, let code, _, _) = self { return code }
         return nil
     }
+
+    /// The HTTP status behind a server refusal, when there was one. A screen
+    /// that needs to tell "this is gone" apart from "the network is down"
+    /// cannot do it from the message — the messages read the same to a
+    /// `catch`, and one of them has a "Try again" that can never work.
+    public var httpStatus: Int? {
+        if case .server(_, _, let status, _) = self { return status }
+        return nil
+    }
+}
+
+/// The refusal codes every buyer-action surface has to be able to tell apart.
+/// They are the server's own strings — `OWN_LISTING_CODE` and
+/// `UNAVAILABLE_LISTING_CODE` in Backend/app/api/views/account.py, and the same
+/// `own_listing` the checkout gate and `POST /listings/<id>/offers` send.
+public enum ListingRefusal {
+    /// You are the seller. Item 1.6.
+    public static let ownListing = "own_listing"
+    /// Sold, archived, or held by somebody else. Item 18.6.
+    public static let unavailable = "listing_unavailable"
 }

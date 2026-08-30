@@ -68,7 +68,7 @@ private struct OfferDetailContent: View {
                 title: "The ball's in someone's court",
                 message: "These buttons follow the negotiation: Accept, Counter, or Decline when it's your move — Counter opens an inline form. Once an offer is accepted, “Pay now” takes you straight to checkout at the agreed price.",
                 advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card)
+                cutout: .roundedRect(Radius.box)
             )
         ]
     )
@@ -377,6 +377,7 @@ private struct OfferDetailContent: View {
                     .font(CalibreType.label)
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
+            .moneyFormatted($model.counterAmountText)
 
             CalibreTextField(
                 "Message (optional)",
@@ -409,9 +410,9 @@ private struct OfferDetailContent: View {
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
         .transition(.opacity.combined(with: .offset(y: -6)))

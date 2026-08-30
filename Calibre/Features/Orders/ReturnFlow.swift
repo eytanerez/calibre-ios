@@ -1120,9 +1120,9 @@ private struct ReturnFactRow: View {
 private extension View {
     /// The bordered card surface the order screens share.
     func returnCardSurface() -> some View {
-        background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
     }

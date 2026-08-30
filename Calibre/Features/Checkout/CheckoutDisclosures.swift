@@ -230,10 +230,10 @@ enum CheckoutCopy {
         guard let terms = breakdown.returns, terms.accepted else {
             return "This is a final sale \u{2014} it cannot be returned or cancelled"
         }
-        if let hours = terms.windowHours {
-            return "This seller accepts returns: \(hours)-hour window"
-        }
-        return "This seller accepts returns"
+        // Item 1.22 — the duration is the answer, so it leads. "This seller
+        // accepts returns" tells a buyer nothing they can act on; "72-hour
+        // returns" tells them whether they have the weekend.
+        return terms.summary ?? "Returns accepted"
     }
 
     /// The listing's return terms with the real numbers, before purchase.
@@ -283,8 +283,7 @@ enum CheckoutCopy {
         guard let terms = item.returns else { return nil }
         guard terms.accepted else { return "Sold without returns" }
 
-        var line = terms.windowHours.map { "Returns within \($0) hours of delivery" }
-            ?? "Returns accepted"
+        var line = terms.summary ?? "Returns accepted"
         if let fee = item.returnFee {
             switch (fee.percent, fee.minimum) {
             case (let percent?, let minimum?):

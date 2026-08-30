@@ -98,9 +98,9 @@ struct ListingMiniCard: View {
             Spacer(minLength: 0)
         }
         .padding(Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
@@ -136,9 +136,9 @@ struct CheckoutItemsCard: View {
                 }
             }
             .background(Color.calibre.card)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
         }
@@ -198,9 +198,9 @@ struct ListingMiniCardSkeleton: View {
             Spacer(minLength: 0)
         }
         .padding(Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }
@@ -375,7 +375,7 @@ struct DroppedWatchNote: View {
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.secondary.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.secondary.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }
@@ -432,9 +432,9 @@ struct DisclosureCard<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)

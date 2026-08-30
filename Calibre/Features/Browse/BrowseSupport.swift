@@ -123,6 +123,9 @@ struct BrowseFilters: Hashable {
     var lugWidth: String?
     var waterResistance: String?
     var caliber: String?
+    /// Item 1.21 — the seller's return window. `nil` means the buyer has not
+    /// asked; `.all` means "any seller who takes returns".
+    var returnWindow: ReturnWindowFilter?
     var sort: ListingQuery.Sort?
 
     /// Facets counted on the Filter button badge. Search, seller and sort
@@ -139,6 +142,7 @@ struct BrowseFilters: Hashable {
         for value in [material, color, caseSize, movement, bracelet, thickness, lugWidth, waterResistance, caliber] where value != nil {
             count += 1
         }
+        if let returnWindow, returnWindow != .any { count += 1 }
         return count
     }
 
@@ -163,6 +167,7 @@ struct BrowseFilters: Hashable {
             lugWidth: lugWidth,
             waterResistance: waterResistance,
             caliber: caliber,
+            returnWindow: returnWindow,
             sort: sort,
             page: page,
             pageSize: pageSize,
@@ -177,6 +182,32 @@ struct BrowseFilters: Hashable {
         if keepBrand { cleared.brand = brand }
         return cleared
     }
+}
+
+// A second initializer written inside the struct would suppress the
+// memberwise one that 30-odd call sites use, so it lives out here.
+extension BrowseFilters {
+    /// Rebuilds the filters a saved search stands for.
+    ///
+    /// The keys are the server's own (`SAVED_SEARCH_FILTER_KEYS` in
+    /// Backend/app/api/views/alerts.py), which is also what `saveSearch` in
+    /// `FilterSheet` writes — so a search saved from the filter sheet re-runs
+    /// as exactly the query that saved it. Anything unrecognised is dropped
+    /// rather than guessed at: a saved search that runs the wrong query is
+    /// worse than one facet fewer.
+    init(savedSearch filters: [String: String]) {
+        self.init()
+        search = filters["search"]
+        brand = filters["brand"]
+        model = filters["model"]
+        reference = filters["reference"]
+        condition = filters["condition"]
+        year = filters["year"].flatMap(Int.init)
+        priceMin = filters["price_min"].flatMap { Decimal(string: $0, locale: Locale(identifier: "en_US_POSIX")) }
+        priceMax = filters["price_max"].flatMap { Decimal(string: $0, locale: Locale(identifier: "en_US_POSIX")) }
+        boxPapers = filters["box_papers"] == "true" ? true : nil
+    }
+
 }
 
 // MARK: - Card mapping
@@ -214,17 +245,87 @@ extension WatchlistItem {
 }
 
 extension ListingSummary {
-    /// Cards for cart/watchlist rows: the summary payload has no brand or
-    /// reference, so the year takes the eyebrow and the full title the middle.
-    var cardModel: ListingCardModel {
-        ListingCardModel(
+    /// Cards for cart/watchlist rows.
+    ///
+    /// `_serialize_listing_summary` (Backend/app/api/views/account.py) sends
+    /// only a composed `title` — no brand, model or reference — so this
+    /// projection has to take the card's three identity slots out of one
+    /// string. What it used to do instead was put the **production year** in
+    /// the brand slot and the whole title in the model slot, which §4 makes
+    /// visibly wrong twice over: a year sits where a brand goes, the year
+    /// column is empty beside it, and the model line — one line, shrinking to
+    /// 0.8 and then clipping — turned "Cartier Santos Chronograph WSSA0017"
+    /// into "Cartier Santos Chronograph…". §0.6 does not allow that ellipsis.
+    ///
+    /// Splitting the brand off the front fixes both: the brand row gets a
+    /// brand and the year, and the model line is short enough to survive.
+    /// `knownBrands` is the catalog's own brand list when the caller has it
+    /// (multi-word brands like "A. Lange & Sohne" only split correctly
+    /// against a list); without it the first word is used, which is right for
+    /// every single-word brand and no worse than today for the rest.
+    func cardModel(knownBrands: [String] = []) -> ListingCardModel {
+        let parts = Self.split(title: title, knownBrands: knownBrands)
+        return ListingCardModel(
             id: id,
-            brand: productionYear.map(String.init) ?? " ",
-            title: title,
+            brand: parts.brand,
+            year: productionYear.map(String.init),
+            title: parts.model,
+            reference: parts.reference,
             priceText: PriceFormatter.format(price.value, currency: currency),
             imageURL: image?.url,
             isVerifiedDealer: seller?.isVerifiedDealer ?? false
         )
+    }
+
+    var cardModel: ListingCardModel { cardModel(knownBrands: []) }
+
+    /// Pulls a brand off the front of a composed title, and a reference off
+    /// the back when the last word can only be one.
+    ///
+    /// The reference test is deliberately strict — five characters or more,
+    /// at least two digits, and no lowercase — because getting it wrong costs
+    /// part of a model name, while declining costs only a longer line.
+    /// "300M" (four characters) and "40" stay in the model where they belong;
+    /// "WSSA0017", "126622" and "SRPB43" move to the Ref. line.
+    static func split(title: String, knownBrands: [String]) -> (brand: String, model: String, reference: String?) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Longest match wins: "A. Lange & Sohne" must beat "A." if both were
+        // ever in the list.
+        let matchedBrand = knownBrands
+            .filter { !$0.isEmpty && trimmed.lowercased().hasPrefix($0.lowercased() + " ") }
+            .max(by: { $0.count < $1.count })
+
+        var remainder: String
+        var brand: String
+        if let matchedBrand {
+            brand = matchedBrand
+            remainder = String(trimmed.dropFirst(matchedBrand.count))
+                .trimmingCharacters(in: .whitespaces)
+        } else {
+            var words = trimmed.split(separator: " ").map(String.init)
+            // A one-word title is the whole name; splitting it would leave the
+            // model line empty.
+            guard words.count >= 2 else {
+                return (trimmed.isEmpty ? "Watch" : trimmed, trimmed, nil)
+            }
+            brand = words.removeFirst()
+            remainder = words.joined(separator: " ")
+        }
+
+        var words = remainder.split(separator: " ").map(String.init)
+        var reference: String?
+        if words.count >= 2, let last = words.last, Self.looksLikeReference(last) {
+            reference = last
+            words.removeLast()
+        }
+        let model = words.joined(separator: " ")
+        return (brand, model.isEmpty ? remainder : model, reference)
+    }
+
+    private static func looksLikeReference(_ word: String) -> Bool {
+        guard word.count >= 5 else { return false }
+        guard !word.contains(where: \.isLowercase) else { return false }
+        return word.filter(\.isNumber).count >= 2
     }
 
     var isAvailable: Bool { status == .active }

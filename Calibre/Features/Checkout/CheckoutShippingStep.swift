@@ -143,10 +143,10 @@ private struct AddressRadioCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 isSelected ? Color.calibre.primary.opacity(0.06) : Color.calibre.card,
-                in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(
                         isSelected ? Color.calibre.primary.opacity(0.5) : Color.calibre.border,
                         lineWidth: 1
@@ -288,10 +288,11 @@ private struct AddressForm: View {
             CalibreTextField(
                 "Phone (optional)",
                 text: $phone,
-                placeholder: "For delivery questions",
+                placeholder: "(415) 555-0134",
                 error: phoneError,
                 kind: .phone
             )
+            .phoneFormatted($phone)
 
             if let error = model.addressFormError {
                 InlineErrorLine(message: error)
@@ -309,9 +310,9 @@ private struct AddressForm: View {
             .disabled(model.savingAddress)
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
         .animation(Motion.easeFast, value: model.addressFormError)

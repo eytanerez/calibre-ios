@@ -94,9 +94,9 @@ public struct TimelineRow: View {
                 .padding(.top, 1)
         }
         .padding(Space.m)
-        .background(fill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(fill, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(stroke, lineWidth: 1)
         )
         // One event, not four separate stops for heading, amount, message and

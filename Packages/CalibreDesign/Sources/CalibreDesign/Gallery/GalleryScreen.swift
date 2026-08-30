@@ -132,9 +132,9 @@ public struct GalleryScreen: View {
                 }
                 .padding(Space.l)
                 .background(Color.calibre.card)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         .strokeBorder(Color.calibre.border, lineWidth: 1)
                 )
                 .markImpact(trigger: markPlay)
@@ -184,18 +184,50 @@ public struct GalleryScreen: View {
 
     private var listingCardSection: some View {
         section("Listing card") {
-            HStack(alignment: .top, spacing: Space.l) {
-                ListingCard(model: .init(
-                    id: "1",
-                    brand: "Rolex",
-                    year: "2019",
-                    title: "Submariner Date",
-                    reference: "116610LN",
-                    priceText: "$12,400",
-                    condition: "Very Good",
-                    watcherCount: 14
-                )) { _ in placeholderWatch }
-                ListingCardSkeleton()
+            VStack(alignment: .leading, spacing: Space.l) {
+                HStack(alignment: .top, spacing: Space.l) {
+                    ListingCard(model: .init(
+                        id: "1",
+                        brand: "Rolex",
+                        year: "2019",
+                        title: "Submariner Date",
+                        reference: "116610LN",
+                        priceText: "$12,400",
+                        condition: "Very Good",
+                        watcherCount: 14
+                    )) { _ in placeholderWatch }
+                    ListingCardSkeleton()
+                }
+
+                // The two cards §4 is actually about: the longest brand on the
+                // marketplace beside the widest price, both with every optional
+                // element present. This pair is where the brand row used to
+                // clip and where the reason used to sit above the brand.
+                HStack(alignment: .top, spacing: Space.l) {
+                    ListingCard(model: .init(
+                        id: "2",
+                        brand: "Jaeger-LeCoultre",
+                        year: "2021",
+                        title: "Reverso Tribute Duoface",
+                        reference: "Q3988482",
+                        priceText: "$14,300",
+                        condition: "Like New",
+                        watcherCount: 231,
+                        isVerifiedDealer: true,
+                        reason: "Because you saved a Reverso"
+                    )) { _ in placeholderWatch }
+                    ListingCard(model: .init(
+                        id: "3",
+                        brand: "A. Lange & Söhne",
+                        year: "2018",
+                        title: "Datograph Up/Down",
+                        reference: "405.035",
+                        priceText: "$94,500",
+                        condition: "Excellent",
+                        watcherCount: 8,
+                        isVerifiedDealer: true
+                    )) { _ in placeholderWatch }
+                }
             }
         }
     }
@@ -286,9 +318,9 @@ public struct GalleryScreen: View {
                 action: {}
             )
             .background(Color.calibre.card)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
         }

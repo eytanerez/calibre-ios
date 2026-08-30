@@ -93,7 +93,7 @@ struct CheckoutSuccessMoment: View {
             ZStack {
                 ForEach(Array(imageURLs.prefix(3).enumerated().reversed()), id: \.offset) { index, url in
                     SquareThumb(url: url, side: index == 0 ? 180 : 156)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
                         .calibreShadow(.lifted)
                         .rotationEffect(.degrees(fanAngle(index)))
                         .offset(x: fanOffset(index))
@@ -103,7 +103,7 @@ struct CheckoutSuccessMoment: View {
             .frame(height: 200)
         } else {
             SquareThumb(url: imageURLs.first ?? nil, side: 200)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
                 .calibreShadow(.lifted)
         }
     }

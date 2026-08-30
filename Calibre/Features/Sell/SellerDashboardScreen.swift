@@ -530,9 +530,9 @@ struct SellerDashboardScreen: View {
             SellSectionHeader("Waiting on you").sellRow(bottom: Space.s)
             ForEach(Array(shown.enumerated()), id: \.element.stableID) { index, action in
                 actionRow(action)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                             .strokeBorder(Color.calibre.border, lineWidth: 1)
                     )
                     .sellRow(bottom: index == shown.count - 1 ? Space.l : Space.s)

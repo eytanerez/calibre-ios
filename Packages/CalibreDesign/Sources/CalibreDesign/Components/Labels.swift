@@ -48,6 +48,32 @@ public struct ConditionPill: View {
     }
 }
 
+/// The watcher count as it rides on a listing photograph: same frosted plate
+/// the condition pill sits on, top-right corner. It used to share the price's
+/// row underneath the photo, where it competed with the one number on the card
+/// that may never be lost.
+public struct WatcherPill: View {
+    let count: Int
+
+    public init(count: Int) {
+        self.count = count
+    }
+
+    public var body: some View {
+        Label("\(count)", systemImage: "eye")
+            .labelStyle(.titleAndIcon)
+            .font(CalibreType.caption)
+            .foregroundStyle(Color.calibre.foreground)
+            .padding(.horizontal, Space.s)
+            .padding(.vertical, 4)
+            .background(Color.calibre.background.opacity(0.95), in: Capsule())
+            .accessibilityElement(children: .ignore)
+            // The eye carries the meaning and is not spoken, so without this
+            // the card ends on a bare number.
+            .accessibilityLabel("\(count) watching")
+    }
+}
+
 /// Status badge tinted by semantic tone. Plain human words, no system codes.
 public struct StatusBadge: View {
     public enum Tone {
@@ -58,7 +84,12 @@ public struct StatusBadge: View {
             case .neutral: Color.calibre.mutedForeground
             case .info: Color.calibre.primary
             case .success: Color.calibre.success
-            case .warning: Color(red: 0.72, green: 0.48, blue: 0.11)
+            // Was a raw sRGB literal — the one tone in this switch with no
+            // dynamic provider behind it, so a "Reserved" badge stayed a
+            // light-tuned amber on the dark page while its four siblings
+            // moved, and Increase Contrast had nothing to reach. The palette
+            // now carries the token the other four already had.
+            case .warning: Color.calibre.warning
             case .danger: Color.calibre.destructive
             }
         }

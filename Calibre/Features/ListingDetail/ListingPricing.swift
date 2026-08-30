@@ -285,10 +285,10 @@ struct ListingPriceControls: View {
         .padding(Space.l)
         .background(
             Color.calibre.card,
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
         // Keep the switch trait — VoiceOver should announce this as a switch

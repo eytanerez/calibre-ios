@@ -220,6 +220,103 @@ public struct ServerNotificationList: Decodable, Equatable, Sendable {
 public struct SavedSearchSummary: Decodable, Equatable, Sendable, Identifiable {
     public let id: String
     public let name: String
+    /// The query this search stands for, exactly as the server stores it —
+    /// `brand`, `model`, `reference`, `search`, `condition`, `year`,
+    /// `price_min`, `price_max`, `box_papers` (`SAVED_SEARCH_FILTER_KEYS` in
+    /// Backend/app/api/views/alerts.py). `_serialize_saved_search` has always
+    /// sent this key; the app simply never decoded it, which is why a saved
+    /// search could be listed and deleted but never re-run.
+    ///
+    /// Values arrive typed as JSON — `year` is a number, `box_papers` a bool —
+    /// so they are decoded loosely and normalised to the strings the browse
+    /// query builder takes.
+    public let filters: [String: String]
     public let lastMatchedAt: String?
     public let createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, filters, lastMatchedAt, createdAt
+    }
+
+    public init(
+        id: String,
+        name: String,
+        filters: [String: String] = [:],
+        lastMatchedAt: String? = nil,
+        createdAt: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.filters = filters
+        self.lastMatchedAt = lastMatchedAt
+        self.createdAt = createdAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        lastMatchedAt = try container.decodeIfPresent(String.self, forKey: .lastMatchedAt)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        let raw = (try? container.decodeIfPresent([String: JSONScalar].self, forKey: .filters))
+            .flatMap { $0 } ?? [:]
+        filters = Dictionary(
+            uniqueKeysWithValues: raw.compactMap { key, value in
+                value.stringValue.map { (Self.wireKey(for: key), $0) }
+            }
+        )
+    }
+
+    /// `APIClient` decodes with `.convertFromSnakeCase`, and that strategy
+    /// applies to **dictionary keys** as well as to coding keys — so the
+    /// server's `price_min` arrives here already renamed to `priceMin`. The
+    /// browse query builder and the create/update payload both speak the
+    /// server's snake_case, so the keys are put back before anything reads
+    /// them. Without this a saved search with a price range re-runs as a
+    /// search with no price range: no crash, no error, just the wrong result
+    /// set.
+    private static func wireKey(for decodedKey: String) -> String {
+        switch decodedKey {
+        case "priceMin": "price_min"
+        case "priceMax": "price_max"
+        case "boxPapers": "box_papers"
+        default: decodedKey
+        }
+    }
+}
+
+/// One JSON value of the handful of shapes a saved-search filter can hold.
+/// Narrower than a general JSON decoder on purpose: a filter is a scalar, and
+/// anything else is a payload this app does not understand.
+enum JSONScalar: Decodable, Equatable, Sendable {
+    case string(String)
+    case int(Int)
+    case double(Double)
+    case bool(Bool)
+    case null
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            self = .null
+        } else if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else if let value = try? container.decode(Int.self) {
+            self = .int(value)
+        } else if let value = try? container.decode(Double.self) {
+            self = .double(value)
+        } else {
+            self = .string(try container.decode(String.self))
+        }
+    }
+
+    var stringValue: String? {
+        switch self {
+        case .string(let value): value
+        case .int(let value): String(value)
+        case .double(let value): String(value)
+        case .bool(let value): value ? "true" : "false"
+        case .null: nil
+        }
+    }
 }

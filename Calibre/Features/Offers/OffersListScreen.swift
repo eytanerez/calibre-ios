@@ -25,7 +25,7 @@ struct OffersListScreen: View {
                 title: "Swipe for the quick answer",
                 message: "Swipe any offer row: Accept or Decline the ones waiting on you, or Cancel one you sent. Each offer expires \(offerExpiryPhrase(expiryHours)) after the last move.",
                 advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card),
+                cutout: .roundedRect(Radius.box),
                 cutoutPadding: Space.xs
             ),
             TutorialStep(

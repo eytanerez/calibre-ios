@@ -34,11 +34,28 @@ struct ListingDetailScreen: View {
     /// reload, and keyed by id so a push to a different listing on the same
     /// instance still counts as a view.
     @State private var viewedListingID: String?
+    /// Set when the detail endpoint refused this listing rather than failing
+    /// to arrive. Item 18.6: `ListingDetailView` 404s a sold watch to everyone
+    /// but its seller (`_can_view_non_active_listing` /
+    /// `listing_claimable_by_buyer` in the backend), and the screen used to
+    /// answer that 404 with "Check your connection and try again" over a
+    /// "Try again" button that could never work. A watch that has sold is not
+    /// a network problem and must not be dressed as one.
+    @State private var gone: GoneReason?
+
+    /// Why a listing is not here. Both arms are honest endings, not retries.
+    enum GoneReason {
+        case sold
+        case withdrawn
+    }
 
     var body: some View {
         Group {
             if let listing {
                 content(listing)
+            } else if let gone {
+                goneState(gone)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if failed {
                 EmptyState(
                     icon: "clock.badge.questionmark",
@@ -192,10 +209,8 @@ struct ListingDetailScreen: View {
         if let terms = listing.returns {
             VStack(alignment: .leading, spacing: 2) {
                 Label {
-                    Text(terms.accepted
-                        ? (terms.windowHours.map { "Returns accepted within \($0) hours of delivery" }
-                            ?? "Returns accepted")
-                        : "Sold without returns")
+                    // Item 1.22: the window, not the fact of a window.
+                    Text(terms.summary ?? "Sold without returns")
                         .font(CalibreType.label)
                         .foregroundStyle(Color.calibre.foreground)
                 } icon: {
@@ -228,12 +243,18 @@ struct ListingDetailScreen: View {
 
     private func actionStack(_ listing: Listing) -> some View {
         VStack(spacing: Space.m) {
+            // The reason comes before the disabled controls, not after them.
+            // Whichever of the two applies, the buyer reads why the buttons
+            // below are grey before they try one.
+            ownListingBand(listing)
+            unavailableBand(listing)
+
             Button("Buy Now") {
                 Haptics.shared.play(.press)
                 buyNow()
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
-            .disabled(!isAvailable(listing))
+            .unavailable(!canTransact(listing))
 
             if let openOffer {
                 Button("Offer pending — view") {
@@ -245,7 +266,7 @@ struct ListingDetailScreen: View {
                     makeOffer()
                 }
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
-                .disabled(!isAvailable(listing))
+                .unavailable(!canTransact(listing))
             }
 
             HStack(spacing: Space.m) {
@@ -258,6 +279,12 @@ struct ListingDetailScreen: View {
                     )
                 }
                 .buttonStyle(.calibre(.ghost, fullWidth: true))
+                // Save is wider than buy — the server keeps saving open on a
+                // reserved watch whose hold can lapse
+                // (`_SAVABLE_LISTING_STATUSES`) — so it is gated on ownership
+                // and on the watch still being on the market, not on
+                // `canTransact`.
+                .unavailable(isOwnListing(listing) || !isSavable(listing))
 
                 Button {
                     addToBag()
@@ -265,9 +292,51 @@ struct ListingDetailScreen: View {
                     Label("Add to Bag", systemImage: "bag")
                 }
                 .buttonStyle(.calibre(.ghost, fullWidth: true))
-                .disabled(!isAvailable(listing))
+                .unavailable(!canTransact(listing))
             }
         }
+        // Four disabled buttons with no explanation is the thing item 1.6
+        // names. The band above says it on screen; this says it to VoiceOver,
+        // which does not read a `CalloutBand` that sits outside the button.
+        .accessibilityHint(actionsHint(listing) ?? "")
+    }
+
+    /// The one sentence that explains a greyed action stack, or nil when
+    /// nothing is greyed.
+    private func actionsHint(_ listing: Listing) -> String? {
+        if isOwnListing(listing) {
+            return "This is your own listing, so you can't buy, bag or save it."
+        }
+        switch listing.status {
+        case .active: return nil
+        case .sold: return "This watch has sold."
+        case .reserved: return "Another buyer is holding this watch."
+        default: return "This watch is no longer for sale."
+        }
+    }
+
+    /// Item 18.6 on a page that *did* load — the seller's own view of a watch
+    /// they sold, and the reserved case, where the buy box would otherwise
+    /// read like an ordinary listing with a small badge beside the price.
+    @ViewBuilder
+    private func unavailableBand(_ listing: Listing) -> some View {
+        if !isOwnListing(listing), listing.status != .active {
+            CalloutBand(
+                icon: listing.status == .sold ? "checkmark.seal" : "clock.badge.xmark",
+                title: listing.status == .sold ? "Sold" : (listing.status == .reserved ? "On hold" : "No longer listed"),
+                message: listing.status == .sold
+                    ? "This watch found an owner. It stays here for reference only."
+                    : (listing.status == .reserved
+                        ? "Another buyer is checking out. If the hold lapses it comes back."
+                        : "The seller took this watch off the market.")
+            )
+        }
+    }
+
+    /// Still savable: on the market now, or held by somebody whose hold can
+    /// lapse. Mirrors `_SAVABLE_LISTING_STATUSES` on the server.
+    private func isSavable(_ listing: Listing) -> Bool {
+        listing.status == .active || listing.status == .reserved
     }
 
     private func specSection(_ listing: Listing) -> some View {
@@ -352,6 +421,43 @@ struct ListingDetailScreen: View {
         .disabled(true)
     }
 
+    /// Item 18.6, made honest. A sold watch is gone for good, so the offer is
+    /// a way onward rather than a retry: the market, and the search that finds
+    /// the next one like it.
+    private func goneState(_ reason: GoneReason) -> some View {
+        EmptyState(
+            icon: reason == .sold ? "checkmark.seal" : "clock.badge.xmark",
+            title: reason == .sold ? "This one sold" : "This listing is closed",
+            message: reason == .sold
+                ? "It found an owner. The market moves — there may well be another like it."
+                : "The seller took this watch off the market.",
+            aside: "Nothing here to wait for.",
+            actionTitle: "Find another"
+        ) {
+            push(.search)
+        }
+    }
+
+    /// Item 1.6 — you cannot buy your own listing, and the app says so rather
+    /// than presenting four dead buttons and no reason. A greyed control with
+    /// no explanation reads as a bug; the seller's own watch is not a bug.
+    ///
+    /// The buttons below are disabled *as well* because the server refuses
+    /// this on every path — checkout, offers, bag and save all answer
+    /// `own_listing` — and a disabled control that agrees with the server is
+    /// the honest one. The refusal is still handled in the action handlers,
+    /// because a listing can change hands under an open screen.
+    @ViewBuilder
+    private func ownListingBand(_ listing: Listing) -> some View {
+        if isOwnListing(listing) {
+            CalloutBand(
+                icon: "person.crop.circle.badge.checkmark",
+                title: "This is your listing",
+                message: "You can't buy, bag, or save your own watch. Manage it from Sell."
+            )
+        }
+    }
+
     // MARK: - Derived
 
     private func eyebrowText(_ listing: Listing) -> String {
@@ -363,6 +469,25 @@ struct ListingDetailScreen: View {
 
     private func isAvailable(_ listing: Listing) -> Bool {
         listing.status == .active
+    }
+
+    /// Whether the signed-in member is this listing's seller.
+    ///
+    /// Matched on `sellerId` against `session.user?.id` — the same comparison
+    /// `_seller_is_viewer` makes on the server
+    /// (Backend/app/api/views/account.py). A guest is never the seller, so
+    /// this is false while signed out and the guest still gets the ordinary
+    /// sign-in gate.
+    private func isOwnListing(_ listing: Listing) -> Bool {
+        guard let userID = session.user?.id else { return false }
+        return listing.sellerId == userID
+    }
+
+    /// Can this member act on this watch at all — buy it, bag it, offer on
+    /// it? Their own listing is excluded here rather than at each of the four
+    /// buttons, so a fifth button cannot be added without the rule.
+    private func canTransact(_ listing: Listing) -> Bool {
+        isAvailable(listing) && !isOwnListing(listing)
     }
 
     private func availabilityBadge(_ listing: Listing) -> (text: String, tone: StatusBadge.Tone)? {
@@ -400,6 +525,7 @@ struct ListingDetailScreen: View {
             let (resolvedSimilar, resolvedOffer) = await (similarLoad, offerLoad)
 
             guard generation == loadGeneration else { return }
+            gone = nil
             listing = loaded
             similar = resolvedSimilar
             openOffer = resolvedOffer
@@ -421,7 +547,15 @@ struct ListingDetailScreen: View {
             failed = false
         } catch {
             guard generation == loadGeneration, !(error is CancellationError) else { return }
-            if listing == nil {
+            // A 404 here is the server saying this watch is no longer
+            // readable, which after a purchase is exactly what it says
+            // (`_can_view_non_active_listing`). It is a different fact from
+            // "the request did not arrive" and gets a different screen.
+            if (error as? APIError)?.httpStatus == 404 {
+                gone = .sold
+                listing = nil
+                failed = false
+            } else if listing == nil {
                 failed = true
             } else {
                 toasts.show(title: "Couldn't refresh this listing", message: error.browseMessage, tone: .error)
@@ -480,8 +614,32 @@ struct ListingDetailScreen: View {
                 }
             } catch {
                 Haptics.shared.play(.error)
-                toasts.show(title: "Couldn't update Saved", message: error.browseMessage, tone: .error)
+                if let refusal = Self.refusalToast(error, verb: "save") {
+                    toasts.show(title: refusal.title, message: refusal.message, tone: .error)
+                } else {
+                    toasts.show(title: "Couldn't update Saved", message: error.browseMessage, tone: .error)
+                }
             }
+        }
+    }
+
+    /// The two refusals every buyer action can come back with, said in words
+    /// rather than as the server's code.
+    ///
+    /// Item 1.6 asks that the app not merely disable these — the disabled
+    /// button is what the buyer sees before they act, and this is what they
+    /// see if the world changed while the screen was open: a listing bought by
+    /// someone else, or a screen left open across a sign-in that made them the
+    /// seller. Falling through to the generic "couldn't do that" would tell a
+    /// seller their network was flaky.
+    static func refusalToast(_ error: Error, verb: String) -> (title: String, message: String)? {
+        switch (error as? APIError)?.serverCode {
+        case ListingRefusal.ownListing:
+            return ("This is your own listing", "You can't \(verb) a watch you're selling. Manage it from Sell.")
+        case ListingRefusal.unavailable:
+            return ("This watch is gone", "It sold or was withdrawn while this page was open.")
+        default:
+            return nil
         }
     }
 
@@ -512,8 +670,37 @@ struct ListingDetailScreen: View {
                 )
             } catch {
                 Haptics.shared.play(.error)
-                toasts.show(title: "Couldn't add to your bag", message: error.browseMessage, tone: .error)
+                if let refusal = Self.refusalToast(error, verb: "bag") {
+                    toasts.show(title: refusal.title, message: refusal.message, tone: .error)
+                    // The server has just told us something this screen's copy
+                    // of the listing does not know. Re-read it so the buttons
+                    // agree with the answer.
+                    await load()
+                } else {
+                    toasts.show(title: "Couldn't add to your bag", message: error.browseMessage, tone: .error)
+                }
             }
         }
+    }
+}
+
+/// Greying out, which the button style does not do for itself.
+///
+/// `CalibreButtonStyle.makeBody` reads `configuration.isPressed` and nothing
+/// else — there is no `\.isEnabled` branch anywhere in it — so `.disabled(true)`
+/// on a Calibre button produces a control that is pixel-identical to a live one
+/// and simply ignores taps. Item 1.6 asks for these to be **greyed out** and to
+/// say why, and an inert button that still looks tappable is the worse half of
+/// both: the buyer taps it, nothing happens, and they conclude the app is
+/// broken rather than that the rule exists.
+///
+/// Desaturating rather than only fading is deliberate: at 0.55 opacity alone
+/// the copper primary is still plainly the strong action on the screen. Taking
+/// the hue out is what makes it read as out of play.
+private extension View {
+    func unavailable(_ isUnavailable: Bool) -> some View {
+        disabled(isUnavailable)
+            .saturation(isUnavailable ? 0 : 1)
+            .opacity(isUnavailable ? 0.55 : 1)
     }
 }

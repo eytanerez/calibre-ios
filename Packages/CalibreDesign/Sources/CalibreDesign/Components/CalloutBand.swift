@@ -65,10 +65,10 @@ public struct CalloutBand: View {
         .padding(Space.l)
         .background(
             Color.calibre.accent.opacity(0.4),
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }

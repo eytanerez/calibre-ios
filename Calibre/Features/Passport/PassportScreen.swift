@@ -612,7 +612,7 @@ struct PassportScreen: View {
 
     private var skeleton: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
                 .fill(Kraft.page)
                 .shimmer()
             Spacer(minLength: 0)
@@ -927,8 +927,8 @@ private enum Booklet {
     static let leafShape = UnevenRoundedRectangle(
         topLeadingRadius: 3,
         bottomLeadingRadius: 3,
-        bottomTrailingRadius: Radius.card,
-        topTrailingRadius: Radius.card,
+        bottomTrailingRadius: Radius.box,
+        topTrailingRadius: Radius.box,
         style: .continuous
     )
 
@@ -936,8 +936,8 @@ private enum Booklet {
     static let boardShape = UnevenRoundedRectangle(
         topLeadingRadius: Radius.control,
         bottomLeadingRadius: Radius.control,
-        bottomTrailingRadius: Radius.overlay,
-        topTrailingRadius: Radius.overlay,
+        bottomTrailingRadius: Radius.panel,
+        topTrailingRadius: Radius.panel,
         style: .continuous
     )
 }

@@ -91,7 +91,7 @@ public struct TutorialStep: Identifiable, Sendable {
         message: String,
         advance: TutorialAdvance = .tapToContinue,
         hint: TutorialHint = .none,
-        cutout: TutorialCutout = .roundedRect(Radius.card),
+        cutout: TutorialCutout = .roundedRect(Radius.box),
         cutoutPadding: CGFloat = Space.s,
         actionPrompt: String? = nil
     ) {

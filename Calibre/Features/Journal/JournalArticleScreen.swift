@@ -97,7 +97,7 @@ struct JournalArticleScreen: View {
                         .scaledToFill()
                         .frame(maxWidth: .infinity)
                         .frame(height: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                         .accessibilityLabel("Photograph for \(article.title)")
                 }
 
@@ -161,7 +161,7 @@ struct JournalArticleScreen: View {
                 }
                 .padding(.top, Space.l)
 
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .frame(height: 220)
                     .shimmer()
 
@@ -232,10 +232,10 @@ struct JournalArticleScreen: View {
         .padding(Space.l)
         .background(
             Color.calibre.accent.opacity(0.4),
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }

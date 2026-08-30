@@ -151,7 +151,7 @@ struct OrdersListScreen: View {
             .padding(Space.s)
             .background(
                 Color.calibre.secondary.opacity(0.35),
-                in: RoundedRectangle(cornerRadius: Radius.card + Space.s, style: .continuous)
+                in: RoundedRectangle(cornerRadius: Radius.box + Space.s, style: .continuous)
             )
         }
     }
@@ -212,9 +212,9 @@ struct OrderRow: View {
                 .foregroundStyle(Color.calibre.placeholder)
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }
@@ -297,8 +297,8 @@ private struct OrderRowSkeleton: View {
             Spacer()
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 }
 

@@ -158,8 +158,8 @@ private struct RequestRow: View {
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     private func detail(_ label: String, _ value: String) -> some View {
@@ -205,6 +205,7 @@ private struct NewRequestSheet: View {
                         error: budgetError,
                         kind: .money
                     )
+                    .moneyFormatted($budget)
                     CalibreTextField("Notes", text: $notes, kind: .sentence)
                         .onChange(of: notes) { _, value in
                             if value.count > 2_000 { notes = String(value.prefix(2_000)) }

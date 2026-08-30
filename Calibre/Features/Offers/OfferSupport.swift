@@ -652,9 +652,9 @@ struct OfferResolutionBand: View {
         }
         .multilineTextAlignment(.leading)
         .padding(Space.l)
-        .background(fill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(fill, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(stroke, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)

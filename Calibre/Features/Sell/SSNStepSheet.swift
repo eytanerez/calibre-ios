@@ -2,8 +2,16 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// Native SSN step before Stripe Connect onboarding. The number is masked and
-/// auto-formats as 123-45-6789.
+/// Native SSN step before Stripe Connect onboarding. The number auto-formats
+/// as 123-45-6789 and stays fully visible.
+///
+/// **Not masked, deliberately** — CALIBRE_FINAL_PUSH_CONTRACTS.md §6 records
+/// Eytan's explicit call: the SSN formats as 123-45-6789 and is fully visible,
+/// with no masking and no reveal toggle. It was `isSecure: true`, which turned
+/// nine digits into nine dots and left a seller no way to check the one number
+/// on this screen that a typo makes worthless — the auto-formatting was
+/// invisible behind the dots too, so the field looked identical whether it had
+/// been understood or not.
 ///
 /// It is asked for one reason: the backend digests it and checks that digest
 /// against banned and suspended accounts before creating a Connect account
@@ -49,8 +57,7 @@ struct SSNStepSheet: View {
                         "Social Security number",
                         text: $ssn,
                         placeholder: "123-45-6789",
-                        error: error,
-                        isSecure: true
+                        error: error
                     )
                     .keyboardType(.numberPad)
                     // Deliberately no `textContentType`. iOS has no content type

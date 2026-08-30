@@ -488,16 +488,23 @@ struct SaleDetailScreen: View {
                 ? "This listing doesn't accept returns, so your payout released when authentication passed."
                 : "This listing doesn't accept returns, so your payout releases when authentication passes."
         case "return_window_close":
+            // Item 1.22 — name the window where the order carries it.
+            let window = order.returns?.windowHours.map { "\($0)-hour returns" } ?? "Returns are accepted"
             return released
-                ? "This listing accepts returns, so your payout released when the return window closed."
-                : "This listing accepts returns, so your payout releases when the return window closes."
+                ? "\(window) on this listing, so your payout released when that window closed."
+                : "\(window) on this listing, so your payout releases when that window closes."
         default:
             // No trigger on the payload — fall back to the listing's own
             // terms rather than inventing a rule.
             if let terms = order.returns {
-                return terms.accepted
-                    ? "This listing accepts returns, so your payout releases when the return window closes."
-                    : "This listing doesn't accept returns, so your payout releases when authentication passes."
+                guard terms.accepted else {
+                    return "This listing doesn't accept returns, so your payout releases when authentication passes."
+                }
+                // Item 1.22 — say the window. A seller waiting on money wants
+                // to know how long, not that there is a wait.
+                return terms.windowHours.map {
+                    "This listing has \($0)-hour returns, so your payout releases when that window closes."
+                } ?? "This listing accepts returns, so your payout releases when the return window closes."
             }
             return "Your payout releases once this sale is settled, and we'll show both dates here."
         }

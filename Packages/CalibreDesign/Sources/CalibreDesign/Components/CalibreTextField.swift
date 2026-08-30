@@ -198,7 +198,7 @@ public struct CalibreTextField<Accessory: View>: View {
             )
             .overlay {
                 // Focus ring: 11% glow — destructive-tinted while in error.
-                RoundedRectangle(cornerRadius: Radius.control + 3, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.focusRing, style: .continuous)
                     .strokeBorder(ringColor.opacity(0.11), lineWidth: 3)
                     .padding(-3)
                     .opacity(focused ? 1 : 0)

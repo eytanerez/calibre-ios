@@ -4,10 +4,26 @@ import NukeUI
 import SwiftUI
 
 /// One deck card: image-forward — the watch photo fills the top ~70%, and a
-/// quiet identity panel (eyebrow brand line, serif title, serif price,
-/// condition pill) sits below.
+/// quiet identity panel sits below.
+///
+/// The panel follows CALIBRE_FINAL_PUSH_CONTRACTS.md §4's element order, the
+/// same one `ListingCard` uses, because §4 fixes that order across the whole
+/// product and the deck is the second listing-card shape:
+///
+///     [ photo ]  ⌐ condition pill top-left   ⌐ watcher count top-right
+///     BRAND                                          year
+///     Model name
+///     Ref. 0000000
+///     [ verified-dealer chip, only when true ]
+///     $ price
+///
+/// The deck keeps `sectionTitle` for the model line where the grid card uses
+/// `bodyMedium` — §4 fixes the order, not the type size, and this card is the
+/// full width of the screen.
 struct DeckCard: View {
     let listing: Listing
+
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         GeometryReader { geo in
@@ -18,9 +34,9 @@ struct DeckCard: View {
             }
         }
         .background(Color.calibre.card)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }
@@ -28,26 +44,42 @@ struct DeckCard: View {
     // MARK: - Photo
 
     private func photo(width: CGFloat, height: CGFloat) -> some View {
-        ZStack {
-            Color.calibre.secondary.opacity(0.5)
-            if let url = listing.images.first?.url {
-                LazyImage(request: DeckImage.request(for: url)) { state in
-                    if let image = state.image {
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } else if state.error != nil {
-                        fallbackGlyph
-                    } else {
-                        Rectangle().shimmer()
+        ZStack(alignment: .topLeading) {
+            ZStack {
+                Color.calibre.secondary.opacity(0.5)
+                if let url = listing.images.first?.url {
+                    LazyImage(request: DeckImage.request(for: url)) { state in
+                        if let image = state.image {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } else if state.error != nil {
+                            fallbackGlyph
+                        } else {
+                            Rectangle().shimmer()
+                        }
                     }
+                } else {
+                    fallbackGlyph
                 }
-            } else {
-                fallbackGlyph
+            }
+            .frame(width: width, height: height)
+            .clipped()
+
+            // §4: the condition pill rides top-left over the photograph and
+            // the watcher count top-right. Both used to sit in the panel
+            // below, where the condition badge shared the price's row.
+            if let condition = listing.condition?.overall {
+                ConditionPill(condition)
+                    .padding(Space.m)
+            }
+            if let watchers = listing.metrics?.watchers, watchers > 0 {
+                WatcherPill(count: watchers)
+                    .padding(Space.m)
+                    .frame(maxWidth: .infinity, alignment: .topTrailing)
             }
         }
         .frame(width: width, height: height)
-        .clipped()
     }
 
     private var fallbackGlyph: some View {
@@ -59,36 +91,52 @@ struct DeckCard: View {
     // MARK: - Panel
 
     private var panel: some View {
-        VStack(alignment: .leading, spacing: Space.s) {
-            if !eyebrowText.isEmpty {
-                Eyebrow(eyebrowText)
+        VStack(alignment: .leading, spacing: Space.xs) {
+            // Brand left, year right — the same arrangement, and the same
+            // no-clipping rules, as `ListingCard`. The year takes its width
+            // first and is pinned against compression; the brand shrinks and
+            // then wraps rather than ever ending in an ellipsis (§0.6).
+            HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                Eyebrow(listing.brand ?? "Watch")
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.65)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let year = listing.productionYear.map(String.init) {
+                    Spacer(minLength: Space.xs)
+                    Eyebrow(year)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .layoutPriority(1)
+                }
             }
-            Text(listing.title)
+
+            Text(listing.model ?? listing.title)
                 .font(CalibreType.sectionTitle)
                 .foregroundStyle(Color.calibre.foreground)
-                .lineLimit(2)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
                 .minimumScaleFactor(0.75)
+
+            if let reference = listing.referenceNumber {
+                Text("Ref. \(reference)")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            if listing.seller?.isVerifiedDealer == true {
+                DealerBadge(compact: true)
+                    .padding(.top, 2)
+            }
 
             Spacer(minLength: Space.s)
 
-            HStack(alignment: .center, spacing: Space.m) {
-                Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
-                    .font(CalibreType.price)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                if let condition = listing.condition?.overall {
-                    StatusBadge(condition)
-                }
-            }
+            Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                .font(CalibreType.price)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.l)
-    }
-
-    private var eyebrowText: String {
-        [listing.brand, listing.productionYear.map(String.init)]
-            .compactMap(\.self)
-            .joined(separator: " · ")
     }
 }
 
@@ -112,9 +160,9 @@ struct DeckCardSkeleton: View {
             }
         }
         .background(Color.calibre.card)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }
@@ -138,10 +186,10 @@ struct DeckSkeleton: View {
     }
 
     private var underPlate: some View {
-        RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous)
+        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
             .fill(Color.calibre.card)
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
     }

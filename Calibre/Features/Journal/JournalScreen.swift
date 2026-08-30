@@ -76,7 +76,7 @@ struct JournalScreen: View {
     private var skeleton: some View {
         VStack(spacing: Space.xl) {
             ForEach(0..<3, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .fill(Color.calibre.card)
                     .frame(height: 300)
                     .shimmer()
@@ -124,9 +124,9 @@ struct JournalCard: View {
                 .padding(Space.l)
             }
             .background(Color.calibre.card)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
         }

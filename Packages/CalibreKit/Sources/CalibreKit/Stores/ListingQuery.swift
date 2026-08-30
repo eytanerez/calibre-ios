@@ -36,6 +36,9 @@ public struct ListingQuery: Hashable, Sendable {
     public var lugWidth: String?
     public var waterResistance: String?
     public var caliber: String?
+    /// Item 1.21 — the return-window filter. `nil`/`any` sends nothing;
+    /// `.all` asks for every listing that accepts returns at any window.
+    public var returnWindow: ReturnWindowFilter?
     public var sort: Sort?
     public var page: Int
     public var pageSize: Int
@@ -62,6 +65,7 @@ public struct ListingQuery: Hashable, Sendable {
         lugWidth: String? = nil,
         waterResistance: String? = nil,
         caliber: String? = nil,
+        returnWindow: ReturnWindowFilter? = nil,
         sort: Sort? = nil,
         page: Int = 1,
         pageSize: Int = 24,
@@ -87,6 +91,7 @@ public struct ListingQuery: Hashable, Sendable {
         self.lugWidth = lugWidth
         self.waterResistance = waterResistance
         self.caliber = caliber
+        self.returnWindow = returnWindow
         self.sort = sort
         self.page = page
         self.pageSize = pageSize
@@ -120,6 +125,7 @@ public struct ListingQuery: Hashable, Sendable {
         add("lug_width", lugWidth)
         add("water_resistance", waterResistance)
         add("caliber", caliber)
+        add("return_window_hours", returnWindow?.wireValue)
         add("sort", sort?.rawValue)
         add("page", String(page))
         add("page_size", String(pageSize))

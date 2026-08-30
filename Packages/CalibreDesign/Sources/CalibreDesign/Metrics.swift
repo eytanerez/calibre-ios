@@ -1,13 +1,50 @@
 import SwiftUI
 
-/// Strict radius ladder — one scale, no ad-hoc corners.
+/// The radius ladder — five tiers, assigned by the SIZE of a surface, not by
+/// what kind of component it is. A large panel at 12pt reads squarer than a
+/// chip at 12pt even though the number is identical, so the bigger the
+/// surface, the rounder the corner. CALIBRE_FINAL_PUSH_CONTRACTS.md §1.
+///
+/// When the tier is not obvious, measure the surface's **short edge** at its
+/// most common rendered size:
+///
+/// - `>= 240pt` → `card`
+/// - `120…240pt` → `box`
+/// - `< 120pt` → `control`, or `chip` if it is a label rather than a control
+///
+/// A surface that changes tier between size classes takes the tier it holds
+/// at the larger one, so it does not visibly change shape as the window
+/// narrows. Every `.cornerRadius(_:)` / `RoundedRectangle` takes a name from
+/// here, never a literal.
+///
+/// The three small rungs moved up once the cards went round (chip 6→8,
+/// control 8→12, box 12→14): buttons and text fields were then the squarest
+/// thing left on any screen, which is what the round-2 review actually saw.
+/// `panel` and `card` are unchanged, so the ladder still climbs by size — it
+/// just starts higher. The site's tokens carry the identical numbers.
 public enum Radius {
-    /// Buttons, inputs, icon tiles.
-    public static let control: CGFloat = 8
-    /// Cards, panels, callouts.
-    public static let card: CGFloat = 12
-    /// Sheets, modals, gallery frames.
-    public static let overlay: CGFloat = 16
+    /// Tags, small bars, square-ish badges, the condition pill's square variant.
+    public static let chip: CGFloat = 8
+    /// Buttons, inputs, selects, text editors, small icon buttons and tiles.
+    public static let control: CGFloat = 12
+    /// Callouts, banners, info boxes, list rows, small tiles, toasts.
+    public static let box: CGFloat = 14
+    /// Modals, drawers, sheets, popovers, menus, large section panels.
+    public static let panel: CGFloat = 16
+    /// Listing cards, metric tiles, hero frames, the gallery frame.
+    public static let card: CGFloat = 20
+
+    /// The focus ring rides 3pt outside the control it surrounds, so it has to
+    /// move whenever `control` does. It was written out longhand at three call
+    /// sites; naming it is what keeps the fourth one from being wrong.
+    public static let focusRing: CGFloat = control + 3
+
+    /// Was the top of a three-tier ladder (control/card/overlay) and is the
+    /// same 16pt the `panel` tier now carries. Kept so the app's existing
+    /// sheet and cover call sites keep building while they are renamed; new
+    /// code says `panel`.
+    @available(*, deprecated, renamed: "panel", message: "The 16pt tier is now Radius.panel — see CALIBRE_FINAL_PUSH_CONTRACTS.md §1.")
+    public static let overlay: CGFloat = panel
 }
 
 /// Spacing rhythm (pt).

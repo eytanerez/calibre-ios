@@ -316,9 +316,9 @@ struct TutorialCoachCard: View {
         }
         .frame(maxWidth: 380, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
         .calibreShadow(.modal)

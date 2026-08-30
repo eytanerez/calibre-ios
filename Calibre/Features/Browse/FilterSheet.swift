@@ -69,7 +69,7 @@ struct FilterSheet: View {
                 title: "It narrows as you go",
                 message: "Choose a brand and a Model field appears; choose a model and Reference follows. Each pick sharpens the next.",
                 advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card)
+                cutout: .roundedRect(Radius.box)
             ))
         }
         steps.append(TutorialStep(
@@ -79,7 +79,7 @@ struct FilterSheet: View {
             message: "Drag either handle to bracket a range — a low end and a high end move independently.",
             advance: .perform(event: "price"),
             hint: .drag(.right),
-            cutout: .roundedRect(Radius.card),
+            cutout: .roundedRect(Radius.box),
             actionPrompt: "Drag a price handle"
         ))
         steps.append(TutorialStep(
@@ -103,6 +103,7 @@ struct FilterSheet: View {
                         }
                         conditionSection
                         priceSection
+                        returnsSection
                         yearAndPapersSection
                         detailsSection
                     }
@@ -169,6 +170,34 @@ struct FilterSheet: View {
             .onChange(of: priceUpper) { syncPriceIntoDraft() }
         }
         .tutorialAnchor("filters.price")
+    }
+
+    /// Item 1.21 — filter by the seller's return window.
+    ///
+    /// Four choices, matching the server's (`return_window_hours` in
+    /// `ListingQueryPayload`): **Any** sends no parameter at all, **All** asks
+    /// for every listing that takes returns whatever the window, and 24h/48h/
+    /// 72h ask for that window exactly. `All` and `24h` are different
+    /// questions — "will they take it back" and "do I have three days" — which
+    /// is why the server carries them as two parameters and why "All" is not
+    /// simply the absence of the filter.
+    private var returnsSection: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Eyebrow("Returns")
+            ChipRail {
+                ForEach(ReturnWindowFilter.allCases, id: \.self) { option in
+                    FilterChip(option.label, isSelected: (draft.returnWindow ?? .any) == option) {
+                        draft.returnWindow = option == .any ? nil : option
+                    }
+                    .accessibilityLabel(option.accessibilityLabel)
+                }
+            }
+            .padding(.horizontal, -Space.l)
+            Text("How long after delivery the seller will take the watch back.")
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var yearAndPapersSection: some View {

@@ -109,7 +109,7 @@ struct VaultWatchDetailScreen: View {
         ScrollView {
             VStack(spacing: Space.l) {
                 ForEach(0..<3, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         .fill(Color.calibre.card)
                         .frame(height: 140)
                         .shimmer()
@@ -252,8 +252,8 @@ struct VaultWatchDetailScreen: View {
             }
         }
         .padding(.vertical, Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     /// Only the windows the published history reaches back over.
@@ -382,8 +382,8 @@ struct VaultWatchDetailScreen: View {
                         serviceRow(record)
                     }
                 }
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
             }
         }
     }
@@ -467,8 +467,8 @@ struct VaultWatchDetailScreen: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     private enum Tone { case neutral, up, down }

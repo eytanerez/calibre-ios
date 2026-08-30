@@ -398,7 +398,7 @@ struct DiscoverScreen: View {
                 message: "Not the one? Flick the card to the left and the next slides up.",
                 advance: .perform(event: "pass"),
                 hint: .swipe(.left),
-                cutout: .roundedRect(Radius.overlay),
+                cutout: .roundedRect(Radius.panel),
                 cutoutPadding: Space.xs,
                 actionPrompt: "Swipe left to pass"
             ),
@@ -409,7 +409,7 @@ struct DiscoverScreen: View {
                 message: "Love it? Send the card right and it lands in your Saved list.",
                 advance: .perform(event: "save"),
                 hint: .swipe(.right),
-                cutout: .roundedRect(Radius.overlay),
+                cutout: .roundedRect(Radius.panel),
                 cutoutPadding: Space.xs,
                 actionPrompt: "Swipe right to save"
             ),

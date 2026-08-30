@@ -39,7 +39,7 @@ struct MakeOfferSheet: View {
             title: "A hold, not a charge",
             message: "Offers are backed by \(holdPhrase) on your credit card — never a charge. It's released once you pay, and it is only kept if the seller accepts and you then walk away.",
             advance: .tapToContinue,
-            cutout: .roundedRect(Radius.card)
+            cutout: .roundedRect(Radius.box)
         )
     }
 
@@ -100,7 +100,7 @@ struct MakeOfferSheet: View {
             }
             .presentationDetents([.large])
             .presentationBackground(Color.calibre.background)
-            .presentationCornerRadius(Radius.overlay)
+            .presentationCornerRadius(Radius.panel)
         default:
             SheetScaffold(title: scaffoldTitle(model), detents: [.large]) {
                 ScrollView {
@@ -178,6 +178,7 @@ struct MakeOfferSheet: View {
                         .font(CalibreType.label)
                         .foregroundStyle(Color.calibre.mutedForeground)
                 }
+                .moneyFormatted($model.amountText)
             }
 
             CalibreTextEditor(
@@ -281,9 +282,9 @@ struct MakeOfferSheet: View {
         }
         .multilineTextAlignment(.leading)
         .padding(Space.l)
-        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }

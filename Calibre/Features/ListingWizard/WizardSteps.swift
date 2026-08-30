@@ -398,7 +398,7 @@ struct PhotosStep: View {
                 title: "Six angles, one story",
                 message: "All six shots are required. Each uploads the instant you take it, and your Front photo becomes the listing's hero. You can submit once every shot finishes uploading.",
                 advance: .tapToContinue,
-                cutout: .roundedRect(Radius.card)
+                cutout: .roundedRect(Radius.box)
             ),
             TutorialStep(
                 id: "capture",
@@ -407,7 +407,7 @@ struct PhotosStep: View {
                 message: "Tap any slot to open the camera and capture that angle. Do the Front first — that's your hero.",
                 advance: .perform(event: "photo"),
                 hint: .tap,
-                cutout: .roundedRect(Radius.card),
+                cutout: .roundedRect(Radius.box),
                 actionPrompt: "Tap a slot to add a photo"
             ),
         ]
@@ -704,6 +704,7 @@ struct PriceStep: View {
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
             .id(WizardField.price)
+            .moneyFormatted($model.priceText)
             .onChange(of: model.priceText) { _, _ in model.priceChanged() }
 
             payoutCard

@@ -79,7 +79,7 @@ public struct CalibreTextEditor: View {
                     .strokeBorder(borderColor, lineWidth: 1)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: Radius.control + 3, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.focusRing, style: .continuous)
                     .strokeBorder(ringColor.opacity(0.11), lineWidth: 3)
                     .padding(-3)
                     .opacity(focused ? 1 : 0)

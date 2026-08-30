@@ -73,24 +73,44 @@ public final class CatalogStore {
 
     /// Typed-ahead suggestions matched locally against cached metadata
     /// (brands, then models, then references). Empty until metadata loads.
+    ///
+    /// Item 1.20: the query is split into words and **every** word has to land
+    /// somewhere in the candidate's own identity — a model is matched against
+    /// its brand and its own name together, a reference against its brand,
+    /// model and number. That is what makes "rolex datejust" find the
+    /// Datejust. The previous rule tested the whole typed string as one
+    /// substring, so the moment a second word was typed nothing matched: no
+    /// brand contains "rolex datejust" and no model does either, and the
+    /// suggestion list emptied out exactly when the buyer had told us the most
+    /// about what they wanted.
+    ///
+    /// This mirrors `_search_token_clause` in
+    /// Backend/app/api/views/listings.py — every token must match, matching is
+    /// case-insensitive and infix — so the suggestions above the results agree
+    /// with the results.
     public func suggestions(matching text: String, limit: Int = 8) -> [SearchSuggestion] {
-        let needle = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !needle.isEmpty, let options = metadata?.options else { return [] }
+        let tokens = Self.searchTokens(text)
+        guard !tokens.isEmpty, let options = metadata?.options else { return [] }
+
+        func matches(_ fields: String?...) -> Bool {
+            let haystack = fields.compactMap { $0 }.joined(separator: " ").lowercased()
+            return tokens.allSatisfy { haystack.contains($0) }
+        }
 
         var results: [SearchSuggestion] = []
-        for brand in options.brands where brand.lowercased().contains(needle) {
+        for brand in options.brands where matches(brand) {
             results.append(SearchSuggestion(text: brand, kind: .brand))
             if results.count >= limit { return results }
         }
         for group in options.byBrand {
-            for model in group.models where model.model.lowercased().contains(needle) {
+            for model in group.models where matches(group.brand, model.model) {
                 results.append(SearchSuggestion(text: model.model, kind: .model(brand: group.brand)))
                 if results.count >= limit { return results }
             }
         }
         for group in options.byBrand {
             for model in group.models {
-                for reference in model.references where reference.lowercased().contains(needle) {
+                for reference in model.references where matches(group.brand, model.model, reference) {
                     results.append(
                         SearchSuggestion(text: reference, kind: .reference(brand: group.brand, model: model.model))
                     )
@@ -99,6 +119,19 @@ public final class CatalogStore {
             }
         }
         return results
+    }
+
+    /// The distinct lowercased words of a query, in the order they were typed
+    /// — the client-side twin of the server's `_search_tokens`.
+    nonisolated static func searchTokens(_ text: String, limit: Int = 6) -> [String] {
+        var tokens: [String] = []
+        for raw in text.split(whereSeparator: { $0.isWhitespace }) {
+            let token = raw.lowercased()
+            guard !token.isEmpty, !tokens.contains(token) else { continue }
+            tokens.append(token)
+            if tokens.count >= limit { break }
+        }
+        return tokens
     }
 
     // MARK: - Metadata (disk-cached, stale-while-revalidate)

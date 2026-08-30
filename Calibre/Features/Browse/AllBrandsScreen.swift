@@ -101,10 +101,10 @@ struct AllBrandsScreen: View {
             }
             .background(
                 Color.calibre.card,
-                in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
             .padding(Space.margin)
@@ -129,7 +129,7 @@ struct AllBrandsScreen: View {
         .padding(.horizontal, Space.l)
         .background(
             Color.calibre.card,
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .padding(Space.margin)
         .disabled(true)

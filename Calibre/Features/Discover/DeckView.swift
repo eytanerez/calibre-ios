@@ -128,7 +128,7 @@ struct DeckView: View {
             .frame(width: cardSize.width, height: cardSize.height)
             .overlay(
                 // A whisper of warm-ink dimming that lifts as the card rises.
-                RoundedRectangle(cornerRadius: Radius.overlay, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .fill(Color.calibre.shadowTint.opacity(0.06 * depthProgress))
             )
             // Anchored at the bottom so the 10/20pt offsets read as visible

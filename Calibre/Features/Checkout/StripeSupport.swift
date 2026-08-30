@@ -83,7 +83,7 @@ enum CalibreStripe {
         var appearance = PaymentSheet.Appearance()
 
         appearance.cornerRadius = Radius.control
-        appearance.sheetCornerRadius = Radius.overlay
+        appearance.sheetCornerRadius = Radius.panel
         appearance.borderWidth = 1
 
         appearance.colors.primary = UIColor(Color.calibre.primary)

@@ -21,6 +21,69 @@ public struct ListingReturnTerms: Codable, Sendable, Hashable {
         accepted = try container.decodeIfPresent(Bool.self, forKey: .accepted) ?? false
         windowHours = try container.decodeIfPresent(Int.self, forKey: .windowHours)
     }
+
+    /// The window as a noun phrase — "72-hour returns".
+    ///
+    /// Item 1.22: everywhere the product used to say a seller "accepts
+    /// returns", it says for how long instead. "Accepts returns" is the answer
+    /// to a question nobody asked; the buyer is deciding whether they have
+    /// time to get the watch on their wrist and change their mind, and that is
+    /// a number. The database has held the all-or-nothing rule as a CHECK
+    /// constraint since migration 20260830_0080, so an accepting listing
+    /// always carries 24, 48 or 72 — the nil arm only covers rows recorded
+    /// before that and says the honest thing rather than inventing a duration.
+    public var summary: String? {
+        guard accepted else { return nil }
+        guard let windowHours else { return "Returns accepted" }
+        return "\(windowHours)-hour returns"
+    }
+
+    /// The same fact as a sentence, for a paragraph rather than a chip.
+    public var sentence: String? {
+        guard accepted else { return nil }
+        guard let windowHours else {
+            return "This seller accepts returns after delivery."
+        }
+        return "This seller accepts returns for \(windowHours) hours after delivery."
+    }
+}
+
+/// The return window a buyer can filter the market by (item 1.21). The values
+/// are the server's: `all` plus the three windows a seller may commit to
+/// (`RETURN_WINDOW_HOURS_CHOICES` in Backend/app/api/serializers.py). `any`
+/// carries no parameter at all — it is the absence of the filter, not the
+/// server's `all`, which means "accepts returns, whatever the window".
+public enum ReturnWindowFilter: String, CaseIterable, Sendable, Hashable {
+    case any
+    case all
+    case hours24 = "24"
+    case hours48 = "48"
+    case hours72 = "72"
+
+    /// What `GET /listings?return_window_hours=` receives, or nil for `any`.
+    public var wireValue: String? {
+        self == .any ? nil : rawValue
+    }
+
+    public var label: String {
+        switch self {
+        case .any: "Any"
+        case .all: "All"
+        case .hours24: "24h"
+        case .hours48: "48h"
+        case .hours72: "72h"
+        }
+    }
+
+    public var accessibilityLabel: String {
+        switch self {
+        case .any: "Any return terms"
+        case .all: "Accepts returns, any window"
+        case .hours24: "24-hour returns"
+        case .hours48: "48-hour returns"
+        case .hours72: "72-hour returns"
+        }
+    }
 }
 
 /// The return fee's shape, as both the checkout breakdown and the public

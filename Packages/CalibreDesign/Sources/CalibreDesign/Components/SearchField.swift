@@ -64,7 +64,7 @@ public struct SearchField: View {
         )
         .overlay {
             // Focus ring: primary at 11% — a glow, not an outline.
-            RoundedRectangle(cornerRadius: Radius.control + 3, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.focusRing, style: .continuous)
                 .strokeBorder(Color.calibre.primary.opacity(0.11), lineWidth: 3)
                 .padding(-3)
                 .opacity(focused ? 1 : 0)

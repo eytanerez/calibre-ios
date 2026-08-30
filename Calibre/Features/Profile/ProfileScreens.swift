@@ -52,8 +52,8 @@ struct AboutScreen: View {
                         aboutRow("Privacy Policy")
                     }
                 }
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
 
                 Text("Version \(version)")
                     .font(CalibreType.caption)
@@ -97,7 +97,7 @@ struct ProfileScreen: View {
                     SpecList([
                         ("Email", profile.email),
                         ("Username", "@\(profile.username)"),
-                        ("Phone", profile.phone ?? "—"),
+                        ("Phone", PhoneFormatter.display(profile.phone) ?? "—"),
                         ("Member since", profile.createdAt?.formatted(date: .abbreviated, time: .omitted) ?? "—"),
                     ])
                 } else if failed {
@@ -213,8 +213,8 @@ private struct AddressCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 }
 
@@ -259,11 +259,13 @@ private struct AddressForm: View {
                     CalibreTextField(
                         "Phone",
                         text: $phone,
+                        placeholder: "(415) 555-0134",
                         error: InputValidation.isValidPhone(phone, required: false)
                             ? nil
                             : "Enter a valid phone number, or leave it blank.",
                         kind: .phone
                     )
+                    .phoneFormatted($phone)
                     Toggle("Set as default shipping address", isOn: $makeDefault)
                         .font(CalibreType.body).tint(Color.calibre.primary)
                     Button(saving ? "Saving…" : "Save address") { Task { await save() } }
@@ -540,8 +542,8 @@ struct PaymentMethodScreen: View {
         }
         .padding(.leading, Space.l)
         .padding(.vertical, Space.s)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     private func loadMethod() async {
@@ -753,7 +755,7 @@ struct NotificationSettingsScreen: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
     }
 
     private func refreshPushStatus() async {
@@ -1003,9 +1005,9 @@ struct DeleteAccountScreen: View {
                     }
                 }
             }
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(Color.calibre.border, lineWidth: 1)
             )
 

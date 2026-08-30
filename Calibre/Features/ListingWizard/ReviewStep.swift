@@ -242,7 +242,7 @@ struct ReviewStep: View {
         guard let hours = model.returnWindowHours else {
             return "Returns accepted. Your payout releases when the return window closes."
         }
-        return "Returns accepted, with a \(hours)-hour window. Your payout releases when that window closes."
+        return "\(hours)-hour returns. Your payout releases when that window closes."
     }
 
     // MARK: Photo checklist

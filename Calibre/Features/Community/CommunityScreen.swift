@@ -71,7 +71,7 @@ struct CommunityScreen: View {
     private var skeleton: some View {
         VStack(spacing: Space.l) {
             ForEach(0..<3, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .fill(Color.calibre.card)
                     .frame(height: 140)
                     .shimmer()
@@ -137,10 +137,10 @@ struct CommunityScreen: View {
                         }
                         .background(
                             Color.calibre.card,
-                            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                                 .strokeBorder(Color.calibre.border, lineWidth: 1)
                         )
                     }
@@ -302,10 +302,10 @@ struct CommunityPromptCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             Color.calibre.card,
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }

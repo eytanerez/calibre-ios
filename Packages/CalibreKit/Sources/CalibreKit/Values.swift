@@ -201,3 +201,141 @@ private extension Decimal {
         return result
     }
 }
+
+/// Money as it should look *while it is being typed* — grouping separators
+/// appear under the caret, the way CALIBRE_FINAL_PUSH_CONTRACTS.md §6 asks
+/// for across the site, the admin and both apps.
+///
+/// This is deliberately not `PriceFormatter`. `PriceFormatter.format` renders
+/// a finished `Decimal` with a currency symbol; a field being typed into holds
+/// a half-finished *string* — "12,4", "12400.", "0.5" — and none of those are
+/// a `Decimal` yet. Round-tripping through `Decimal` would delete the trailing
+/// separator the moment it was typed, so the person could never reach the
+/// cents. The rules here therefore work on characters:
+///
+/// - keep digits and at most one `.`, drop everything else (including the `$`
+///   and any separators the person pasted in);
+/// - group the integer part in threes;
+/// - keep a trailing `.` and up to `maximumFractionDigits` after it, so the
+///   caret can sit past the point while the cents are still being typed;
+/// - never re-group the fraction.
+///
+/// The submitted value stays the field's own text: `InputValidation.positiveMoney`
+/// already strips `,` and `$` before parsing (Values.swift), so the server sees
+/// the same number it always did.
+public enum MoneyInputFormatter {
+    public static func format(_ raw: String, maximumFractionDigits: Int = 2) -> String {
+        var integerDigits = ""
+        var fractionDigits = ""
+        var sawSeparator = false
+        for character in raw {
+            if character == "." {
+                // A second separator is a typo, not a number.
+                if sawSeparator { continue }
+                sawSeparator = true
+            } else if character.isASCII && character.isNumber {
+                if sawSeparator {
+                    if fractionDigits.count < maximumFractionDigits {
+                        fractionDigits.append(character)
+                    }
+                } else {
+                    integerDigits.append(character)
+                }
+            }
+        }
+
+        // "007" is a keystroke on the way to "700", but "0007" is not a price.
+        // One leading zero survives so "0.5" can be typed.
+        while integerDigits.count > 1, integerDigits.hasPrefix("0") {
+            integerDigits.removeFirst()
+        }
+
+        let grouped = groupInThrees(integerDigits)
+        if sawSeparator {
+            return grouped.isEmpty ? "0.\(fractionDigits)" : "\(grouped).\(fractionDigits)"
+        }
+        return grouped
+    }
+
+    private static func groupInThrees(_ digits: String) -> String {
+        guard digits.count > 3 else { return digits }
+        var out = ""
+        for (offset, character) in digits.enumerated() {
+            if offset > 0, (digits.count - offset) % 3 == 0 {
+                out.append(",")
+            }
+            out.append(character)
+        }
+        return out
+    }
+}
+
+/// US phone numbers as they are typed: `(415) 555-0134`.
+///
+/// US only, per CALIBRE_FINAL_PUSH_CONTRACTS.md §6 and §7. A leading `+1` or a
+/// bare leading `1` on an 11-digit string is the country code and is dropped —
+/// a person typing their own number often starts with it, and `(1) 415-555-01`
+/// is not a phone number anyone recognises.
+///
+/// Anything that is not ten US digits is left as the person typed it rather
+/// than forced into the shape: a half-typed number formats progressively
+/// ("415" → "(415)"), and a number that cannot be American at all (more than
+/// ten digits after the country code) is returned untouched so the field never
+/// silently deletes what someone entered.
+public enum PhoneFormatter {
+    /// The digits a US number is stored and submitted as — ten, no country
+    /// code, no punctuation. Nil when the input is not a US number.
+    public static func nationalDigits(_ raw: String) -> String? {
+        var digits = raw.filter(\.isNumber)
+        if digits.count == 11, digits.hasPrefix("1") {
+            digits.removeFirst()
+        }
+        return digits.count == 10 ? digits : nil
+    }
+
+    /// Progressive formatting for a field being typed into.
+    ///
+    /// No punctuation is added until the digit *after* the one it would
+    /// follow has been typed. That is not cosmetic: a formatter that closes
+    /// the bracket at three digits renders "(415)", and the backspace that
+    /// deletes the ")" leaves "(415", which re-formats straight back to
+    /// "(415)" — the field stops accepting deletions and the person is stuck.
+    /// Adding each separator one digit late means every backspace removes a
+    /// digit and the number unwinds exactly the way it was built.
+    public static func format(_ raw: String) -> String {
+        var digits = raw.filter(\.isNumber)
+        // Only strip the country code once there is a national number behind
+        // it, or the "1" of "1-415-…" would vanish as it was typed.
+        if digits.count > 10, digits.hasPrefix("1") {
+            digits.removeFirst()
+        }
+        guard digits.count <= 10 else { return raw }
+
+        switch digits.count {
+        case 0...3:
+            return String(digits)
+        case 4...6:
+            let area = digits.prefix(3)
+            let exchange = digits.dropFirst(3)
+            return "(\(area)) \(exchange)"
+        default:
+            let area = digits.prefix(3)
+            let exchange = digits.dropFirst(3).prefix(3)
+            let line = digits.dropFirst(6)
+            return "(\(area)) \(exchange)-\(line)"
+        }
+    }
+
+    /// Formatting for a value that arrived from the server and is only being
+    /// read. A number that is not a ten-digit US one is shown exactly as
+    /// stored — §0.6 forbids hiding data, and a foreign number that predates
+    /// the US-only rule is still that member's real number.
+    public static func display(_ raw: String?) -> String? {
+        guard let raw, !raw.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        guard let digits = nationalDigits(raw) else { return raw }
+        let area = digits.prefix(3)
+        let exchange = digits.dropFirst(3).prefix(3)
+        let line = digits.dropFirst(6)
+        return "(\(area)) \(exchange)-\(line)"
+    }
+}

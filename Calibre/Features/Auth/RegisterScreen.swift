@@ -130,9 +130,10 @@ struct RegisterScreen: View {
             CalibreTextField(
                 "Phone",
                 text: $phone,
-                placeholder: "+1 555 000 1234",
+                placeholder: "(415) 555-0134",
                 kind: .phone
             )
+            .phoneFormatted($phone)
 
             usernameField
 
@@ -255,7 +256,8 @@ struct RegisterScreen: View {
 
             CalibreTextField("Country", text: $country, placeholder: "US", kind: .country)
 
-            CalibreTextField("Phone", text: $phone, kind: .phone)
+            CalibreTextField("Phone", text: $phone, placeholder: "(415) 555-0134", kind: .phone)
+                .phoneFormatted($phone)
         }
     }
 

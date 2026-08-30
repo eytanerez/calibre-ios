@@ -154,7 +154,7 @@ struct MarketBoardView: View {
     private var skeleton: some View {
         VStack(spacing: Space.l) {
             ForEach(0..<4, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .fill(Color.calibre.card)
                     .frame(height: 140)
                     .shimmer()
@@ -202,8 +202,8 @@ struct MarketBoardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     // MARK: - Watch board (filters + grid)
@@ -428,8 +428,8 @@ private struct TickerCard: View {
             }
             .padding(Space.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
         }
         .buttonStyle(PressableStyle())
     }

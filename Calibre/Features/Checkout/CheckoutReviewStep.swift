@@ -162,9 +162,9 @@ struct CheckoutReviewStep: View {
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
     }
@@ -281,10 +281,10 @@ struct CheckoutReviewStep: View {
                     .background(
                         model.selectedSavedCardID == card.id
                             ? Color.calibre.primary.opacity(0.06) : Color.calibre.card,
-                        in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                             .strokeBorder(
                                 model.selectedSavedCardID == card.id
                                     ? Color.calibre.primary.opacity(0.5) : Color.calibre.border,
@@ -412,10 +412,10 @@ struct CheckoutReviewStep: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             Color.calibre.destructive.opacity(0.06),
-            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(Color.calibre.destructive.opacity(0.35), lineWidth: 1)
         )
         .transition(.opacity)
@@ -452,10 +452,10 @@ struct CheckoutReviewStep: View {
                 .padding(Space.l)
                 .background(
                     Color.calibre.card,
-                    in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         .strokeBorder(Color.calibre.border, lineWidth: 1)
                 )
                 .accessibilityElement(children: .combine)
