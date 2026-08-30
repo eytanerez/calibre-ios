@@ -8,6 +8,11 @@ import SwiftUI
 struct DetailsStep: View {
     @Bindable var model: WizardModel
     @State private var showGradeGuide = false
+    @Environment(\.dynamicTypeSize) private var typeSize
+    /// Width of "Very Good" at the label's font — the widest grade. Scaled,
+    /// because a fixed 84pt column holds about two characters of an
+    /// accessibility-size grade and clipped the rest of the word.
+    @ScaledMetric(relativeTo: .body) private var gradeLabelWidth: CGFloat = 84
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
@@ -118,45 +123,23 @@ struct DetailsStep: View {
     private func conditionRow(_ part: ConditionPart) -> some View {
         let error = model.conditionError(part)
         return VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(part.label)
-                    .font(CalibreType.body)
-                    .foregroundStyle(error == nil ? Color.calibre.mutedForeground : Color.calibre.destructive)
-                Spacer()
-                Menu {
-                    ForEach(ConditionPart.grades, id: \.self) { grade in
-                        Button(grade) {
-                            model.conditions[part] = grade
-                            model.fieldChanged()
-                            Haptics.shared.play(.selection)
-                        }
+            // The part and its grade share a line right up to the
+            // accessibility sizes, where the reserved grade column alone is
+            // wider than the card and pushed the part name off the row. Past
+            // that point the grade sits under the name it belongs to.
+            Group {
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: Space.s) {
+                        partLabel(part, error: error)
+                        gradeMenu(part)
                     }
-                } label: {
-                    HStack(spacing: Space.s) {
-                        Text(model.conditions[part] ?? "Select")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(
-                                model.conditions[part] == nil
-                                    ? Color.calibre.placeholder
-                                    : Color.calibre.foreground
-                            )
-                            .lineLimit(1)
-                            .fixedSize()
-                            // Reserve room for the longest grade so picking a
-                            // two-word one ("Like New") doesn't resize the
-                            // label. That resize is what made the text blink
-                            // out while the menu animated shut.
-                            .frame(minWidth: Self.gradeLabelWidth, alignment: .trailing)
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                } else {
+                    HStack {
+                        partLabel(part, error: error)
+                        Spacer()
+                        gradeMenu(part)
                     }
-                    .frame(minHeight: Space.touchTarget)
-                    .contentShape(Rectangle())
                 }
-                // The menu's dismissal animation must not drag the label
-                // through a crossfade.
-                .transaction { $0.animation = nil }
             }
             .frame(minHeight: Space.touchTarget)
             .accessibilityElement(children: .combine)
@@ -174,12 +157,64 @@ struct DetailsStep: View {
         .animation(Motion.easeFast, value: error)
     }
 
-    /// Width of "Very Good" at the label's font — the widest grade.
-    private static let gradeLabelWidth: CGFloat = 84
+    private func partLabel(_ part: ConditionPart, error: String?) -> some View {
+        Text(part.label)
+            .font(CalibreType.body)
+            .foregroundStyle(error == nil ? Color.calibre.mutedForeground : Color.calibre.destructive)
+    }
+
+    private func gradeMenu(_ part: ConditionPart) -> some View {
+        Menu {
+            ForEach(ConditionPart.grades, id: \.self) { grade in
+                Button(grade) {
+                    model.conditions[part] = grade
+                    model.fieldChanged()
+                    Haptics.shared.play(.selection)
+                }
+            }
+        } label: {
+            HStack(spacing: Space.s) {
+                Text(model.conditions[part] ?? "Select")
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(
+                        model.conditions[part] == nil
+                            ? Color.calibre.placeholder
+                            : Color.calibre.foreground
+                    )
+                    // The reservation below only works while the grade fits on
+                    // one line; at an accessibility size it has to be allowed
+                    // to wrap, or "Very Good" is drawn straight off the card.
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
+                    // Reserve room for the longest grade so picking a
+                    // two-word one ("Like New") doesn't resize the
+                    // label. That resize is what made the text blink
+                    // out while the menu animated shut.
+                    .frame(
+                        minWidth: typeSize.isAccessibilitySize ? nil : gradeLabelWidth,
+                        alignment: .trailing
+                    )
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.calibre.mutedForeground)
+            }
+            .frame(minHeight: Space.touchTarget)
+            .contentShape(Rectangle())
+        }
+        // The menu's dismissal animation must not drag the label
+        // through a crossfade.
+        .transaction { $0.animation = nil }
+    }
 }
 
 /// "How we grade" — the five grades, in plain words.
 private struct GradeGuideSheet: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    /// Width of the grade column. `StatusBadge` draws in `CalibreType.label`
+    /// (13pt relative to .footnote), so the reservation tracks the text it is
+    /// holding room for instead of staying 92pt while the badge triples.
+    @ScaledMetric(relativeTo: .footnote) private var badgeColumnWidth: CGFloat = 92
+
     private let grades: [(String, String)] = [
         ("New", "Unworn, exactly as it left the boutique — stickers still on."),
         ("Like New", "Worn a handful of times. No marks visible to the naked eye."),
@@ -196,19 +231,33 @@ private struct GradeGuideSheet: View {
                         .font(CalibreType.body)
                         .foregroundStyle(Color.calibre.mutedForeground)
                     ForEach(grades, id: \.0) { grade, meaning in
-                        HStack(alignment: .firstTextBaseline, spacing: Space.m) {
-                            StatusBadge(grade, tone: .neutral)
-                                .frame(width: 92, alignment: .leading)
-                            Text(meaning)
-                                .font(CalibreType.body)
-                                .foregroundStyle(Color.calibre.foreground)
-                                .fixedSize(horizontal: false, vertical: true)
+                        // Side by side until the grade column would take most
+                        // of the sheet and leave its meaning a word a line —
+                        // then the grade simply sits above what it means.
+                        if typeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: Space.s) {
+                                StatusBadge(grade, tone: .neutral)
+                                meaningLine(meaning)
+                            }
+                        } else {
+                            HStack(alignment: .firstTextBaseline, spacing: Space.m) {
+                                StatusBadge(grade, tone: .neutral)
+                                    .frame(width: badgeColumnWidth, alignment: .leading)
+                                meaningLine(meaning)
+                            }
                         }
                     }
                 }
                 .padding(.bottom, Space.xxl)
             }
         }
+    }
+
+    private func meaningLine(_ meaning: String) -> some View {
+        Text(meaning)
+            .font(CalibreType.body)
+            .foregroundStyle(Color.calibre.foreground)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

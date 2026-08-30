@@ -122,6 +122,10 @@ struct MarketSparkline: View {
             context.fill(Path(ellipseIn: CGRect(x: last.x - 2, y: last.y - 2, width: 4, height: 4)), with: .color(tint))
         }
         .frame(height: 44)
+        // The card that draws this already says the brand, the reference, the
+        // price and the change in words. A second, wordless "trend" element in
+        // the middle of that sentence is noise, so keep the drawing out of it.
+        .accessibilityHidden(true)
     }
 }
 
@@ -138,6 +142,16 @@ struct MarketAreaChart: View {
     /// then the touch belongs to the enclosing scroll view.
     @State private var scrubbing = false
 
+    /// Canvas draws its text at a literal point size, so the axis readouts and
+    /// the tooltip's date stayed 10pt at every Dynamic Type setting while the
+    /// rest of the screen grew. Seeded from the same numbers that shipped, so
+    /// at the default size these are exactly 10, 44 and 22 and the chart is
+    /// pixel-for-pixel what it was; above it the labels get the gutter they
+    /// need instead of being clipped by the plot.
+    @ScaledMetric(relativeTo: .caption2) private var axisSize: CGFloat = 10
+    @ScaledMetric(relativeTo: .caption2) private var axisGutter: CGFloat = 44
+    @ScaledMetric(relativeTo: .caption2) private var axisFooter: CGFloat = 22
+
     private static let tooltipDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy"
@@ -153,10 +167,10 @@ struct MarketAreaChart: View {
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
-            let padL: CGFloat = 44
+            let padL = axisGutter
             let padR: CGFloat = 8
             let padT: CGFloat = 8
-            let padB: CGFloat = 22
+            let padB = axisFooter
             let plotW = max(size.width - padL - padR, 1)
             let plotH = max(size.height - padT - padB, 1)
 
@@ -190,7 +204,7 @@ struct MarketAreaChart: View {
                             style: StrokeStyle(lineWidth: 1, dash: step == 0 ? [] : [3, 5])
                         )
                         context.draw(
-                            Text(formatValue(value)).font(.system(size: 10)).foregroundColor(Color.calibre.mutedForeground),
+                            Text(formatValue(value)).font(.system(size: axisSize)).foregroundColor(Color.calibre.mutedForeground),
                             at: CGPoint(x: padL - 6, y: y),
                             anchor: .trailing
                         )
@@ -240,7 +254,7 @@ struct MarketAreaChart: View {
                     for index in [0, series.count / 2, series.count - 1] where dates.indices.contains(index) {
                         let anchor: UnitPoint = index == 0 ? .bottomLeading : (index == series.count - 1 ? .bottomTrailing : .bottom)
                         context.draw(
-                            Text(Self.axisDateFormatter.string(from: dates[index])).font(.system(size: 10)).foregroundColor(Color.calibre.mutedForeground),
+                            Text(Self.axisDateFormatter.string(from: dates[index])).font(.system(size: axisSize)).foregroundColor(Color.calibre.mutedForeground),
                             at: CGPoint(x: xPos(index), y: size.height - 4),
                             anchor: anchor
                         )
@@ -271,6 +285,50 @@ struct MarketAreaChart: View {
             }
         }
         .frame(height: 220)
+        // The whole chart is one drawing plus a press-and-hold, so VoiceOver
+        // found nothing here at all — the price history was simply absent. As
+        // one adjustable element it reads its shape, and swiping up or down
+        // walks the crosshair point by point, which is the only way to scrub
+        // without a finger that can hold still on a canvas.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Price history")
+        .accessibilityValue(accessibilityReadout)
+        .accessibilityAdjustableAction { direction in
+            guard series.count > 1 else { return }
+            let current = dragIndex ?? series.count - 1
+            switch direction {
+            case .increment:
+                dragIndex = min(current + 1, series.count - 1)
+            case .decrement:
+                dragIndex = max(current - 1, 0)
+            @unknown default:
+                break
+            }
+            // The touch path plays a selection tap on the first move of a
+            // drag; stepping by swipe never opens one, so leave the flag down
+            // and the haptic unplayed.
+            scrubbing = false
+        }
+    }
+
+    /// What the chart says out loud: the point under the crosshair while one
+    /// is up, otherwise the window it covers and the range it spans.
+    private var accessibilityReadout: String {
+        guard let first = series.first, let last = series.last else {
+            return "No price history yet"
+        }
+        if let dragIndex, series.indices.contains(dragIndex) {
+            guard dates.indices.contains(dragIndex) else { return formatValue(series[dragIndex]) }
+            return "\(formatValue(series[dragIndex])), \(Self.tooltipDateFormatter.string(from: dates[dragIndex]))"
+        }
+        var parts: [String] = []
+        if let firstDate = dates.first, let lastDate = dates.last {
+            parts.append("\(Self.tooltipDateFormatter.string(from: firstDate)) to \(Self.tooltipDateFormatter.string(from: lastDate))")
+        }
+        parts.append("\(formatValue(first)) to \(formatValue(last))")
+        parts.append("low \(formatValue(series.min() ?? first)), high \(formatValue(series.max() ?? last))")
+        parts.append("\(series.count) points")
+        return parts.joined(separator: ", ")
     }
 
     @ViewBuilder
@@ -283,12 +341,16 @@ struct MarketAreaChart: View {
                 .font(CalibreType.bodyMedium)
                 .foregroundStyle(Color.calibre.foreground)
             Text(Self.tooltipDateFormatter.string(from: dates[index]))
-                .font(.system(size: 10))
+                .font(.system(size: axisSize))
                 .foregroundStyle(Color.calibre.mutedForeground)
         }
         .padding(.horizontal, Space.s)
         .padding(.vertical, Space.xs)
-        .frame(width: tooltipWidth)
+        // A floor, not a ceiling: the compact price and the date both fit
+        // inside 128 at every normal size, so the bubble is the same width it
+        // has always been — but at large text sizes a fixed width truncated
+        // the very number the tooltip exists to show.
+        .frame(minWidth: tooltipWidth)
         .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)

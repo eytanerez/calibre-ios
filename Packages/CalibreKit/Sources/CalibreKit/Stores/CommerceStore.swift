@@ -157,22 +157,43 @@ public final class CommerceStore {
     /// Make an offer. The response's `hold.clientSecret` + `publishableKey`
     /// feed Stripe PaymentSheet to authorize the good-faith hold, whose
     /// amount is `hold.amount`; call `confirmHold` afterwards.
+    ///
+    /// `penaltyConsent` is not a formality: `ListingOfferCreatePayload`
+    /// refuses the whole request without it, so only pass true once the buyer
+    /// has actually agreed to the §17.5 disclosure on screen.
+    ///
+    /// `paymentMethodID` is the card the buyer means to put the hold on. Send
+    /// it and the server checks its funding type *before* an offer row or a
+    /// PaymentIntent exists, answering 402 `offer_hold_card_must_be_credit` /
+    /// `offer_hold_card_required` with nothing ever authorized. Omit it and
+    /// the only check is `confirmHold`, which reads the card that actually
+    /// authorized and has to cancel the authorization to refuse it.
     public func createOffer(
         listingID: String,
         amount: Decimal,
         currency: String = "USD",
-        message: String? = nil
+        message: String? = nil,
+        penaltyConsent: Bool,
+        paymentMethodID: String? = nil
     ) async throws -> Offer {
         struct Payload: Encodable {
             let amount: String
             let currency: String
             let buyerMessage: String?
+            let penaltyConsent: Bool
+            let paymentMethodId: String?
         }
         return try await client.send(
             try Endpoint.json(
                 method: .post,
                 path: "/listings/\(listingID)/offers",
-                payload: Payload(amount: "\(amount)", currency: currency, buyerMessage: message)
+                payload: Payload(
+                    amount: "\(amount)",
+                    currency: currency,
+                    buyerMessage: message,
+                    penaltyConsent: penaltyConsent,
+                    paymentMethodId: paymentMethodID
+                )
             )
         )
     }

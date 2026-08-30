@@ -250,6 +250,9 @@ final class SellerCardModel {
     @ObservationIgnored private let sell: SellSession
     /// Kept for the life of the call: Stripe holds the sheet weakly.
     @ObservationIgnored private var paymentSheet: PaymentSheet?
+    /// The SetupIntent the sheet is confirming, so the server can be told
+    /// which one succeeded rather than being polled about it.
+    @ObservationIgnored private var pendingSetupIntentID: String?
 
     init(seller: SellerStore, sell: SellSession) {
         self.seller = seller
@@ -268,6 +271,7 @@ final class SellerCardModel {
             do {
                 STPAPIClient.shared.publishableKey = try await sell.stripeKey()
                 let intent = try await seller.sellerCardSetupIntent()
+                pendingSetupIntentID = intent.setupIntentId
                 let sheet = PaymentSheet(
                     setupIntentClientSecret: intent.clientSecret,
                     configuration: sheetConfiguration()
@@ -316,9 +320,34 @@ final class SellerCardModel {
         }
     }
 
+    /// The settled card after the sheet reports success.
+    ///
+    /// Reporting the SetupIntent is what settles it: the server reads the card
+    /// off Stripe and records it in the same round trip, so the answer below is
+    /// the finished one. Plain `sellerCard()` is only the fallback for a build
+    /// talking to a server without the confirm endpoint — and it races the
+    /// `setup_intent.succeeded` webhook, which is exactly how a perfectly good
+    /// credit card used to come back as "that wasn't a credit card".
+    private func settledCard() async throws -> SellerCardState {
+        guard let setupIntentID = pendingSetupIntentID else {
+            return try await seller.sellerCard()
+        }
+        do {
+            return try await seller.sellerCardConfirm(setupIntentID: setupIntentID)
+        } catch let error as APIError {
+            // 404 here is "not this account's setup intent", 409 is "not
+            // finished" — neither is a card verdict, so fall back to reading
+            // rather than telling the seller their card was refused.
+            if case .server(_, _, let status, _) = error, status == 404 || status == 409 {
+                return try await seller.sellerCard()
+            }
+            throw error
+        }
+    }
+
     private func readBackCard() async {
         do {
-            let state = try await seller.sellerCard()
+            let state = try await settledCard()
             card = state
             if state.present, state.funding?.lowercased() == "credit" {
                 saved = true

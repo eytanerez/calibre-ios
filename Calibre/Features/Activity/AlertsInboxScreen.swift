@@ -206,6 +206,9 @@ private struct AlertRow: View {
             )
         }
         .buttonStyle(PressableStyle())
+        // Unread is drawn as an 8pt dot and nothing else, so without this a row
+        // reads identically whether it has been opened or not.
+        .accessibilityValue(row.read ? "" : "Unread")
     }
 
     private var icon: String {

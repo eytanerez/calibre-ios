@@ -95,17 +95,8 @@ struct LoginScreen: View {
                     GoogleSignInButton(onMessage: { showMessage($0) })
                 }
 
-                HStack(spacing: Space.xs) {
-                    Text("New to Calibre?")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                    NavigationLink("Create an account") {
-                        RegisterScreen()
-                    }
-                    .font(CalibreType.bodySemiBold)
-                    .tint(Color.calibre.primary)
-                }
-                .padding(.top, Space.s)
+                signUpPrompt
+                    .padding(.top, Space.s)
 
                 if context == .gate {
                     Button("Browse as guest") {
@@ -154,6 +145,36 @@ struct LoginScreen: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// "New to Calibre?" and the way in. One line while the two fit side by
+    /// side — which is every normal text size — and stacked once they don't,
+    /// rather than the link running off the right edge of the screen.
+    private var signUpPrompt: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.xs) {
+                signUpLead
+                signUpLink
+            }
+            VStack(spacing: Space.xs) {
+                signUpLead
+                signUpLink
+            }
+        }
+    }
+
+    private var signUpLead: some View {
+        Text("New to Calibre?")
+            .font(CalibreType.body)
+            .foregroundStyle(Color.calibre.mutedForeground)
+    }
+
+    private var signUpLink: some View {
+        NavigationLink("Create an account") {
+            RegisterScreen()
+        }
+        .font(CalibreType.bodySemiBold)
+        .tint(Color.calibre.primary)
     }
 
     private func signIn() async {

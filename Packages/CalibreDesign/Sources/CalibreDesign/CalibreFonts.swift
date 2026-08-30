@@ -26,7 +26,20 @@ public enum CalibreFonts {
             assertionFailure("CalibreDesign font resources missing from bundle")
             return
         }
-        CTFontManagerRegisterFontURLs(urls as CFArray, .process, true) { _, _ in true }
+        // The callback used to throw its errors away. A face that fails to
+        // register silently falls back to the system font, which is how a
+        // brand screen ships in the wrong typeface with nothing in the log to
+        // say so — and how a Dynamic Type check passes against a face the app
+        // is not actually drawing. Errors arrive incrementally, so trap on any
+        // non-empty batch rather than waiting for the `done` pass, and always
+        // return true so the faces that did register still come through.
+        CTFontManagerRegisterFontURLs(urls as CFArray, .process, true) { errors, _ in
+            let failures = errors as? [Error] ?? []
+            if !failures.isEmpty {
+                assertionFailure("CalibreDesign font registration failed: \(failures)")
+            }
+            return true
+        }
     }()
 
     public static func register() {

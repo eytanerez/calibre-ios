@@ -165,6 +165,19 @@ public struct WalletCard: Decodable, Sendable, Identifiable, Equatable {
     public let expMonth: Int?
     public let expYear: Int?
     public let isDefault: Bool
+    /// This is the seller's guarantee card, not a card for spending.
+    ///
+    /// One Stripe customer holds both, and a seller who used the same card for
+    /// each has two rows that are the same four digits and the same expiry —
+    /// so nothing on screen can tell them apart without this. It is not a
+    /// payment method: it is what a counterfeit or misrepresentation charge
+    /// lands on, and buyer checkout must not offer it.
+    public let isSellerCard: Bool
+    /// Whether this particular card may be detached right now. False on the
+    /// seller's guarantee card, and on the default while a hold is live.
+    public let canRemove: Bool
+    /// The server's own sentence for why not, when it says no.
+    public let removeBlockedReason: String?
 
     public var displayName: String {
         "\(brand?.capitalized ?? "Card") •••• \(last4 ?? "----")"
@@ -174,6 +187,26 @@ public struct WalletCard: Decodable, Sendable, Identifiable, Equatable {
         guard let expMonth, let expYear else { return nil }
         return String(format: "Expires %02d/%02d", expMonth, expYear % 100)
     }
+
+    enum CodingKeys: String, CodingKey {
+        case id, brand, last4, expMonth, expYear, isDefault, isSellerCard, canRemove, removeBlockedReason
+    }
+
+    /// Written out rather than synthesized so the three keys added later do
+    /// not make this fail to decode against a server that predates them. A
+    /// card no one has told us about is an ordinary, removable card.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        brand = try container.decodeIfPresent(String.self, forKey: .brand)
+        last4 = try container.decodeIfPresent(String.self, forKey: .last4)
+        expMonth = try container.decodeIfPresent(Int.self, forKey: .expMonth)
+        expYear = try container.decodeIfPresent(Int.self, forKey: .expYear)
+        isDefault = try container.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
+        isSellerCard = try container.decodeIfPresent(Bool.self, forKey: .isSellerCard) ?? false
+        canRemove = try container.decodeIfPresent(Bool.self, forKey: .canRemove) ?? true
+        removeBlockedReason = try container.decodeIfPresent(String.self, forKey: .removeBlockedReason)
+    }
 }
 
 /// `GET /account/payment-methods` — every card on the Stripe customer, with
@@ -181,8 +214,18 @@ public struct WalletCard: Decodable, Sendable, Identifiable, Equatable {
 public struct WalletInfo: Decodable, Sendable {
     public let paymentMethods: [WalletCard]
     public let defaultPaymentMethodId: String?
+    /// The seller's guarantee card, when this account has one. Also flagged on
+    /// the card itself; carried here so a caller can name it without walking
+    /// the list.
+    public let sellerCardPaymentMethodId: String?
     public let canRemove: Bool
     public let removeBlockedReason: String?
+
+    /// Every card that may actually be spent from — the guarantee card is a
+    /// promise, not a payment method.
+    public var spendableCards: [WalletCard] {
+        paymentMethods.filter { !$0.isSellerCard && $0.id != sellerCardPaymentMethodId }
+    }
 }
 
 /// A mobile-only Stripe CustomerSession secret. Distinct from the flat

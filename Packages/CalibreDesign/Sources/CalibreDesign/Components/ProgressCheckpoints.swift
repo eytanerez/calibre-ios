@@ -2,25 +2,52 @@ import SwiftUI
 
 /// Horizontal order tracker — the 5-checkpoint rail (placed → authenticated
 /// → delivered). Dots joined by a hairline rail; completed segments fill
-/// chocolate with a slow ease, the current dot pulses quietly (static under
-/// Reduce Motion), captions sit under each dot.
+/// chocolate with a slow ease, the current dot pulses quietly (a ring instead
+/// of a pulse under Reduce Motion), captions sit under each dot — or beside
+/// them, once the type is too large for five columns.
 public struct ProgressCheckpoints: View {
     let steps: [String]
     let currentIndex: Int
+    let label: String
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var pulsing = false
 
     private let dotSize: CGFloat = 12
 
     /// `currentIndex` is the step in progress; steps before it are complete.
     /// An index past the last step marks the whole journey complete.
-    public init(steps: [String], currentIndex: Int) {
+    ///
+    /// `label` names the journey to VoiceOver; the listing wizard is not an
+    /// order, and every rail announcing itself as one misdescribes it.
+    public init(steps: [String], currentIndex: Int, label: String = "Order progress") {
         self.steps = steps
         self.currentIndex = currentIndex
+        self.label = label
     }
 
     public var body: some View {
+        Group {
+            if typeSize.isAccessibilitySize {
+                stackedRail
+            } else {
+                horizontalRail
+            }
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(Motion.ease(0.9).repeatForever(autoreverses: true)) {
+                pulsing = true
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(accessibilityText)
+    }
+
+    /// The shipped rail: five equal columns under a hairline.
+    private var horizontalRail: some View {
         HStack(alignment: .top, spacing: 0) {
             ForEach(steps.indices, id: \.self) { index in
                 VStack(spacing: Space.s) {
@@ -39,15 +66,44 @@ public struct ProgressCheckpoints: View {
             }
         }
         .background(alignment: .top) { rail }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(Motion.ease(0.9).repeatForever(autoreverses: true)) {
-                pulsing = true
+    }
+
+    /// Above the accessibility threshold a fifth of the screen holds about two
+    /// characters, so the checkpoints turn the corner: dots down the leading
+    /// edge, each caption on its own full-width line. Default sizes never
+    /// reach this branch and keep the horizontal rail exactly as drawn.
+    private var stackedRail: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(steps.indices, id: \.self) { index in
+                HStack(alignment: .top, spacing: Space.m) {
+                    VStack(spacing: 0) {
+                        dot(at: index)
+                        if index < steps.count - 1 {
+                            Capsule()
+                                .fill(
+                                    index < currentIndex
+                                        ? Color.calibre.primary
+                                        : Color.calibre.border
+                                )
+                                .frame(width: 2)
+                                .frame(maxHeight: .infinity)
+                        }
+                    }
+                    .frame(width: dotSize)
+
+                    Text(steps[index])
+                        .font(CalibreType.caption)
+                        .foregroundStyle(
+                            index <= currentIndex
+                                ? Color.calibre.foreground
+                                : Color.calibre.mutedForeground
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, index < steps.count - 1 ? Space.m : 0)
+                }
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Order progress")
-        .accessibilityValue(accessibilityText)
     }
 
     /// The connecting rail: full-width hairline plus the animated chocolate fill.
@@ -77,10 +133,21 @@ public struct ProgressCheckpoints: View {
                 .fill(Color.calibre.primary)
                 .frame(width: dotSize, height: dotSize)
         } else if index == currentIndex {
-            Circle()
-                .fill(Color.calibre.primary)
-                .frame(width: dotSize, height: dotSize)
-                .opacity(reduceMotion ? 1 : (pulsing ? 1 : 0.6))
+            if reduceMotion {
+                // The pulse is the only thing separating the step in progress
+                // from the completed ones; with motion off it reads as a sixth
+                // finished dot. A ring says "here" while standing still.
+                // Motion on — the default — is untouched.
+                Circle()
+                    .fill(Color.calibre.card)
+                    .strokeBorder(Color.calibre.primary, lineWidth: 3)
+                    .frame(width: dotSize, height: dotSize)
+            } else {
+                Circle()
+                    .fill(Color.calibre.primary)
+                    .frame(width: dotSize, height: dotSize)
+                    .opacity(pulsing ? 1 : 0.6)
+            }
         } else {
             Circle()
                 .fill(Color.calibre.card)

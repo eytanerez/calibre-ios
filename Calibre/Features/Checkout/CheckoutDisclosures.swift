@@ -323,6 +323,23 @@ enum CheckoutCopy {
     /// trying again will help.
     static func problem(for error: Error) -> CheckoutProblem {
         guard let apiError = error as? APIError else {
+            // Not every failure in checkout comes back from our API, and the
+            // ones that don't are the ones a buyer most needs words for: a
+            // 3-D Secure decline carries Stripe's own sentence ("Your card has
+            // insufficient funds."), a cancelled challenge carries "You
+            // cancelled the check with your bank, so nothing was charged", an
+            // unreadable card carries a line about checking the details. Every
+            // one of them travels as `CheckoutMessageError`, which is not an
+            // `APIError` — so all of them used to be thrown away here and
+            // replaced with "Something went wrong. Please try again." That is
+            // not just vaguer, it is wrong advice: a declined card declines
+            // again, every time, and the buyer is left retrying instead of
+            // reaching for another card or the wire route.
+            let written = (error as? LocalizedError)?.errorDescription?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if let written, !written.isEmpty {
+                return CheckoutProblem(message: written)
+            }
             return CheckoutProblem(message: "Something went wrong. Please try again.")
         }
 

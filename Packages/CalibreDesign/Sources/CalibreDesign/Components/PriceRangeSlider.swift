@@ -57,10 +57,20 @@ public struct PriceRangeSlider: View {
                     thumb(active: lowerActive)
                         .position(x: lowerX, y: thumbSize / 2)
                         .gesture(lowerDrag(width: width))
+                        .accessibilityLabel("Minimum price")
+                        .accessibilityValue(priceText(lowerValue))
+                        .accessibilityAdjustableAction { direction in
+                            adjust(&lowerValue, direction, upperBound: upperValue)
+                        }
 
                     thumb(active: upperActive)
                         .position(x: upperX, y: thumbSize / 2)
                         .gesture(upperDrag(width: width))
+                        .accessibilityLabel("Maximum price")
+                        .accessibilityValue(priceText(upperValue))
+                        .accessibilityAdjustableAction { direction in
+                            adjust(&upperValue, direction, lowerBound: lowerValue)
+                        }
                 }
             }
             .frame(height: thumbSize)
@@ -71,9 +81,13 @@ public struct PriceRangeSlider: View {
                 if grabbed { Haptics.shared.play(.selection) }
             }
         }
-        .accessibilityElement(children: .ignore)
+        // `children: .contain` rather than `.ignore`: the two thumbs below are
+        // the only way to change a price without a continuous drag, so they have
+        // to stay reachable. `.ignore` flattened them into one read-only summary
+        // and left VoiceOver, Switch Control and Voice Control with a value they
+        // could hear and no gesture that could move it.
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("Price range")
-        .accessibilityValue(rangeText)
     }
 
     private func thumb(active: Bool) -> some View {
@@ -84,6 +98,32 @@ public struct PriceRangeSlider: View {
             .calibreShadow(.resting)
             .scaleEffect(active ? Motion.pressScale : 1)
             .animation(Motion.easeFast, value: active)
+            // 28pt drawn, 44pt grabbable. `.position` places by centre and the
+            // negative padding hands the size back, so the thumb does not move.
+            .a11yExpandTarget(currentSize: thumbSize)
+    }
+
+    /// One increment of VoiceOver's swipe-up/swipe-down on a thumb. Steps by
+    /// `step` where that is a sensible fraction of the range, otherwise by a
+    /// twentieth of it, so a $0–$50,000 filter is twenty gestures end to end
+    /// rather than five hundred.
+    private func adjust(
+        _ value: inout Double,
+        _ direction: AccessibilityAdjustmentDirection,
+        lowerBound: Double? = nil,
+        upperBound: Double? = nil
+    ) {
+        let increment = max(step, (span / 20).rounded())
+        let moved = direction == .increment ? value + increment : value - increment
+        let floor = max(lowerBound ?? bounds.lowerBound, bounds.lowerBound)
+        let ceiling = min(upperBound ?? bounds.upperBound, bounds.upperBound)
+        value = min(max(moved, floor), ceiling)
+        Haptics.shared.play(.selection)
+    }
+
+    private func priceText(_ value: Double) -> String {
+        let text = "$" + Int(value).formatted(.number.grouping(.automatic))
+        return value >= bounds.upperBound ? text + " or more" : text
     }
 
     private func lowerDrag(width: CGFloat) -> some Gesture {

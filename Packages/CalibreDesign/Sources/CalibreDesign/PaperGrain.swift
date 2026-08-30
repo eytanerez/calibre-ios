@@ -33,6 +33,9 @@ struct PaperGrain: View {
             .resizable(resizingMode: .tile)
             .opacity(Self.opacity)
             .allowsHitTesting(false)
+            // Texture, not content. Without this VoiceOver stops on an
+            // unnamed image on the ground of every screen in the app.
+            .accessibilityHidden(true)
     }
 
     /// One tile pixel to one device pixel. Laid out at its nominal point size

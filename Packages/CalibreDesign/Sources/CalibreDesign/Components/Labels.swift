@@ -6,16 +6,27 @@ public struct Eyebrow: View {
     let text: String
     let color: Color
 
+    /// 0.18em at 11pt, and it has to stay 0.18em. Frozen at 1.98 the letters
+    /// crowd back together as the type grows, which is the one thing an
+    /// eyebrow cannot afford. Seeded from the documented base, so at the
+    /// default size this is exactly 1.98 and the label is untouched.
+    @ScaledMetric(relativeTo: .caption2) private var tracking: CGFloat = CalibreType.eyebrowTracking
+
     public init(_ text: String, color: Color = Color.calibre.mutedForeground) {
         self.text = text
         self.color = color
     }
 
     public var body: some View {
-        Text(text.uppercased())
+        // Uppercased for the eye only. Baked into the string, "GBP" and "REF"
+        // reach VoiceOver as capitals and get spelled out letter by letter;
+        // as a display case the spoken text stays the words that were passed
+        // in, and the drawn label is identical either way.
+        Text(text)
             .font(CalibreType.eyebrow)
-            .tracking(CalibreType.eyebrowTracking)
+            .tracking(tracking)
             .foregroundStyle(color)
+            .textCase(.uppercase)
     }
 }
 

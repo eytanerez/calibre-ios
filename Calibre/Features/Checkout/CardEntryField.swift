@@ -11,6 +11,37 @@ import UIKit
 /// applies. Owning the field is what lets us create the PaymentMethod, ask
 /// the server about it, and show a refusal inline while wire is still one tap
 /// away. PaymentSheet is untouched everywhere else.
+///
+/// ## Why this is still the legacy control (checked against stripe-ios 26.2.0)
+///
+/// The modern components were looked at, and the honest answer is that one of
+/// them *can* hand us a PaymentMethod before confirmation — but not at the
+/// moment that matters:
+///
+/// * `PaymentSheet.FlowController` and `EmbeddedPaymentElement` expose the
+///   buyer's choice as `PaymentOptionDisplayData`, which carries an image, a
+///   label, billing details and a payment-method *type* string. No id, no
+///   `card.funding`. There is nothing to ask the server about.
+/// * `PaymentSheet.IntentConfiguration`'s deferred flow does better: its
+///   `ConfirmHandler` is called with a full `STPPaymentMethod` — funding
+///   included — and no money moves until we hand back a client secret, so
+///   returning a failure there would hold the line. But that handler fires
+///   only *after* the buyer taps Pay inside Stripe's sheet. The refusal would
+///   arrive as one line of red text in a sheet we do not own, on a screen
+///   with no way to offer the wire route, after the buyer has committed —
+///   and the whole point of the gate is that it answers at card entry, while
+///   wire is still one tap away.
+///
+/// So the modern component would move a refusal later and make it smaller in
+/// exchange for a nicer form. Not a trade worth making. If Stripe ever gives
+/// the sheet a pre-confirmation hook on selection, this is the paragraph to
+/// come back to.
+///
+/// (`STPPaymentCardTextField.cardParams` is formally deprecated in favour of
+/// `.paymentMethodParams`; both return a fresh copy per read, which is what
+/// makes the identity check in `CheckoutModel.validateEnteredCard` mean
+/// something. Swapping to the newer accessor is a rename, not a rescue, and
+/// is not what "modernise" was asking about.)
 struct CardEntryField: UIViewRepresentable {
     /// The card as Stripe models it — nil until every field validates, so a
     /// caller can never build a PaymentMethod from a half-typed card.

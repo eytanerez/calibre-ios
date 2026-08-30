@@ -108,6 +108,11 @@ private struct CheckoutStack: View {
             // dismissal travels via this environment closure instead.
             .environment(\.checkoutClose, { dismiss() })
             .opacity(model.completedOrder == nil ? 1 : 0)
+            // `.opacity(0)` hides pixels and nothing else — the whole checkout
+            // form, card field included, stayed in the accessibility tree behind
+            // the success screen, so a VoiceOver user could swipe back into a
+            // payment they had already made.
+            .a11yCoveredBy(model.completedOrder != nil)
 
             if let order = model.completedOrder {
                 CheckoutSuccessMoment(
@@ -120,6 +125,18 @@ private struct CheckoutStack: View {
                     onKeepBrowsing: { dismiss() }
                 )
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.02)))
+                .accessibilityAddTraits(.isModal)
+                // The single most important sentence the app ever says, and it
+                // was said only in pixels. Focus does not follow an opacity
+                // crossfade, so without this a blind buyer had no confirmation
+                // that the payment they just authorised had gone through.
+                .onAppear {
+                    A11y.screenChanged(
+                        model.completedOrders.count > 1
+                            ? "Order confirmed. \(model.completedOrders.count) watches purchased."
+                            : "Order confirmed."
+                    )
+                }
             }
         }
         .animation(Motion.easeSlow, value: model.completedOrder == nil)
@@ -140,6 +157,16 @@ extension EnvironmentValues {
 
 /// Shared close affordance for every checkout step.
 struct CheckoutCloseButton: View {
+    /// Set while money is moving.
+    ///
+    /// Closing the cover does not stop a payment — the confirm is already with
+    /// Stripe, and the task that is waiting on it outlives the view. All
+    /// dismissing does is take away the only screen that would have told the
+    /// buyer their card went through, so the review step shuts this door for
+    /// the seconds the payment is in flight. The back button is already
+    /// hidden for exactly the same reason.
+    var disabled: Bool = false
+
     @Environment(\.checkoutClose) private var close
 
     var body: some View {
@@ -152,6 +179,9 @@ struct CheckoutCloseButton: View {
                 .frame(width: 34, height: 34)
                 .background(Color.calibre.secondary, in: Circle())
         }
+        .disabled(disabled)
+        .opacity(disabled ? 0.4 : 1)
         .accessibilityLabel("Close checkout")
+        .accessibilityHint(disabled ? "Unavailable while your payment is going through" : "")
     }
 }

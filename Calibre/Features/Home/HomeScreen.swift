@@ -7,6 +7,7 @@ import SwiftUI
 struct HomeScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     @State private var model: HomeModel?
     @State private var pushed: BrowseDestination?
@@ -130,12 +131,22 @@ struct HomeScreen: View {
                     }
             }
             .buttonStyle(PressableStyle())
-            .accessibilityLabel(bagCount > 0 ? "Bag, \(bagCount) item" : "Bag")
+            .accessibilityLabel(bagLabel)
         }
     }
 
     private var bagCount: Int {
         session.isAuthenticated ? services.commerce.cart.count : 0
+    }
+
+    /// The badge is a numeral; VoiceOver reads the sentence, and the sentence
+    /// was "Bag, 2 item" for every count above one.
+    private var bagLabel: String {
+        switch bagCount {
+        case 0: "Bag"
+        case 1: "Bag, 1 item"
+        default: "Bag, \(bagCount) items"
+        }
     }
 
     private var searchButton: some View {
@@ -274,6 +285,20 @@ struct HomeScreen: View {
         .accessibilityHint("Opens the full watch catalog")
     }
 
+    /// Two across only while a half-width card can still hold a brand name.
+    /// At an accessibility size it cannot — "Jaeger-LeCoultre" in half a phone
+    /// is a stack of fragments — so the rail becomes one column. At every
+    /// default size these are the two flexible columns that ship.
+    private var brandColumns: [GridItem] {
+        if typeSize.isAccessibilitySize {
+            return [GridItem(.flexible(), spacing: Space.m)]
+        }
+        return [
+            GridItem(.flexible(), spacing: Space.m),
+            GridItem(.flexible(), spacing: Space.m),
+        ]
+    }
+
     private func brandRail(_ brands: [BrandGroup]) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             HStack(alignment: .firstTextBaseline) {
@@ -290,13 +315,7 @@ struct HomeScreen: View {
                 .accessibilityLabel("View all watch brands")
             }
 
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: Space.m),
-                    GridItem(.flexible(), spacing: Space.m),
-                ],
-                spacing: Space.m
-            ) {
+            LazyVGrid(columns: brandColumns, spacing: Space.m) {
                 ForEach(brands.prefix(6), id: \.brand) { group in
                     Button {
                         pushed = .brand(group.brand)
@@ -305,8 +324,13 @@ struct HomeScreen: View {
                             Text(group.brand)
                                 .font(CalibreType.bodyMedium)
                                 .foregroundStyle(Color.calibre.foreground)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
+                                // One line with an 0.8 floor is the shipped
+                                // look and stays it; past that floor a long
+                                // brand name is truncated rather than shrunk,
+                                // so above the accessibility threshold the
+                                // name wraps instead.
+                                .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
+                                .minimumScaleFactor(typeSize.isAccessibilitySize ? 1 : 0.8)
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 11, weight: .medium))

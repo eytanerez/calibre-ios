@@ -31,6 +31,12 @@ struct TutorialOverlayModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            // The scrim stacks pixels over the screen; it does not take the
+            // screen out of the accessibility tree, so VoiceOver still walks a
+            // lesson's worth of blocked controls behind it. Only a
+            // `.tapToContinue` beat blocks everything — a `.perform` step needs
+            // the real control underneath to stay reachable.
+            .a11yCoveredBy(controller.currentStep?.advance == .tapToContinue)
             .overlayPreferenceValue(TutorialAnchorPreference.self) { anchors in
                 GeometryReader { proxy in
                     if let step = controller.currentStep {
@@ -91,6 +97,14 @@ struct TutorialScrim: View {
             coachLayer
         }
         .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
+        // Modal only where nothing beneath needs reaching. A `.perform` step
+        // waits on the real control under the hole, so sealing the layer would
+        // make the lesson impossible to finish.
+        .accessibilityAddTraits(step.advance == .tapToContinue ? .isModal : [])
+        // A lesson arrives over a screen the reader is already standing in, so
+        // without this the card is drawn and never spoken.
+        .onAppear { A11y.screenChanged(step.title) }
+        .onChange(of: step.id) { _, _ in A11y.screenChanged(step.title) }
     }
 
     // MARK: Dim
@@ -144,16 +158,41 @@ struct TutorialScrim: View {
     // MARK: Coach card
 
     private var coachLayer: some View {
-        card
-            .frame(maxWidth: min(380, containerSize.width - 2 * Space.margin))
+        let width = min(380, containerSize.width - 2 * Space.margin)
+        let measured = card
+            .frame(maxWidth: width)
             .background(
                 GeometryReader { proxy in
                     Color.clear.preference(key: TutorialCardHeightKey.self, value: proxy.size.height)
                 }
             )
-            .position(x: containerSize.width / 2, y: cardCenterY)
-            .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
-            .onPreferenceChange(TutorialCardHeightKey.self) { cardHeight = $0 }
+
+        // Once the words are large enough, a step's card outgrows the room
+        // between the safe area and the tab bar — and a card centred on a
+        // screen it doesn't fit runs off BOTH ends, so the title and the
+        // button that ends the lesson are equally unreachable. Above that
+        // threshold, cap it and let it scroll. The height preference stays on
+        // the card *inside* the scroll view, so it keeps reporting its own
+        // intrinsic height and the branch can't flip-flop. Below the
+        // threshold — every default-size lesson — this is the layer as shipped.
+        return Group {
+            if cardHeight > availableCardHeight {
+                ScrollView { measured }
+                    .frame(width: width, height: availableCardHeight)
+            } else {
+                measured
+            }
+        }
+        .position(x: containerSize.width / 2, y: cardCenterY)
+        .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
+        .onPreferenceChange(TutorialCardHeightKey.self) { cardHeight = $0 }
+    }
+
+    /// The vertical room a card may occupy — the same top and bottom
+    /// clearances `cardCenterY` keeps, and exactly the height at which its
+    /// `minCenter <= maxCenter` guard gives up.
+    private var availableCardHeight: CGFloat {
+        max(0, containerSize.height - safeAreaInsets.top - Space.l - safeAreaInsets.bottom - 72)
     }
 
     private var card: some View {
@@ -167,7 +206,10 @@ struct TutorialScrim: View {
     /// it is always fully on-screen. A generous bottom clearance keeps it
     /// clear of a floating tab bar (which iOS doesn't report as a safe inset).
     private var cardCenterY: CGFloat {
-        let half = cardHeight / 2
+        // A card taller than the room available is drawn capped and scrolling,
+        // so centre the height it actually occupies. Identical below that
+        // threshold, where the card is shorter than the room it has.
+        let half = min(cardHeight, availableCardHeight) / 2
         let minCenter = safeAreaInsets.top + Space.l + half
         let bottomClearance = safeAreaInsets.bottom + 72
         let maxCenter = containerSize.height - bottomClearance - half
@@ -230,6 +272,9 @@ struct TutorialBlockerPanes: View {
             .frame(width: rect.width, height: rect.height)
             .position(x: rect.midX, y: rect.midY)
             .onTapGesture { Haptics.shared.play(.selection) }
+            // Four tappable rectangles that only say "no". Left reachable they
+            // are four unnamed buttons between the reader and the coach card.
+            .accessibilityHidden(true)
     }
 }
 
@@ -290,7 +335,7 @@ struct TutorialCoachCard: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
-        case .perform:
+        case .perform(let event):
             if let prompt = step.actionPrompt {
                 HStack(spacing: Space.s) {
                     Image(systemName: promptSymbol)
@@ -301,6 +346,21 @@ struct TutorialCoachCard: View {
                 .foregroundStyle(Color.calibre.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isSummaryElement)
+            }
+            // A `.perform` step only ends when the real swipe, drag or
+            // long-press happens — which Switch Control cannot produce and
+            // VoiceOver cannot aim, so the lesson dead-ends and the screen
+            // stays blocked. This is the way out, and only someone already
+            // navigating by focus is ever shown it.
+            if A11y.isNavigatingByFocus {
+                Button {
+                    controller.fire(event)
+                } label: {
+                    Text(isLast ? "Got it" : "Continue")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .accessibilityHint("Moves on without performing the gesture")
             }
         }
     }

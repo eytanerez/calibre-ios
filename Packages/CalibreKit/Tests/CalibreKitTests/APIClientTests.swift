@@ -133,6 +133,85 @@ final class APIClientTests: XCTestCase {
         XCTAssertFalse(user.isAdmin)
     }
 
+    /// The exact 402 body `POST /checkout/create-intent` returns when a buyer
+    /// asks to pay by wire with no credit card recorded as their default —
+    /// copied from a live response, `"funding": null` and all.
+    ///
+    /// Two things have to survive it. The machine code has to arrive, because
+    /// `WireCardRefusal` is built from it and the entire wire card-refusal UI
+    /// (add a card, pay by card instead) is keyed off that type being
+    /// non-nil. And the *other* key in the same map must not take the code
+    /// down with it: decoding `details` straight into `[String: String]` threw
+    /// on the null and turned the whole map into nil, which is how a refusal
+    /// the buyer could have acted on arrived as "something went wrong, try
+    /// again" — advice that could never work.
+    func testServerErrorCarriesCodeFromDetailsAlongsideANullSibling() async throws {
+        let body = Data("""
+        {"ok": false,
+         "error": "Paying by wire needs a credit card on file for the refundable $250 authorization.",
+         "details": {"code": "wire_card_required", "funding": null}}
+        """.utf8)
+        MockURLProtocol.setHandler { _ in (402, body) }
+
+        let client = APIClient(configuration: mockConfiguration(), auth: nil)
+        do {
+            let _: CurrentUser = try await client.send(Endpoint(path: "/checkout/create-intent", requiresAuth: false))
+            XCTFail("Expected APIError.server")
+        } catch let error as APIError {
+            guard case .server(let message, let code, let status, let details) = error else {
+                return XCTFail("Expected .server, got \(error)")
+            }
+            XCTAssertEqual(status, 402)
+            XCTAssertEqual(code, "wire_card_required")
+            XCTAssertEqual(error.serverCode, "wire_card_required")
+            XCTAssertEqual(details?["code"], "wire_card_required")
+            // The null is dropped rather than rendered as the word "null".
+            XCTAssertNil(details?["funding"])
+            XCTAssertTrue(message.hasPrefix("Paying by wire"))
+        }
+    }
+
+    /// A validation failure states each field as a *list* of messages. Those
+    /// are not detail strings and are dropped — but they must not stop the
+    /// rest of the map from being read.
+    func testServerErrorKeepsScalarDetailsWhenAFieldCarriesAList() async throws {
+        let body = Data("""
+        {"ok": false, "error": "Listing not found",
+         "details": {"code": "listing_reserved", "listing_id": ["not found", "or reserved"], "retry_after": 30}}
+        """.utf8)
+        MockURLProtocol.setHandler { _ in (409, body) }
+
+        let client = APIClient(configuration: mockConfiguration(), auth: nil)
+        do {
+            let _: CurrentUser = try await client.send(Endpoint(path: "/checkout/payment-intent", requiresAuth: false))
+            XCTFail("Expected APIError.server")
+        } catch let error as APIError {
+            guard case .server(_, let code, _, let details) = error else {
+                return XCTFail("Expected .server, got \(error)")
+            }
+            XCTAssertEqual(code, "listing_reserved")
+            XCTAssertEqual(details?["retry_after"], "30")
+            XCTAssertNil(details?["listing_id"])
+        }
+    }
+
+    /// A top-level `code`, if an endpoint ever sends one, still wins over the
+    /// one inside `details`.
+    func testTopLevelCodeWinsOverDetailsCode() async throws {
+        let body = Data("""
+        {"ok": false, "error": "no", "code": "top_level", "details": {"code": "nested"}}
+        """.utf8)
+        MockURLProtocol.setHandler { _ in (400, body) }
+
+        let client = APIClient(configuration: mockConfiguration(), auth: nil)
+        do {
+            let _: CurrentUser = try await client.send(Endpoint(path: "/anything", requiresAuth: false))
+            XCTFail("Expected APIError.server")
+        } catch let error as APIError {
+            XCTAssertEqual(error.serverCode, "top_level")
+        }
+    }
+
     func testRateLimitMapsTo429Error() async throws {
         MockURLProtocol.setHandler { _ in (429, Data("{\"ok\": false, \"error\": \"slow down\"}".utf8)) }
         let client = APIClient(configuration: mockConfiguration(), auth: nil)

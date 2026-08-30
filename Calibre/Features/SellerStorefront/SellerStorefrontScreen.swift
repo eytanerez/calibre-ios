@@ -6,6 +6,7 @@ import SwiftUI
 /// the paged grid of their active listings.
 struct SellerStorefrontScreen: View {
     @Environment(AppServices.self) private var services
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     let username: String
 
@@ -88,34 +89,19 @@ struct SellerStorefrontScreen: View {
                 }
             }
 
-            HStack(alignment: .top, spacing: Space.xl) {
-                stat(
-                    value: "\(storefront.reputation.salesCount)",
-                    label: storefront.reputation.salesCount == 1 ? "sale" : "sales"
-                )
-                stat(
-                    value: "\(storefront.activeListingCount)",
-                    label: storefront.activeListingCount == 1 ? "listing" : "listings"
-                )
-                if let average = storefront.reputation.averageRating, storefront.reputation.ratingCount > 0 {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: Space.xs) {
-                            StarRating(rating: average)
-                            Text(average.formatted(.number.precision(.fractionLength(1))))
-                                .font(CalibreType.priceSmall)
-                                .foregroundStyle(Color.calibre.primary)
-                                .monospacedDigit()
-                                .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
-                        }
-                        Text(storefront.reputation.ratingCount == 1 ? "1 review" : "\(storefront.reputation.ratingCount) reviews")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                    }
+            if typeSize.isAccessibilitySize {
+                // Every stat is fixedSize, so at accessibility sizes the row
+                // cannot compress — the review count simply runs off the
+                // trailing edge. Above the threshold they stack; at every
+                // default size the row below is what ships.
+                VStack(alignment: .leading, spacing: Space.m) {
+                    statBlocks(storefront)
                 }
-                Spacer(minLength: 0)
+            } else {
+                HStack(alignment: .top, spacing: Space.xl) {
+                    statBlocks(storefront)
+                    Spacer(minLength: 0)
+                }
             }
 
             storefrontLine(storefront)
@@ -153,6 +139,38 @@ struct SellerStorefrontScreen: View {
     /// numerals sit on varying widths and were wrapping mid-number in the old
     /// equal-spaced row — `monospacedDigit` plus a single unwrapped line keeps
     /// them stable, and the row lays out by content rather than stretching.
+    /// Sales, listings, and the rating — the same three blocks whichever way
+    /// the header lays them out.
+    @ViewBuilder
+    private func statBlocks(_ storefront: SellerStorefront) -> some View {
+        stat(
+            value: "\(storefront.reputation.salesCount)",
+            label: storefront.reputation.salesCount == 1 ? "sale" : "sales"
+        )
+        stat(
+            value: "\(storefront.activeListingCount)",
+            label: storefront.activeListingCount == 1 ? "listing" : "listings"
+        )
+        if let average = storefront.reputation.averageRating, storefront.reputation.ratingCount > 0 {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: Space.xs) {
+                    StarRating(rating: average)
+                    Text(average.formatted(.number.precision(.fractionLength(1))))
+                        .font(CalibreType.priceSmall)
+                        .foregroundStyle(Color.calibre.primary)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                Text(storefront.reputation.ratingCount == 1 ? "1 review" : "\(storefront.reputation.ratingCount) reviews")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+    }
+
     private func stat(value: String, label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
@@ -240,10 +258,7 @@ struct SellerStorefrontScreen: View {
                     )
                 } else {
                     LazyVGrid(
-                        columns: [
-                            GridItem(.flexible(), spacing: Space.l),
-                            GridItem(.flexible(), spacing: Space.l),
-                        ],
+                        columns: calibreGridColumns(typeSize, spacing: Space.l),
                         alignment: .leading,
                         spacing: Space.xl
                     ) {
@@ -276,10 +291,7 @@ struct SellerStorefrontScreen: View {
 
     private var inventorySkeleton: some View {
         LazyVGrid(
-            columns: [
-                GridItem(.flexible(), spacing: Space.l),
-                GridItem(.flexible(), spacing: Space.l),
-            ],
+            columns: calibreGridColumns(typeSize, spacing: Space.l),
             spacing: Space.xl
         ) {
             ForEach(0..<4, id: \.self) { _ in

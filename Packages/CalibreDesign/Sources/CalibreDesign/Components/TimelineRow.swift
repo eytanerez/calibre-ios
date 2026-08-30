@@ -99,6 +99,13 @@ public struct TimelineRow: View {
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(stroke, lineWidth: 1)
         )
+        // One event, not four separate stops for heading, amount, message and
+        // time. Combining keeps all four spoken, in order.
+        .accessibilityElement(children: .combine)
+        // Which side an event belongs to is drawn only as a tint, and a tint
+        // has no spoken form. Every caller's heading already names the party,
+        // so this speaks only when there is no heading to say it.
+        .accessibilityValue(heading == nil ? (side == .buyer ? "From you" : "From the seller") : "")
     }
 
     private var dotColor: Color {

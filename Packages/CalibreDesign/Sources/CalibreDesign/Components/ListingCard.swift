@@ -43,15 +43,21 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
 /// quiet, and never louder than the watch.
 public struct DealerBadge: View {
     private let compact: Bool
+    /// The seal is the only part of the badge that would not grow with the
+    /// word it certifies — at an accessibility size a frozen 11pt glyph reads
+    /// as a speck beside "Dealer". Identical at the default size, where
+    /// `ScaledMetric` returns the value it was given.
+    @ScaledMetric private var sealSize: CGFloat
 
     public init(compact: Bool = false) {
         self.compact = compact
+        _sealSize = ScaledMetric(wrappedValue: compact ? 9 : 11)
     }
 
     public var body: some View {
         HStack(spacing: 3) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: compact ? 9 : 11, weight: .semibold))
+                .font(.system(size: sealSize, weight: .semibold))
             Text("Dealer")
                 .font(compact ? CalibreType.caption : CalibreType.label)
         }
@@ -70,6 +76,8 @@ public struct DealerBadge: View {
 public struct ListingCard<ImageContent: View>: View {
     let model: ListingCardModel
     @ViewBuilder let image: (URL?) -> ImageContent
+
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     public init(model: ListingCardModel, @ViewBuilder image: @escaping (URL?) -> ImageContent) {
         self.model = model
@@ -109,26 +117,43 @@ public struct ListingCard<ImageContent: View>: View {
                     }
                     Spacer(minLength: 0)
                 }
+                // One line each at the default size, as before. Above the
+                // accessibility threshold the limits lift instead of cutting
+                // the watch's name to five characters — "Santos…" identifies
+                // nothing, and the reference is how a buyer checks a listing.
                 Text(model.title)
                     .font(CalibreType.bodyMedium)
                     .foregroundStyle(Color.calibre.foreground)
-                    .lineLimit(1)
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                 if let reference = model.reference {
                     Text("Ref. \(reference)")
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
-                        .lineLimit(1)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                 }
+                // The price is the one thing on this card that may never be
+                // lost. It shared an HStack with the watcher count and a
+                // Spacer at equal priority, so when the row ran short SwiftUI
+                // truncated the flexible child — and on a marketplace where a
+                // watch is $94,500 the number rendered as "$…". Layout
+                // priority makes the watcher count yield instead; at the
+                // default size nothing is short, so nothing moves.
                 HStack(alignment: .firstTextBaseline) {
                     Text(model.priceText)
                         .font(CalibreType.price)
                         .foregroundStyle(Color.calibre.foreground)
-                    Spacer()
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
+                    Spacer(minLength: Space.xs)
                     if let watchers = model.watcherCount, watchers > 0 {
                         Label("\(watchers)", systemImage: "eye")
                             .font(CalibreType.caption)
                             .foregroundStyle(Color.calibre.mutedForeground)
                             .labelStyle(.titleAndIcon)
+                            // The eye carries the meaning and is not spoken,
+                            // so the card otherwise ends on a bare number
+                            // read straight after the price.
+                            .accessibilityLabel("\(watchers) watching")
                     }
                 }
                 .padding(.top, 1)

@@ -32,6 +32,12 @@ struct VaultWatchDetailScreen: View {
     @State private var loadFailed = false
     @State private var showGapSheet = false
 
+    /// The uppercase micro labels over the performance windows and the stat
+    /// cells sit below caption2 on purpose, but the literal froze them at 10pt
+    /// for everyone — they stayed 10pt at the largest setting in the OS.
+    /// Identical at the default size, scaled above it.
+    @ScaledMetric(relativeTo: .caption2) private var microSize: CGFloat = 10
+
     var body: some View {
         Group {
             if let detail {
@@ -238,7 +244,7 @@ struct VaultWatchDetailScreen: View {
             ForEach(windows(series), id: \.label) { window in
                 VStack(spacing: Space.xs) {
                     Text(window.label.uppercased())
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: microSize, weight: .semibold))
                         .foregroundStyle(Color.calibre.mutedForeground)
                     ChangePillView(change: window.value)
                 }
@@ -470,7 +476,7 @@ struct VaultWatchDetailScreen: View {
     private func statCell(label: String, value: String, tone: Tone = .neutral) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased())
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: microSize, weight: .semibold))
                 .foregroundStyle(Color.calibre.mutedForeground)
             Text(value)
                 .font(CalibreType.bodyMedium)

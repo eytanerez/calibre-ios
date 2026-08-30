@@ -633,8 +633,18 @@ struct OrderDetailScreen: View {
             // Only replace on success — a transient failure must not wipe the
             // rendered order and strand the screen on a spinner.
             if let refreshed = try? await services.commerce.order(id: orderID) {
+                // The hero, the badge and the checkpoint all change under a
+                // reader who is still on the old ones and is told nothing.
+                // The tracker is a function of the status, so the status
+                // moving is the whole of what there is to say — and saying it
+                // only when it moves is what keeps a 60-second poll from
+                // talking over somebody every minute.
+                let moved = refreshed.status != order?.status
                 order = refreshed
                 syncReturnFlow(refreshed)
+                if moved {
+                    A11y.announce("Order updated. \(refreshed.statusLabel). \(refreshed.statusSummary)")
+                }
             }
         }
     }

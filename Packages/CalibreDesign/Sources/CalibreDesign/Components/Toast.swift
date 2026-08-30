@@ -46,7 +46,13 @@ public final class ToastCenter {
     public init() {}
 
     /// Presents a toast, replacing any visible one. Auto-dismisses after 4s;
-    /// the user can also swipe it down.
+    /// the user can also swipe it up.
+    ///
+    /// This is the app's only general feedback channel, so it is also the only
+    /// thing that tells a screen-reader user whether an action worked. It
+    /// therefore speaks, and it does not delete itself out from under someone
+    /// who navigates by focus: a banner that vanishes on a timer is a banner
+    /// they can never reach, and its `action` ("Retry", "Undo") with it.
     public func show(
         title: String,
         message: String? = nil,
@@ -55,6 +61,18 @@ public final class ToastCenter {
     ) {
         dismissTask?.cancel()
         current = Toast(id: UUID(), title: title, message: message, tone: tone, action: action)
+
+        A11y.announce(
+            [title, message].compactMap(\.self).joined(separator: ". "),
+            priority: tone == .error ? .high : .default
+        )
+
+        // Errors and anything carrying an action wait for the user when an
+        // assistive technology is driving; everything else keeps the 4s rhythm
+        // sighted users already have.
+        let waitsForUser = A11y.isNavigatingByFocus && (tone == .error || action != nil)
+        guard !waitsForUser else { return }
+
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(4))
             guard !Task.isCancelled else { return }

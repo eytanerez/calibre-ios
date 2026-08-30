@@ -340,13 +340,22 @@ struct MarketBoardView: View {
 struct ChangePillView: View {
     let change: Double
 
+    /// The arrow and the figure sit below the body sizes so the pill reads as a
+    /// ticker mark. Scaled rather than frozen: at the default size these are
+    /// exactly 10 and 12 points, so nothing moves, and above it the percentage
+    /// grows instead of staying a fleck of type nobody can read. The capsule's
+    /// padding and the free HStack grow with the content, so it needs no
+    /// layout work of its own.
+    @ScaledMetric(relativeTo: .caption) private var arrowSize: CGFloat = 10
+    @ScaledMetric(relativeTo: .caption) private var valueSize: CGFloat = 12
+
     var body: some View {
         let positive = change >= 0
         HStack(spacing: 3) {
             Image(systemName: positive ? "arrow.up.right" : "arrow.down.right")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: arrowSize, weight: .semibold))
             Text(MarketFormat.percent(change))
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: valueSize, weight: .semibold))
                 .monospacedDigit()
         }
         .foregroundStyle(positive ? Color.calibre.success : Color.calibre.destructive)
@@ -361,22 +370,34 @@ private struct TickerCard: View {
     let series: MarketSeries
     let onSelect: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+    /// The brand eyebrow and the reference number are the smallest type on the
+    /// card. Scaled rather than frozen: at the default size these are exactly
+    /// 10 and 11 points, so the grid is untouched, and above it the reference
+    /// grows with everything else instead of staying unreadably small.
+    @ScaledMetric(relativeTo: .caption) private var brandSize: CGFloat = 10
+    @ScaledMetric(relativeTo: .caption) private var referenceSize: CGFloat = 11
+
     var body: some View {
         Button(action: onSelect) {
             VStack(alignment: .leading, spacing: Space.m) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(price.brand.uppercased())
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: brandSize, weight: .semibold))
                             .foregroundStyle(Color.calibre.mutedForeground)
                         Text(price.model ?? price.reference)
                             .font(CalibreType.serif(.semiBold, 15, relativeTo: .subheadline))
                             .foregroundStyle(Color.calibre.foreground)
                             .lineLimit(1)
                         Text("Ref. \(price.reference)")
-                            .font(.system(size: 11))
+                            .font(.system(size: referenceSize))
                             .foregroundStyle(Color.calibre.mutedForeground)
-                            .lineLimit(1)
+                            // One line at every normal size — the second line
+                            // only exists at accessibility sizes, where a
+                            // reference truncated to "Ref. 126…" identifies
+                            // nothing.
+                            .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
                     }
                     Spacer(minLength: Space.s)
                     if series.isDrawable {
@@ -393,7 +414,11 @@ private struct TickerCard: View {
                     Text("First published price")
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
-                        .frame(height: 44, alignment: .leading)
+                        // 44 is the sparkline's height, so the grid still lines
+                        // up — but as a floor, not a ceiling: at large text
+                        // sizes the caption wraps out of a fixed 44 and gets
+                        // clipped mid-sentence.
+                        .frame(minHeight: 44, alignment: .leading)
                 }
 
                 Text(MarketFormat.usdFull(price.currentValue))

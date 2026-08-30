@@ -9,6 +9,7 @@ struct FilterSheet: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     let metadata: MarketMetadata?
     /// Non-nil hides the brand cascade (BrandScreen locks it).
@@ -176,7 +177,11 @@ struct FilterSheet: View {
                 "Year",
                 text: $yearText,
                 placeholder: "Any year",
-                error: yearError
+                error: yearError,
+                // The field throws away everything that isn't a digit, so the
+                // letters keyboard was offering keys that do nothing. Every
+                // other Year field in the app is already .integer.
+                kind: .integer
             ) {
                 EmptyView()
             }
@@ -204,13 +209,7 @@ struct FilterSheet: View {
     private var detailsSection: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Eyebrow("Details")
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: Space.m),
-                    GridItem(.flexible(), spacing: Space.m),
-                ],
-                spacing: Space.m
-            ) {
+            LazyVGrid(columns: detailColumns, spacing: Space.m) {
                 FacetSelect(label: "Material", options: options(\.materials), selection: $draft.material)
                 FacetSelect(label: "Dial color", options: options(\.colors), selection: $draft.color)
                 FacetSelect(label: "Case size", options: options(\.caseSizes), selection: $draft.caseSize)
@@ -222,6 +221,18 @@ struct FilterSheet: View {
                 FacetSelect(label: "Caliber", options: options(\.calibers), selection: $draft.caliber)
             }
         }
+    }
+
+    /// Two half-width cells hold "Water resistance" and its value at every
+    /// default size; above the accessibility threshold they hold neither, so
+    /// the grid goes single file. Default sizes keep the two-up grid.
+    private var detailColumns: [GridItem] {
+        typeSize.isAccessibilitySize
+            ? [GridItem(.flexible(), spacing: Space.m)]
+            : [
+                GridItem(.flexible(), spacing: Space.m),
+                GridItem(.flexible(), spacing: Space.m),
+            ]
     }
 
     private var footer: some View {
@@ -403,6 +414,14 @@ private struct FacetSelect: View {
     let options: [String]
     @Binding var selection: String?
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// One line at every default size, as drawn; above the accessibility
+    /// threshold the chosen value would be clipped to a syllable, so it wraps.
+    private var valueLineLimit: Int? {
+        typeSize.isAccessibilitySize ? nil : 1
+    }
+
     var body: some View {
         Menu {
             Picker(label, selection: $selection) {
@@ -422,7 +441,7 @@ private struct FacetSelect: View {
                         .foregroundStyle(
                             selection == nil ? Color.calibre.mutedForeground : Color.calibre.foreground
                         )
-                        .lineLimit(1)
+                        .lineLimit(valueLineLimit)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 11, weight: .medium))

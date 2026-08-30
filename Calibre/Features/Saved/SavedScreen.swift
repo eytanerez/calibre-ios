@@ -9,6 +9,8 @@ import SwiftUI
 /// carries only the listing's current price — no saved-at price — so drops
 /// aren't detectable from the API today. Skipped and noted.
 struct SavedScreen: View {
+
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(ToastCenter.self) private var toasts
@@ -111,10 +113,7 @@ struct SavedScreen: View {
     private var grid: some View {
         ScrollView {
             LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: Space.l),
-                    GridItem(.flexible(), spacing: Space.l),
-                ],
+                columns: calibreGridColumns(typeSize, spacing: Space.l),
                 alignment: .leading,
                 spacing: Space.xl
             ) {
@@ -179,7 +178,28 @@ struct SavedScreen: View {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
         }
-        .accessibilityLabel("\(item.listing?.title ?? "Listing"), \(cardModel(for: item).priceText)")
+        .accessibilityLabel(cardLabel(for: item))
+    }
+
+    /// Everything the cell actually shows, in the order it shows it. This
+    /// `Button` collapses the card into a single element, so whatever is left
+    /// out of this string is simply not there for a screen reader — the
+    /// condition pill, the dealer mark, and above all the Sold / Reserved
+    /// badge, which is the difference between a watch you can buy and one you
+    /// cannot.
+    private func cardLabel(for item: WatchlistItem) -> String {
+        let model = cardModel(for: item)
+        return [
+            model.brand,
+            model.title,
+            model.priceText,
+            model.condition,
+            model.isVerifiedDealer ? "Verified dealer" : nil,
+            item.listing?.unavailableBadge?.text,
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
+        .joined(separator: ", ")
     }
 
     /// The watchlist payload only ever omits `listing` for a row whose watch
@@ -197,10 +217,7 @@ struct SavedScreen: View {
     private var skeleton: some View {
         ScrollView {
             LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: Space.l),
-                    GridItem(.flexible(), spacing: Space.l),
-                ],
+                columns: calibreGridColumns(typeSize, spacing: Space.l),
                 spacing: Space.xl
             ) {
                 ForEach(0..<4, id: \.self) { _ in

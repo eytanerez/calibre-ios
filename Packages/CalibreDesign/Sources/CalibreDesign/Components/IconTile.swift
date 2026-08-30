@@ -19,6 +19,10 @@ public struct IconTile: View {
                 Color.calibre.accent,
                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
             )
+            // The tile decorates a row that already says the thing in words —
+            // without this VoiceOver reads the SF Symbol's name ("checkmark
+            // shield") as a stop of its own before the sentence beside it.
+            .accessibilityHidden(true)
     }
 }
 

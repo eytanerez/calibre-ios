@@ -38,6 +38,9 @@ public struct CalibreTextEditor: View {
             Text(label)
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.secondaryForeground)
+                // The editor below carries `label` as its own accessible name,
+                // so leaving this reachable would say it twice.
+                .accessibilityHidden(true)
 
             ZStack(alignment: .topLeading) {
                 if text.isEmpty {
@@ -47,6 +50,9 @@ public struct CalibreTextEditor: View {
                         .padding(.horizontal, Space.m + 5)
                         .padding(.vertical, Space.m + 8)
                         .allowsHitTesting(false)
+                        // Drawn behind the editor, not inside it: reachable, it
+                        // reads as a second element saying the prompt again.
+                        .accessibilityHidden(true)
                 }
 
                 TextEditor(text: $text)
@@ -57,6 +63,11 @@ public struct CalibreTextEditor: View {
                     .scrollContentBackground(.hidden)
                     .focused($focused)
                     .padding(Space.m)
+                    // A bare `TextEditor` has no title of its own, so without
+                    // this it is announced as "text field" and nothing else —
+                    // the same name `CalibreTextField` gives its own entry.
+                    .accessibilityLabel(label)
+                    .accessibilityHint(error ?? "")
             }
             .frame(minHeight: minHeight, alignment: .topLeading)
             .background(
@@ -86,6 +97,10 @@ public struct CalibreTextEditor: View {
                     Text("\(text.count)/\(characterLimit)")
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
+                        // "123/2000" is read out as a date. Spelling it out
+                        // costs no pixels and stays its own element, so it
+                        // never displaces what the editor itself says.
+                        .accessibilityLabel("\(text.count) of \(characterLimit) characters")
                 }
             }
         }

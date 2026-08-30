@@ -60,6 +60,12 @@ public struct ListingCardSkeleton: View {
             }
             .padding(.horizontal, 2)
         }
+        // The skeleton is a stack of bare shapes, so VoiceOver reads nothing
+        // at all while a screen loads — silence that is indistinguishable
+        // from an empty shelf. One label on the card, not five on the bars.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading")
+        .accessibilityAddTraits(.updatesFrequently)
     }
 }
 

@@ -11,6 +11,7 @@ struct SupportChatScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(AppRouter.self) private var router
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var draft: String
 
@@ -132,9 +133,20 @@ struct SupportChatScreen: View {
                     }
                     .padding(Space.margin)
                 }
-                .onChange(of: conversation.messages.count) { _, _ in
-                    withAnimation(Motion.easeMedium) {
+                .onChange(of: conversation.messages.count) { old, new in
+                    // Reduce Motion asks for no sliding thread; it lands on the
+                    // newest message either way.
+                    if reduceMotion {
                         proxy.scrollTo(conversation.messages.last?.id, anchor: .bottom)
+                    } else {
+                        withAnimation(Motion.easeMedium) {
+                            proxy.scrollTo(conversation.messages.last?.id, anchor: .bottom)
+                        }
+                    }
+                    // The reply arrives while focus is still in the composer, so
+                    // without this the answer lands in silence.
+                    if new > old, let last = conversation.messages.last, last.sender != .customer {
+                        A11y.announce("New reply: \(RecordRefs.flatten(last.body))")
                     }
                 }
             }
@@ -178,8 +190,14 @@ struct SupportChatScreen: View {
                         .foregroundStyle(Color.calibre.primaryForeground)
                         .frame(width: 40, height: 40)
                         .background(canSend ? Color.calibre.primary : Color.calibre.placeholder, in: Circle())
+                        // The circle still draws at 40 and still takes 40 in the
+                        // row; only the region that answers a finger grows.
+                        .a11yExpandTarget(currentSize: 40)
                 }
                 .disabled(!canSend || sending)
+                // An arrow glyph has no name of its own: this read as "button".
+                .accessibilityLabel("Send message")
+                .accessibilityHint(sendHint)
             }
 
             if !canAttach {
@@ -229,6 +247,7 @@ struct SupportChatScreen: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(Color.calibre.primary)
                 .frame(width: 40, height: 40)
+                .a11yExpandTarget(currentSize: 40)
         }
         .disabled(sending || uploading)
         .accessibilityLabel("Link an order or listing")
@@ -255,6 +274,10 @@ struct SupportChatScreen: View {
                                 .foregroundStyle(Color.calibre.mutedForeground)
                         }
                         .accessibilityLabel("Unlink \(ref.label)")
+                        // A 13pt glyph was a 13pt target. The chip's own padding
+                        // and the gap to the next chip absorb the growth, so the
+                        // chip is drawn and measured exactly as before.
+                        .a11yExpandTarget(currentSize: 13)
                     }
                     .padding(.horizontal, Space.s)
                     .padding(.vertical, Space.xs)
@@ -304,6 +327,7 @@ struct SupportChatScreen: View {
                 }
             }
             .frame(width: 40, height: 40)
+            .a11yExpandTarget(currentSize: 40)
         }
         .disabled(!canAttach || uploading || sending)
         .accessibilityLabel("Attach a file")
@@ -332,6 +356,8 @@ struct SupportChatScreen: View {
                                 .foregroundStyle(Color.calibre.mutedForeground)
                         }
                         .accessibilityLabel("Remove \(attachment.filename ?? "attachment")")
+                        // Same 13pt glyph, same absorbed growth as the record chips.
+                        .a11yExpandTarget(currentSize: 13)
                     }
                     .padding(.horizontal, Space.s)
                     .padding(.vertical, Space.xs)
@@ -347,6 +373,18 @@ struct SupportChatScreen: View {
             && (!needsGuestEmail || InputValidation.isValidEmail(guestEmail))
             && !sending
             && !uploading
+    }
+
+    /// Why the send is off. Otherwise the only account of it is a grey fill,
+    /// and VoiceOver's flat "dimmed".
+    private var sendHint: String {
+        if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Write a message first"
+        }
+        if needsGuestEmail && !InputValidation.isValidEmail(guestEmail) {
+            return "Add the email we should reply to first"
+        }
+        return ""
     }
 
     // MARK: - Attachments

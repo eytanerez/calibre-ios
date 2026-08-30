@@ -135,6 +135,146 @@ func offerIsOpen(_ offer: Offer) -> Bool {
     }
 }
 
+// MARK: - What may carry the deposit
+
+/// The offer deposit takes credit cards and nothing else.
+///
+/// Mirrors `offers.OFFER_HOLD_REQUIRED_FUNDING`, which is the authority. This
+/// constant exists only so the client can refuse a card it can already see is
+/// wrong, in the one spot where the server's own pre-check cannot run again.
+let offerHoldRequiredFunding = "credit"
+
+/// The 402 either offer endpoint answers when the card behind the deposit
+/// can't carry it, and everything the buyer needs to hear about it.
+///
+/// The same refusal arrives from two places, and the difference between them
+/// is the whole point of this work, so it is carried in ``origin`` rather than
+/// flattened away: refused at creation, nothing was ever authorized; refused
+/// by `confirm-hold`, an authorization landed and was cancelled, and the
+/// buyer's bank has already seen it.
+struct OfferHoldCardRefusal: Error, LocalizedError, Equatable {
+    /// Whether money stood on the card before the refusal.
+    enum Origin: Equatable {
+        /// `POST /listings/<id>/offers` refused the card it was handed. No
+        /// offer row, no PaymentIntent, nothing on the statement.
+        case beforeAuthorization
+        /// `POST /offers/<id>/confirm-hold` read the card that actually
+        /// authorized, refused it and cancelled the authorization.
+        case afterAuthorization
+    }
+
+    /// Refused because we could read the funding and it wasn't credit.
+    static let mustBeCreditCode = "offer_hold_card_must_be_credit"
+    /// Refused because the funding could not be read at all.
+    static let requiredCode = "offer_hold_card_required"
+
+    let code: String
+    /// The funding the server read, when it read one and it isn't credit.
+    /// Never a guess — an unnamed funding drops out of the sentence.
+    let funding: String?
+    let origin: Origin
+    /// The hold figure, so the sentence can name it. Nil drops the number.
+    let holdText: String?
+
+    /// Nil for anything that isn't this refusal, so the ordinary failure path
+    /// keeps every error it already handled.
+    init?(_ error: Error, origin: Origin, holdText: String?) {
+        guard let apiError = error as? APIError,
+              case .server(_, let code, let status, let details) = apiError,
+              status == 402,
+              let code, code == Self.mustBeCreditCode || code == Self.requiredCode
+        else { return nil }
+        self.code = code
+        let read = details?["funding"]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        self.funding = (read?.isEmpty == false && read != offerHoldRequiredFunding) ? read : nil
+        self.origin = origin
+        self.holdText = holdText
+    }
+
+    /// Built without a server round trip, for the card the client can already
+    /// see is wrong. Nothing has been authorized when this one is raised.
+    init(clientRead funding: String, holdText: String?) {
+        self.code = Self.mustBeCreditCode
+        self.funding = funding
+        self.origin = .beforeAuthorization
+        self.holdText = holdText
+    }
+
+    /// Read by Stripe's PaymentSheet, which shows `localizedDescription`
+    /// under the card form and leaves the form open — so the sentence ends by
+    /// asking for the thing the buyer can do right there.
+    var errorDescription: String? { message }
+
+    var message: String {
+        let holdNoun = offerHoldNoun(holdText)
+        var sentence: String
+
+        if code == Self.requiredCode {
+            sentence = "We couldn\u{2019}t tell what kind of card this is, and an offer\u{2019}s \(holdNoun) has "
+                + "to sit on a credit card."
+        } else if let funding {
+            sentence = "That\u{2019}s a \(funding) card, and an offer\u{2019}s \(holdNoun) has to sit on a "
+                + "credit card \u{2014} a deposit has to be a promise a bank is standing behind, and a "
+                + "\(funding) balance can be spent elsewhere."
+        } else {
+            sentence = "An offer\u{2019}s \(holdNoun) has to sit on a credit card \u{2014} a deposit has to "
+                + "be a promise a bank is standing behind, and a debit or prepaid balance can be spent "
+                + "elsewhere."
+        }
+
+        switch origin {
+        case .beforeAuthorization:
+            sentence += " Nothing was authorized. Try a credit card."
+        case .afterAuthorization:
+            // Said because it is true and because the buyer is about to see it
+            // on their statement: the authorization did land before we could
+            // read the card, and releasing it is not the same as it never
+            // having happened.
+            sentence += " We released the authorization straight away, though your bank may take a day or "
+                + "two to drop it. Try a credit card."
+        }
+        return sentence
+    }
+}
+
+/// The funding Stripe already attached to a PaymentMethod, when it is one the
+/// deposit cannot take.
+///
+/// Advisory, and deliberately narrow: a funding type Stripe didn't state is
+/// **not** refused here, because the server is the one that decides an
+/// unreadable card. All this saves is the round trip — and, where it is used,
+/// an authorization that would otherwise be placed and cancelled.
+func offerHoldRefusedFunding(_ paymentMethod: STPPaymentMethod) -> String? {
+    guard let funding = paymentMethod.card?.funding?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .lowercased(),
+        !funding.isEmpty,
+        funding != offerHoldRequiredFunding
+    else { return nil }
+    return funding
+}
+
+/// The Stripe publishable key, fetched once per launch.
+///
+/// PaymentSheet needs the key *before* it can show a card form, and the offer
+/// flow now wants a card before an offer exists — so the key can no longer
+/// come off the create response. `POST /billing/setup-intent` is the one
+/// authenticated endpoint that hands it out with no order attached, and it is
+/// idempotent per card-setup attempt, so asking twice does not leave a second
+/// unconfirmed SetupIntent behind. The key is static per environment, hence
+/// the cache.
+@MainActor
+enum OfferStripeKey {
+    private static var cached: String?
+
+    static func resolve(_ commerce: CommerceStore) async throws -> String {
+        if let cached { return cached }
+        let key = try await commerce.setupIntent().publishableKey
+        cached = key
+        return key
+    }
+}
+
 // MARK: - The deposit, and renewing it
 
 /// How close to expiring a live offer's authorization has to be before the

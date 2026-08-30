@@ -182,6 +182,9 @@ final class CheckoutModel {
     /// credit card. Both are 402s the buyer can act on.
     private(set) var wireCardRefusal: WireCardRefusal?
     private(set) var addingWireCard = false
+    /// Whether this checkout has already promoted a card the buyer owns in
+    /// answer to "you need a credit card on file". One attempt per checkout.
+    @ObservationIgnored private var triedPromotingOwnedCard = false
     /// A challenge the buyer walked away from. The same intent is retried —
     /// never a new one.
     private(set) var wireHoldError: String?
@@ -219,6 +222,37 @@ final class CheckoutModel {
 
     /// The gate said yes to the card in the field.
     var cardAccepted: Bool { validatedPaymentMethodID != nil }
+
+    // MARK: Cards the buyer already has
+
+    /// The buyer's saved cards, from `GET /account/payment-methods`.
+    ///
+    /// Checkout used to ignore the wallet entirely: a buyer who had paid on
+    /// this account ten minutes ago was handed an empty card field and asked
+    /// to find their wallet again. The account screen could list the card the
+    /// whole time. Loading it here is not a shortcut past the funding gate —
+    /// a saved card goes through exactly the same
+    /// `POST /checkout/validate-payment-method` a typed one does, before the
+    /// Pay button is live, and the server judges it a second time on confirm.
+    private(set) var savedCards: [WalletCard] = []
+    /// Which saved card is selected; nil while a new card is being typed.
+    private(set) var selectedSavedCardID: String?
+    /// The buyer chose to type a card instead. Also the only state a buyer
+    /// with no saved cards is ever in.
+    private(set) var isEnteringNewCard = false
+    private(set) var checkingSavedCard = false
+
+    var hasSavedCards: Bool { !savedCards.isEmpty }
+
+    var selectedSavedCard: WalletCard? {
+        savedCards.first { $0.id == selectedSavedCardID }
+    }
+
+    /// The card to offer first: the one the account calls default, else the
+    /// newest. Never a guess about funding — that is the server's answer.
+    private var preferredSavedCard: WalletCard? {
+        savedCards.first(where: \.isDefault) ?? savedCards.first
+    }
 
     // MARK: Payment
 
@@ -275,7 +309,24 @@ final class CheckoutModel {
             phase = .ready
         } catch {
             phase = .failed(friendlyMessage(error))
+            return
         }
+        await loadSavedCards()
+    }
+
+    /// The wallet, loaded after the checkout itself is on screen and never
+    /// able to stop it. A buyer with no cards, or a cards call that fell over,
+    /// gets the card form — which is exactly what they got before this
+    /// existed. Nothing here decides whether a card may be used.
+    private func loadSavedCards() async {
+        // `spendableCards`, not every card: a seller's guarantee card sits on
+        // the same Stripe customer, and a seller who used one card for both
+        // sees the same brand and the same four digits twice with nothing to
+        // choose between them. It is the card a counterfeit charge lands on —
+        // never a card to buy a watch with.
+        let cards = (try? await commerce.wallet())?.spendableCards ?? []
+        savedCards = cards
+        isEnteringNewCard = cards.isEmpty
     }
 
     /// Every watch in the set, fetched together. One failure fails the load —
@@ -384,7 +435,11 @@ final class CheckoutModel {
             trackCheckoutStarted(.card, group: intent.breakdownGroup, breakdown: intent.breakdown)
         } catch {
             recordPricingFailure(error)
+            return
         }
+        // A re-price is a new verdict: the funding rule rides on the pricing
+        // mode, and the mode rides on where the purchase is going.
+        await prepareCardSelection()
     }
 
     /// The card cost in dollars, once the server has priced the purchase.
@@ -408,6 +463,14 @@ final class CheckoutModel {
         method = .wire
         clearCardEntry()
         await startWire()
+        // The card gate can refuse wire, and everything a buyer can do about
+        // that — the message for each code, "Add a credit card", "Pay by card
+        // instead" — lives on the method step. Refused from the review step,
+        // the refusal would be state nothing on screen renders, and the button
+        // would look broken. Step back to where the answer is.
+        if wireCardRefusal != nil, path.last == .review {
+            path = [.method]
+        }
     }
 
     /// Opens the wire path, deposit first.
@@ -428,6 +491,51 @@ final class CheckoutModel {
             if path.last != .wire { path.append(.wire) }
             return
         }
+        guard !preparingWire, selectedAddressID != nil, !listingIDs.isEmpty else { return }
+        await openWireCheckout()
+
+        // "You need a credit card on file" is sometimes about our own record
+        // of which card is the buyer's, not about anything they have to do:
+        // the gate reads the account's *default* card, and a card saved
+        // through checkout or a sheet can sit in the wallet with that field
+        // never written. Being asked to add a card you are looking at on your
+        // own payment screen is not an honest refusal, so before showing it,
+        // promote what they already own and ask again. Once — a second round
+        // against a server that keeps saying no is a loop, not a retry.
+        //
+        // Safe at exactly this point and nowhere else: the card gate runs
+        // before the deposit is placed, so no authorization exists yet and
+        // re-opening costs the buyer nothing (contracts §11.6).
+        guard wireCardRefusal?.offersAddCard == true, !triedPromotingOwnedCard else { return }
+        triedPromotingOwnedCard = true
+        guard await promoteOwnedCard() else { return }
+        wireCardRefusal = nil
+        await openWireCheckout()
+    }
+
+    /// Makes a card the buyer already owns the one the deposit is placed on.
+    ///
+    /// A one-line server write, and the server still judges the funding
+    /// afterwards — a promoted debit card is refused on the next attempt with
+    /// `wire_card_must_be_credit`, which is the true answer.
+    private func promoteOwnedCard() async -> Bool {
+        do {
+            let wallet = try await commerce.wallet()
+            let spendable = wallet.spendableCards
+            savedCards = spendable
+            // Never the guarantee card: the deposit has to sit on a card the
+            // buyer chose to spend from.
+            let card = spendable.first { $0.id == wallet.defaultPaymentMethodId } ?? spendable.first
+            guard let card else { return false }
+            try await commerce.makeCardDefault(id: card.id)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// One attempt at opening the wire checkout.
+    private func openWireCheckout() async {
         guard !preparingWire, let addressID = selectedAddressID, !listingIDs.isEmpty else { return }
         preparingWire = true
         pricingError = nil
@@ -495,6 +603,16 @@ final class CheckoutModel {
         do {
             let intent = try await commerce.setupIntent()
             guard await presentSheet(intent) else { return }
+            // The account's default card is written by the
+            // `setup_intent.succeeded` webhook, and asking for wire again the
+            // instant the sheet closes races it — the buyer is told a second
+            // time to add the card they have just added. Promoting what the
+            // wallet now holds settles it in a round trip we control, and the
+            // server still judges the funding on the retry.
+            _ = await promoteOwnedCard()
+            // Already resolved by hand; the retry inside `startWire` would
+            // only repeat this.
+            triedPromotingOwnedCard = true
             wireCardRefusal = nil
             await startWire()
         } catch {
@@ -577,10 +695,91 @@ final class CheckoutModel {
 
     // MARK: - Review & pay (card)
 
-    /// Paying is only offered once the funding gate has accepted the card in
-    /// the field. A card nobody has checked is never one tap from a charge.
+    /// Paying is only offered once the funding gate has accepted the card —
+    /// typed or saved. A card nobody has checked is never one tap from a
+    /// charge.
     var canPayWithCard: Bool {
-        cardIntent != nil && cardAccepted && !payState.isBusy && !confirmingOrder && !checkingCardEntry
+        cardIntent != nil && cardAccepted && !payState.isBusy && !confirmingOrder
+            && !checkingCardEntry && !checkingSavedCard
+    }
+
+    // MARK: - Paying with a card already on the account
+
+    /// Settles which card the review step is offering, and puts it through the
+    /// gate. Called when the step appears and again whenever the purchase is
+    /// re-priced — a new destination can change the pricing mode, and the
+    /// funding rule rides on the mode, so an old verdict is not reusable.
+    func prepareCardSelection() async {
+        guard cardIntent != nil else { return }
+        if selectedSavedCardID == nil, !isEnteringNewCard, let preferred = preferredSavedCard {
+            selectedSavedCardID = preferred.id
+        }
+        guard selectedSavedCardID != nil, validatedPaymentMethodID == nil else { return }
+        await validateSavedCard()
+    }
+
+    /// Switch to one of the buyer's saved cards. The previous verdict goes
+    /// with the previous card.
+    func useSavedCard(_ id: String) {
+        guard savedCards.contains(where: { $0.id == id }) else { return }
+        isEnteringNewCard = false
+        selectedSavedCardID = id
+        // Writing `cardParams` retires the accepted PaymentMethod, so nothing
+        // a typed card earned can be paid with under a saved card's name.
+        cardParams = nil
+        cardIsValid = false
+        cardRefusal = nil
+        cardCheckProblem = nil
+        Task { await validateSavedCard() }
+    }
+
+    /// "Use a different card" — a fresh form, with nothing carried over.
+    func enterNewCard() {
+        isEnteringNewCard = true
+        selectedSavedCardID = nil
+        clearCardEntry()
+    }
+
+    /// Back to the saved cards from the form.
+    func useSavedCardsInstead() {
+        guard hasSavedCards else { return }
+        clearCardEntry()
+        isEnteringNewCard = false
+        if let preferred = preferredSavedCard {
+            useSavedCard(preferred.id)
+        }
+    }
+
+    /// The same funding gate a typed card goes through, run on a saved card
+    /// before the Pay button is live. A saved card is not a trusted card: it
+    /// may be the debit card the buyer added for an offer hold, and this
+    /// order may be one that only takes credit.
+    func validateSavedCard() async {
+        guard let card = selectedSavedCard, cardIntent != nil else { return }
+        guard !checkingSavedCard, !payState.isBusy, !confirmingOrder else { return }
+        checkingSavedCard = true
+        cardRefusal = nil
+        cardCheckProblem = nil
+        paymentProblem = nil
+        defer { checkingSavedCard = false }
+
+        do {
+            let validation = try await checkout.validatePaymentMethod(
+                listingIDs: listingIDs,
+                paymentMethodID: card.id
+            )
+            // The buyer may have moved on to another card while this was in
+            // flight; that verdict is not about what is on screen.
+            guard selectedSavedCardID == card.id else { return }
+            guard validation.accepted else {
+                cardRefusal = CardRefusal(code: validation.reason, serverMessage: nil)
+                return
+            }
+            validatedPaymentMethodID = card.id
+        } catch {
+            guard selectedSavedCardID == card.id else { return }
+            cardCheckProblem = CheckoutCopy.problem(for: error)
+        }
     }
 
     /// The funding check, run the moment a complete card is in the field —
@@ -604,14 +803,16 @@ final class CheckoutModel {
                 listingIDs: listingIDs,
                 paymentMethodID: paymentMethodID
             )
+            // The card the gate judged may already have been replaced by a
+            // newer one — that write cleared the id, and this verdict is no
+            // longer about what is on screen. Checked before the refusal too,
+            // or a card the buyer has already typed over shows a refusal for
+            // a card that is no longer in the field.
+            guard cardParams === params else { return }
             guard validation.accepted else {
                 cardRefusal = CardRefusal(code: validation.reason, serverMessage: nil)
                 return
             }
-            // The card the gate accepted may already have been replaced by a
-            // newer one — that write cleared the id, and this verdict is no
-            // longer about what is on screen.
-            guard cardParams === params else { return }
             validatedPaymentMethodID = paymentMethodID
         } catch {
             guard cardParams === params else { return }
@@ -625,7 +826,12 @@ final class CheckoutModel {
     func payWithCard() async {
         guard let intent = cardIntent,
               let paymentMethodID = validatedPaymentMethodID,
-              !payState.isBusy else { return }
+              !payState.isBusy, !confirmingOrder else { return }
+        // Claimed here, before anything can suspend, so a second tap landing
+        // in the gap between the tap and the first network call finds the
+        // guard above already closed. `confirmAccepted` sets it again; this is
+        // the one that has to be synchronous with the guard.
+        payState = .confirming
         cardRefusal = nil
         paymentProblem = nil
 
@@ -926,10 +1132,10 @@ final class CheckoutModel {
                     return
                 }
             } catch let error as APIError {
-                if case .server(_, _, let status, _) = error, status != 402, status < 500 {
+                if case .server(let message, let code, let status, _) = error, status != 402, status < 500 {
                     // Terminal server verdict (refunded races, forbidden) —
                     // stop polling and show the backend's own message.
-                    giveUp(partial, message: error.localizedDescription)
+                    giveUp(partial, message: Self.terminalMessage(code: code, serverMessage: message))
                     return
                 }
                 if Date.now >= deadline {
@@ -967,6 +1173,23 @@ final class CheckoutModel {
 
     private static let settlingMessage =
         "Your payment went through, but we couldn't confirm the order just yet. It will appear in your orders shortly."
+
+    /// The server's own sentence for a purchase that cannot become an order,
+    /// plus the half it leaves out.
+    ///
+    /// When a paid checkout can no longer be fulfilled the API refunds the
+    /// charge and answers 409 with a `..._refunded` code — but its message is
+    /// only "Listing is no longer available". A buyer who has just watched
+    /// several thousand dollars leave their account is owed the other half of
+    /// that sentence in the same breath, not in an email later. (Reachable
+    /// only since the client started reading `details.code`; before that the
+    /// code was always nil and this could never have been said.)
+    private static func terminalMessage(code: String?, serverMessage: String) -> String {
+        let served = serverMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        let base = served.isEmpty ? "This purchase couldn't be completed." : served
+        guard code?.hasSuffix("_refunded") == true else { return base }
+        return "\(base) Your payment has been refunded in full — it can take a few days to reach your statement."
+    }
 
     // MARK: - Wire path
 

@@ -75,6 +75,23 @@ public extension ButtonStyle where Self == CalibreButtonStyle {
 public struct PressableStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
+        // NOTE: a blanket 44pt hit floor was tried here and DELIBERATELY REMOVED.
+        //
+        // It was a clear background with `frame(minWidth:minHeight:)` and a
+        // `contentShape`, which is layout-free — but it silently widens the hit
+        // region of all 60+ call sites by up to 22pt in every direction, and a
+        // background is neither clipped nor bounded by the button's own frame.
+        // `SearchField`'s 15pt clear button sits `Space.s` from the text field
+        // with no clip between them, so the grown region reached back over the
+        // field's trailing edge: a tap meant to place the cursor at the end of a
+        // query would have wiped the query instead.
+        //
+        // The change is either that regression or completely inert, depending on
+        // whether SwiftUI dispatches to an overflowing background — and that
+        // needs a device to settle, not a reading. Targets on this style are a
+        // real finding; the fix belongs at the call sites that are actually
+        // short, using `a11yExpandTarget` where the neighbours have been looked
+        // at, not as a blanket rule nobody has run.
         configuration.label
             .scaleEffect(configuration.isPressed ? Motion.pressScale : 1)
             .animation(Motion.easeFast, value: configuration.isPressed)

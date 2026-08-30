@@ -7,6 +7,11 @@ public struct SearchField: View {
     @Binding var text: String
     let placeholder: String
     @FocusState private var focused: Bool
+    /// The magnifier and the clear ✕ are the only two things in the field that
+    /// would not grow with the query between them — at an accessibility size
+    /// they sit as specks against text twice their height. Identical at the
+    /// default size, where `ScaledMetric` returns the value it was given.
+    @ScaledMetric private var glyphSize: CGFloat = 15
 
     public init(text: Binding<String>, placeholder: String = "Search watches") {
         self._text = text
@@ -16,7 +21,7 @@ public struct SearchField: View {
     public var body: some View {
         HStack(spacing: Space.s) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: glyphSize, weight: .medium))
                 .foregroundStyle(Color.calibre.mutedForeground)
 
             TextField(
@@ -36,7 +41,7 @@ public struct SearchField: View {
                     text = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
+                        .font(.system(size: glyphSize))
                         .foregroundStyle(Color.calibre.placeholder)
                 }
                 .buttonStyle(PressableStyle())

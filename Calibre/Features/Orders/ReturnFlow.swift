@@ -601,6 +601,11 @@ private struct ReturnQuoteView: View {
     let model: ReturnFlowModel
     let onCapture: (ListingImageCategory) -> Void
 
+    /// The photo rail's caption column. Fixed at 76 the six labels wrap into a
+    /// column of single letters at the larger text sizes; this is exactly 76 at
+    /// the default size, so the rail ships unchanged.
+    @ScaledMetric(relativeTo: .caption) private var slotLabelWidth: CGFloat = 76
+
     @Bindable private var bindable: ReturnFlowModel
 
     init(quote: ReturnQuote, model: ReturnFlowModel, onCapture: @escaping (ListingImageCategory) -> Void) {
@@ -799,7 +804,7 @@ private struct ReturnQuoteView: View {
                             Text(category.label)
                                 .font(CalibreType.caption)
                                 .foregroundStyle(Color.calibre.mutedForeground)
-                                .frame(width: 76)
+                                .frame(width: slotLabelWidth)
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
                         }

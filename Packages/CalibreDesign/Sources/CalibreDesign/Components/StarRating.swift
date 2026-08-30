@@ -83,6 +83,12 @@ public struct StarRating: View {
                         )
                 }
             }
+            // 28pt stars make a row about 33pt tall — under the finger a rating
+            // control needs. The 11pt of growth is vertical only, so the star
+            // maths below (horizontal) is untouched, and the negative padding
+            // hands the layout straight back: the row still measures what it
+            // drew, and the 5.5pt of spill lands in the gap above the caption.
+            .padding(.vertical, 5.5)
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
@@ -96,6 +102,7 @@ public struct StarRating: View {
                         }
                     }
             )
+            .padding(.vertical, -5.5)
 
             Text(selection.wrappedValue > 0 ? Self.labels[selection.wrappedValue - 1] : "Tap to rate")
                 .font(CalibreType.label)

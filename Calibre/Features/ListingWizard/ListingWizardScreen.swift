@@ -52,6 +52,11 @@ struct ListingWizardScreen: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .interactiveDismissDisabled()
+        // The success cover is opaque pixels and nothing more: without this
+        // the wizard underneath it stays fully readable, so a screen-reader
+        // seller is still swiping through Continue and the price field while
+        // the app says the listing is in review.
+        .a11yCoveredBy(showSuccess)
         .overlay {
             if showSuccess {
                 successMoment
@@ -195,7 +200,9 @@ struct ListingWizardScreen: View {
             withAnimation(Motion.easeFast) {
                 model.markAttempted(model.step)
             }
-            scrollTarget = model.firstInvalidField(onStep: model.step)
+            let firstInvalid = model.firstInvalidField(onStep: model.step)
+            scrollTarget = firstInvalid
+            announceFirstError(firstInvalid, on: model)
             Haptics.shared.play(.error)
             return
         }
@@ -214,6 +221,23 @@ struct ListingWizardScreen: View {
         }
     }
 
+    /// The first thing Continue refused over, spoken.
+    ///
+    /// Every message lands beside its own field, which is exactly where a
+    /// screen reader's cursor is not — scrolling moves the eye, not the
+    /// focus. Without this, pressing Continue on an incomplete step is a
+    /// button that does nothing at all. Silent when nothing is listening.
+    private func announceFirstError(_ field: WizardField?, on model: WizardModel) {
+        guard let field else { return }
+        let message: String? = switch field {
+        case .brand: model.brandError
+        case .year: model.yearFieldError
+        case .condition(let part): model.conditionError(part).map { "\(part.label). \($0)" }
+        case .price: model.priceFieldError
+        }
+        if let message { A11y.announce(message, priority: .high) }
+    }
+
     private func advance(_ model: WizardModel, to step: Int) {
         withAnimation(Motion.easeMedium) {
             model.step = min(max(step, 0), 3)
@@ -228,7 +252,14 @@ struct ListingWizardScreen: View {
                 withAnimation(Motion.easeSlow) {
                     showSuccess = true
                 }
-                try? await Task.sleep(for: .seconds(2))
+                // The cover replaces the wizard outright, which is a screen
+                // change nothing else announces.
+                A11y.screenChanged("In review. We'll let you know the moment it's live.")
+                // Two seconds is a glance to read and most of a sentence to
+                // hear: on the timer a screen-reader seller loses the only
+                // confirmation the submit ever gets. Nothing is waiting on
+                // this — the listing is already in.
+                try? await Task.sleep(for: .seconds(A11y.isNavigatingByFocus ? 8 : 2))
                 dismiss()
                 onFinished()
             }
@@ -269,6 +300,7 @@ struct ListingWizardScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .calibrePageBackground()
         .transition(.opacity)
+        .accessibilityAddTraits(.isModal)
     }
 
     private var wizardSkeleton: some View {

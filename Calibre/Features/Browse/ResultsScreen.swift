@@ -235,6 +235,13 @@ struct ResultsContent: View {
                 .frame(minHeight: 36)
                 .background(Color.calibre.card, in: Capsule())
                 .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+                // A button is only tappable where its label is, so the 44pt
+                // frame outside it padded the row without widening the target:
+                // the capsule still drew at 36 and the top and bottom 4pt of
+                // the row swallowed the tap. Grow the label instead — the
+                // capsule stays centred at 36, so nothing moves.
+                .frame(minHeight: Space.touchTarget)
+                .contentShape(Rectangle())
             }
             .buttonStyle(PressableStyle())
             .frame(minHeight: Space.touchTarget)
@@ -264,6 +271,10 @@ struct ResultsContent: View {
             .frame(minHeight: 36)
             .background(Color.calibre.card, in: Capsule())
             .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+            // Same as Filter: the menu opens only from the label's own 36pt
+            // capsule, so the target is grown here rather than around it.
+            .frame(minHeight: Space.touchTarget)
+            .contentShape(Rectangle())
         }
         .frame(minHeight: Space.touchTarget)
         .accessibilityLabel("Sort")

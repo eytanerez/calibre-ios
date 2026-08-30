@@ -32,6 +32,10 @@ public struct SheetScaffold<Content: View>: View {
                 Text(title)
                     .font(CalibreType.sectionTitle)
                     .foregroundStyle(Color.calibre.foreground)
+                    // Serif and size are all that mark this as the sheet's
+                    // title; the trait is what puts it in VoiceOver's heading
+                    // rotor so a sheet can be identified without reading it.
+                    .accessibilityAddTraits(.isHeader)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Space.margin)
                     .padding(.bottom, Space.l)

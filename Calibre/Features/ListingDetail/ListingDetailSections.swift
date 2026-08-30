@@ -52,13 +52,29 @@ struct ParsedDescription {
 /// The three at-a-glance tiles under the buy box: Condition / Year / Box & papers.
 struct QuickSpecRow: View {
     let listing: Listing
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: Space.m) {
-            tile("Condition", listing.condition?.overall ?? "—")
-            tile("Year", listing.productionYear.map(String.init) ?? "—")
-            tile("Box & papers", boxPapersText)
+        // Three tiles across a phone give each about a third of the width. At
+        // an accessibility size a third holds two or three characters, so
+        // "Full set" was arriving as "Fu…" — past that point the tiles stack
+        // full width instead.
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Space.m) {
+                tiles
+            }
+        } else {
+            HStack(spacing: Space.m) {
+                tiles
+            }
         }
+    }
+
+    @ViewBuilder
+    private var tiles: some View {
+        tile("Condition", listing.condition?.overall ?? "—")
+        tile("Year", listing.productionYear.map(String.init) ?? "—")
+        tile("Box & papers", boxPapersText)
     }
 
     private var boxPapersText: String {
@@ -71,10 +87,17 @@ struct QuickSpecRow: View {
 
     private func tile(_ label: String, _ value: String) -> some View {
         VStack(spacing: 3) {
+            // "Box & papers" fits on one line at the default size and needs a
+            // second before it will fit at any larger one, so the limit lifts
+            // only above the accessibility threshold. Gated rather than deleted:
+            // dropping it outright left the default layout resting on a hand
+            // measurement (~73pt of text in a ~96pt tile on a 375pt screen) with
+            // no floor under it, so a longer localized label would silently wrap
+            // the tile and grow the row for everyone.
             Text(label)
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
-                .lineLimit(1)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             // Two-word values ("Very Good", "Like New") need room to wrap —
             // a single line with only an 0.8 scale factor was clipping them.
             Text(value)

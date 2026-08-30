@@ -300,6 +300,33 @@ public final class SellerStore {
         try await client.send(Endpoint(method: .post, path: "/account/seller-card/setup-intent"))
     }
 
+    /// Reports the SetupIntent the SDK just confirmed, and gets the settled
+    /// card back.
+    ///
+    /// Without this the only thing that tells Calibre a card was saved is the
+    /// `setup_intent.succeeded` webhook, and re-reading `sellerCard()` the
+    /// instant the sheet closes races it. Losing that race does not read as
+    /// "not yet" anywhere in the UI — it reads as *no card*, which the screen
+    /// then explains as the card having been refused for not being a credit
+    /// card. This endpoint settles it in the same round trip.
+    ///
+    /// Only the id is sent: the card itself is read off Stripe's own object
+    /// server-side, because a client saying "I saved a credit card" is not
+    /// evidence, and credit-only is the whole guarantee. The webhook runs the
+    /// same code, so whichever arrives first does the work.
+    public func sellerCardConfirm(setupIntentID: String) async throws -> SellerCardState {
+        struct Payload: Encodable {
+            let setupIntentId: String
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .post,
+                path: "/account/seller-card/confirm",
+                payload: Payload(setupIntentId: setupIntentID)
+            )
+        )
+    }
+
     // MARK: - Pricing guidance
 
     /// "Watches like this listed at $X–Y and sold in ~N days" — computed from

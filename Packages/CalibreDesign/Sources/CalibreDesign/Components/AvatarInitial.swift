@@ -29,12 +29,19 @@ public struct AvatarInitial: View {
     let initials: String
     let size: Size
     private let accessibilityName: String?
+    /// The monogram already grows with Dynamic Type — `CalibreType.serif` is
+    /// declared `relativeTo: .body` — but the circle around it did not, so the
+    /// letters ran into their own edge and clipped. Identical at the default
+    /// size, where `ScaledMetric` hands back the value it was given; the same
+    /// treatment `DealerBadge` gives its seal.
+    @ScaledMetric private var diameter: CGFloat
 
     /// Exact initials, e.g. `AvatarInitial(initials: "GW")`.
     public init(initials: String, size: Size = .m) {
         self.initials = initials
         self.size = size
         self.accessibilityName = nil
+        _diameter = ScaledMetric(wrappedValue: size.diameter)
     }
 
     /// Derives up to two initials from a display name
@@ -44,13 +51,14 @@ public struct AvatarInitial: View {
         self.initials = words.compactMap { $0.first.map(String.init) }.joined().uppercased()
         self.size = size
         self.accessibilityName = name
+        _diameter = ScaledMetric(wrappedValue: size.diameter)
     }
 
     public var body: some View {
         Text(initials)
             .font(CalibreType.serif(.medium, size.fontSize))
             .foregroundStyle(Color.calibre.accentForeground)
-            .frame(width: size.diameter, height: size.diameter)
+            .frame(width: diameter, height: diameter)
             .background(Color.calibre.accent, in: Circle())
             .accessibilityLabel(accessibilityName ?? initials)
     }

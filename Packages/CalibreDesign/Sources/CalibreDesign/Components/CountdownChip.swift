@@ -32,10 +32,20 @@ public struct CountdownChip: View {
                 if nowExpired && !firedWarning {
                     firedWarning = true
                     Haptics.shared.play(.warning)
+                    // The haptic is how a sighted user learns the deadline
+                    // passed. This is the same beat for someone who won't see
+                    // the chip go grey; silent when nothing is listening.
+                    A11y.announce("Expired")
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(expired ? "Expired" : "Expires in \(text(remaining: remaining))")
+            // Split so a screen reader re-reads only the time, and coarsened to
+            // whole minutes: `updatesFrequently` means VoiceOver polls this on
+            // its own schedule, and a seconds-precision label comes back a
+            // different sentence every poll. The drawn chip keeps its seconds.
+            .accessibilityLabel(expired ? "Expired" : "Expires in")
+            .accessibilityValue(expired ? "" : spokenText(remaining: remaining))
+            .accessibilityAddTraits(.updatesFrequently)
         }
     }
 
@@ -49,6 +59,24 @@ public struct CountdownChip: View {
             return "\(total / 3_600)h \((total % 3_600) / 60)m"
         }
         return "\(total / 60)m \(total % 60)s"
+    }
+
+    /// The spoken deadline: the same ladder as the drawn chip with the
+    /// seconds rung removed.
+    private func spokenText(remaining: TimeInterval) -> String {
+        guard remaining > 0 else { return "Expired" }
+        let total = Int(remaining.rounded(.up))
+        let days = total / 86_400
+        let hours = (total % 86_400) / 3_600
+        let minutes = (total % 3_600) / 60
+        if days > 0 { return "\(plural(days, "day")) \(plural(hours, "hour"))" }
+        if hours > 0 { return "\(plural(hours, "hour")) \(plural(minutes, "minute"))" }
+        if minutes > 0 { return plural(minutes, "minute") }
+        return "less than a minute"
+    }
+
+    private func plural(_ value: Int, _ unit: String) -> String {
+        "\(value) \(unit)\(value == 1 ? "" : "s")"
     }
 
     private func tint(remaining: TimeInterval) -> Color {

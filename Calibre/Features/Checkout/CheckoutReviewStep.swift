@@ -80,13 +80,18 @@ struct CheckoutReviewStep: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(model.confirmingOrder || model.payState.isBusy)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) { CheckoutCloseButton() }
+            ToolbarItem(placement: .topBarTrailing) {
+                CheckoutCloseButton(disabled: model.confirmingOrder || model.payState.isBusy)
+            }
         }
         .safeAreaInset(edge: .bottom) { payBar }
         .animation(Motion.easeFast, value: model.cardRefusal)
         .animation(Motion.easeFast, value: model.paymentProblem)
         .animation(Motion.easeFast, value: model.cardCheckProblem)
         .animation(Motion.easeFast, value: model.checkingCardEntry)
+        .animation(Motion.easeFast, value: model.checkingSavedCard)
+        .animation(Motion.easeFast, value: model.selectedSavedCardID)
+        .animation(Motion.easeFast, value: model.isEnteringNewCard)
         .animation(Motion.easeFast, value: model.cardAccepted)
         .animation(Motion.easeMedium, value: model.confirmingOrder)
         .animation(Motion.easeMedium, value: model.payState)
@@ -179,18 +184,17 @@ struct CheckoutReviewStep: View {
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // The funding check runs the moment the card is complete, so a
-            // refusal arrives here — with wire one tap away — rather than
-            // after a payment the buyer thought had gone through.
-            CardEntryField(
-                cardParams: $model.cardParams,
-                isValid: $model.cardIsValid,
-                onComplete: { Task { await model.validateEnteredCard() } }
-            )
-            .frame(height: 48)
-            .disabled(model.payState.isBusy || model.confirmingOrder)
+            // Cards the buyer already has, when they have any. Each one still
+            // goes through the funding gate before Pay comes alive — a saved
+            // card is a card we have seen before, not a card we have approved
+            // for this order.
+            if !model.isEnteringNewCard, model.hasSavedCards {
+                savedCards
+            } else {
+                newCardEntry
+            }
 
-            if model.checkingCardEntry {
+            if model.checkingCardEntry || model.checkingSavedCard {
                 cardCheckRow
             } else if model.cardAccepted {
                 cardAcceptedRow
@@ -204,7 +208,13 @@ struct CheckoutReviewStep: View {
                 VStack(alignment: .leading, spacing: Space.s) {
                     InlineErrorLine(message: problem.message)
                     Button("Check this card again") {
-                        Task { await model.validateEnteredCard() }
+                        Task {
+                            if model.isEnteringNewCard {
+                                await model.validateEnteredCard()
+                            } else {
+                                await model.validateSavedCard()
+                            }
+                        }
                     }
                     .buttonStyle(.calibreGhost)
                 }
@@ -225,6 +235,110 @@ struct CheckoutReviewStep: View {
                     .disabled(model.payState.isBusy || model.confirmingOrder)
                     .accessibilityLabel("Pay with Apple Pay")
                 }
+            }
+        }
+        .task { await model.prepareCardSelection() }
+    }
+
+    /// The wallet, as a list of choices rather than a thing to retype. Picking
+    /// one runs the same server-side funding check a typed card runs, and the
+    /// Pay button stays dead until it comes back yes.
+    private var savedCards: some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            ForEach(model.savedCards) { card in
+                Button {
+                    Haptics.shared.play(.selection)
+                    model.useSavedCard(card.id)
+                } label: {
+                    HStack(spacing: Space.m) {
+                        Image(systemName: "creditcard")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(Color.calibre.primary)
+                            .frame(width: 28)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(card.displayName)
+                                .font(CalibreType.bodyMedium)
+                                .foregroundStyle(Color.calibre.foreground)
+                            if let expiry = card.expiryLabel {
+                                Text(expiry)
+                                    .font(CalibreType.caption)
+                                    .foregroundStyle(Color.calibre.mutedForeground)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                        Image(
+                            systemName: model.selectedSavedCardID == card.id
+                                ? "inset.filled.circle" : "circle"
+                        )
+                        .font(.system(size: 20))
+                        .foregroundStyle(
+                            model.selectedSavedCardID == card.id
+                                ? Color.calibre.primary : Color.calibre.borderBright
+                        )
+                    }
+                    .padding(Space.l)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        model.selectedSavedCardID == card.id
+                            ? Color.calibre.primary.opacity(0.06) : Color.calibre.card,
+                        in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            .strokeBorder(
+                                model.selectedSavedCardID == card.id
+                                    ? Color.calibre.primary.opacity(0.5) : Color.calibre.border,
+                                lineWidth: 1
+                            )
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .disabled(model.payState.isBusy || model.confirmingOrder)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(model.selectedSavedCardID == card.id ? .isSelected : [])
+            }
+
+            Button("Use a different card") {
+                Haptics.shared.play(.selection)
+                model.enterNewCard()
+            }
+            .buttonStyle(.calibreGhost)
+            .disabled(model.payState.isBusy || model.confirmingOrder)
+        }
+    }
+
+    @ViewBuilder
+    private var newCardEntry: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            // The funding check runs the moment the card is complete, so a
+            // refusal arrives here — with wire one tap away — rather than
+            // after a payment the buyer thought had gone through.
+            CardEntryField(
+                cardParams: $model.cardParams,
+                isValid: $model.cardIsValid,
+                onComplete: { Task { await model.validateEnteredCard() } }
+            )
+            // `minHeight`, not `height`. CardEntryField goes to real trouble to
+            // be Dynamic-Type-correct — `UIFontMetrics.default.scaledFont` on a
+            // 17pt base, plus required vertical hugging and compression — and a
+            // fixed height threw all of it away: at an accessibility text size
+            // the font wants ~70pt and the card number clipped as it was typed,
+            // on the one screen where a buyer has to proofread it. Stripe's own
+            // intrinsic floor is 44pt, so at the default size this still
+            // resolves to exactly 48 and nothing moves.
+            .frame(minHeight: 48)
+            .disabled(model.payState.isBusy || model.confirmingOrder)
+
+            // A buyer who opened the form to check something can get back to
+            // the card they already had without leaving checkout.
+            if model.hasSavedCards {
+                Button("Use a saved card") {
+                    Haptics.shared.play(.selection)
+                    model.useSavedCardsInstead()
+                }
+                .buttonStyle(.calibreGhost)
+                .disabled(model.payState.isBusy || model.confirmingOrder)
             }
         }
     }
@@ -272,8 +386,11 @@ struct CheckoutReviewStep: View {
             }
 
             HStack(spacing: Space.m) {
+                // Always the empty form, never the saved list: the card that
+                // was just refused is on that list, and offering it again is
+                // offering the same answer.
                 Button("Use a different card") {
-                    model.clearCardEntry()
+                    model.enterNewCard()
                 }
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
 

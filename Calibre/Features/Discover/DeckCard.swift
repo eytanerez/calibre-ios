@@ -130,6 +130,10 @@ struct DeckSkeleton: View {
             DeckCardSkeleton()
         }
         .padding(.bottom, 20)
+        // A ZStack of shimmer plates is not an accessibility element, so the
+        // label below had nothing to attach to and the deck came up silent —
+        // VoiceOver found no cards and no explanation for why.
+        .accessibilityElement()
         .accessibilityLabel("Loading the deck")
     }
 

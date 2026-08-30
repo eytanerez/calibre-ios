@@ -220,13 +220,62 @@ private struct RawEnvelope: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         ok = try container.decode(Bool.self, forKey: .ok)
         error = try container.decodeIfPresent(String.self, forKey: .error)
-        code = try container.decodeIfPresent(String.self, forKey: .code)
-        // details may be a flat map or arbitrary JSON — keep flat strings, drop the rest.
-        details = try? container.decodeIfPresent([String: String].self, forKey: .details)
+
+        // `details` is whatever the endpoint passed as `errors=`: a flat map of
+        // strings on a good day, and a map holding a null, a number, or a list
+        // of validation messages on any other. Decoding it straight into
+        // `[String: String]` threw on the first value that wasn't a string, and
+        // the `try?` around it turned the *whole map* into nil — so a payload
+        // as ordinary as `{"code": "wire_card_required", "funding": null}`
+        // arrived with nothing in it at all. Scalars are kept as their text;
+        // anything nested is dropped rather than rendered as JSON at a person.
+        let scalars = try? container.decodeIfPresent([String: DetailScalar].self, forKey: .details)
+        let flattened = scalars?.compactMapValues(\.text)
+        details = (flattened?.isEmpty ?? true) ? nil : flattened
+
+        // The API states its machine reason as `details.code`: `failure()` in
+        // `app/api/http.py` writes `{"ok", "error", "details"}` and has never
+        // written a top-level `code`. Reading only the top level is why
+        // `serverCode` came back nil at every call site that asks for one —
+        // including the buyer's wire refusal, whose whole UI is keyed off it.
+        code = try container.decodeIfPresent(String.self, forKey: .code) ?? flattened?["code"]
     }
 
     enum CodingKeys: String, CodingKey {
         case ok, error, code, details
+    }
+}
+
+/// One value out of an error `details` map, kept as text where text is what it
+/// is. Never throws: a details map that cannot be read is worth less than one
+/// read partially, because the machine code is usually the only entry anyone
+/// needs and it is always a string.
+private enum DetailScalar: Decodable {
+    case text(String)
+    case unreadable
+
+    var text: String? {
+        if case .text(let value) = self { return value }
+        return nil
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            self = .unreadable
+        } else if let value = try? container.decode(String.self) {
+            self = .text(value)
+        } else if let value = try? container.decode(Bool.self) {
+            self = .text(String(value))
+        } else if let value = try? container.decode(Int.self) {
+            self = .text(String(value))
+        } else if let value = try? container.decode(Double.self) {
+            self = .text(String(value))
+        } else {
+            // A nested object, or the list of messages a field validator
+            // produces. Not a detail string.
+            self = .unreadable
+        }
     }
 }
 

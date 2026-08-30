@@ -82,6 +82,10 @@ struct DiscoverScreen: View {
                         .frame(width: 36, height: 36)
                         .background(Color.calibre.card, in: Circle())
                         .overlay(Circle().strokeBorder(Color.calibre.border, lineWidth: 1))
+                        // The 4pt of growth spills into the screen margin and the
+                        // gap to the title, neither of which is tappable; the
+                        // circle still draws and still measures 36.
+                        .a11yExpandTarget(currentSize: 36)
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("Close the deck")
@@ -90,6 +94,10 @@ struct DiscoverScreen: View {
                 Text("Discover")
                     .font(CalibreType.sectionTitle)
                     .foregroundStyle(Color.calibre.foreground)
+                    // The navigation bar is hidden here, so this is the screen's
+                    // only title — without the trait, heading navigation finds
+                    // nothing on the whole deck.
+                    .accessibilityAddTraits(.isHeader)
                 Spacer()
                 savedTicker
             }
@@ -121,6 +129,9 @@ struct DiscoverScreen: View {
             .padding(.horizontal, Space.m)
             .frame(minHeight: 36)
             .background(Color.calibre.accent, in: Capsule())
+            // Same 4pt of growth as the close button, into the same untappable
+            // margin; the capsule is drawn and measured unchanged.
+            .a11yExpandTarget(currentSize: 36)
         }
         .buttonStyle(PressableStyle())
         .animation(Motion.easeMedium, value: count)
@@ -294,8 +305,15 @@ struct DiscoverScreen: View {
     private func setUndo(_ record: UndoRecord) {
         undoable = record
         undoExpiry?.cancel()
+        // The pill appears beside the deck, nowhere near where focus is; without
+        // this it comes and goes without ever being mentioned.
+        A11y.announce(record.kind == .save ? "Saved. Undo is available." : "Passed. Undo is available.")
+        // Five seconds is barely enough to hear that the pill exists, let alone
+        // move focus to it. Stretched only while something is navigating by
+        // focus — everyone else still gets exactly five.
+        let window: Duration = A11y.isNavigatingByFocus ? .seconds(20) : .seconds(5)
         undoExpiry = Task {
-            try? await Task.sleep(for: .seconds(5))
+            try? await Task.sleep(for: window)
             guard !Task.isCancelled else { return }
             undoable = nil
         }

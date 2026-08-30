@@ -269,6 +269,9 @@ struct ListingImageWell: View {
             }
         }
         .clipped()
+        // Smart Invert turns every photograph into a negative; the watch is
+        // the product, so the well opts its imagery out the way Photos does.
+        .accessibilityIgnoresInvertColors()
     }
 
     private var request: ImageRequest? {

@@ -149,6 +149,9 @@ public struct CalibreTextField<Accessory: View>: View {
             Text(label)
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.secondaryForeground)
+                // The field below carries `label` as its own accessible name, so
+                // leaving this reachable would say it twice.
+                .accessibilityHidden(true)
 
             HStack(spacing: Space.s) {
                 field
@@ -156,6 +159,12 @@ public struct CalibreTextField<Accessory: View>: View {
                     .foregroundStyle(Color.calibre.foreground)
                     .tint(Color.calibre.primary)
                     .focused($focused)
+                    // `TextField("", …)` has no title, so without this the field's
+                    // name falls back to the prompt — and 43 call sites pass no
+                    // placeholder at all. The rotor, Full Keyboard Access and
+                    // Voice Control all address the field directly and get this.
+                    .accessibilityLabel(label)
+                    .accessibilityHint(error ?? "")
 
                 if isSecure {
                     Button {
@@ -167,6 +176,12 @@ public struct CalibreTextField<Accessory: View>: View {
                     }
                     .buttonStyle(PressableStyle())
                     .accessibilityLabel(revealed ? "Hide password" : "Show password")
+                    // No hit-region expansion here, on purpose. This glyph sits
+                    // `Space.s` from the secure field with nothing clipping
+                    // between them, so a 44pt region would reach back over the
+                    // field — and a stray tap there lands on a password entry.
+                    // Widening this target needs a layout change, not a
+                    // hit-region trick.
                 }
 
                 accessory

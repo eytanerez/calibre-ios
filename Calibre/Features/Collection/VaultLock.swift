@@ -108,10 +108,19 @@ private struct VaultGateModifier: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
 
     func body(content: Content) -> some View {
-        content
+        let locked = signedIn && lock.isLocked
+
+        return content
+            // An overlay stacks pixels; it does not take what is under it out of
+            // the accessibility tree. Without this, VoiceOver reads "Your vault
+            // is locked" and then swipes straight into the collection it is
+            // supposed to be hiding — every watch and every acquisition price.
+            // Face ID has to guard the accessibility API too, not just the glass.
+            .a11yCoveredBy(locked)
             .overlay {
-                if signedIn, lock.isLocked {
+                if locked {
                     VaultLockedView(lock: lock)
+                        .accessibilityAddTraits(.isModal)
                 }
             }
             .task(id: signedIn) {

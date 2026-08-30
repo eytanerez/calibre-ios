@@ -26,52 +26,72 @@ struct SSNStepSheet: View {
 
     var body: some View {
         SheetScaffold(title: "One quick check", detents: [.large]) {
-            VStack(alignment: .leading, spacing: Space.xl) {
-                Text("Before we open a payouts account, we check that this number doesn't match any banned or suspended Calibre account.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-                    .fixedSize(horizontal: false, vertical: true)
+            // `SheetScaffold` pins its content top-aligned and does not scroll —
+            // 12 of the 14 call sites bring their own ScrollView and this one did
+            // not. At an accessibility text size the opening paragraph alone runs
+            // about ten lines and "Continue to Stripe" leaves the bottom of the
+            // sheet with nothing to scroll, so a seller could not finish payouts
+            // onboarding at all, or even read the disclosure saying the number
+            // never reaches Stripe.
+            //
+            // The content is already top-aligned and ends in `Spacer(minLength: 0)`,
+            // which collapses under a ScrollView's nil height proposal, so nothing
+            // moves at the default size. `.basedOnSize` keeps the sheet inert
+            // rather than adding rubber-band bounce to a page that never scrolls.
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.xl) {
+                    Text("Before we open a payouts account, we check that this number doesn't match any banned or suspended Calibre account.")
+                        .font(CalibreType.body)
+                        .foregroundStyle(Color.calibre.secondaryForeground)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                CalibreTextField(
-                    "Social Security number",
-                    text: $ssn,
-                    placeholder: "123-45-6789",
-                    error: error,
-                    isSecure: true
-                )
-                .keyboardType(.numberPad)
-                .textContentType(.oneTimeCode)
-                .onChange(of: ssn) { _, newValue in
-                    let formatted = Self.format(newValue)
-                    if formatted != newValue {
-                        ssn = formatted
+                    CalibreTextField(
+                        "Social Security number",
+                        text: $ssn,
+                        placeholder: "123-45-6789",
+                        error: error,
+                        isSecure: true
+                    )
+                    .keyboardType(.numberPad)
+                    // Deliberately no `textContentType`. iOS has no content type
+                    // for a Social Security number, and `.oneTimeCode` — which
+                    // was here — makes the QuickType bar offer codes from
+                    // Messages for it and invites the keyboard to fill an SSN
+                    // field with whatever six digits arrived by SMS.
+                    .textContentType(nil)
+                    .onChange(of: ssn) { _, newValue in
+                        let formatted = Self.format(newValue)
+                        if formatted != newValue {
+                            ssn = formatted
+                        }
+                        if error != nil {
+                            error = nil
+                        }
                     }
-                    if error != nil {
-                        error = nil
+
+                    CalloutBand(
+                        icon: "lock.shield",
+                        title: "Where this number goes",
+                        message: "We don't send your Social Security number to Stripe — only a one-way fingerprint stays with us. Stripe will ask for it again inside their own form."
+                    )
+
+                    Button {
+                        submit()
+                    } label: {
+                        if busy {
+                            ProgressView().tint(Color.calibre.primaryForeground)
+                        } else {
+                            Text("Continue to Stripe")
+                        }
                     }
+                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .disabled(busy || digits.count != 9)
+
+                    Spacer(minLength: 0)
                 }
-
-                CalloutBand(
-                    icon: "lock.shield",
-                    title: "Where this number goes",
-                    message: "We don't send your Social Security number to Stripe — only a one-way fingerprint stays with us. Stripe will ask for it again inside their own form."
-                )
-
-                Button {
-                    submit()
-                } label: {
-                    if busy {
-                        ProgressView().tint(Color.calibre.primaryForeground)
-                    } else {
-                        Text("Continue to Stripe")
-                    }
-                }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
-                .disabled(busy || digits.count != 9)
-
-                Spacer(minLength: 0)
+                .padding(.top, Space.s)
             }
-            .padding(.top, Space.s)
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
 

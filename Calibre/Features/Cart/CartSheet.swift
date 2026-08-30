@@ -14,6 +14,7 @@ struct CartSheet: View {
     @Environment(AuthSession.self) private var session
     @Environment(ToastCenter.self) private var toasts
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     /// Parent-provided navigation (the sheet can't push): both dismiss first.
     let openListing: (String) -> Void
@@ -205,80 +206,38 @@ struct CartSheet: View {
 
     /// One bag row: a selection control on the left when there is a choice to
     /// make, the watch itself in the middle, and its own overflow menu.
+    ///
+    /// Three of those four pieces have a fixed width — a 44pt checkbox, a 72pt
+    /// image well and a 44pt menu — so the title and price share whatever is
+    /// left. At an accessibility size that remainder is not enough to finish
+    /// the price, and a bag row that will not say what a watch costs is not a
+    /// bag row. Above the threshold the same pieces stack instead; at every
+    /// size below it, this is the row that has always shipped.
     private func bagCard(_ item: CartItem) -> some View {
         let available = item.listing?.isAvailable ?? false
         let selected = available && !deselected.contains(item.listingId)
 
-        return HStack(spacing: Space.m) {
-            if checkoutableItems.count > 1 {
-                Button {
-                    Haptics.shared.play(.selection)
-                    toggleSelection(item)
-                } label: {
-                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22))
-                        .foregroundStyle(selected ? Color.calibre.primary : Color.calibre.borderBright)
-                        .frame(width: Space.touchTarget, height: Space.touchTarget)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(PressableStyle())
-                .disabled(!available)
-                .accessibilityLabel(selected ? "Selected for checkout" : "Not selected")
-                .accessibilityValue(item.listing?.title ?? "Listing")
-                .accessibilityAddTraits(selected ? .isSelected : [])
-            }
-
-            Button {
-                dismiss()
-                openListing(item.listingId)
-            } label: {
-                HStack(spacing: Space.m) {
-                    ListingImageWell(url: item.listing?.image?.url, targetWidth: 180)
-                        .frame(width: 72, height: 72)
-                        .background(Color.calibre.secondary.opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: Space.xs) {
-                        Text(item.listing?.title ?? "Listing")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                        if let listing = item.listing {
-                            Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
-                                .font(CalibreType.priceSmall)
-                                .foregroundStyle(Color.calibre.foreground)
-                            if let badge = listing.unavailableBadge {
-                                StatusBadge(badge.text, tone: badge.tone)
-                            }
+        return Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: Space.m) {
+                    HStack(spacing: Space.m) {
+                        if checkoutableItems.count > 1 {
+                            bagSelectionButton(item, selected: selected, available: available)
                         }
+                        Spacer(minLength: 0)
+                        bagMenu(item)
                     }
-
-                    Spacer(minLength: 0)
+                    bagOpenButton(item, stacked: true)
                 }
-                .contentShape(Rectangle())
+            } else {
+                HStack(spacing: Space.m) {
+                    if checkoutableItems.count > 1 {
+                        bagSelectionButton(item, selected: selected, available: available)
+                    }
+                    bagOpenButton(item, stacked: false)
+                    bagMenu(item)
+                }
             }
-            .buttonStyle(PressableStyle())
-
-            Menu {
-                Button {
-                    Task { await saveBagItemForLater(item) }
-                } label: {
-                    Label("Save for later", systemImage: "heart")
-                }
-                Button(role: .destructive) {
-                    removalCandidate = item
-                } label: {
-                    Label("Remove", systemImage: "trash")
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .frame(width: Space.touchTarget, height: Space.touchTarget)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel("Options for \(item.listing?.title ?? "this watch")")
         }
         .padding(Space.m)
         .background(Color.calibre.card)
@@ -294,6 +253,102 @@ struct CartSheet: View {
         )
         .opacity(available ? 1 : 0.6)
         .animation(Motion.easeFast, value: selected)
+    }
+
+    /// Include-in-this-checkout, shown only when there is more than one
+    /// checkoutable watch to choose between.
+    private func bagSelectionButton(_ item: CartItem, selected: Bool, available: Bool) -> some View {
+        Button {
+            Haptics.shared.play(.selection)
+            toggleSelection(item)
+        } label: {
+            Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 22))
+                .foregroundStyle(selected ? Color.calibre.primary : Color.calibre.borderBright)
+                .frame(width: Space.touchTarget, height: Space.touchTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .disabled(!available)
+        .accessibilityLabel(selected ? "Selected for checkout" : "Not selected")
+        .accessibilityValue(item.listing?.title ?? "Listing")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// The watch itself — tapping it opens the listing. `stacked` puts the
+    /// image well above the words rather than beside them, which is the only
+    /// arrangement that leaves the price room to be read whole.
+    @ViewBuilder
+    private func bagOpenButton(_ item: CartItem, stacked: Bool) -> some View {
+        Button {
+            dismiss()
+            openListing(item.listingId)
+        } label: {
+            if stacked {
+                VStack(alignment: .leading, spacing: Space.m) {
+                    bagImageWell(item)
+                    bagDetails(item)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            } else {
+                HStack(spacing: Space.m) {
+                    bagImageWell(item)
+                    bagDetails(item)
+
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+        }
+        .buttonStyle(PressableStyle())
+    }
+
+    private func bagImageWell(_ item: CartItem) -> some View {
+        ListingImageWell(url: item.listing?.image?.url, targetWidth: 180)
+            .frame(width: 72, height: 72)
+            .background(Color.calibre.secondary.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+    }
+
+    private func bagDetails(_ item: CartItem) -> some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            Text(item.listing?.title ?? "Listing")
+                .font(CalibreType.bodyMedium)
+                .foregroundStyle(Color.calibre.foreground)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            if let listing = item.listing {
+                Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                    .font(CalibreType.priceSmall)
+                    .foregroundStyle(Color.calibre.foreground)
+                if let badge = listing.unavailableBadge {
+                    StatusBadge(badge.text, tone: badge.tone)
+                }
+            }
+        }
+    }
+
+    private func bagMenu(_ item: CartItem) -> some View {
+        Menu {
+            Button {
+                Task { await saveBagItemForLater(item) }
+            } label: {
+                Label("Save for later", systemImage: "heart")
+            }
+            Button(role: .destructive) {
+                removalCandidate = item
+            } label: {
+                Label("Remove", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .frame(width: Space.touchTarget, height: Space.touchTarget)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Options for \(item.listing?.title ?? "this watch")")
     }
 
     private func toggleSelection(_ item: CartItem) {
@@ -324,64 +379,28 @@ struct CartSheet: View {
     /// listing, matching `bagCard`); the overflow `Menu` is a sibling, not
     /// nested inside that button's label, so the two controls never fight
     /// over the same tap.
+    ///
+    /// The same squeeze `bagCard` has, one size down: a 56pt image well and a
+    /// 44pt menu are fixed, so at an accessibility size the price runs out of
+    /// room mid-number, and a shelf that won't say what a watch costs isn't
+    /// worth showing. Above the threshold the pieces stack; at every size
+    /// below it, this is the row that has always shipped.
     private func savedRow(_ item: WatchlistItem) -> some View {
-        HStack(spacing: Space.m) {
-            Button {
-                dismiss()
-                openListing(item.listingId)
-            } label: {
+        Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: Space.m) {
+                    HStack(spacing: Space.m) {
+                        Spacer(minLength: 0)
+                        savedMenu(item)
+                    }
+                    savedOpenButton(item, stacked: true)
+                }
+            } else {
                 HStack(spacing: Space.m) {
-                    ListingImageWell(url: item.listing?.image?.url, targetWidth: 120)
-                        .frame(width: 56, height: 56)
-                        .background(Color.calibre.secondary.opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.listing?.title ?? "Listing")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
-                            .lineLimit(1)
-                        HStack(spacing: Space.s) {
-                            if let listing = item.listing {
-                                Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
-                                    .font(CalibreType.priceSmall)
-                                    .foregroundStyle(Color.calibre.foreground)
-                                if let badge = listing.unavailableBadge {
-                                    StatusBadge(badge.text, tone: badge.tone)
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(minLength: 0)
+                    savedOpenButton(item, stacked: false)
+                    savedMenu(item)
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(PressableStyle())
-            .accessibilityLabel(item.listing.map { "\($0.title), \(PriceFormatter.format($0.price.value, currency: $0.currency))" } ?? "Listing")
-            .accessibilityHint("Opens this listing")
-
-            Menu {
-                if item.listing?.isAvailable ?? false {
-                    Button {
-                        Task { await moveToBag(item) }
-                    } label: {
-                        Label("Move to bag", systemImage: "bag")
-                    }
-                }
-                Button(role: .destructive) {
-                    Task { await removeSaved(item) }
-                } label: {
-                    Label("Remove", systemImage: "heart.slash")
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .frame(width: Space.touchTarget, height: Space.touchTarget)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel("Options for \(item.listing?.title ?? "saved watch")")
         }
         .padding(Space.m)
         .background(Color.calibre.card)
@@ -390,6 +409,89 @@ struct CartSheet: View {
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
+    }
+
+    /// The watch itself — tapping it opens the listing. `stacked` puts the
+    /// image well above the words rather than beside them, which is the only
+    /// arrangement that leaves the price room to be read whole.
+    @ViewBuilder
+    private func savedOpenButton(_ item: WatchlistItem, stacked: Bool) -> some View {
+        Button {
+            dismiss()
+            openListing(item.listingId)
+        } label: {
+            if stacked {
+                VStack(alignment: .leading, spacing: Space.m) {
+                    savedImageWell(item)
+                    savedDetails(item, stacked: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            } else {
+                HStack(spacing: Space.m) {
+                    savedImageWell(item)
+                    savedDetails(item, stacked: false)
+
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(item.listing.map { "\($0.title), \(PriceFormatter.format($0.price.value, currency: $0.currency))" } ?? "Listing")
+        .accessibilityHint("Opens this listing")
+    }
+
+    private func savedImageWell(_ item: WatchlistItem) -> some View {
+        ListingImageWell(url: item.listing?.image?.url, targetWidth: 120)
+            .frame(width: 56, height: 56)
+            .background(Color.calibre.secondary.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+    }
+
+    private func savedDetails(_ item: WatchlistItem, stacked: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(item.listing?.title ?? "Listing")
+                .font(CalibreType.bodyMedium)
+                .foregroundStyle(Color.calibre.foreground)
+                // Stacked, the title has the row's full width, so it wraps the
+                // way `bagCard`'s does instead of clipping a long name.
+                .lineLimit(stacked ? 2 : 1)
+            HStack(spacing: Space.s) {
+                if let listing = item.listing {
+                    Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                        .font(CalibreType.priceSmall)
+                        .foregroundStyle(Color.calibre.foreground)
+                    if let badge = listing.unavailableBadge {
+                        StatusBadge(badge.text, tone: badge.tone)
+                    }
+                }
+            }
+        }
+    }
+
+    private func savedMenu(_ item: WatchlistItem) -> some View {
+        Menu {
+            if item.listing?.isAvailable ?? false {
+                Button {
+                    Task { await moveToBag(item) }
+                } label: {
+                    Label("Move to bag", systemImage: "bag")
+                }
+            }
+            Button(role: .destructive) {
+                Task { await removeSaved(item) }
+            } label: {
+                Label("Remove", systemImage: "heart.slash")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .frame(width: Space.touchTarget, height: Space.touchTarget)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Options for \(item.listing?.title ?? "saved watch")")
     }
 
     /// Native swipe actions mirror the overflow menu: Move to bag when the

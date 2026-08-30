@@ -341,6 +341,11 @@ struct DraftFinishingQueueScreen: View {
                             }
                             .buttonStyle(PressableStyle())
                             .accessibilityLabel("\(category.label) photo")
+                            // Naming the angle here replaces the ring's own
+                            // label, which is the only thing that said whether
+                            // the slot was shot — the phase has to come back
+                            // as the value. Same shape as ReturnFlow.
+                            .accessibilityValue(photoPhaseValue(category))
                             Text(category.label)
                                 .font(CalibreType.caption)
                                 .foregroundStyle(Color.calibre.mutedForeground)
@@ -349,6 +354,16 @@ struct DraftFinishingQueueScreen: View {
                 }
                 .padding(.vertical, 2)
             }
+        }
+    }
+
+    /// The slot's phase, spoken as the button's value — see the call site.
+    private func photoPhaseValue(_ category: ListingImageCategory) -> String {
+        switch photoPhase(category) {
+        case .empty: "not taken"
+        case .uploading(let progress): "uploading, \(Int((progress * 100).rounded())) percent"
+        case .done: "taken"
+        case .failed: "upload failed"
         }
     }
 

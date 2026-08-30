@@ -26,18 +26,21 @@ public struct CalibrePalette: Sendable {
     public let secondary = dynamic(light: 0xF3F1ED, dark: 0x211C18)
     /// Text on `secondary`.
     public let secondaryForeground = dynamic(light: 0x4A4036, dark: 0xD8CFC5)
-    /// De-emphasized text.
-    public let mutedForeground = dynamic(light: 0x7A736A, dark: 0xA79C8F)
+    /// De-emphasized text. 4.48:1 on the cream page — a hair under AA, which
+    /// is why Increase Contrast has somewhere to go.
+    public let mutedForeground = dynamic(light: 0x7A736A, dark: 0xA79C8F, lightHC: 0x5C554E, darkHC: 0xACA295)
     /// Warm beige chips, icon tiles, callouts.
     public let accent = dynamic(light: 0xECE7E0, dark: 0x2A231D)
     /// Text on `accent`.
     public let accentForeground = dynamic(light: 0x574A3E, dark: 0xD9CCBE)
-    /// Hairline borders and input strokes.
-    public let border = dynamic(light: 0xE7E3DD, dark: 0x2C2620)
+    /// Hairline borders and input strokes. The resting hairline is 1.25:1 —
+    /// it is the card's edge, not a shape anyone has to find, until the reader
+    /// says otherwise.
+    public let border = dynamic(light: 0xE7E3DD, dark: 0x2C2620, lightHC: 0x95918B, darkHC: 0x69645E)
     /// Brighter borders — focused inputs, hovered cards.
-    public let borderBright = dynamic(light: 0xD8D2C9, dark: 0x3A322A)
+    public let borderBright = dynamic(light: 0xD8D2C9, dark: 0x3A322A, lightHC: 0x817B74, darkHC: 0x7E7870)
     /// Placeholder text.
-    public let placeholder = dynamic(light: 0x968F85, dark: 0x7A6F63)
+    public let placeholder = dynamic(light: 0x968F85, dark: 0x7A6F63, lightHC: 0x79726A, darkHC: 0x8A8074)
     /// Errors and destructive actions.
     public let destructive = dynamic(light: 0xB91C1C, dark: 0xD96B65)
     /// Success states.
@@ -53,9 +56,26 @@ public struct CalibrePalette: Sendable {
     public let wax = dynamic(light: 0x9E3B32, dark: 0xB4483D)
     public let waxHighlight = dynamic(light: 0xC0554A, dark: 0xD0655A)
 
-    private static func dynamic(light: UInt32, dark: UInt32) -> Color {
+    /// Light and dark, plus the pair Increase Contrast asks for.
+    ///
+    /// `lightHC`/`darkHC` fall back to the shipped values, so a token that
+    /// omits them is the same color it has always been and a device with the
+    /// setting off never reaches a new branch. The high-contrast pair is not
+    /// a second palette either: each one is its own warm neutral blended
+    /// toward the page's ink until it clears its target — 4.5:1 for text,
+    /// 3:1 for a stroke someone has to find — so the app stays the same app,
+    /// only firmer.
+    private static func dynamic(light: UInt32, dark: UInt32, lightHC: UInt32? = nil, darkHC: UInt32? = nil) -> Color {
         Color(UIColor { traits in
-            UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
+            let isDark = traits.userInterfaceStyle == .dark
+            let wantsContrast = traits.accessibilityContrast == .high
+            let value = switch (isDark, wantsContrast) {
+            case (false, false): light
+            case (false, true): lightHC ?? light
+            case (true, false): dark
+            case (true, true): darkHC ?? dark
+            }
+            return UIColor(hex: value)
         })
     }
 }

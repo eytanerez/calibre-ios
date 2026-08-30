@@ -192,32 +192,19 @@ private struct OrderSection: Identifiable {
 struct OrderRow: View {
     let order: Order
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
         HStack(spacing: Space.m) {
             OrderThumb(url: order.listing?.image?.url)
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: Space.s) {
-                    Text(order.listing?.title ?? "Your watch")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                        .lineLimit(1)
-                    Text(order.displayNumber)
-                        .font(CalibreType.caption)
-                        .monospacedDigit()
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                        .layoutPriority(1)
-                }
+                titleLine
                 Text(order.statusSummary)
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
-                    .lineLimit(1)
-                HStack(spacing: Space.s) {
-                    StatusBadge(order.statusLabel, tone: order.statusTone)
-                    Text(PriceFormatter.format(order.grandTotal.value, currency: order.currency))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
-                }
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                statusLine
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
@@ -230,6 +217,62 @@ struct OrderRow: View {
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
+    }
+
+    /// The order number keeps its layout priority — it is the thing you read
+    /// a number out to support, and it must never lose a digit. What that
+    /// costs is the watch's name, which at accessibility sizes is squeezed to
+    /// a single ellipsis beside it. Above the threshold the pair stacks and
+    /// both survive; at every normal size this is the row that ships today.
+    @ViewBuilder private var titleLine: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                titleText
+                numberText
+            }
+        } else {
+            HStack(spacing: Space.s) {
+                titleText
+                numberText
+            }
+        }
+    }
+
+    /// Same trade one line down: a long total and a wide status pill cannot
+    /// share a row once the type is large enough.
+    @ViewBuilder private var statusLine: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                StatusBadge(order.statusLabel, tone: order.statusTone)
+                totalText
+            }
+        } else {
+            HStack(spacing: Space.s) {
+                StatusBadge(order.statusLabel, tone: order.statusTone)
+                totalText
+            }
+        }
+    }
+
+    private var titleText: some View {
+        Text(order.listing?.title ?? "Your watch")
+            .font(CalibreType.bodyMedium)
+            .foregroundStyle(Color.calibre.foreground)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+    }
+
+    private var numberText: some View {
+        Text(order.displayNumber)
+            .font(CalibreType.caption)
+            .monospacedDigit()
+            .foregroundStyle(Color.calibre.mutedForeground)
+            .layoutPriority(1)
+    }
+
+    private var totalText: some View {
+        Text(PriceFormatter.format(order.grandTotal.value, currency: order.currency))
+            .font(CalibreType.priceSmall)
+            .foregroundStyle(Color.calibre.foreground)
     }
 }
 

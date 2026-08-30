@@ -22,6 +22,8 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
 
     private let ringWidth: CGFloat = 3
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     public init(
         phase: PhotoSlotPhase,
         size: CGFloat = 64,
@@ -33,6 +35,33 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
     }
 
     public var body: some View {
+        slot
+            .animation(Motion.easeMedium, value: phase)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityText)
+    }
+
+    /// The ring is a fixed circle the caller sizes — 76 in the wizard's grid,
+    /// 64 in the return flow, 56 on the extras rail — so it cannot grow with
+    /// the type. At accessibility sizes the percent chip grows anyway, spills
+    /// past the circle and covers the very progress it is reporting, so above
+    /// the threshold it steps out from under the ring and sits below it.
+    /// Below the threshold the chip is inside the circle, unchanged.
+    @ViewBuilder
+    private var slot: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(spacing: Space.xs) {
+                ringStack(showsPercent: false)
+                if case .uploading(let progress) = phase {
+                    percentLabel(progress)
+                }
+            }
+        } else {
+            ringStack(showsPercent: true)
+        }
+    }
+
+    private func ringStack(showsPercent: Bool) -> some View {
         ZStack {
             Circle()
                 .fill(Color.calibre.secondary.opacity(0.5))
@@ -50,21 +79,22 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
 
-            if case .uploading(let progress) = phase {
-                Text("\(Int((progress * 100).rounded()))%")
-                    .font(CalibreType.caption)
-                    .monospacedDigit()
-                    .foregroundStyle(Color.calibre.foreground)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .background(Color.calibre.background.opacity(0.8), in: Capsule())
+            if showsPercent, case .uploading(let progress) = phase {
+                percentLabel(progress)
             }
         }
         .frame(width: size, height: size)
         .overlay(alignment: .bottomTrailing) { badge }
-        .animation(Motion.easeMedium, value: phase)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText)
+    }
+
+    private func percentLabel(_ progress: Double) -> some View {
+        Text("\(Int((progress * 100).rounded()))%")
+            .font(CalibreType.caption)
+            .monospacedDigit()
+            .foregroundStyle(Color.calibre.foreground)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(Color.calibre.background.opacity(0.8), in: Capsule())
     }
 
     @ViewBuilder
