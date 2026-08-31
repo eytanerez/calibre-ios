@@ -94,6 +94,13 @@ struct SellerListingsTab: View {
                 continueBulkImport.sellRow()
             }
 
+            // The one place a new listing starts. It used to be a full-width
+            // primary button on the dashboard header, above every tab — the
+            // loudest thing on a screen whose job is the shop that already
+            // exists. Inventory is this tab's subject, so its verb sits here,
+            // sized like a verb rather than like a headline.
+            listWatchButton
+
             if availableFilters.count > 1 {
                 filterRail.sellRailRow()
             }
@@ -123,6 +130,29 @@ struct SellerListingsTab: View {
     private var availableFilters: [SellerListingFilter] {
         SellerListingFilter.allCases.filter { candidate in
             candidate == .all || listings.contains(where: candidate.matches)
+        }
+    }
+
+    // MARK: List a watch
+
+    /// Withheld while the shop is empty: the empty state below already offers
+    /// the same verb as its own action, and the same button twice on one
+    /// screen is the thing that made this loud in the first place.
+    @ViewBuilder
+    private var listWatchButton: some View {
+        if !listings.isEmpty {
+            Button {
+                Haptics.shared.play(.press)
+                actions.listWatch(nil)
+            } label: {
+                Label("List a watch", systemImage: "plus")
+            }
+            .buttonStyle(.calibre(.secondary))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // The row modifier goes inside the branch: hung off the
+            // `ViewBuilder` it would decorate the empty branch too, and a
+            // decorated `EmptyView` is how a list grows a row of nothing.
+            .sellRow(bottom: Space.m)
         }
     }
 

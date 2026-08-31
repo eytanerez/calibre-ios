@@ -315,6 +315,19 @@ struct YouScreen: View {
 
                 Divider().overlay(Color.calibre.border)
 
+                // The seller shop's tab strip at the phone widths it has to
+                // hold four whole words in. The dashboard it ships on is
+                // behind a sign-in and a payouts check, so this is the only
+                // way to look at the bar itself in a few seconds.
+                NavigationLink {
+                    SellerTabStripHarness()
+                } label: {
+                    developerRow(icon: "rectangle.split.3x1", label: "Seller tab strip")
+                }
+                .buttonStyle(PressableStyle())
+
+                Divider().overlay(Color.calibre.border)
+
                 // The ledger has always documented a "Replay tips" control;
                 // until now there wasn't one, so replaying meant a launch
                 // argument (which a sideloaded build cannot pass) or deleting

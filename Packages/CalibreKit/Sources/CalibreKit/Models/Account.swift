@@ -188,6 +188,14 @@ public struct WalletCard: Decodable, Sendable, Identifiable, Equatable {
         return String(format: "Expires %02d/%02d", expMonth, expYear % 100)
     }
 
+    /// The date as a card carries it — two digits over two, and no word,
+    /// because the card face prints "Expires" itself. Saying it twice is how
+    /// "Expires Expires 08/27" reaches a screen.
+    public var expiryPrinted: String? {
+        guard let expMonth, let expYear else { return nil }
+        return String(format: "%02d / %02d", expMonth, expYear % 100)
+    }
+
     enum CodingKeys: String, CodingKey {
         case id, brand, last4, expMonth, expYear, isDefault, isSellerCard, canRemove, removeBlockedReason
     }

@@ -401,7 +401,9 @@ struct PaymentMethodScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
                 if !cards.isEmpty {
-                    VStack(alignment: .leading, spacing: Space.s) {
+                    // Cards, not rows: they need the air between them that
+                    // objects lying on a page need.
+                    VStack(alignment: .leading, spacing: Space.m) {
                         ForEach(cards) { card in
                             cardRow(card)
                         }
@@ -494,56 +496,49 @@ struct PaymentMethodScreen: View {
         }
     }
 
-    /// One saved card: the default is marked, the rest can be promoted.
+    /// One saved card, drawn as the card it is.
+    ///
+    /// It is the same `WalletCardFace` the buyer taps to choose a card at
+    /// checkout — one component, two contexts. This is the managing one, so
+    /// the card carries its own controls along its base: promoting it to
+    /// default, and removing it. A removal acted out on the drawing is the
+    /// removal of the thing being looked at, rather than of a row that
+    /// happened to describe it.
+    ///
+    /// The seller's guarantee card is deliberately not this drawing — see
+    /// `GuaranteeCard`, and `SellerCardScreen`, which is where it is managed.
+    /// Detaching a wallet card costs a buyer a re-typing; detaching that one
+    /// takes a seller's listings off the market, and two objects with
+    /// different consequences must not share a face.
     private func cardRow(_ card: WalletCard) -> some View {
-        HStack(spacing: Space.m) {
-            IconTile(systemName: "creditcard")
-            VStack(alignment: .leading, spacing: 2) {
-                Text(card.displayName)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
-                HStack(spacing: Space.s) {
-                    if let expiry = card.expiryLabel {
-                        Text(expiry)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                    }
-                    if card.id == defaultCardID {
-                        Text("DEFAULT")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.primary)
-                    }
-                }
-            }
-            Spacer()
-            Menu {
+        WalletCardFace(
+            brand: GuaranteeCard.Brand(stripeBrand: card.brand),
+            last4: card.last4,
+            expiry: card.expiryPrinted,
+            isDefault: card.id == defaultCardID,
+            context: .manage
+        ) {
+            HStack(spacing: Space.l) {
                 if card.id != defaultCardID {
-                    Button {
+                    Button("Make default") {
                         Task { await makeDefault(card) }
-                    } label: {
-                        Label("Make default", systemImage: "checkmark.circle")
                     }
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.primary)
+                    .frame(minHeight: Space.touchTarget)
                 }
                 if canRemove || card.id != defaultCardID {
-                    Button(role: .destructive) {
+                    Button("Remove") {
                         confirmRemove = card
-                    } label: {
-                        Label("Remove", systemImage: "trash")
                     }
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.destructive)
+                    .frame(minHeight: Space.touchTarget)
+                    .accessibilityLabel("Remove \(card.displayName)")
                 }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .frame(width: Space.touchTarget, height: Space.touchTarget)
-                    .contentShape(Rectangle())
+                Spacer(minLength: 0)
             }
-            .accessibilityLabel("Options for \(card.displayName)")
         }
-        .padding(.leading, Space.l)
-        .padding(.vertical, Space.s)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
     }
 
     private func loadMethod() async {

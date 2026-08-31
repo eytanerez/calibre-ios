@@ -134,7 +134,7 @@ public struct GuaranteeCard: View {
                     expiryBlock(expiry)
                 }
                 Spacer(minLength: Space.s)
-                BrandMark(brand: brand, height: size == .compact ? 18 : 22)
+                CardBrandMark(brand: brand, height: size == .compact ? 18 : 22, ink: Stock.ink, dim: Stock.dim)
                     .opacity(status == .lapsed ? 0.7 : 1)
             }
             .padding(.top, Space.s)
@@ -354,13 +354,29 @@ private enum Stock {
 /// The marks are printed at a fixed size. They do not answer to Dynamic Type,
 /// because the brand is also spoken in the card's accessibility label, where
 /// growing a logo would help nobody.
-private struct BrandMark: View {
+///
+/// It is public, and it takes its ink, because two different cards draw it:
+/// this one on its own dark stock, and `WalletCardFace` on the page's surface.
+/// The network colours are the same on both — only the ink that stands for
+/// "printed here" changes with the material.
+public struct CardBrandMark: View {
     let brand: GuaranteeCard.Brand
     /// The printed height on the stock. Every measurement below is a fraction
     /// of it, so both card sizes carry the same mark rather than two drawings.
     let height: CGFloat
+    /// The colour a wordmark is struck in — the material's own ink.
+    let ink: Color
+    /// The quieter ink, for the device drawn when there is no mark to draw.
+    let dim: Color
 
-    var body: some View {
+    public init(brand: GuaranteeCard.Brand, height: CGFloat, ink: Color, dim: Color) {
+        self.brand = brand
+        self.height = height
+        self.ink = ink
+        self.dim = dim
+    }
+
+    public var body: some View {
         Group {
             switch brand {
             case .visa: visa
@@ -381,7 +397,7 @@ private struct BrandMark: View {
             .font(.system(size: height * 0.77, weight: .heavy))
             .italic()
             .tracking(height * 0.045)
-            .foregroundStyle(Stock.ink)
+            .foregroundStyle(ink)
     }
 
     /// Two discs and the lens where they overlap.
@@ -412,7 +428,7 @@ private struct BrandMark: View {
             Text(verbatim: "DISCOVER")
                 .font(.system(size: height * 0.5, weight: .heavy))
                 .tracking(height * 0.018)
-                .foregroundStyle(Stock.ink)
+                .foregroundStyle(ink)
             Circle()
                 .fill(Self.discoverOrange)
                 .frame(width: height * 0.41, height: height * 0.41)
@@ -422,11 +438,11 @@ private struct BrandMark: View {
     /// No mark to draw: a card device with its stripe, and no invented brand.
     private var plainCard: some View {
         RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .strokeBorder(Stock.dim, lineWidth: 1.5)
+            .strokeBorder(dim, lineWidth: 1.5)
             .frame(width: height * 1.45, height: height * 0.86)
             .overlay(alignment: .top) {
                 Rectangle()
-                    .fill(Stock.dim)
+                    .fill(dim)
                     .frame(height: height * 0.18)
                     .padding(.top, height * 0.18)
             }

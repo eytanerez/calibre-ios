@@ -16,6 +16,7 @@ public struct GalleryScreen: View {
     @State private var emailField = "not-an-email"
     @State private var passwordField = "hunter2!"
     @State private var markPlay = 0
+    @State private var walletPick = "visa"
 
     private enum DealTab: CaseIterable {
         case offers, orders, saved
@@ -44,6 +45,7 @@ public struct GalleryScreen: View {
                     badgesSection
                     listingCardSection
                     guaranteeCardSection
+                    walletCardSection
                     specListSection
                     calloutSection
                     countdownSection
@@ -471,6 +473,61 @@ public struct GalleryScreen: View {
                     status: .onFile,
                     size: .compact
                 )
+            }
+        }
+    }
+
+    /// The buyer's card, in both the places it appears. It sits next to the
+    /// guarantee card on purpose: the two must not be mistakable for each
+    /// other, and that is only checkable side by side.
+    private var walletCardSection: some View {
+        section("Wallet card") {
+            VStack(alignment: .leading, spacing: Space.xl) {
+                Text("Checkout — the card is the choice.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                WalletCardFace(
+                    brand: .visa,
+                    last4: "4242",
+                    expiry: "04 / 29",
+                    isDefault: true,
+                    context: .select(isSelected: walletPick == "visa", onSelect: { walletPick = "visa" })
+                )
+                WalletCardFace(
+                    brand: .mastercard,
+                    last4: "0916",
+                    expiry: "08 / 26",
+                    context: .select(isSelected: walletPick == "mc", onSelect: { walletPick = "mc" })
+                )
+                WalletCardFace(
+                    brand: GuaranteeCard.Brand(stripeBrand: "jcb"),
+                    last4: "1155",
+                    expiry: nil,
+                    note: "This card can't hold a wire deposit.",
+                    noteIsProblem: true,
+                    isDisabled: true,
+                    context: .select(isSelected: false, onSelect: {})
+                )
+
+                Text("Settings — the card carries its own controls.")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                WalletCardFace(
+                    brand: .amex,
+                    last4: "0005",
+                    expiry: "06 / 26",
+                    context: .manage
+                ) {
+                    HStack(spacing: Space.l) {
+                        Text("Make default")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.primary)
+                        Text("Remove")
+                            .font(CalibreType.label)
+                            .foregroundStyle(Color.calibre.destructive)
+                        Spacer(minLength: 0)
+                    }
+                }
             }
         }
     }

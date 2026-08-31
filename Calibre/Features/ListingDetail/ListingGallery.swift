@@ -6,6 +6,20 @@ import SwiftUI
 
 /// The PDP hero: a full-bleed square pager with counter dots and the
 /// condition pill. Tap or pinch opens the full-screen lightbox.
+///
+/// The photograph tracks the finger and settles — it is a paging scroll view,
+/// not a control that swaps one image for another when a swipe is recognised.
+/// A page follows the drag one-to-one, comes to rest on the brand's own
+/// deceleration, and stops dead at the first and last photograph rather than
+/// rubber-banding past them (`.scrollBounceBehavior(.basedOnSize)`), because
+/// §5's motion rules refuse bounce.
+///
+/// And the dots are honest while it moves: `page` is recomputed from the
+/// scroll's own geometry as the finger travels, so the filled dot — and the
+/// seller's caption under the photograph — change at the halfway point, with
+/// the photograph they belong to. Read from `selection` they would lag until
+/// the scroll had finished and the caption would belong to the previous
+/// picture for the length of the swipe.
 struct ListingGallery: View {
     let images: [URL?]
     let condition: String?
@@ -19,6 +33,7 @@ struct ListingGallery: View {
     var annotations: [ListingAnnotation]?
     let onOpenLightbox: (Int) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var page = 0
 
     private func annotation(at index: Int) -> ListingAnnotation? {
@@ -27,44 +42,7 @@ struct ListingGallery: View {
 
     var body: some View {
         VStack(spacing: Space.m) {
-            TabView(selection: $page) {
-                ForEach(Array(images.enumerated()), id: \.offset) { index, url in
-                    ListingImageWell(url: url, targetWidth: 900)
-                        .aspectRatio(1, contentMode: .fill)
-                        // Inside the clip, so the mark is trimmed by exactly
-                        // the crop the photograph is trimmed by.
-                        .overlay {
-                            if let mark = annotation(at: index) {
-                                AnnotationOverlay(annotation: mark, imageURL: url)
-                            }
-                        }
-                        .clipped()
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            onOpenLightbox(index)
-                        }
-                        .tag(index)
-                        .accessibilityLabel(photoLabel(index))
-                        .accessibilityAddTraits(.isButton)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .aspectRatio(1, contentMode: .fit)
-            .background(Color.calibre.secondary.opacity(0.5))
-            .overlay(alignment: .topLeading) {
-                if let condition {
-                    ConditionPill(condition)
-                        .padding(Space.l)
-                }
-            }
-            .simultaneousGesture(
-                MagnifyGesture()
-                    .onChanged { value in
-                        if value.magnification > 1.15 {
-                            onOpenLightbox(page)
-                        }
-                    }
-            )
+            pager
 
             if images.count > 1 {
                 HStack(spacing: 6) {
@@ -74,7 +52,6 @@ struct ListingGallery: View {
                             .frame(width: 6, height: 6)
                     }
                 }
-                .animation(Motion.easeFast, value: page)
                 .accessibilityHidden(true)
             }
 
@@ -85,7 +62,78 @@ struct ListingGallery: View {
                     .transition(.opacity)
             }
         }
-        .animation(Motion.easeFast, value: page)
+        // The dot filling and the caption crossing over are the only motion
+        // here that is the interface's rather than the reader's finger; under
+        // Reduce Motion they change without one.
+        .animation(reduceMotion ? nil : Motion.easeFast, value: page)
+    }
+
+    /// The square the photographs travel across.
+    ///
+    /// `GeometryReader` under a 1:1 aspect ratio gives the square and, with it,
+    /// the page width — every photograph is framed to exactly that, which is
+    /// what makes each one a paging stop and what lets the scroll's offset be
+    /// read back as a page number.
+    private var pager: some View {
+        GeometryReader { proxy in
+            let side = proxy.size.width
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 0) {
+                    ForEach(Array(images.enumerated()), id: \.offset) { index, url in
+                        photo(index: index, url: url)
+                            .frame(width: side, height: proxy.size.height)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+            .scrollDisabled(images.count < 2)
+            .onScrollGeometryChange(for: Int.self) { geometry in
+                guard side > 0 else { return 0 }
+                // The midpoint of what is on screen, so the count turns over
+                // as the next photograph takes the larger half of the frame.
+                let crossed = Int(geometry.visibleRect.midX / side)
+                return min(max(crossed, 0), max(images.count - 1, 0))
+            } action: { _, reached in
+                if page != reached { page = reached }
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .background(Color.calibre.secondary.opacity(0.5))
+        .overlay(alignment: .topLeading) {
+            if let condition {
+                ConditionPill(condition)
+                    .padding(Space.l)
+            }
+        }
+        .simultaneousGesture(
+            MagnifyGesture()
+                .onChanged { value in
+                    if value.magnification > 1.15 {
+                        onOpenLightbox(page)
+                    }
+                }
+        )
+    }
+
+    private func photo(index: Int, url: URL?) -> some View {
+        ListingImageWell(url: url, targetWidth: 900)
+            .aspectRatio(1, contentMode: .fill)
+            // Inside the clip, so the mark is trimmed by exactly the crop the
+            // photograph is trimmed by.
+            .overlay {
+                if let mark = annotation(at: index) {
+                    AnnotationOverlay(annotation: mark, imageURL: url)
+                }
+            }
+            .clipped()
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onOpenLightbox(index)
+            }
+            .accessibilityLabel(photoLabel(index))
+            .accessibilityAddTraits(.isButton)
     }
 
     /// A mark is a fact about the photo a blind reader cannot see, so it is

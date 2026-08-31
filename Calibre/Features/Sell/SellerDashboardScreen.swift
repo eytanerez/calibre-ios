@@ -442,6 +442,14 @@ struct SellerDashboardScreen: View {
 
     // MARK: - Header
 
+    /// The shop's name and the ⋯ menu, and nothing else.
+    ///
+    /// There was a full-width "List a watch" button under this line. It came
+    /// off: a call to action the size of the title, standing above a shop that
+    /// already has inventory in it, made the dashboard read like an onboarding
+    /// screen every time the seller opened it. Listing a watch is Listings'
+    /// verb, so it lives at the top of that tab — one entry point instead of
+    /// two, in the room that is about inventory.
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             HStack(alignment: .firstTextBaseline) {
@@ -468,13 +476,6 @@ struct SellerDashboardScreen: View {
                     .tutorialAnchor("sell.menu")
                 }
             }
-
-            Button {
-                openWizard(.new(prefill: nil))
-            } label: {
-                Label("List a watch", systemImage: "plus")
-            }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
         }
         .sellRow(top: Space.l, bottom: Space.l)
     }

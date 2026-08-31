@@ -113,12 +113,25 @@ private struct OfferDetailContent: View {
         VStack(alignment: .leading, spacing: Space.l) {
             OfferListingMiniCard(offer: offer, thumbURL: model.thumbURL)
 
-            HStack(spacing: Space.s) {
-                StatusBadge(presentation.text, tone: presentation.tone)
-                if let deadline = offerLiveDeadline(for: offer) {
-                    CountdownChip(until: deadline)
+            HStack(spacing: Space.m) {
+                // Agreed and binding. `waxSeal` is the mark for exactly this
+                // moment (CALIBRE_BY_HAND_CONTRACTS.md §4) and this is the one
+                // screen in the negotiation that reaches it, so the budget of
+                // one illustrated moment per step is spent here and nowhere
+                // else in the flow. It presses when the screen first shows an
+                // agreed offer and again if the status changes under it;
+                // under Reduce Motion it is simply already sealed.
+                if isAgreed(offer) {
+                    CalibreMark.waxSeal(size: 44, trigger: offer.status)
                 }
-                Spacer()
+
+                VStack(alignment: .leading, spacing: Space.s) {
+                    StatusBadge(presentation.text, tone: presentation.tone)
+                    if let deadline = offerLiveDeadline(for: offer) {
+                        CountdownChip(until: deadline)
+                    }
+                }
+                Spacer(minLength: 0)
             }
 
             // Money at risk comes before the negotiation history: a buyer
@@ -178,6 +191,14 @@ private struct OfferDetailContent: View {
         .padding(.bottom, Space.xxl)
         .animation(Motion.easeFast, value: model.actionError)
         .animation(Motion.easeMedium, value: model.showCounterForm)
+    }
+
+    /// An agreement that stands: the price is settled and the only thing
+    /// left is the money. `paid` is past it — the seal marks the agreement
+    /// being struck, not the payment clearing, and a mark that stayed on
+    /// screen after the sale would be decoration.
+    private func isAgreed(_ offer: Offer) -> Bool {
+        offer.status == .acceptedPendingPayment
     }
 
     // MARK: - Renewing the deposit

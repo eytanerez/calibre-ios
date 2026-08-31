@@ -240,63 +240,31 @@ struct CheckoutReviewStep: View {
         .task { await model.prepareCardSelection() }
     }
 
-    /// The wallet, as a list of choices rather than a thing to retype. Picking
-    /// one runs the same server-side funding check a typed card runs, and the
-    /// Pay button stays dead until it comes back yes.
+    /// The wallet, as the cards themselves rather than as a list of choices.
+    ///
+    /// A saved card is drawn here exactly as it is drawn in settings — one
+    /// `WalletCardFace`, two contexts — so the thing a buyer picks at checkout
+    /// is the thing they recognise from their own account rather than a row
+    /// with a radio dot beside it. Picking one runs the same server-side
+    /// funding check a typed card runs, and the Pay button stays dead until it
+    /// comes back yes.
     private var savedCards: some View {
-        VStack(alignment: .leading, spacing: Space.s) {
+        VStack(alignment: .leading, spacing: Space.m) {
             ForEach(model.savedCards) { card in
-                Button {
-                    Haptics.shared.play(.selection)
-                    model.useSavedCard(card.id)
-                } label: {
-                    HStack(spacing: Space.m) {
-                        Image(systemName: "creditcard")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(Color.calibre.primary)
-                            .frame(width: 28)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(card.displayName)
-                                .font(CalibreType.bodyMedium)
-                                .foregroundStyle(Color.calibre.foreground)
-                            if let expiry = card.expiryLabel {
-                                Text(expiry)
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
-                            }
+                WalletCardFace(
+                    brand: GuaranteeCard.Brand(stripeBrand: card.brand),
+                    last4: card.last4,
+                    expiry: card.expiryPrinted,
+                    isDefault: card.isDefault,
+                    isDisabled: model.payState.isBusy || model.confirmingOrder,
+                    context: .select(
+                        isSelected: model.selectedSavedCardID == card.id,
+                        onSelect: {
+                            Haptics.shared.play(.selection)
+                            model.useSavedCard(card.id)
                         }
-                        Spacer(minLength: 0)
-                        Image(
-                            systemName: model.selectedSavedCardID == card.id
-                                ? "inset.filled.circle" : "circle"
-                        )
-                        .font(.system(size: 20))
-                        .foregroundStyle(
-                            model.selectedSavedCardID == card.id
-                                ? Color.calibre.primary : Color.calibre.borderBright
-                        )
-                    }
-                    .padding(Space.l)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        model.selectedSavedCardID == card.id
-                            ? Color.calibre.primary.opacity(0.06) : Color.calibre.card,
-                        in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                            .strokeBorder(
-                                model.selectedSavedCardID == card.id
-                                    ? Color.calibre.primary.opacity(0.5) : Color.calibre.border,
-                                lineWidth: 1
-                            )
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(PressableStyle())
-                .disabled(model.payState.isBusy || model.confirmingOrder)
-                .accessibilityElement(children: .combine)
-                .accessibilityAddTraits(model.selectedSavedCardID == card.id ? .isSelected : [])
+                )
             }
 
             Button("Use a different card") {
