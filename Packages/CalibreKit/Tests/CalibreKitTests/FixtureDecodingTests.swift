@@ -722,6 +722,41 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(breakdown.display?.wirePrice?.value, Decimal(string: "4400.00"))
         // Same money either way — only the presentation differs.
         XCTAssertEqual(breakdown.totals?.card?.value, Decimal(string: "4601.99"))
+
+        // This capture predates the tax-source keys, and a payload without
+        // them has to keep decoding — an absent key is not an outage.
+        XCTAssertNil(breakdown.taxSource)
+        XCTAssertNil(breakdown.taxUnavailableWarning)
+        XCTAssertNil(breakdown.taxStubWarning)
+        XCTAssertFalse(breakdown.isTaxUnavailable)
+    }
+
+    /// The tax provider is unreachable. The quote endpoints no longer answer
+    /// 503: every other line is priced, `tax` is a placeholder zero, and the
+    /// three keys say so. The zero is the trap — read on its own it means "no
+    /// tax is owed", so the source is what a screen has to branch on.
+    func testListingQuoteTaxUnavailableFixtureDecodes() throws {
+        let breakdown = try apiDecoder().decode(
+            Envelope<CheckoutBreakdown>.self,
+            from: fixtureData("listing-quote-tax-unavailable")
+        ).data
+
+        XCTAssertEqual(breakdown.taxSource, "unavailable")
+        XCTAssertTrue(breakdown.isTaxUnavailable)
+        XCTAssertEqual(breakdown.tax?.value, Decimal(string: "0.00"))
+        XCTAssertNil(breakdown.taxStubWarning)
+        XCTAssertEqual(
+            breakdown.taxUnavailableWarning,
+            "Sales tax could not be calculated just now, so it is not included here. "
+                + "The full total, tax included, is shown again at checkout before you pay."
+        )
+
+        // Everything the server *could* price still arrived, which is the
+        // whole point of the 200: the panel has lines to show.
+        XCTAssertEqual(breakdown.subtotal.value, Decimal(string: "4400.00"))
+        XCTAssertEqual(breakdown.shipping.value, Decimal(string: "72.00"))
+        XCTAssertEqual(breakdown.cardFee?.amount.value, Decimal(string: "129.99"))
+        XCTAssertEqual(breakdown.grandTotal.value, Decimal(string: "4601.99"))
     }
 
     func testPaymentMethodValidationFixturesDecode() throws {

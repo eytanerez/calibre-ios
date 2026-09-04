@@ -118,6 +118,23 @@ public struct Order: Codable, Sendable, Identifiable {
     public let latestShipment: Shipment?
     public let authResult: OrderAuthResult?
 
+    /// The bench's record for this order — where the watch is, whether it is
+    /// held, the report and the case. See `OrderAuthentication`.
+    ///
+    /// Nil means the server said nothing, which is what a deployment predating
+    /// the record does. It never means "no", and no screen reads it that way.
+    public let authentication: OrderAuthentication?
+
+    /// The watch's Passport code, from the moment the bench mints it — which
+    /// is authentication, days before delivery. Nil until then, and nil on
+    /// payloads recorded before the order carried it.
+    ///
+    /// Not gated on delivery on purpose. The vault only ever holds watches
+    /// the buyer already has, so until this the one document a buyer wants to
+    /// show somebody was unreachable for exactly as long as the watch was
+    /// still in the air.
+    public let passportCode: String?
+
     /// The line the seller wrote when they handed the parcel over, shown to
     /// the buyer once it arrives. Written once, at the declaration, and never
     /// edited afterwards — it is a note in the box, not a message thread.

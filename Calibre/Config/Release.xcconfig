@@ -4,6 +4,12 @@
 // Routes are served at the origin root (no /api prefix).
 API_BASE_URL = https:/$()/candidate-accessible-transportation-abs.trycloudflare.com
 
+// calibre-messaging has no Release tunnel of its own yet — this is a
+// placeholder so the build has a well-formed URL to compile against.
+// SideStore builds will fail to reach it at runtime until it gets its own
+// Cloudflare Tunnel (see the note on API_BASE_URL above for the pattern).
+MESSAGING_API_BASE_URL = http:/$()/localhost:8020
+
 // Shows Apple Pay in the payment sheet. Completing one additionally needs the
 // com.apple.developer.in-app-payments entitlement and merchant id
 // merchant.com.buycalibre.calibre registered to a *paid* Apple Developer

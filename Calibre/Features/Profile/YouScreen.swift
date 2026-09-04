@@ -29,6 +29,10 @@ struct YouScreen: View {
                     // Activity first — offers, orders, and alerts are what a
                     // signed-in member checks most (the old Activity tab).
                     linkedSection(title: "Activity") {
+                        NavigationLink { MessagesListScreen() } label: {
+                            rowLabel(icon: "bubble.left.and.bubble.right", label: "Messages")
+                        }.buttonStyle(PressableStyle())
+                        divider
                         NavigationLink { OffersListScreen() } label: {
                             rowLabel(icon: "arrow.left.arrow.right", label: "Offers")
                         }.buttonStyle(PressableStyle())

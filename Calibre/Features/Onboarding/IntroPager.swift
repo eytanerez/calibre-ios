@@ -73,7 +73,11 @@ struct IntroPager: View {
                     withAnimation(Motion.easeMedium) { page += 1 }
                 }
             } label: {
-                Text(isLastPage ? "Get started" : "Continue")
+                // "Get started" was accurate when the next screen was a
+                // sign-in gate: getting started meant making an account.
+                // The next screen is the market itself now, so the button
+                // promises the thing it actually opens.
+                Text(isLastPage ? "Browse the market" : "Continue")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))

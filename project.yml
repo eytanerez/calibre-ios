@@ -78,6 +78,7 @@ targets:
           - CFBundleURLSchemes:
               - calibre
         CalibreAPIBaseURL: $(API_BASE_URL)
+        CalibreMessagingBaseURL: $(MESSAGING_API_BASE_URL)
         CalibreApplePayEnabled: $(APPLE_PAY_ENABLED)
         CalibrePostHogKey: $(CALIBRE_POSTHOG_KEY)
         CalibrePostHogHost: $(CALIBRE_POSTHOG_HOST)

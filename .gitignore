@@ -6,3 +6,8 @@ DerivedData/
 xcuserdata/
 .build/
 .swiftpm/
+
+# Swift Package Manager's resolved-dependency cache. 124MB of other
+# projects' git objects, one pack of which is over GitHub's 100MB file
+# limit and rejects the push outright. Rebuilt by Xcode on demand.
+.spm-cache/

@@ -33,6 +33,8 @@
 	<string>$(API_BASE_URL)</string>
 	<key>CalibreApplePayEnabled</key>
 	<string>$(APPLE_PAY_ENABLED)</string>
+	<key>CalibreMessagingBaseURL</key>
+	<string>$(MESSAGING_API_BASE_URL)</string>
 	<key>CalibrePostHogHost</key>
 	<string>$(CALIBRE_POSTHOG_HOST)</string>
 	<key>CalibrePostHogKey</key>

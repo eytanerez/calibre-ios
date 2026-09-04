@@ -93,9 +93,26 @@ struct OrderDetailScreen: View {
 
                 purchaseGroupNote(order)
 
+                // The record's own states, in the order a buyer meets them:
+                // held, then the case they are asked to answer, then the
+                // report. Each draws only when the server says so.
+                if let record = order.authentication, record.isHeld {
+                    AuthenticationHoldCard(record: record, audience: .buyer)
+                }
+
+                if let caseRef = order.authentication?.authCase {
+                    AuthCaseCard(caseID: caseRef.id) { Task { await load() } }
+                }
+
+                if let report = order.authentication?.report {
+                    AuthenticationReportRow(source: .order(order.id), reference: report)
+                }
+
                 if let auth = order.authResult, order.status == .authPass || order.status == .authFail {
                     authResultCard(order, auth)
                 }
+
+                passportRow(order)
 
                 if let shipment = order.toBuyerShipment ?? order.toAuthShipment ?? order.latestShipment,
                    shipment.trackingNumber != nil {
@@ -138,13 +155,19 @@ struct OrderDetailScreen: View {
             Text(heroHeadline(order))
                 .font(CalibreType.title)
                 .foregroundStyle(Color.calibre.foreground)
-            Text(order.statusSummary)
+            // `to_auth` covers the seller still holding it, the carrier
+            // holding it, and the bench holding it. The record is the only
+            // thing that can tell the last one apart, and until it existed all
+            // three read "on its way to our authentication center".
+            Text(order.arrivalSummary ?? order.statusSummary)
                 .font(CalibreType.body)
                 .foregroundStyle(Color.calibre.mutedForeground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Order \(order.displayNumber), \(order.statusLabel). \(order.statusSummary)")
+        .accessibilityLabel(
+            "Order \(order.displayNumber), \(order.statusLabel). \(order.arrivalSummary ?? order.statusSummary)"
+        )
     }
 
     private func heroHeadline(_ order: Order) -> String {
@@ -266,21 +289,70 @@ struct OrderDetailScreen: View {
             .font(CalibreType.bodySemiBold)
             .foregroundStyle(passed ? Color.calibre.success : Color.calibre.destructive)
 
-            if let notes = auth.notes, !notes.isEmpty {
-                Text(notes).font(CalibreType.body).foregroundStyle(Color.calibre.foreground)
-            }
+            // The bench's own notes used to print here verbatim. They are
+            // written by watchmakers for watchmakers, they are evidence on a
+            // record rather than a message to a customer, and what a customer
+            // is entitled to is the report — which says the same things in
+            // sentences somebody wrote for them.
             if auth.aftermarketFlag == true {
                 Text("Aftermarket parts were noted during inspection.")
                     .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
             }
             if !passed {
-                Text("Our team will follow up by email with the details and your options.")
-                    .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                Text(
+                    "Our authentication centre could not authenticate this watch, so the sale is off. You are being "
+                    + "refunded in full, including the card processing fee, and you owe nothing. Your Calibre contact "
+                    + "will write to you with what we found."
+                )
+                .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
         .cardSurface()
+    }
+
+    // MARK: - The Passport
+
+    /// The way into the booklet, from the moment the bench mints the code —
+    /// which is authentication, days before the watch reaches the doorstep.
+    ///
+    /// Deliberately not gated on delivery. The Vault is the only other place
+    /// this row exists, and the Vault holds watches the buyer already has, so
+    /// until now the one document a buyer wanted to show somebody was out of
+    /// reach for exactly as long as the watch was in the air. Nil-checked
+    /// rather than status-checked because the code's presence *is* the fact:
+    /// an order that never passed the bench has none.
+    @ViewBuilder private func passportRow(_ order: Order) -> some View {
+        if let code = order.passportCode {
+            Button {
+                services.router.push(.passport(code))
+            } label: {
+                HStack(spacing: Space.m) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundStyle(Color.calibre.primary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("This watch's Passport")
+                            .font(CalibreType.bodyMedium)
+                            .foregroundStyle(Color.calibre.foreground)
+                            .multilineTextAlignment(.leading)
+                        Text("The record that travels with it.")
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.calibre.placeholder)
+                }
+                .padding(Space.l)
+                .cardSurface()
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityHint("Opens this watch's Passport")
+        }
     }
 
     // MARK: - What the seller sent with it

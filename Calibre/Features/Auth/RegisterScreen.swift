@@ -4,7 +4,9 @@ import SwiftUI
 
 /// Two-step account creation. Step one is who you are — with a live username
 /// check and a password checklist that ticks as you type. Step two is where
-/// watches should ship. Registration signs the new member in on the spot.
+/// watches should ship, and where the terms are accepted — the backend now
+/// refuses a registration without it. Registration signs the new member in on
+/// the spot.
 struct RegisterScreen: View {
     /// True when presented in its own modal cover (adds a close button).
     var isModal = false
@@ -32,6 +34,10 @@ struct RegisterScreen: View {
     @State private var zip = ""
     @State private var state = ""
     @State private var country = "US"
+
+    /// Never seeded true, never restored from anywhere. A pre-ticked box is
+    /// not consent, and this one is the only record that the person agreed.
+    @State private var acceptedTerms = false
 
     @State private var step = 1
     @State private var usernameState: UsernameCheckState = .idle
@@ -258,7 +264,89 @@ struct RegisterScreen: View {
 
             CalibreTextField("Phone", text: $phone, placeholder: "(415) 555-0134", kind: .phone)
                 .phoneFormatted($phone)
+
+            termsAcceptance
         }
+    }
+
+    // MARK: - Terms
+
+    /// The same two site pages the About screen links to, opened the same way
+    /// — one set of URLs, so what you accept here and what you can read there
+    /// cannot drift apart.
+    private static let termsURL = URL(string: "https://buycalibre.com/terms")!
+    private static let privacyURL = URL(string: "https://buycalibre.com/privacy")!
+
+    /// The acceptance `POST /auth/register` now requires. The client sends the
+    /// boolean and nothing else: the server stamps the version it actually
+    /// published, and a version the app guessed at would be a record of the
+    /// wrong document.
+    private var termsAcceptance: some View {
+        HStack(alignment: .center, spacing: Space.m) {
+            Button {
+                Haptics.shared.play(.selection)
+                acceptedTerms.toggle()
+            } label: {
+                // The same two symbols the password checklist above uses, at a
+                // size you can hit rather than one you can only read.
+                Image(systemName: acceptedTerms ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(acceptedTerms ? Color.calibre.primary : Color.calibre.borderBright)
+                    .frame(width: Space.touchTarget, height: Space.touchTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableStyle())
+            // A bare circle is silent. The box carries the whole sentence as
+            // its name and its tick as its value, so VoiceOver can say what is
+            // being agreed to and whether it has been.
+            .accessibilityLabel("I accept the Terms of Service and the Privacy Policy")
+            .accessibilityValue(acceptedTerms ? "Checked" : "Not checked")
+            .accessibilityAddTraits(acceptedTerms ? .isSelected : [])
+
+            VStack(alignment: .leading, spacing: Space.xs) {
+                Text("I accept the Terms of Service and the Privacy Policy.")
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    // Word for word the box's own label, so leaving it in the
+                    // tree only makes VoiceOver say the sentence twice before
+                    // it reaches the two links. Sighted readers still see it.
+                    .accessibilityHidden(true)
+                legalLinks
+            }
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: Space.touchTarget)
+        .animation(Motion.easeFast, value: acceptedTerms)
+    }
+
+    /// Side by side while they fit — which is every normal text size — and
+    /// stacked once they don't, rather than the second one running off the
+    /// right edge. Same shape as the login screen's sign-up prompt.
+    private var legalLinks: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.l) {
+                termsLink
+                privacyLink
+            }
+            VStack(alignment: .leading, spacing: Space.xs) {
+                termsLink
+                privacyLink
+            }
+        }
+    }
+
+    private var termsLink: some View {
+        Link("Read the Terms of Service", destination: Self.termsURL)
+            .font(CalibreType.label)
+            .tint(Color.calibre.primary)
+    }
+
+    private var privacyLink: some View {
+        Link("Read the Privacy Policy", destination: Self.privacyURL)
+            .font(CalibreType.label)
+            .tint(Color.calibre.primary)
     }
 
     // MARK: - Footer
@@ -331,6 +419,10 @@ struct RegisterScreen: View {
             && InputValidation.isNonBlank(zip)
             && InputValidation.isNonBlank(state)
             && InputValidation.isISO2CountryCode(country)
+            // The backend rejects a registration without it, so it belongs
+            // beside the other required fields rather than in a second gate
+            // the submit path could forget to consult.
+            && acceptedTerms
     }
 
     private func advanceToAddress() {
@@ -422,6 +514,10 @@ struct RegisterScreen: View {
             "password": .string(password),
             "phone": .string(phone.trimmingCharacters(in: .whitespaces)),
             "address": .object(address),
+            // The state of the box, not a literal `true`: the guard above
+            // already refuses to submit without it, and encoding the flag
+            // means the body can never claim more than the person did.
+            "accepted_terms": .bool(acceptedTerms),
         ]
 
         var createdAccount = false

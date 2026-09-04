@@ -19,6 +19,9 @@ enum Route: Hashable {
     case journal
     case journalArticle(String)
     case supportChat
+    case messages
+    /// One buyer↔seller conversation, by its calibre-messaging thread id.
+    case messageThread(String)
     case alerts
     case checkout(String, offerID: String?)
     /// A past poll's own page, carried by value — there's no fetch-by-id yet.
@@ -159,13 +162,24 @@ final class AppRouter {
     /// Which tab a route naturally lives in.
     private func homeTab(for route: Route) -> AppTab {
         switch route {
+        // The public Passport is not a vault record and must not land in the
+        // Vault tab, even though it is a document about a watch. That tab's
+        // entire navigation stack sits under `vaultGate` — the biometric lock
+        // is above the stack on purpose, so no pushed route can escape it —
+        // and the lock is on by default after every trip to the background. A
+        // passport routed there therefore asks a signed-in member for Face ID
+        // before it will show them a booklet that needs no account at all,
+        // usually somebody else's. Android routes it outside its own gate for
+        // the same reason (`navigation/MainTabShell.kt`).
+        case .passport:
+            .home
         case .listing, .seller, .brand, .checkout:
             .home
         case .journal, .journalArticle, .poll:
             .community
-        case .order, .offer, .alerts, .supportChat:
+        case .order, .offer, .alerts, .supportChat, .messages, .messageThread:
             .you
-        case .vaultWatch, .passport:
+        case .vaultWatch:
             .collection
         }
     }

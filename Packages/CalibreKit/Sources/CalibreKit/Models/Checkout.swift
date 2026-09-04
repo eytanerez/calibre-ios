@@ -47,6 +47,23 @@ public struct CheckoutBreakdown: Decodable, Sendable {
     /// What a return would cost, for the same disclosure.
     public let returnFee: ReturnFeeTerms?
 
+    // MARK: Tax availability
+
+    /// Where the `tax` figure came from: "provider", "debug_stub" or
+    /// "unavailable". The quote endpoints used to answer 503 when the tax
+    /// provider was down; they now price everything else and say so here.
+    ///
+    /// Optional, like the two warnings below, because a server that predates
+    /// that change sends none of the three keys — and a quote that decodes
+    /// with an unknown tax source is worth far more than one that throws.
+    public let taxSource: String?
+    /// The server's own sentence for a tax outage. Print it verbatim where it
+    /// is present: it is the wording the site shows, and two platforms
+    /// explaining the same outage differently is its own kind of wrong.
+    public let taxUnavailableWarning: String?
+    /// The banner that accompanies a stubbed tax figure outside production.
+    public let taxStubWarning: String?
+
     public enum PricingMode: String, Decodable, Sendable {
         case surcharge
         case discount
@@ -91,6 +108,17 @@ public struct CheckoutBreakdown: Decodable, Sendable {
     /// Whether a debit card is accepted on this order.
     public var acceptsDebit: Bool {
         acceptedCardFunding?.contains("debit") ?? false
+    }
+
+    /// True when the tax provider could not be reached and `tax` is a
+    /// placeholder zero rather than a figure anyone stands behind. Every total
+    /// on this breakdown is then a before-tax total, and a screen that renders
+    /// one without saying so is telling the buyer a price they will not pay.
+    ///
+    /// False for an older payload that sends no `tax_source` at all — the
+    /// absence of the key is not evidence of an outage.
+    public var isTaxUnavailable: Bool {
+        taxSource == "unavailable"
     }
 }
 
@@ -161,6 +189,11 @@ public struct CheckoutBreakdownGroup: Decodable, Sendable {
         public let currency: String
         public let itemCount: Int
         public let paymentMethod: String?
+        /// The purchase has one tax line, so it has one tax source. Read from
+        /// `combined` rather than from any item for the same reason `tax` is.
+        public let taxSource: String?
+        public let taxUnavailableWarning: String?
+        public let taxStubWarning: String?
     }
 
     /// The combined column expressed as a `CheckoutBreakdown`, so every piece
@@ -200,7 +233,13 @@ public struct CheckoutBreakdownGroup: Decodable, Sendable {
             // states it for the purchase.
             paymentDisclosures: items.first?.paymentDisclosures,
             returns: single?.returns,
-            returnFee: single?.returnFee
+            returnFee: single?.returnFee,
+            // One tax line for the purchase, so the outage travels with it.
+            // Nil where the server said nothing, which reads as "not an
+            // outage" — the same answer a pre-change server gets.
+            taxSource: combined.taxSource,
+            taxUnavailableWarning: combined.taxUnavailableWarning,
+            taxStubWarning: combined.taxStubWarning
         )
     }
 }

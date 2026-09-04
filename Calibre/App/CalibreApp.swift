@@ -34,7 +34,6 @@ struct CalibreApp: App {
         // the app's own writes, freezing the phase machine.)
         if ProcessInfo.processInfo.arguments.contains("-resetAppState") {
             UserDefaults.standard.set(false, forKey: "hasSeenIntro")
-            UserDefaults.standard.set(false, forKey: "guestChosen")
             KeychainTokenStore().clear()
             TutorialLedger.shared.resetAll()
         }
@@ -53,32 +52,40 @@ struct CalibreApp: App {
     }
 }
 
-/// The app's four lives: waking up, the first-run intro, the sign-in gate,
-/// and the tab shell. Transitions are a quiet crossfade with a whisper of
-/// scale — never a slide.
+/// The app's three lives: waking up, the first-run intro, and the tab shell.
+/// Transitions are a quiet crossfade with a whisper of scale — never a slide.
+///
+/// There is no sign-in life. The intro used to hand a first-time visitor a
+/// full-screen login with "Browse as guest" buried at the bottom of it, which
+/// asks a stranger for an account before showing them a single watch. The
+/// market is the front door now, and sign-in is asked for at the moment it
+/// actually buys something — see `AuthSession.require`, whose intent is
+/// replayed the instant the account exists.
 struct RootView: View {
     private enum Phase: Equatable {
-        case booting, intro, gate, main
+        case booting, intro, main
     }
 
     @State private var services = AppServices()
     @State private var bootstrapped = false
     @AppStorage("hasSeenIntro") private var hasSeenIntro = false
-    @AppStorage("guestChosen") private var guestChosen = false
     @AppStorage("appearancePreference") private var appearancePreference: AppearancePreference = .system
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     private var phase: Phase {
         if !bootstrapped { return .booting }
-        if services.auth.isAuthenticated { return .main }
-        if !hasSeenIntro { return .intro }
-        if guestChosen { return .main }
-        return .gate
+        // A restored session skips the intro. The Keychain outlives deleting
+        // the app while `hasSeenIntro` does not, so a returning member can
+        // arrive with the flag cleared — and being introduced to an app you
+        // are already signed in to reads as a reset account.
+        if !hasSeenIntro, !services.auth.isAuthenticated { return .intro }
+        return .main
     }
 
-    /// The one sheet the root can present. A reset link outranks the guest
-    /// gate; consolidating into a single `.sheet(item:)` avoids the chained
-    /// double-sheet trap.
+    /// The one sheet the root can present. A reset link outranks the mid-action
+    /// sign-in sheet; consolidating into a single `.sheet(item:)` avoids the
+    /// chained double-sheet trap.
     private var activeSheet: RootSheet? {
         if let token = services.router.passwordResetToken {
             return .resetPassword(token)
@@ -105,11 +112,6 @@ struct RootView: View {
             case .intro:
                 IntroPager {
                     hasSeenIntro = true
-                }
-                .transition(phaseTransition)
-            case .gate:
-                NavigationStack {
-                    LoginScreen(context: .gate)
                 }
                 .transition(phaseTransition)
             case .main:
@@ -159,6 +161,14 @@ struct RootView: View {
             // spinner forever. Everything it doesn't claim is a Calibre link.
             guard !StripeAPI.handleURLCallback(with: url) else { return }
             services.router.handle(url: url)
+        }
+        // The presence heartbeat, foreground only. `.task(id:)` cancels its
+        // work the moment the id changes, so leaving the foreground stops the
+        // beat with no timer to invalidate and nothing left running behind a
+        // locked screen claiming somebody is here.
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            await services.presence.beatWhileForeground()
         }
         .onAppear {
             // Hand the live coordinator to the UIKit app delegate and let it
@@ -252,6 +262,7 @@ final class AppServices {
     let seller: SellerStore
     let account: AccountStore
     let support: SupportStore
+    let messaging: MessagingStore
     let community: CommunityStore
     let content: ContentStore
     let config: ConfigStore
@@ -262,6 +273,7 @@ final class AppServices {
     let router = AppRouter()
     let toasts = ToastCenter()
     let push: PushCoordinator
+    let presence: PresenceHeartbeat
 
     init() {
         let configuration = APIConfiguration.fromInfoPlist()
@@ -275,6 +287,12 @@ final class AppServices {
         let account = AccountStore(client: client)
         self.account = account
         self.support = SupportStore(client: client)
+        // calibre-messaging is a separate service (own base URL, own wire
+        // contract) — see `MessagingClient` — but the same signed-in
+        // session, so it reuses `auth` as its bearer-token provider exactly
+        // as `client` above does.
+        let messagingConfiguration = APIConfiguration.fromMessagingInfoPlist()
+        self.messaging = MessagingStore(client: MessagingClient(configuration: messagingConfiguration, auth: auth))
         self.community = CommunityStore(client: client)
         self.content = ContentStore(client: client)
         let config = ConfigStore(client: client)
@@ -283,6 +301,7 @@ final class AppServices {
         self.serverAlerts = ServerAlertsStore(client: client)
         self.signals = LocalSignals()
         self.push = PushCoordinator(account: account)
+        self.presence = PresenceHeartbeat(client: client)
 
         // Rates, minimums and windows the app may quote before the object
         // that would carry them exists. Warmed once at launch so a
@@ -308,6 +327,29 @@ final class AppServices {
             vault?.reset()
             serverAlerts?.reset()
             support?.reset()
+        }
+
+        // A session that ends without the member asking has to say so.
+        //
+        // The full-screen sign-in gate used to be the announcement: a member
+        // whose token was rejected met it on the next launch and understood.
+        // With the app opening on the market instead, the same member lands
+        // in the tab shell as a guest with nothing said at all — and an empty
+        // Vault with no explanation reads as "you lost your account", not as
+        // "you're signed out". So it is said here, once, at the one moment it
+        // is true. A deliberate sign-out is not this: the member knows, and
+        // the You tab already thanks them.
+        let toasts = self.toasts
+        auth.onSessionExpired = { [weak auth, weak toasts] in
+            toasts?.show(
+                title: "You've been signed out",
+                message: "Your session expired. Everything is still here \u{2014} sign back in to pick it up.",
+                action: ToastCenter.Action(label: "Sign in") {
+                    // The same door every other gated action opens, so the
+                    // sheet and its replay behave exactly as they always do.
+                    auth?.require("Sign in to pick up where you left off") {}
+                }
+            )
         }
     }
 }

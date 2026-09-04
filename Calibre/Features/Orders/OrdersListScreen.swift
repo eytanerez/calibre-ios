@@ -200,7 +200,7 @@ struct OrderRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 titleLine
-                Text(order.statusSummary)
+                Text(order.arrivalSummary ?? order.statusSummary)
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .lineLimit(typeSize.isAccessibilitySize ? nil : 1)

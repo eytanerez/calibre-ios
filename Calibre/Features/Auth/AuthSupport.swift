@@ -2,17 +2,22 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// Mixed-type JSON payload value for auth endpoints whose bodies nest objects
-/// (Apple's `full_name`, register's `address`). Keys are written already
-/// snake_cased — `JSONEncoder.convertToSnakeCase` leaves them untouched.
+/// Mixed-type JSON payload value for auth endpoints whose bodies are not all
+/// strings: the nested objects (Apple's `full_name`, register's `address`) and
+/// register's `accepted_terms`, which the server type-checks as a real boolean
+/// and refuses as the string "true". Keys are written already snake_cased —
+/// `JSONEncoder.convertToSnakeCase` leaves them untouched.
 enum AuthJSON: Encodable, Sendable {
     case string(String)
+    case bool(Bool)
     case object([String: AuthJSON])
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
         case .string(let value):
+            try container.encode(value)
+        case .bool(let value):
             try container.encode(value)
         case .object(let value):
             try container.encode(value)

@@ -47,6 +47,16 @@ public final class AuthSession {
     /// need to know about the stores built on top of it.
     public var onSessionCleared: (@MainActor () -> Void)?
 
+    /// Fired for the subset of those endings the member did not ask for: a
+    /// rejected refresh token, or a launch-time validation that came back a
+    /// definitive 401. A separate hook rather than an argument on the one
+    /// above because the two want opposite things — every ending must drop
+    /// the cached account state, and only this one must be *said out loud*.
+    /// A member who signed out knows they did; a member whose token expired
+    /// is put back in the shell as a guest, and an empty Vault with nothing
+    /// said reads as a lost account.
+    public var onSessionExpired: (@MainActor () -> Void)?
+
     @ObservationIgnored private let tokenStore: TokenStoring
     @ObservationIgnored private let configuration: APIConfiguration
     /// Bare transport for auth endpoints only (no auth provider — no recursion).
@@ -168,7 +178,7 @@ public final class AuthSession {
 
     public func logout() async {
         let refreshToken = tokens?.refreshToken
-        clearSession()
+        clearSession(atMemberRequest: true)
         // Best-effort server-side revocation.
         if let refreshToken {
             let endpoint = try? Endpoint<EmptyResponse>.json(
@@ -213,12 +223,21 @@ public final class AuthSession {
         }
     }
 
-    private func clearSession() {
+    /// `atMemberRequest` is true only for `logout()`. It defaults to false
+    /// because every other way a session ends — a rejected refresh token, a
+    /// 401 with no refresh credential to spend, a bootstrap validation that
+    /// came back definitively unauthorized — is something that happened *to*
+    /// the member, and a new one of those should announce itself by default
+    /// rather than by being remembered about.
+    private func clearSession(atMemberRequest: Bool = false) {
         user = nil
         tokens = nil
         isAuthenticated = false
         tokenStore.clear()
         onSessionCleared?()
+        if !atMemberRequest {
+            onSessionExpired?()
+        }
     }
 
     private func harvestCookie(named name: String, from response: HTTPURLResponse) -> String? {

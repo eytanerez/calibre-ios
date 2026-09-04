@@ -2,23 +2,29 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// The sign-in screen. Lives two lives: the full-screen gate after the intro
-/// (with "Browse as guest" at the bottom) and a modal reached from the You
-/// tab once a guest wants in. Always the screen — never a half sheet.
+/// The sign-in screen: a modal reached from the Me tab once a guest wants in.
+/// Always the screen — never a half sheet.
+///
+/// It used to live a second life as the app's front door, a full-screen gate
+/// after the intro with "Browse as guest" at the bottom. That door is gone —
+/// the app opens on the market now — and the gate went with it rather than
+/// being left standing behind a flag, because a screen nothing reaches is a
+/// screen nobody maintains. The mid-action sheet (`AuthGateSheet`) is what a
+/// signed-out visitor meets instead, at the moment they reach for something
+/// that needs an account.
 struct LoginScreen: View {
     enum Context {
-        /// The app's front door — offers "Browse as guest".
-        case gate
-        /// Presented modally over the tab shell — offers "Close" instead.
+        /// Presented modally over the tab shell — offers "Close".
         case modal
     }
 
+    /// Names the presentation at the call site. Nothing reads it while
+    /// `.modal` is the only shape the screen has.
     let context: Context
 
     @Environment(AuthSession.self) private var session
     @Environment(ToastCenter.self) private var toasts
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("guestChosen") private var guestChosen = false
 
     @State private var identifier = ""
     @State private var password = ""
@@ -36,7 +42,7 @@ struct LoginScreen: View {
         ScrollView {
             VStack(spacing: Space.xl) {
                 header
-                    .padding(.top, context == .gate ? Space.xxl * 2 : Space.xl)
+                    .padding(.top, Space.xl)
                     .padding(.bottom, Space.s)
 
                 VStack(spacing: Space.l) {
@@ -97,15 +103,6 @@ struct LoginScreen: View {
 
                 signUpPrompt
                     .padding(.top, Space.s)
-
-                if context == .gate {
-                    Button("Browse as guest") {
-                        Haptics.shared.play(.press)
-                        guestChosen = true
-                    }
-                    .buttonStyle(.calibre(.ghost, fullWidth: true))
-                    .padding(.top, Space.l)
-                }
             }
             .padding(.horizontal, Space.margin)
             .padding(.bottom, Space.xxl)
@@ -113,24 +110,22 @@ struct LoginScreen: View {
         .scrollBounceBehavior(.basedOnSize)
         .calibrePageBackground()
         .toolbar {
-            if context == .modal {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                            .frame(width: Space.touchTarget, height: Space.touchTarget)
-                    }
-                    .buttonStyle(PressableStyle())
-                    .accessibilityLabel("Close")
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .frame(width: Space.touchTarget, height: Space.touchTarget)
                 }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("Close")
             }
         }
         .animation(Motion.easeFast, value: errorMessage)
         .onChange(of: session.isAuthenticated) { _, isAuthenticated in
-            if isAuthenticated, context == .modal {
+            if isAuthenticated {
                 dismiss()
             }
         }

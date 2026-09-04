@@ -381,6 +381,15 @@ struct ListingDetailScreen: View {
                 SellerCard(seller: seller) {
                     push(.seller(seller.username))
                 }
+                if !isOwnListing(listing) {
+                    Button {
+                        Haptics.shared.play(.press)
+                        messageSeller(listing)
+                    } label: {
+                        Label("Message Seller", systemImage: "bubble.left.and.bubble.right")
+                    }
+                    .buttonStyle(.calibre(.ghost, fullWidth: true))
+                }
             }
         }
     }
@@ -585,6 +594,38 @@ struct ListingDetailScreen: View {
         let stubPresented = $showMakeOfferStub
         session.requireThenPresent("Sign in to make an offer") {
             stubPresented.wrappedValue = true
+        }
+    }
+
+    /// Opens (or resumes) the buyer's thread with this listing's seller and
+    /// pushes onto whichever stack the PDP is already on — same in-context
+    /// navigation `push(.seller(...))` above uses, so Back returns here
+    /// rather than jumping to a different tab.
+    private func messageSeller(_ listing: Listing) {
+        let router = services.router
+        let toasts = toasts
+        let messaging = services.messaging
+        let listingID = listingID
+        let sellerID = listing.sellerId
+        let listingTitle = listing.title
+        let listingReference = listing.referenceNumber
+        session.require("Sign in to message the seller") {
+            do {
+                let thread = try await messaging.openThread(
+                    listingID: listingID,
+                    sellerID: sellerID,
+                    listingTitle: listingTitle,
+                    listingReference: listingReference
+                )
+                router.push(.messageThread(thread.id))
+            } catch {
+                Haptics.shared.play(.error)
+                toasts.show(
+                    title: "Couldn't start this conversation",
+                    message: error.browseMessage,
+                    tone: .error
+                )
+            }
         }
     }
 

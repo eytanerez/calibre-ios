@@ -441,6 +441,8 @@ struct PhotosStep: View {
 
             morePhotos
 
+            inclusions
+
             markSection
 
             #if DEBUG
@@ -490,6 +492,37 @@ struct PhotosStep: View {
             }
         }
         .task { await model.refreshPhotoBoard() }
+    }
+
+    // MARK: What comes with the watch
+
+    /// Three answers, asked beside the photographs because the full-set shot
+    /// is where the seller already has the box and the papers on the table.
+    ///
+    /// Nothing here is required. A watch with no box is an ordinary watch, and
+    /// forcing an answer would only teach people to tick to get past the step.
+    /// What matters is that the question is asked at all: it never was, so
+    /// every listing this wizard has made says "watch only" on the seller's
+    /// behalf.
+    private var inclusions: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                Text("What comes with it")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+                Text("Our authentication centre checks each of these against what actually arrives.")
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Toggle("Original box", isOn: $model.boxIncluded)
+            Toggle("Papers", isOn: $model.papersIncluded)
+            Toggle("Booklets", isOn: $model.bookletsIncluded)
+        }
+        .font(CalibreType.bodyMedium)
+        .foregroundStyle(Color.calibre.foreground)
+        .tint(Color.calibre.primary)
     }
 
     // MARK: Marks

@@ -163,7 +163,12 @@ struct CollectionScreen: View {
                         // The booklet is a screen in the app now. It used to
                         // hand the reader to Safari for a record that is
                         // about a watch they already own.
-                        services.router.open(.passport(code))
+                        // `push`, not `open`: the passport's canonical tab is
+                        // now Home so a public link never lands behind the
+                        // vault lock, and `open` would therefore throw a member
+                        // reading their OWN vault out to a different tab. Push
+                        // appends to the stack they are already on.
+                        services.router.push(.passport(code))
                     }
                 }
             }

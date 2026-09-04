@@ -88,13 +88,19 @@ final class DesignSystemContractTests: XCTestCase {
         XCTAssertLessThan(hand?.xHeight ?? .infinity, sans?.xHeight ?? 0)
     }
 
-    /// The paper tile ships as bytes, not as a catalog entry, so that the same
-    /// file can be identical on web and Android. A resource declaration that
-    /// stops copying it fails silently — the grain just goes away.
-    func testPaperGrainShipsInTheBundle() {
-        let url = Bundle.module.url(forResource: "paper-grain", withExtension: "png")
-        XCTAssertNotNil(url)
-        XCTAssertNotNil(url.flatMap { UIImage(contentsOfFile: $0.path) })
+    /// Inverted on 2026-08-30. This asserted that the paper tile shipped in
+    /// the bundle, and it guarded something real while the grain existed: a
+    /// resource declaration that stops copying a file fails silently, and the
+    /// grain would just have gone away. Eytan then took the grain out of all
+    /// three surfaces, so the assertion was guarding a file that must not
+    /// exist. Inverted rather than deleted, because deleting it would guard
+    /// nothing and the failure it now catches is a real one — a `Resources`
+    /// folder copied back into the package, or a `.copy` line restored, would
+    /// put the tile back in the bundle where nothing draws it and no one
+    /// looks. `PaperGrain.swift` and `Resources/paper-grain.png` are both
+    /// gone; `calibrePageBackground()` stays as the one page ground.
+    func testPaperGrainIsNotBundled() {
+        XCTAssertNil(Bundle.module.url(forResource: "paper-grain", withExtension: "png"))
     }
 
     /// The card surface carries the warmth in light. In dark it no longer

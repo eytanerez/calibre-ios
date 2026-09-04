@@ -174,6 +174,12 @@ struct WizardSnapshot: Codable {
     /// ask them a second time. Optional for the same reason as the fields
     /// above; absent means they were never asked.
     var vaultAskDeclined: Bool? = nil
+    /// The three inclusion answers. Optional for the same reason as the
+    /// fields above: a snapshot written before the question existed decodes
+    /// as nil, which means "never asked" and not "no".
+    var boxIncluded: Bool? = nil
+    var papersIncluded: Bool? = nil
+    var bookletsIncluded: Bool? = nil
     var updatedAt: Date
 }
 
@@ -274,6 +280,17 @@ final class WizardModel {
     // Returns — the seller's choice at listing time.
     var returnsAccepted = false
     var returnWindowHours: Int?
+
+    // What comes with the watch. Three answers, because "box and papers" is
+    // one phrase for two different things and a booklet set is a third.
+    //
+    // Until this build the wizard asked none of them, so `box_papers` was
+    // false on every listing ever made through it — not because sellers said
+    // no, but because nobody was asked. The bench then compares what arrives
+    // against that false.
+    var boxIncluded = false
+    var papersIncluded = false
+    var bookletsIncluded = false
 
     // Photos
     var slots: [ListingImageCategory: WizardPhotoSlot] = [:]
@@ -543,6 +560,13 @@ final class WizardModel {
             returnsAccepted = terms.accepted
             returnWindowHours = terms.windowHours
         }
+        // A listing made before the question was split carries one bit for all
+        // three, and that bit meant box AND papers. Booklets were never asked
+        // about, so they start unticked rather than inheriting an answer.
+        if listing.boxPapers == true {
+            boxIncluded = true
+            papersIncluded = true
+        }
         if let condition = listing.condition {
             conditions[.watchCase] = condition.caseCondition
             conditions[.dial] = condition.dial
@@ -576,6 +600,11 @@ final class WizardModel {
         // Absent on snapshots written before the vault question existed, which
         // is a seller who was never asked rather than one who said no.
         vaultAskDeclined = snapshot.vaultAskDeclined ?? false
+        // Absent means the draft predates the question; the listing's own
+        // answer, already applied above, stands in that case.
+        if let box = snapshot.boxIncluded { boxIncluded = box }
+        if let papers = snapshot.papersIncluded { papersIncluded = papers }
+        if let booklets = snapshot.bookletsIncluded { bookletsIncluded = booklets }
         step = min(max(snapshot.step, 0), 3)
         fulfillRequestID = snapshot.fulfillRequestID
         for (key, grade) in snapshot.conditions {
@@ -703,6 +732,10 @@ final class WizardModel {
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
             conditionCaseback: conditions[.caseback],
+            // What this column has always meant: both, not either. The
+            // booklets answer has no column of its own on the server yet, so
+            // it is collected here and does not travel — see the build report.
+            boxPapers: boxIncluded && papersIncluded,
             productionYear: yearUnknown ? nil : InputValidation.productionYear(yearText),
             returnsAccepted: returnsAccepted,
             // The server requires a window when returns are accepted, and
@@ -751,6 +784,9 @@ final class WizardModel {
             returnsAccepted: returnsAccepted,
             returnWindowHours: returnWindowHours,
             vaultAskDeclined: vaultAskDeclined,
+            boxIncluded: boxIncluded,
+            papersIncluded: papersIncluded,
+            bookletsIncluded: bookletsIncluded,
             updatedAt: .now
         ))
     }

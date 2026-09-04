@@ -114,6 +114,10 @@ struct RouteDestinationView: View {
             OfferDetailScreen(offerID: id)
         case .supportChat:
             SupportChatScreen()
+        case .messages:
+            MessagesListScreen()
+        case .messageThread(let id):
+            MessageThreadScreen(threadID: id)
         case .alerts:
             AlertsInboxScreen()
         case .checkout(let listingID, let offerID):
