@@ -232,7 +232,7 @@ extension Listing {
 
     /// The listing's page on the web marketplace — used for sharing.
     var webURL: URL {
-        URL(string: "https://buycalibre.com/listings/\(id)")!
+        URL(string: "https://buycalibre.com/listing/\(id)")!
     }
 }
 
@@ -240,7 +240,7 @@ extension WatchlistItem {
     /// The listing's page on the web marketplace — used for sharing a saved
     /// watch, same as a full `Listing`'s `webURL`.
     var webURL: URL {
-        URL(string: "https://buycalibre.com/listings/\(listingId)")!
+        URL(string: "https://buycalibre.com/listing/\(listingId)")!
     }
 }
 
