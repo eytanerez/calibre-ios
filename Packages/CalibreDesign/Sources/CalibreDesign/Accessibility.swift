@@ -69,6 +69,23 @@ public func calibreGridColumns(
         : [GridItem(.flexible(), spacing: spacing), GridItem(.flexible(), spacing: spacing)]
 }
 
+/// The widest a card in a horizontal lane may be drawn.
+///
+/// A lane card's width used to be a frozen 168pt while its height was
+/// measured "so it scales with Dynamic Type". At AX5 that left roughly 140pt
+/// of text — about one character of the brand, so "ROLEX" rendered as "R" —
+/// and the condition pill, which does grow with the type, spilled out of the
+/// card and over the photograph.
+///
+/// `@ScaledMetric` grows the width with the reader's text size; this caps the
+/// result, because 168pt scaled by AX5 is about 520pt and a card wider than
+/// the phone is worse than a cramped one. The cap leaves the next card
+/// peeking on the narrowest supported iPhone, so the lane still reads as a
+/// lane rather than as a single stranded card.
+public func calibreLaneCardWidth(_ scaled: CGFloat, cap: CGFloat = 320) -> CGFloat {
+    min(max(scaled, 1), cap)
+}
+
 public extension View {
     /// Marks this view as the only thing assistive technology may reach, and
     /// removes whatever it is covering from the accessibility tree.

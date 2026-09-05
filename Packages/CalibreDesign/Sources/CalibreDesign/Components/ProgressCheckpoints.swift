@@ -32,7 +32,29 @@ public struct ProgressCheckpoints: View {
             if typeSize.isAccessibilitySize {
                 stackedRail
             } else {
-                horizontalRail
+                // The rail turns the corner when the captions do not fit, not
+                // when the type size crosses a threshold. Those are different
+                // questions and only the first one is the one being asked.
+                //
+                // Keying the fallback off `isAccessibilitySize` alone assumed
+                // the captions are short, which the previews are ("Placed",
+                // "Verified") and the order screen's are not. Five columns of
+                // a 402pt phone are about 72pt each, and "Shipped to
+                // authentication" needs more, so at the *default* size it wrapped
+                // mid-word to a stranded "n" and ran into the caption beside it:
+                // "At authenticatio / n" and "Shipped to authenticatio / n"
+                // touching, because the columns sit at `spacing: 0`.
+                //
+                // `ViewThatFits` measures the horizontal rail with its captions
+                // held to one line each. If they fit, it draws exactly the rail
+                // that shipped — the wizard's "Details / Photos / Price /
+                // Review" is unchanged. If they do not, the stacked rail that
+                // already existed for accessibility sizes takes over, which is
+                // the layout long captions needed all along.
+                ViewThatFits(in: .horizontal) {
+                    horizontalRail
+                    stackedRail
+                }
             }
         }
         .onAppear {
@@ -60,7 +82,15 @@ public struct ProgressCheckpoints: View {
                                 : Color.calibre.mutedForeground
                         )
                         .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+                        // One line, at its natural width, and never shrunk or
+                        // clipped: this is the candidate `ViewThatFits` is
+                        // measuring, and a caption allowed to wrap here would
+                        // always "fit" and the measurement would mean nothing.
+                        .fixedSize(horizontal: true, vertical: false)
+                        // Keeps neighbouring captions off each other without
+                        // moving the dots: the columns stay at `spacing: 0`,
+                        // which is what `rail` computes its inset from.
+                        .padding(.horizontal, 2)
                 }
                 .frame(maxWidth: .infinity)
             }

@@ -291,6 +291,12 @@ private struct CopyRow: View {
             }
             .buttonStyle(PressableStyle())
             .accessibilityLabel("Copy \(label)")
+            // 32pt drawn, 44pt grabbable. The row's `minHeight` already gives
+            // the *row* 44pt, which is not the same as giving the button 44pt
+            // — the tile answered a finger over 32×32 of it. The 6pt of
+            // growth lands in the row's own padding and the gap to the value
+            // beside it, so nothing moves and nothing else loses a touch.
+            .a11yExpandTarget(currentSize: 32)
         }
         .padding(.horizontal, Space.l)
         .padding(.vertical, Space.s)

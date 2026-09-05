@@ -22,6 +22,8 @@ final class BuyerSellerMessagingTests: XCTestCase {
 
     // MARK: - Plain-JSON decoding (no {ok, data} envelope)
 
+    // `MessagingStore` is @MainActor, so the test that builds one has to be.
+    @MainActor
     func testListThreadsDecodesThePlainJSONArrayCalibreMessagingActuallySends() async throws {
         MockURLProtocol.setHandler { _ in
             (200, Data("""
@@ -44,6 +46,8 @@ final class BuyerSellerMessagingTests: XCTestCase {
     /// The send response — `{message, action, notice}` — decodes directly,
     /// with no `data` key to unwrap. This is the shape a fresh send renders
     /// its bubble from.
+    // `MessagingStore` is @MainActor, so the test that builds one has to be.
+    @MainActor
     func testSendDecodesTheHeldResponseDirectly() async throws {
         MockURLProtocol.setHandler { _ in
             (201, Data("""
@@ -120,6 +124,8 @@ final class BuyerSellerMessagingTests: XCTestCase {
 
     /// `POST /threads/{id}/read` answers a bare 204 — the same empty-body
     /// shortcut `APIClient` takes for a caller that asked for nothing back.
+    // `MessagingStore` is @MainActor, so the test that builds one has to be.
+    @MainActor
     func testMarkReadAcceptsAnEmpty204() async throws {
         let seen = SeenPath()
         MockURLProtocol.setHandler { request in

@@ -97,13 +97,6 @@ final class PaymentMethodInfoDecodingTests: XCTestCase {
 /// they POST/GET the right path and unwrap the envelope, the same contract
 /// every other store method relies on (see `APIClientTests`).
 final class CommerceStorePaymentMethodTests: XCTestCase {
-    private func mockConfiguration() -> APIConfiguration {
-        APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre.test")!,
-            protocolClasses: [MockURLProtocol.self]
-        )
-    }
-
     @MainActor
     func testSetupIntentPostsToBillingSetupIntent() async throws {
         MockURLProtocol.setHandler { request in

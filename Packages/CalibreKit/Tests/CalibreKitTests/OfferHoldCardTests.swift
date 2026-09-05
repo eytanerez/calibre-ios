@@ -10,13 +10,6 @@ import XCTest
 /// it reads the funding type out of the 402 to say *which* kind of card it
 /// was. Neither is visible from a screenshot, and both break silently.
 final class OfferHoldCardTests: XCTestCase {
-    private func mockConfiguration() -> APIConfiguration {
-        APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre.test")!,
-            protocolClasses: [MockURLProtocol.self]
-        )
-    }
-
     private static let offerResponse = Data("""
         {"ok": true, "data": {
             "id": "o1", "listing_id": "l1", "buyer_id": "b1", "seller_id": "s1",
@@ -166,7 +159,7 @@ private final class SeenOfferRequest: @unchecked Sendable {
     private var body: Data?
 
     func record(_ request: URLRequest) {
-        let drained = request.httpBody ?? request.httpBodyStream.map(Self.drain)
+        let drained = request.httpBody ?? request.httpBodyStream.map(drainHTTPBodyStream)
         lock.withLock {
             self.request = request
             self.body = drained
@@ -182,19 +175,5 @@ private final class SeenOfferRequest: @unchecked Sendable {
             return [:]
         }
         return object
-    }
-
-    private static func drain(_ stream: InputStream) -> Data {
-        stream.open()
-        defer { stream.close() }
-        var data = Data()
-        let size = 4096
-        var buffer = [UInt8](repeating: 0, count: size)
-        while stream.hasBytesAvailable {
-            let read = stream.read(&buffer, maxLength: size)
-            if read <= 0 { break }
-            data.append(buffer, count: read)
-        }
-        return data
     }
 }

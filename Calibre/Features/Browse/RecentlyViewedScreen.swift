@@ -62,6 +62,9 @@ final class RecentlyViewedModel {
 
 struct RecentlyViewedScreen: View {
     @Environment(AppServices.self) private var services
+    /// One column once the reader asks for accessibility text sizes, same as
+    /// every other listing grid — see `calibreGridColumns`.
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     @State private var model: RecentlyViewedModel?
     @Namespace private var zoomNamespace
@@ -105,10 +108,7 @@ struct RecentlyViewedScreen: View {
         } else {
             ScrollView {
                 LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: Space.l),
-                        GridItem(.flexible(), spacing: Space.l),
-                    ],
+                    columns: calibreGridColumns(typeSize, spacing: Space.l),
                     alignment: .leading,
                     spacing: Space.xl
                 ) {

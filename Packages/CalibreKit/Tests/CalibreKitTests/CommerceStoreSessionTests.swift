@@ -7,13 +7,6 @@ import XCTest
 /// signed-out (or newly signed-in) session must never be repopulated by a
 /// request that was still in flight under the previous one.
 final class CommerceStoreSessionTests: XCTestCase {
-    private func mockConfiguration() -> APIConfiguration {
-        APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre.test")!,
-            protocolClasses: [MockURLProtocol.self]
-        )
-    }
-
     @MainActor
     func testResetClearsEveryCachedCollection() async throws {
         MockURLProtocol.setHandler { request in

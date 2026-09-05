@@ -15,20 +15,17 @@ final class DiscoverAndInfoUITests: XCTestCase {
         return app
     }
 
-    private func snap(_ name: String) {
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
-    }
-
     func testDiscoverExplainsGesturesAndExposesSaved() throws {
         let app = returningApp()
         app.launch()
 
         let tabs = app.tabBars.firstMatch
         XCTAssertTrue(tabs.waitForExistence(timeout: 10))
-        tabs.buttons["Discover"].tap()
+        // The deck is no longer its own tab — Home's header opens it as a
+        // full-screen cover (`HomeScreen.swift`'s "the deck lives one tap
+        // from Home" comment). `DiscoverScreen` itself, and every string
+        // below, is unchanged.
+        app.buttons["Open the deck"].tap()
 
         XCTAssertTrue(app.staticTexts[
             "Swipe right to save, left to pass. Tap a watch for its details."
@@ -45,7 +42,8 @@ final class DiscoverAndInfoUITests: XCTestCase {
 
         let tabs = app.tabBars.firstMatch
         XCTAssertTrue(tabs.waitForExistence(timeout: 10))
-        tabs.buttons["You"].tap()
+        // The "You" tab was renamed "Me" — same screen, same rows.
+        tabs.buttons["Me"].tap()
 
         let journal = app.buttons["The Journal"]
         XCTAssertTrue(journal.waitForExistence(timeout: 5))

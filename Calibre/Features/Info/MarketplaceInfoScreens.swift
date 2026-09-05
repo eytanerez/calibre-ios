@@ -2,6 +2,25 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
+/// A title/message pair, stacked. Shared by `FeeBreakdownScreen` and
+/// `AuthenticationGuideScreen` — it used to be a byte-identical private copy
+/// on each.
+private func detailRow(title: String, message: String) -> some View {
+    VStack(alignment: .leading, spacing: 3) {
+        Text(title)
+            .font(CalibreType.bodyMedium)
+            .foregroundStyle(Color.calibre.foreground)
+            .fixedSize(horizontal: false, vertical: true)
+        Text(message)
+            .font(CalibreType.label)
+            .foregroundStyle(Color.calibre.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(Space.l)
+    .accessibilityElement(children: .combine)
+}
+
 /// A first-party explanation of the marketplace, available without leaving
 /// the app or signing in.
 struct MarketplaceGuideScreen: View {
@@ -372,22 +391,6 @@ struct FeeBreakdownScreen: View {
         }
         .padding(Space.l)
     }
-
-    private func detailRow(title: String, message: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(message)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Space.l)
-        .accessibilityElement(children: .combine)
-    }
 }
 
 struct AuthenticationGuideScreen: View {
@@ -509,22 +512,6 @@ struct AuthenticationGuideScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(Space.l)
-        .accessibilityElement(children: .combine)
-    }
-
-    private func detailRow(title: String, message: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(message)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
         .accessibilityElement(children: .combine)
     }

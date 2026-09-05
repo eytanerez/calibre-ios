@@ -178,6 +178,10 @@ struct CheckoutCloseButton: View {
                 .foregroundStyle(Color.calibre.secondaryForeground)
                 .frame(width: 34, height: 34)
                 .background(Color.calibre.secondary, in: Circle())
+                // 34pt drawn, 44pt grabbable. The 5pt of growth spills into
+                // the header's padding, which nothing else answers, so the
+                // circle still draws and still measures 34.
+                .a11yExpandTarget(currentSize: 34)
         }
         .disabled(disabled)
         .opacity(disabled ? 0.4 : 1)

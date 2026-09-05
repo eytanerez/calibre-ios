@@ -191,6 +191,19 @@ struct RootView: View {
             bootstrapped = true
             if services.auth.isAuthenticated {
                 services.push.refreshRegistration()
+                // A restored session skips the intro (see `phase`), but until
+                // now it skipped it *without remembering*, so the flag stayed
+                // false underneath a member who was using the app. Signing out
+                // then flipped the only other half of that condition and the
+                // onboarding carousel came up — on a session that had just
+                // been told "you can keep browsing as a guest".
+                //
+                // Reachable exactly where the `phase` comment says: the
+                // Keychain outlives deleting the app and `hasSeenIntro` does
+                // not, so a reinstalling member lands on Home having never
+                // seen the intro, and their next sign-out is an onboarding
+                // screen. Recording the skip is what the skip already meant.
+                hasSeenIntro = true
             }
             services.push.drainPendingRoute()
             #if DEBUG

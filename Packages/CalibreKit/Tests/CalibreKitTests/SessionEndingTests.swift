@@ -13,13 +13,6 @@ import XCTest
 /// either say nothing when it must, or tell someone who just tapped Sign Out
 /// that they were signed out.
 final class SessionEndingTests: XCTestCase {
-    private func mockConfiguration() -> APIConfiguration {
-        APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre.test")!,
-            protocolClasses: [MockURLProtocol.self]
-        )
-    }
-
     @MainActor
     func testSigningOutClearsWithoutAnnouncingAnything() async {
         MockURLProtocol.setHandler { _ in

@@ -217,7 +217,11 @@ struct AuthenticationReportRow: View {
                     }
                     if let pdf = (report?.pdfUrl ?? reference.pdfUrl)?.url {
                         ToolbarItem(placement: .topBarTrailing) {
+                            // A custom label replaces ShareLink's own, and a
+                            // bare glyph carries none — VoiceOver reached this
+                            // button with nothing to announce.
                             ShareLink(item: pdf) { Image(systemName: "square.and.arrow.up") }
+                                .accessibilityLabel("Share the authentication report")
                         }
                     }
                 }

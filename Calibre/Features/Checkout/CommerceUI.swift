@@ -369,9 +369,13 @@ struct DroppedWatchNote: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
             }
             .accessibilityLabel("Dismiss")
+            // 28pt drawn, 44pt grabbable. The 8pt it grows into on each side
+            // is the band's own `Space.l` padding and the gap to the sentence,
+            // neither of which answers a touch; the ✕ is drawn and measured
+            // exactly where it was.
+            .a11yExpandTarget(currentSize: 28)
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)

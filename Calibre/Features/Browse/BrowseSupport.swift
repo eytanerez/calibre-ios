@@ -472,6 +472,13 @@ struct ListingLaneRow: View {
     /// card's content ever changes shape.
     @State private var cardHeight: CGFloat?
 
+    /// The width scales too. It used to be a frozen 168pt, which is what put
+    /// "R  2002" where "ROLEX 2002" belongs at accessibility text sizes and
+    /// pushed the condition pill out over the photograph. Capped by
+    /// `calibreLaneCardWidth` so the card never outgrows the phone.
+    @ScaledMetric(relativeTo: .body) private var scaledCardWidth: CGFloat = 168
+    private var cardWidth: CGFloat { calibreLaneCardWidth(scaledCardWidth) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(title)
@@ -483,13 +490,13 @@ struct ListingLaneRow: View {
                 HStack(alignment: .top, spacing: Space.l) {
                     ForEach(listings) { listing in
                         ListingGridCard(listing: listing, laneKey: laneKey, zoomNamespace: zoomNamespace)
-                            .frame(width: 168)
+                            .frame(width: cardWidth)
                             .measureLaneCardHeight()
                             .frame(height: cardHeight, alignment: .top)
                     }
                     if let onViewAll {
                         ListingLaneViewAllCard(title: title, action: onViewAll)
-                            .frame(width: 168)
+                            .frame(width: cardWidth)
                             .measureLaneCardHeight()
                             .frame(height: cardHeight, alignment: .top)
                     }
@@ -576,6 +583,9 @@ struct ListingLaneViewAllCard: View {
 
 /// Skeleton twin of `ListingLaneRow` for cold loads.
 struct ListingLaneSkeleton: View {
+    /// Matches the real lane's card width so the skeleton doesn't jump.
+    @ScaledMetric(relativeTo: .body) private var scaledCardWidth: CGFloat = 168
+
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Rectangle()
@@ -586,7 +596,7 @@ struct ListingLaneSkeleton: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: Space.l) {
                     ForEach(0..<4, id: \.self) { _ in
-                        ListingCardSkeleton().frame(width: 168)
+                        ListingCardSkeleton().frame(width: calibreLaneCardWidth(scaledCardWidth))
                     }
                 }
                 .padding(.horizontal, Space.margin)

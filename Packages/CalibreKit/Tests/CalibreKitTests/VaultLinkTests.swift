@@ -14,13 +14,6 @@ import XCTest
 /// `listing-vault-linked.json` is `_serialize_listing`'s seller-view payload
 /// for a listing carrying a vault link.
 final class VaultLinkTests: XCTestCase {
-    private func mockConfiguration() -> APIConfiguration {
-        APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre.test")!,
-            protocolClasses: [MockURLProtocol.self]
-        )
-    }
-
     // MARK: The question
 
     func testVaultMatchesFixtureDecodes() throws {
@@ -183,7 +176,7 @@ private final class SeenRequest: @unchecked Sendable {
         // `httpBody` is nil by the time a request reaches a URLProtocol —
         // URLSession hands the body over as a stream — so it is drained here,
         // while the handler still has it.
-        let drained = request.httpBody ?? request.httpBodyStream.map(Self.drain)
+        let drained = request.httpBody ?? request.httpBodyStream.map(drainHTTPBodyStream)
         lock.withLock {
             self.request = request
             self.body = drained
@@ -219,20 +212,6 @@ private final class SeenRequest: @unchecked Sendable {
             return [:]
         }
         return object
-    }
-
-    private static func drain(_ stream: InputStream) -> Data {
-        stream.open()
-        defer { stream.close() }
-        var data = Data()
-        let size = 4096
-        var buffer = [UInt8](repeating: 0, count: size)
-        while stream.hasBytesAvailable {
-            let read = stream.read(&buffer, maxLength: size)
-            if read <= 0 { break }
-            data.append(buffer, count: read)
-        }
-        return data
     }
 }
 

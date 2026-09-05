@@ -42,7 +42,7 @@ public final class MessagingClient: Sendable {
     }
 
     private func send<Response>(_ endpoint: Endpoint<Response>, isRetry: Bool) async throws -> Response {
-        let request = try await buildRequest(endpoint)
+        let request = try await buildAPIRequest(for: endpoint, configuration: configuration, auth: auth)
         let data: Data
         let response: URLResponse
         do {
@@ -66,35 +66,6 @@ public final class MessagingClient: Sendable {
         }
 
         return try decodeBody(data, status: http.statusCode, path: endpoint.path)
-    }
-
-    private func buildRequest(_ endpoint: Endpoint<some Decodable>) async throws -> URLRequest {
-        var components = URLComponents(
-            url: configuration.baseURL.appending(path: endpoint.path),
-            resolvingAgainstBaseURL: false
-        )!
-        if !endpoint.query.isEmpty {
-            components.queryItems = endpoint.query
-        }
-        var request = URLRequest(url: components.url!)
-        request.httpMethod = endpoint.method.rawValue
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        switch endpoint.body {
-        case .none:
-            break
-        case .json(let data):
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = data
-        case .multipart(let form):
-            request.setValue("multipart/form-data; boundary=\(form.boundary)", forHTTPHeaderField: "Content-Type")
-            request.httpBody = form.encoded()
-        }
-
-        if endpoint.requiresAuth, let header = await auth?.authHeader() {
-            request.setValue(header.value, forHTTPHeaderField: header.name)
-        }
-        return request
     }
 
     private func decodeBody<Response: Decodable>(_ data: Data, status: Int, path: String) throws -> Response {

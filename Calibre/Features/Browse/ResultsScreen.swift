@@ -148,6 +148,14 @@ struct ResultsScreen: View {
 /// `ResultsScreen` and `BrandScreen` (which locks the brand facet).
 struct ResultsContent: View {
     @Environment(AppServices.self) private var services
+    /// The buy grid collapses to one column once the reader has asked for
+    /// accessibility text sizes — see `calibreGridColumns`. Two cards side by
+    /// side leave roughly 160pt of text, which at AX5 truncates the reference
+    /// to "Ref. RO30…", breaks the price across two lines and squeezes the
+    /// brand out of the eyebrow row entirely. Every other listing grid in the
+    /// app already collapses; this one — the grid people actually shop in —
+    /// was the one that did not.
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     @Bindable var model: ResultsModel
     /// Non-nil when the brand is fixed by the screen (BrandScreen): the
@@ -316,10 +324,7 @@ struct ResultsContent: View {
             }
         } else {
             LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: Space.l),
-                    GridItem(.flexible(), spacing: Space.l),
-                ],
+                columns: calibreGridColumns(typeSize, spacing: Space.l),
                 alignment: .leading,
                 spacing: Space.xl
             ) {
@@ -337,7 +342,12 @@ struct ResultsContent: View {
             .padding(.horizontal, Space.margin)
 
             if model.isLoadingMore {
-                HStack(spacing: Space.l) {
+                // Same column count as the grid it is extending, so the
+                // next-page placeholder lands where the next cards will.
+                LazyVGrid(
+                    columns: calibreGridColumns(typeSize, spacing: Space.l),
+                    spacing: Space.xl
+                ) {
                     ListingCardSkeleton()
                     ListingCardSkeleton()
                 }
@@ -349,10 +359,7 @@ struct ResultsContent: View {
 
     private var gridSkeleton: some View {
         LazyVGrid(
-            columns: [
-                GridItem(.flexible(), spacing: Space.l),
-                GridItem(.flexible(), spacing: Space.l),
-            ],
+            columns: calibreGridColumns(typeSize, spacing: Space.l),
             spacing: Space.xl
         ) {
             ForEach(0..<6, id: \.self) { _ in
@@ -365,13 +372,12 @@ struct ResultsContent: View {
 
 /// Bare skeleton shown for the breath before the model exists.
 struct ResultsGridSkeleton: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
         ScrollView {
             LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: Space.l),
-                    GridItem(.flexible(), spacing: Space.l),
-                ],
+                columns: calibreGridColumns(typeSize, spacing: Space.l),
                 spacing: Space.xl
             ) {
                 ForEach(0..<6, id: \.self) { _ in

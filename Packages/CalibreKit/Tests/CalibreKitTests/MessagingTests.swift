@@ -5,13 +5,6 @@ import XCTest
 /// The client half of the messaging pass: reporting a push tap, and the guest
 /// support thread surviving sign-in.
 final class MessagingTests: XCTestCase {
-    private func mockConfiguration() -> APIConfiguration {
-        APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre.test")!,
-            protocolClasses: [MockURLProtocol.self]
-        )
-    }
-
     /// Isolated defaults so a test's guest token never touches the real app's.
     private func scratchDefaults() -> UserDefaults {
         let suite = "calibre.tests.\(UUID().uuidString)"

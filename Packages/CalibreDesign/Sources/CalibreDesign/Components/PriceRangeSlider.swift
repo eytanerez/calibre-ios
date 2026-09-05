@@ -62,6 +62,7 @@ public struct PriceRangeSlider: View {
                         .accessibilityAdjustableAction { direction in
                             adjust(&lowerValue, direction, upperBound: upperValue)
                         }
+                        .zIndex(lowerTakesTouch(lowerX: lowerX, upperX: upperX) ? 1 : 0)
 
                     thumb(active: upperActive)
                         .position(x: upperX, y: thumbSize / 2)
@@ -71,6 +72,7 @@ public struct PriceRangeSlider: View {
                         .accessibilityAdjustableAction { direction in
                             adjust(&upperValue, direction, lowerBound: lowerValue)
                         }
+                        .zIndex(lowerTakesTouch(lowerX: lowerX, upperX: upperX) ? 0 : 1)
                 }
             }
             .frame(height: thumbSize)
@@ -88,6 +90,63 @@ public struct PriceRangeSlider: View {
         // could hear and no gesture that could move it.
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Price range")
+    }
+
+    /// Which thumb answers a touch when the two are stacked on each other.
+    ///
+    /// The thumbs are drawn 28pt and grabbed at 44pt (`a11yExpandTarget`), so
+    /// their hit regions overlap long before their circles do, and the later
+    /// sibling — the maximum — silently wins every touch in the overlap. Drag
+    /// the minimum up until `lowerDrag`'s `min(_, upperValue)` clamp parks it
+    /// against the maximum, and the minimum is now under a thumb that cannot
+    /// help it: dragging left is clamped at `lowerValue`, dragging right only
+    /// widens while the maximum is still below the bound.
+    ///
+    /// Measured on the shipped build against the live $0–$128,100 filter:
+    /// dragging the minimum to the right edge left "$128,000 – $128,100+",
+    /// and one drag to the left took the *maximum* down to $128,000 instead
+    /// of the minimum. From "$128,000 – $128,000" no drag separated them
+    /// again — "Clear all" was the only way out. The sheet's own tutorial
+    /// promises "a low end and a high end move independently", which is
+    /// precisely what was not happening.
+    ///
+    /// The test has to be about pixels, not values: at that price step the
+    /// two values differ by $100 and their centres by about a third of a
+    /// point, so a rule keyed on `lower >= upper` never fires on the state
+    /// that actually traps people.
+    ///
+    /// When the regions do overlap, the thumb with more room to travel takes
+    /// the top of the stack. That thumb can always be moved, and moving it
+    /// uncovers the other one, so whichever end the reader grabbed, the range
+    /// opens again. Thumbs that are apart on screen are untouched: the
+    /// maximum stays on top exactly as it shipped.
+    private func lowerTakesTouch(lowerX: CGFloat, upperX: CGFloat) -> Bool {
+        PriceRangeSlider.lowerThumbTakesTouch(
+            lowerX: lowerX,
+            upperX: upperX,
+            grabRadius: Space.touchTarget / 2,
+            lower: lowerValue,
+            upper: upperValue,
+            in: bounds
+        )
+    }
+
+    /// The rule above, as a value function so it can be tested without a view
+    /// hierarchy or a hit test.
+    static func lowerThumbTakesTouch(
+        lowerX: CGFloat,
+        upperX: CGFloat,
+        grabRadius: CGFloat,
+        lower: Double,
+        upper: Double,
+        in bounds: ClosedRange<Double>
+    ) -> Bool {
+        // Far enough apart that the maximum's grab region does not reach the
+        // minimum's centre: nothing is covered, and the shipped order stands.
+        guard upperX - lowerX < grabRadius else { return false }
+        let roomBelow = lower - bounds.lowerBound
+        let roomAbove = bounds.upperBound - upper
+        return roomBelow > roomAbove
     }
 
     private func thumb(active: Bool) -> some View {

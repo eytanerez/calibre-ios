@@ -44,11 +44,32 @@ final class MockURLProtocol: URLProtocol {
     override func stopLoading() {}
 }
 
-private func mockConfiguration() -> APIConfiguration {
+// Shared by every test file in this target that needs an `APIClient` or
+// `MessagingClient` pointed at `MockURLProtocol` — it used to be copied,
+// byte-for-byte, into six other test files.
+func mockConfiguration() -> APIConfiguration {
     APIConfiguration(
         baseURL: URL(string: "https://mock.calibre.test")!,
         protocolClasses: [MockURLProtocol.self]
     )
+}
+
+/// `httpBody` is nil by the time a request reaches a URLProtocol — URLSession
+/// hands the body over as a stream instead — so a "seen request" recorder
+/// needs to drain it while it still has it. Shared by every such recorder in
+/// this target; it used to be a byte-identical private copy in each one.
+func drainHTTPBodyStream(_ stream: InputStream) -> Data {
+    stream.open()
+    defer { stream.close() }
+    var data = Data()
+    let size = 4096
+    var buffer = [UInt8](repeating: 0, count: size)
+    while stream.hasBytesAvailable {
+        let read = stream.read(&buffer, maxLength: size)
+        if read <= 0 { break }
+        data.append(buffer, count: read)
+    }
+    return data
 }
 
 // MARK: - Auth stub

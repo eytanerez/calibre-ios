@@ -43,7 +43,17 @@ struct ListingWizardScreen: View {
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Color.calibre.foreground)
                     }
-                    .accessibilityLabel("Close — your draft is saved")
+                    // The promise is conditional, so the label has to be too.
+                    // `persistSnapshot()` opens with `guard let listing`, and
+                    // no server draft exists until `createDraftIfNeeded()`
+                    // runs on step 0 → 1 — so on the Details step there is
+                    // nothing to save and closing throws the form away. The
+                    // toast beneath already knows this and stays silent;
+                    // the label announced "your draft is saved" regardless,
+                    // which is the one sentence a VoiceOver seller would act
+                    // on before losing a brand, a reference, a year and five
+                    // condition grades.
+                    .accessibilityLabel(hasSavedDraft ? "Close — your draft is saved" : "Close")
                 }
                 ToolbarItem(placement: .principal) {
                     Eyebrow(headline)
@@ -266,11 +276,18 @@ struct ListingWizardScreen: View {
         }
     }
 
+    /// Whether closing now would actually keep anything. False until the
+    /// Details step is completed, because that is when the server draft
+    /// `persistSnapshot()` requires is created.
+    private var hasSavedDraft: Bool {
+        model?.listing != nil
+    }
+
     private func closeKeepingDraft() {
         model?.persistSnapshot()
         // Nothing to save yet if Details was never completed — no server
         // draft exists until `createDraftIfNeeded()` runs on step 0 → 1.
-        let hasDraft = model?.listing != nil
+        let hasDraft = hasSavedDraft
         dismiss()
         if hasDraft, model?.submitted != true, model?.isEdit != true {
             toasts.show(
