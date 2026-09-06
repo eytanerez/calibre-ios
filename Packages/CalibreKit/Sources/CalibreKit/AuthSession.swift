@@ -91,16 +91,37 @@ public final class AuthSession {
     /// the Keychain session so closing the app while the API is unavailable
     /// never signs the user out.
     public func bootstrap() async {
-        guard tokens != nil else { return }
+        guard let initialAccessToken = tokens?.accessToken else { return }
+        let bootstrapGeneration = sessionGeneration
         do {
-            user = try await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me"))
+            let validatedUser = try await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me"))
+            guard ownsSession(
+                generation: bootstrapGeneration,
+                accessToken: initialAccessToken
+            ) else { return }
+            user = validatedUser
         } catch APIError.sessionExpired {
+            guard ownsSession(
+                generation: bootstrapGeneration,
+                accessToken: initialAccessToken
+            ) else { return }
             guard await refreshAfterUnauthorized() else { return }
+            guard sessionGeneration == bootstrapGeneration,
+                  let refreshedAccessToken = tokens?.accessToken else { return }
             do {
-                user = try await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me"))
+                let validatedUser = try await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me"))
+                guard ownsSession(
+                    generation: bootstrapGeneration,
+                    accessToken: refreshedAccessToken
+                ) else { return }
+                user = validatedUser
             } catch APIError.sessionExpired {
                 // A freshly issued access token was rejected. This is a
                 // definitive invalid session, not a connectivity problem.
+                guard ownsSession(
+                    generation: bootstrapGeneration,
+                    accessToken: refreshedAccessToken
+                ) else { return }
                 clearSession()
             } catch {
                 // The refresh succeeded, so retain it through a transient
@@ -250,6 +271,10 @@ public final class AuthSession {
         sessionGeneration &+= 1
         refreshTask = nil
         refreshTaskGeneration = nil
+    }
+
+    private func ownsSession(generation: UInt64, accessToken: String) -> Bool {
+        sessionGeneration == generation && tokens?.accessToken == accessToken
     }
 
     private func harvestCookie(named name: String, from response: HTTPURLResponse) -> String? {

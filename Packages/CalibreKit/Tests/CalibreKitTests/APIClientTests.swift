@@ -419,6 +419,77 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(expiryCount, 0)
     }
 
+    /// Launch validation belongs to the credentials that sent it. An old
+    /// `/auth/me` success must not replace the identity from a newer login.
+    @MainActor
+    func testOldBootstrapSuccessCannotReplaceNewLoginIdentity() async throws {
+        let bootstrapGate = AsyncRefreshGate()
+        MockURLProtocol.setAsyncHandler { request in
+            switch request.url?.path {
+            case "/auth/me":
+                await bootstrapGate.holdRefresh()
+                return (200, Self.currentUserResponse(id: "old-user", username: "old"))
+            case "/auth/login":
+                return (200, Self.loginResponse(access: "new-access", refresh: "new-refresh"))
+            default:
+                return (404, Data("{\"ok\": false, \"error\": \"not found\"}".utf8))
+            }
+        }
+
+        let store = MemoryTokenStore(tokens: TokenPair(accessToken: "old-access", refreshToken: "old-refresh"))
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+        let oldBootstrap = Task { @MainActor in await session.bootstrap() }
+        await bootstrapGate.waitUntilRefreshStarts()
+
+        try await session.login(identifier: "new@example.com", password: "password")
+        await bootstrapGate.releaseRefresh()
+        await oldBootstrap.value
+
+        XCTAssertEqual(session.user?.id, "new-user")
+        XCTAssertEqual(store.load(), TokenPair(accessToken: "new-access", refreshToken: "new-refresh"))
+    }
+
+    /// The second `/auth/me` after a successful refresh can also outlive its
+    /// generation. Its 401 must not clear a login completed while it waited.
+    @MainActor
+    func testOldPostRefreshBootstrapRejectionCannotClearNewLogin() async throws {
+        let validationGate = AsyncRefreshGate()
+        MockURLProtocol.setAsyncHandler { request in
+            switch request.url?.path {
+            case "/auth/me":
+                if request.value(forHTTPHeaderField: "Authorization") == "Bearer refreshed-old" {
+                    await validationGate.holdRefresh()
+                }
+                return (401, Data("{\"ok\": false, \"error\": \"expired\"}".utf8))
+            case "/auth/refresh":
+                return (200, Data("{\"ok\": true, \"data\": {\"access_token\": \"refreshed-old\"}}".utf8))
+            case "/auth/login":
+                return (200, Self.loginResponse(access: "new-access", refresh: "new-refresh"))
+            default:
+                return (404, Data("{\"ok\": false, \"error\": \"not found\"}".utf8))
+            }
+        }
+
+        let store = MemoryTokenStore(tokens: TokenPair(accessToken: "old-access", refreshToken: "old-refresh"))
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+        var clearCount = 0
+        var expiryCount = 0
+        session.onSessionCleared = { clearCount += 1 }
+        session.onSessionExpired = { expiryCount += 1 }
+        let oldBootstrap = Task { @MainActor in await session.bootstrap() }
+        await validationGate.waitUntilRefreshStarts()
+
+        try await session.login(identifier: "new@example.com", password: "password")
+        await validationGate.releaseRefresh()
+        await oldBootstrap.value
+
+        XCTAssertTrue(session.isAuthenticated)
+        XCTAssertEqual(session.user?.id, "new-user")
+        XCTAssertEqual(store.load(), TokenPair(accessToken: "new-access", refreshToken: "new-refresh"))
+        XCTAssertEqual(clearCount, 0)
+        XCTAssertEqual(expiryCount, 0)
+    }
+
     /// Launch-time API outages must not be interpreted as a logout. The app
     /// can continue with its persisted credentials and retry on the next call.
     @MainActor
@@ -496,6 +567,12 @@ final class APIClientTests: XCTestCase {
           "user": {"id": "new-user", "email": "new@example.com", "username": "new", "roles": ["member"]},
           "tokens": {"access_token": "\(access)", "refresh_token": "\(refresh)"}
         }}
+        """.utf8)
+    }
+
+    private static func currentUserResponse(id: String, username: String) -> Data {
+        Data("""
+        {"data": {"id": "\(id)", "email": "\(username)@example.com", "username": "\(username)", "roles": ["member"]}}
         """.utf8)
     }
 }
