@@ -15,6 +15,13 @@ public struct SellerReadiness: Codable, Sendable {
         self.connect = connect
         self.canList = canList
     }
+
+    /// Payout onboarding owns the shop gate; card readiness owns only new
+    /// listing creation. An established seller whose card lapsed still needs
+    /// their listings, offers, performance and storefront.
+    public var canAccessDashboard: Bool {
+        canList || connect.onboardingComplete
+    }
 }
 
 public struct ConnectStatus: Codable, Sendable {

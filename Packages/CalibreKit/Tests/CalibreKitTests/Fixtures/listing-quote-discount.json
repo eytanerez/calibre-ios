@@ -1,6 +1,7 @@
 {
  "ok": true,
  "data": {
+  "breakdown": {
   "subtotal": "4400.00",
   "fees": "129.99",
   "card_convenience_fee": "129.99",
@@ -45,4 +46,5 @@
    "minimum": "250.00"
   }
  }
+}
 }

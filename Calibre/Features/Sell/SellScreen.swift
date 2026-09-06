@@ -50,7 +50,7 @@ struct SellScreen: View {
             case .gate:
                 SellGateScreen(mode: .onboarding(onReadinessChange: { readiness in
                     withAnimation(Motion.easeMedium) {
-                        phase = readiness.canList ? .dashboard : .gate
+                        phase = readiness.canAccessDashboard ? .dashboard : .gate
                     }
                 }))
             case .dashboard:
@@ -78,7 +78,7 @@ struct SellScreen: View {
         do {
             let readiness = try await services.seller.loadReadiness()
             withAnimation(Motion.easeMedium) {
-                phase = readiness.canList ? .dashboard : .gate
+                phase = readiness.canAccessDashboard ? .dashboard : .gate
             }
         } catch {
             // A transient readiness hiccup shouldn't blank an already-showing

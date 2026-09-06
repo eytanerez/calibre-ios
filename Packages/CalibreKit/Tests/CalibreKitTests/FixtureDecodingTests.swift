@@ -710,10 +710,10 @@ final class FixtureDecodingTests: XCTestCase {
 
     func testListingQuoteDiscountModeFixtureDecodes() throws {
         let envelope = try apiDecoder().decode(
-            Envelope<CheckoutBreakdown>.self,
+            Envelope<ListingQuote>.self,
             from: fixtureData("listing-quote-discount")
         )
-        let breakdown = envelope.data
+        let breakdown = envelope.data.breakdown
         XCTAssertTrue(breakdown.isDiscountPresentation)
         XCTAssertTrue(breakdown.acceptsDebit, "debit is accepted where the discount presentation applies")
         XCTAssertEqual(breakdown.acceptedCardFunding, ["credit", "debit"])
@@ -737,9 +737,9 @@ final class FixtureDecodingTests: XCTestCase {
     /// tax is owed", so the source is what a screen has to branch on.
     func testListingQuoteTaxUnavailableFixtureDecodes() throws {
         let breakdown = try apiDecoder().decode(
-            Envelope<CheckoutBreakdown>.self,
+            Envelope<ListingQuote>.self,
             from: fixtureData("listing-quote-tax-unavailable")
-        ).data
+        ).data.breakdown
 
         XCTAssertEqual(breakdown.taxSource, "unavailable")
         XCTAssertTrue(breakdown.isTaxUnavailable)

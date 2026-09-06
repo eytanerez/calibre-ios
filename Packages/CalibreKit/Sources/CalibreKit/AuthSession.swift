@@ -63,6 +63,10 @@ public final class AuthSession {
     @ObservationIgnored private lazy var bareClient = APIClient(configuration: configuration, auth: nil)
     @ObservationIgnored private var tokens: TokenPair?
     @ObservationIgnored private var refreshTask: Task<Bool, Never>?
+    @ObservationIgnored private var refreshTaskGeneration: UInt64?
+    /// Advances whenever a login, registration, logout, or expiry replaces
+    /// the credentials. A refresh may only mutate the generation that began it.
+    @ObservationIgnored private var sessionGeneration: UInt64 = 0
     @ObservationIgnored private let urlSession: URLSession
 
     public init(configuration: APIConfiguration, tokenStore: TokenStoring = KeychainTokenStore()) {
@@ -213,6 +217,7 @@ public final class AuthSession {
     }
 
     private func applySession(user: CurrentUser, tokens: TokenPair) {
+        invalidateRefreshOwnership()
         self.user = user
         self.tokens = tokens
         isAuthenticated = true
@@ -230,6 +235,7 @@ public final class AuthSession {
     /// the member, and a new one of those should announce itself by default
     /// rather than by being remembered about.
     private func clearSession(atMemberRequest: Bool = false) {
+        invalidateRefreshOwnership()
         user = nil
         tokens = nil
         isAuthenticated = false
@@ -238,6 +244,12 @@ public final class AuthSession {
         if !atMemberRequest {
             onSessionExpired?()
         }
+    }
+
+    private func invalidateRefreshOwnership() {
+        sessionGeneration &+= 1
+        refreshTask = nil
+        refreshTaskGeneration = nil
     }
 
     private func harvestCookie(named name: String, from response: HTTPURLResponse) -> String? {
@@ -306,25 +318,35 @@ extension AuthSession: AuthProviding {
 
     /// Single-flight: concurrent 401s await one refresh.
     public func refreshAfterUnauthorized() async -> Bool {
-        if let task = refreshTask {
+        if let task = refreshTask, refreshTaskGeneration == sessionGeneration {
             return await task.value
         }
-        let task = Task<Bool, Never> { [weak self] in
-            guard let self else { return false }
-            return await self.performRefresh()
-        }
-        refreshTask = task
-        let result = await task.value
-        refreshTask = nil
-        return result
-    }
-
-    private func performRefresh() async -> Bool {
         guard let refreshToken = tokens?.refreshToken else {
             // A 401 with no refresh credential cannot recover.
             clearSession()
             return false
         }
+        let ownerGeneration = sessionGeneration
+        let task = Task<Bool, Never> { [weak self] in
+            guard let self else { return false }
+            return await self.performRefresh(
+                refreshToken: refreshToken,
+                ownerGeneration: ownerGeneration
+            )
+        }
+        refreshTask = task
+        refreshTaskGeneration = ownerGeneration
+        let result = await task.value
+        // A login or logout may have replaced this task while it awaited the
+        // network. Never clear a newer generation's single-flight handle.
+        if refreshTaskGeneration == ownerGeneration {
+            refreshTask = nil
+            refreshTaskGeneration = nil
+        }
+        return result
+    }
+
+    private func performRefresh(refreshToken: String, ownerGeneration: UInt64) async -> Bool {
         struct RefreshResponse: Decodable, Sendable {
             let accessToken: String
         }
@@ -336,13 +358,22 @@ extension AuthSession: AuthProviding {
                 requiresAuth: false
             )
             let response = try await bareClient.send(endpoint)
+            guard sessionGeneration == ownerGeneration,
+                  tokens?.refreshToken == refreshToken else {
+                return false
+            }
             let updated = TokenPair(accessToken: response.accessToken, refreshToken: refreshToken)
             tokens = updated
             tokenStore.save(updated)
             return true
         } catch let APIError.server(_, _, status, _) where status == 401 || status == 403 {
             // Only an explicit auth rejection proves the persisted refresh
-            // token is no longer usable. Never erase it for a timeout or 5xx.
+            // token is no longer usable. It can only invalidate the session
+            // that actually spent it; a newer login owns its own credentials.
+            guard sessionGeneration == ownerGeneration,
+                  tokens?.refreshToken == refreshToken else {
+                return false
+            }
             clearSession()
             return false
         } catch {

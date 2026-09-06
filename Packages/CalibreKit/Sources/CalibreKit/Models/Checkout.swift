@@ -255,6 +255,15 @@ public struct CheckoutQuote: Decodable, Sendable {
     }
 }
 
+/// `GET /listings/{id}/quote` — the one-watch quote wrapper.
+///
+/// The endpoint answers `data.breakdown`, matching the checkout quote's
+/// single-watch branch. Keeping the wrapper explicit prevents the transport
+/// from trying to decode the outer object itself as money.
+public struct ListingQuote: Decodable, Sendable {
+    public let breakdown: CheckoutBreakdown
+}
+
 /// `POST /checkout/validate-payment-method` — run the moment a PaymentMethod
 /// exists, while wire is still one tap away.
 ///

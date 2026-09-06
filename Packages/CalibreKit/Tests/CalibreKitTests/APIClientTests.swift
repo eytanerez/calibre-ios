@@ -7,29 +7,55 @@ import XCTest
 /// Routes every request through a swappable handler. Installed via
 /// `APIConfiguration.protocolClasses`, so both APIClient's session and
 /// AuthSession's internal sessions hit it.
-final class MockURLProtocol: URLProtocol {
+final class MockURLProtocol: URLProtocol, @unchecked Sendable {
     typealias Handler = @Sendable (URLRequest) -> (status: Int, body: Data)
+    typealias AsyncHandler = @Sendable (URLRequest) async -> (status: Int, body: Data)
 
     private static let lock = NSLock()
     nonisolated(unsafe) private static var _handler: Handler?
+    nonisolated(unsafe) private static var _asyncHandler: AsyncHandler?
 
     static func setHandler(_ handler: @escaping Handler) {
-        lock.withLock { _handler = handler }
+        lock.withLock {
+            _handler = handler
+            _asyncHandler = nil
+        }
     }
 
-    private static func currentHandler() -> Handler? {
-        lock.withLock { _handler }
+    static func setAsyncHandler(_ handler: @escaping AsyncHandler) {
+        lock.withLock {
+            _handler = nil
+            _asyncHandler = handler
+        }
+    }
+
+    private static func currentHandlers() -> (Handler?, AsyncHandler?) {
+        lock.withLock { (_handler, _asyncHandler) }
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        guard let handler = Self.currentHandler(), let url = request.url else {
+        let (handler, asyncHandler) = Self.currentHandlers()
+        if let asyncHandler {
+            let responder = MockProtocolResponder(owner: self)
+            Task { [request, responder] in
+                guard let url = request.url else { return }
+                let result = await asyncHandler(request)
+                responder.deliver(status: result.status, body: result.body, url: url)
+            }
+            return
+        }
+        guard let handler, let url = request.url else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
         }
         let (status, body) = handler(request)
+        deliver(status: status, body: body, url: url)
+    }
+
+    fileprivate func deliver(status: Int, body: Data, url: URL) {
         let response = HTTPURLResponse(
             url: url,
             statusCode: status,
@@ -42,6 +68,18 @@ final class MockURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+private final class MockProtocolResponder: @unchecked Sendable {
+    private weak var owner: MockURLProtocol?
+
+    init(owner: MockURLProtocol) {
+        self.owner = owner
+    }
+
+    func deliver(status: Int, body: Data, url: URL) {
+        owner?.deliver(status: status, body: body, url: url)
+    }
 }
 
 // Shared by every test file in this target that needs an `APIClient` or
@@ -311,6 +349,76 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(store.load()?.refreshToken, "refresh-1", "refresh token is not rotated")
     }
 
+    /// A refresh response belongs to the credentials that started it. If the
+    /// member signs in while that request is in flight, the old success must
+    /// not replace the new account's tokens.
+    @MainActor
+    func testOldRefreshSuccessCannotOverwriteNewLogin() async throws {
+        let refreshGate = AsyncRefreshGate()
+        MockURLProtocol.setAsyncHandler { request in
+            switch request.url?.path {
+            case "/auth/refresh":
+                await refreshGate.holdRefresh()
+                return (200, Data("{\"ok\": true, \"data\": {\"access_token\": \"old-refreshed\"}}".utf8))
+            case "/auth/login":
+                return (200, Self.loginResponse(access: "new-access", refresh: "new-refresh"))
+            default:
+                return (404, Data("{\"ok\": false, \"error\": \"not found\"}".utf8))
+            }
+        }
+
+        let store = MemoryTokenStore(tokens: TokenPair(accessToken: "old-access", refreshToken: "old-refresh"))
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+        let oldRefresh = Task { @MainActor in await session.refreshAfterUnauthorized() }
+        await refreshGate.waitUntilRefreshStarts()
+
+        try await session.login(identifier: "new@example.com", password: "password")
+        await refreshGate.releaseRefresh()
+
+        let oldRefreshResult = await oldRefresh.value
+        XCTAssertFalse(oldRefreshResult)
+        XCTAssertEqual(session.user?.id, "new-user")
+        XCTAssertEqual(store.load(), TokenPair(accessToken: "new-access", refreshToken: "new-refresh"))
+    }
+
+    /// The rejection path follows the same ownership rule: an old refresh
+    /// token's 401 cannot clear a replacement session or announce its expiry.
+    @MainActor
+    func testOldRefreshRejectionCannotClearNewLogin() async throws {
+        let refreshGate = AsyncRefreshGate()
+        MockURLProtocol.setAsyncHandler { request in
+            switch request.url?.path {
+            case "/auth/refresh":
+                await refreshGate.holdRefresh()
+                return (401, Data("{\"ok\": false, \"error\": \"Invalid refresh token\"}".utf8))
+            case "/auth/login":
+                return (200, Self.loginResponse(access: "new-access", refresh: "new-refresh"))
+            default:
+                return (404, Data("{\"ok\": false, \"error\": \"not found\"}".utf8))
+            }
+        }
+
+        let store = MemoryTokenStore(tokens: TokenPair(accessToken: "old-access", refreshToken: "old-refresh"))
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+        var clearCount = 0
+        var expiryCount = 0
+        session.onSessionCleared = { clearCount += 1 }
+        session.onSessionExpired = { expiryCount += 1 }
+        let oldRefresh = Task { @MainActor in await session.refreshAfterUnauthorized() }
+        await refreshGate.waitUntilRefreshStarts()
+
+        try await session.login(identifier: "new@example.com", password: "password")
+        await refreshGate.releaseRefresh()
+
+        let oldRefreshResult = await oldRefresh.value
+        XCTAssertFalse(oldRefreshResult)
+        XCTAssertTrue(session.isAuthenticated)
+        XCTAssertEqual(session.user?.id, "new-user")
+        XCTAssertEqual(store.load(), TokenPair(accessToken: "new-access", refreshToken: "new-refresh"))
+        XCTAssertEqual(clearCount, 0)
+        XCTAssertEqual(expiryCount, 0)
+    }
+
     /// Launch-time API outages must not be interpreted as a logout. The app
     /// can continue with its persisted credentials and retry on the next call.
     @MainActor
@@ -381,6 +489,15 @@ final class APIClientTests: XCTestCase {
         XCTAssertFalse(session.isAuthenticated)
         XCTAssertNil(store.load())
     }
+
+    private static func loginResponse(access: String, refresh: String) -> Data {
+        Data("""
+        {"ok": true, "data": {
+          "user": {"id": "new-user", "email": "new@example.com", "username": "new", "roles": ["member"]},
+          "tokens": {"access_token": "\(access)", "refresh_token": "\(refresh)"}
+        }}
+        """.utf8)
+    }
 }
 
 /// Thread-safe test counter (the URLProtocol handler runs off-main).
@@ -394,5 +511,33 @@ final class HitCounter: @unchecked Sendable {
 
     var value: Int {
         lock.withLock { count }
+    }
+}
+
+/// Pauses a mock refresh at a deterministic interleaving point while allowing
+/// the replacement login request through the same URLSession.
+actor AsyncRefreshGate {
+    private var refreshStarted = false
+    private var refreshReleased = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var releaseWaiters: [CheckedContinuation<Void, Never>] = []
+
+    func holdRefresh() async {
+        refreshStarted = true
+        startWaiters.forEach { $0.resume() }
+        startWaiters.removeAll()
+        guard !refreshReleased else { return }
+        await withCheckedContinuation { releaseWaiters.append($0) }
+    }
+
+    func waitUntilRefreshStarts() async {
+        guard !refreshStarted else { return }
+        await withCheckedContinuation { startWaiters.append($0) }
+    }
+
+    func releaseRefresh() {
+        refreshReleased = true
+        releaseWaiters.forEach { $0.resume() }
+        releaseWaiters.removeAll()
     }
 }

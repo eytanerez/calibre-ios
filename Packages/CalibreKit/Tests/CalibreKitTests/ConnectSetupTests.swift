@@ -15,6 +15,7 @@ final class ConnectSetupDecodingTests: XCTestCase {
         status: String,
         basis: String = "live",
         accountId: String? = "acct_1U99HdAz6CESsQ2g",
+        onboardingComplete: Bool = false,
         detailsSubmitted: Bool = false,
         missing: String = "[]",
         upcoming: String = "[]",
@@ -27,7 +28,7 @@ final class ConnectSetupDecodingTests: XCTestCase {
         {
           "connect": {
             "account_id": \(account),
-            "onboarding_complete": false,
+            "onboarding_complete": \(onboardingComplete),
             "details_submitted": \(detailsSubmitted),
             "charges_enabled": false,
             "payouts_enabled": false,
@@ -139,6 +140,22 @@ final class ConnectSetupDecodingTests: XCTestCase {
     func testStatusDoesNotSpeakForCanList() throws {
         XCTAssertFalse(try readiness(status: "complete", canList: false).canList)
         XCTAssertTrue(try readiness(status: "under_review", canList: true).canList)
+    }
+
+    /// The seller card is one component of `can_list`, not ownership of the
+    /// entire shop. An established seller whose card is missing must still
+    /// reach existing listings, offers, performance and storefront.
+    func testCompletedPayoutSetupKeepsDashboardOpenWhenCardBlocksNewListings() throws {
+        let established = try readiness(
+            status: "complete",
+            onboardingComplete: true,
+            canList: false
+        )
+        XCTAssertTrue(established.canAccessDashboard)
+        XCTAssertFalse(established.canList)
+
+        let firstTime = try readiness(status: "in_progress", onboardingComplete: false, canList: false)
+        XCTAssertFalse(firstTime.canAccessDashboard)
     }
 }
 

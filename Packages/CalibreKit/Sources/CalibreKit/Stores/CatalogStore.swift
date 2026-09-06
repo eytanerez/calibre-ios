@@ -60,7 +60,10 @@ public final class CatalogStore {
         if let shippingAddressID {
             query.append(URLQueryItem(name: "shipping_address_id", value: shippingAddressID))
         }
-        return try await client.send(Endpoint(path: "/listings/\(listingID)/quote", query: query))
+        let quote: ListingQuote = try await client.send(
+            Endpoint(path: "/listings/\(listingID)/quote", query: query)
+        )
+        return quote.breakdown
     }
 
     /// Drops every cached browse page — call on pull-to-refresh so the next

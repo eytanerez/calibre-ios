@@ -732,6 +732,14 @@ struct SellerDashboardScreen: View {
     }
 
     private func openWizard(_ kind: WizardContext.Kind) {
+        // A missing/lapsed seller card closes only the door that needs it.
+        // Existing listings, offers, performance and storefront stay open;
+        // asking to create a new listing routes to card repair instead of
+        // letting the wizard fail after the seller has already filled a page.
+        if case .new = kind, services.seller.readiness?.canList != true {
+            showSellerCard = true
+            return
+        }
         wizardContext = WizardContext(kind: kind)
     }
 }
