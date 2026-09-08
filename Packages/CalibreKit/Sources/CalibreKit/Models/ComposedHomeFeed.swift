@@ -197,11 +197,44 @@ public struct HomeFeedSignal: Decodable, Sendable, Hashable {
 /// through the same identity-keyed reconciliation the lanes already use.
 /// `reason` is null when the server could not justify one — there is no
 /// filler, and the client must not write one.
+///
+/// A shelf is padded out past what the ranker could place: ranked cards first,
+/// then fill-ins from live inventory, each one flagged `is_fill` and carrying
+/// no reason because nobody justified it. A server from before the flag sends
+/// no `is_fill` at all, and its cards decode as ranked — the flag is read when
+/// present and never required.
 public struct HomeFeedCard: Decodable, Sendable, Identifiable {
     public let id: String
     public let listing: Listing
     public let reason: HomeFeedReason?
     public let signal: HomeFeedSignal?
+    /// True when the server placed this card to fill the shelf rather than
+    /// because it ranked.
+    public let isFill: Bool
+
+    /// The sentence to print under the card, or nil for none.
+    ///
+    /// A fill-in prints no reason even when one happens to be attached — by
+    /// definition it is a card nobody justified — and a card with no reason is
+    /// treated as a fill-in whether or not it was flagged. Either signal alone
+    /// is enough; the client asks this rather than reading `reason` directly so
+    /// the two cannot disagree.
+    public var reasonLine: String? {
+        isFill ? nil : reason?.text
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, listing, reason, signal, isFill
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        listing = try container.decode(Listing.self, forKey: .listing)
+        reason = try container.decodeIfPresent(HomeFeedReason.self, forKey: .reason)
+        signal = try container.decodeIfPresent(HomeFeedSignal.self, forKey: .signal)
+        isFill = try container.decodeIfPresent(Bool.self, forKey: .isFill) ?? false
+    }
 }
 
 /// `your_next_step` — the one real action this member owes, if there is one.

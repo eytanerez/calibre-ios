@@ -370,6 +370,151 @@ final class HomeFeedTests: XCTestCase {
         XCTAssertEqual(card.signal?.label, "Closing soon")
     }
 
+    // MARK: - Fill-ins
+
+    func testAFillInPrintsNoReasonWhateverItArrivedWith() throws {
+        // Flagged, and with a reason attached anyway: the flag wins. A fill-in
+        // is by definition a card nobody justified, so the sentence is not
+        // printed even though the server sent one.
+        let flagged = try apiDecoder().decode(HomeFeedCard.self, from: Data("""
+        {"id": "l1", "listing": \(Self.listingJSON), "signal": null, "is_fill": true,
+         "reason": {"code": "brand_affinity", "text": "You keep coming back to Tudor", "evidence": []}}
+        """.utf8))
+        XCTAssertTrue(flagged.isFill)
+        XCTAssertNotNil(flagged.reason, "The reason has to survive decoding for the suppression to mean anything.")
+        XCTAssertNil(flagged.reasonLine)
+
+        // Unflagged and reason-less: treated as a fill-in on the reason alone.
+        let unflagged = try apiDecoder().decode(HomeFeedCard.self, from: Data("""
+        {"id": "l1", "listing": \(Self.listingJSON), "signal": null, "is_fill": false, "reason": null}
+        """.utf8))
+        XCTAssertFalse(unflagged.isFill)
+        XCTAssertNil(unflagged.reasonLine)
+
+        // Ranked: the sentence prints, verbatim.
+        let ranked = try apiDecoder().decode(HomeFeedCard.self, from: Data("""
+        {"id": "l1", "listing": \(Self.listingJSON), "signal": null, "is_fill": false,
+         "reason": {"code": "brand_affinity", "text": "You keep coming back to Tudor", "evidence": []}}
+        """.utf8))
+        XCTAssertFalse(ranked.isFill)
+        XCTAssertEqual(ranked.reasonLine, "You keep coming back to Tudor")
+    }
+
+    func testAServerFromBeforeTheFillFlagStillDecodesAndItsCardsAreRanked() throws {
+        // The recording predates `is_fill`. Its cards carry no flag at all,
+        // and every one of them has to decode as a ranked card rather than
+        // failing the module — the flag is read when present, never required.
+        let feed = try recordedFeed()
+        let cards = try XCTUnwrap(feed.module(ofType: "worth_a_look")).cards
+        XCTAssertFalse(cards.isEmpty, "An empty shelf would make the check below vacuous.")
+        for card in cards {
+            XCTAssertFalse(card.isFill)
+        }
+
+        let raw = try JSONSerialization.jsonObject(with: fixtureData("home-feed-guest"))
+        let data = (raw as? [String: Any])?["data"] as? [String: Any]
+        let modules = data?["modules"] as? [[String: Any]] ?? []
+        let shelf = modules.first { $0["type"] as? String == "worth_a_look" }
+        let recordedCards = shelf?["cards"] as? [[String: Any]] ?? []
+        XCTAssertEqual(recordedCards.count, cards.count)
+        XCTAssertTrue(
+            recordedCards.allSatisfy { $0["is_fill"] == nil },
+            "The recording now carries is_fill; this test's premise is gone and the tolerance check above is no longer exercising anything."
+        )
+    }
+
+    // MARK: - The running order
+
+    private static let everySection: Set<HomeSection> = [
+        .nextStep, .watchesForYou, .recentlyViewed, .brands, .popular, .freshArrivals,
+        .savedSearches, .bite, .poll, .collection, .endOfFeed,
+    ]
+
+    func testTheMemberPageRunsTheSitesOrderAndTheGuestPageIsTheSameSkeletonWithLess() {
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .member, feed: .loaded, present: Self.everySection),
+            [
+                .nextStep, .watchesForYou, .recentlyViewed, .brands, .popular, .freshArrivals,
+                .savedSearches, .bite, .poll, .collection, .endOfFeed,
+            ]
+        )
+
+        // The guest opens with the newest shelf where the member's ranked one
+        // sits, and gets none of what only a member has — even when the server
+        // sent it. The guest feed carries a poll and a terminator; the guest
+        // page draws neither, and the ranked module is not drawn for a guest
+        // under a greeting that has nobody to greet.
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .guest, feed: .loaded, present: Self.everySection),
+            [.freshArrivals, .brands, .popular, .bite]
+        )
+    }
+
+    func testASectionWithNothingToShowIsAbsentRatherThanAnEmptyFrame() {
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .member, feed: .loaded, present: [.bite, .brands, .popular]),
+            [.brands, .popular, .bite]
+        )
+        XCTAssertEqual(HomeRunningOrder.sections(audience: .guest, feed: .loaded, present: []), [])
+        XCTAssertEqual(HomeRunningOrder.sections(audience: .member, feed: .loaded, present: []), [])
+    }
+
+    func testTheSkeletonAndTheRetryTakeTheFirstShelfsSlotAndThePageGoesOnBelowEither() {
+        // A load in flight is the skeleton in the ranked shelf's slot, and the
+        // page goes on below it: the shelves that run their own queries draw
+        // around a shelf that is still loading, as they do on the site.
+        XCTAssertEqual(
+            HomeRunningOrder.sections(
+                audience: .member, feed: .loading, present: [.recentlyViewed, .brands, .popular, .freshArrivals]
+            ),
+            [.feedLoading, .recentlyViewed, .brands, .popular, .freshArrivals]
+        )
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .guest, feed: .loading, present: [.freshArrivals, .brands]),
+            [.feedLoading, .freshArrivals, .brands]
+        )
+        // The slot is the ranked shelf's — below the member's next-step band,
+        // first on the guest page.
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .member, feed: .loading, present: [.nextStep, .brands]),
+            [.nextStep, .feedLoading, .brands]
+        )
+        // With nothing else on hand yet, the skeleton stands alone: the slot
+        // is filled, and the rest is absent rather than an empty frame.
+        XCTAssertEqual(HomeRunningOrder.sections(audience: .member, feed: .loading, present: []), [.feedLoading])
+        XCTAssertEqual(HomeRunningOrder.sections(audience: .guest, feed: .loading, present: []), [.feedLoading])
+
+        // A failed request takes the same slot, and the page goes on below it
+        // the same way.
+        XCTAssertEqual(
+            HomeRunningOrder.sections(
+                audience: .member, feed: .failed, present: [.recentlyViewed, .brands, .popular, .freshArrivals]
+            ),
+            [.feedUnavailable, .recentlyViewed, .brands, .popular, .freshArrivals]
+        )
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .guest, feed: .failed, present: [.freshArrivals, .brands]),
+            [.feedUnavailable, .freshArrivals, .brands]
+        )
+        // Both are decided by the feed's state alone: naming either as present
+        // does not draw it over a feed that loaded, and neither is drawn in
+        // the other's state — the slot has one occupant.
+        XCTAssertEqual(
+            HomeRunningOrder.sections(
+                audience: .member, feed: .loaded, present: [.feedLoading, .feedUnavailable, .brands]
+            ),
+            [.brands]
+        )
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .guest, feed: .loading, present: [.feedUnavailable]),
+            [.feedLoading]
+        )
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .guest, feed: .failed, present: [.feedLoading]),
+            [.feedUnavailable]
+        )
+    }
+
     /// The card-view listing shape, exactly as `_serialize_listing_card` sends
     /// it. Trimmed to the keys the decoder requires.
     private static let listingJSON = """

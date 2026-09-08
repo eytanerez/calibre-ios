@@ -14,10 +14,11 @@ import SwiftUI
 /// once, on the server; every title, every selection reason and every omission
 /// that came from the feed is the server's, printed as sent.
 ///
-/// `sections` is the page's running order and the only place it is decided —
-/// the same order the web page runs, so the two read alike. A module the server
-/// omitted is absent from that list rather than padded, and a module type this
-/// build has never heard of is not in it at all.
+/// The page's running order is decided once, in `HomeRunningOrder`, and it is
+/// the same skeleton the web page runs for both audiences, so the two read
+/// alike: this screen only says which sections have something to show. A
+/// module the server omitted is absent from that list rather than padded, and
+/// a module type this build has never heard of is not in it at all.
 struct HomeScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -203,51 +204,44 @@ struct HomeScreen: View {
 
     // MARK: - The running order
 
-    /// What Home is made of today, top to bottom.
-    ///
-    /// Some shelves the web page carries are deliberately not here, because
-    /// this app does not hold what they are made of. "Price drops on watches
-    /// you've seen" needs the price a listing carried when the reader last
-    /// opened it, and "New since your last visit" needs the moment they last
-    /// left; the on-device signals file keeps listing ids and nothing else.
-    /// Drawing either from what is on hand would mean inventing the comparison,
-    /// so they are skipped rather than approximated.
-    private enum HomeSection: Hashable {
-        case feedLoading
-        case feedUnavailable
-        case nextStep
-        case watchesForYou
-        case bite
-        case recentlyViewed
-        case poll
-        case savedSearches
-        case brands
-        case popular
-        case freshArrivals
-        case collection
-        case endOfFeed
+    /// Which page to draw. The session decides, as the site decides it; the
+    /// feed's own `audience` says what the server composed, which is a
+    /// different question.
+    private var audience: HomeAudience {
+        session.isAuthenticated ? .member : .guest
+    }
+
+    /// No model yet is a load in flight, not a feed that failed.
+    private var feedState: HomeFeedLoadState {
+        switch model?.phase {
+        case .loaded: .loaded
+        case .failed: .failed
+        case .loading, nil: .loading
+        }
+    }
+
+    /// The sections that have something to show. The order they are drawn in
+    /// is not decided here; `HomeRunningOrder` places them, and drops the ones
+    /// the audience does not get.
+    private var presentSections: Set<HomeSection> {
+        guard let model else { return [] }
+        var present: Set<HomeSection> = []
+        if model.nextStep != nil { present.insert(.nextStep) }
+        if model.watchesForYou != nil { present.insert(.watchesForYou) }
+        if !model.recentlyViewed.isEmpty { present.insert(.recentlyViewed) }
+        if !model.topBrands.isEmpty { present.insert(.brands) }
+        if !model.popular.isEmpty { present.insert(.popular) }
+        if !model.fresh.isEmpty { present.insert(.freshArrivals) }
+        if model.savedSearches != nil { present.insert(.savedSearches) }
+        if model.bite != nil { present.insert(.bite) }
+        if model.poll != nil { present.insert(.poll) }
+        if model.collection != nil { present.insert(.collection) }
+        if model.endOfFeed != nil { present.insert(.endOfFeed) }
+        return present
     }
 
     private var sections: [HomeSection] {
-        guard let model, model.phase != .loading else { return [.feedLoading] }
-
-        var sections: [HomeSection] = []
-        if model.nextStep != nil { sections.append(.nextStep) }
-        // A failed request is not an empty feed, and it does not take the rest
-        // of the page with it: the shelves below run their own queries and
-        // still draw.
-        if model.phase == .failed { sections.append(.feedUnavailable) }
-        if model.watchesForYou != nil { sections.append(.watchesForYou) }
-        if model.bite != nil { sections.append(.bite) }
-        if !model.recentlyViewed.isEmpty { sections.append(.recentlyViewed) }
-        if model.poll != nil { sections.append(.poll) }
-        if model.savedSearches != nil { sections.append(.savedSearches) }
-        if !model.topBrands.isEmpty { sections.append(.brands) }
-        if !model.popular.isEmpty { sections.append(.popular) }
-        if !model.fresh.isEmpty { sections.append(.freshArrivals) }
-        if model.collection != nil { sections.append(.collection) }
-        if model.endOfFeed != nil { sections.append(.endOfFeed) }
-        return sections
+        HomeRunningOrder.sections(audience: audience, feed: feedState, present: presentSections)
     }
 
     @ViewBuilder
@@ -308,8 +302,11 @@ struct HomeScreen: View {
             )
 
         case .freshArrivals:
+            // The guest page opens with this shelf and heads it as the site
+            // does; the member meets the same query further down, under the
+            // name the rest of the app uses for it.
             ListingLaneRow(
-                title: "Fresh arrivals",
+                title: audience == .guest ? "New this week" : "Fresh arrivals",
                 listings: model?.fresh ?? [],
                 laneKey: "fresh",
                 zoomNamespace: zoomNamespace,
@@ -335,8 +332,15 @@ struct HomeScreen: View {
                 FeedShopWindowModule(module: module, zoomNamespace: zoomNamespace, onAction: open)
             }
         case .bite(let slot, let bite):
-            FeedBiteModule(module: module, slot: slot, bite: bite) { opened in
-                openedBite = BiteRoute(slug: opened.id, preloaded: opened)
+            FeedBiteModule(module: module, slot: slot, bite: bite) { target in
+                // The copy on hand rides along when the route names the Bite
+                // the module carries, so it draws the moment it opens rather
+                // than after a round trip.
+                if case .bite(let slug) = target, slug == bite.id {
+                    openedBite = BiteRoute(slug: slug, preloaded: bite)
+                } else {
+                    open(target)
+                }
             }
         case .poll(let prompt):
             FeedPollModule(module: module, prompt: prompt) { voted in

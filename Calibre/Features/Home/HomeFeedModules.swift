@@ -58,8 +58,9 @@ extension HomeFeedCard {
     /// The shared card projection, carrying the server's selection reason.
     ///
     /// The reason is printed exactly as it was sent and is never composed
-    /// here. `nil` means the server could not justify one, and the card says
-    /// nothing rather than saying something plausible.
+    /// here. `nil` means the server could not justify one — or that the card
+    /// is a fill-in, which nobody justified — and the card says nothing rather
+    /// than saying something plausible.
     var cardModel: ListingCardModel {
         let base = listing.cardModel
         return ListingCardModel(
@@ -73,7 +74,7 @@ extension HomeFeedCard {
             watcherCount: base.watcherCount,
             imageURL: base.imageURL,
             isVerifiedDealer: base.isVerifiedDealer,
-            reason: reason?.text
+            reason: reasonLine
         )
     }
 
@@ -253,8 +254,8 @@ private struct FeedCompactCardRow: View {
                     Text(card.cardModel.priceText)
                         .font(CalibreType.priceSmall)
                         .foregroundStyle(Color.calibre.foreground)
-                    if let reason = card.reason {
-                        Text(reason.text)
+                    if let reason = card.reasonLine {
+                        Text(reason)
                             .font(CalibreType.caption)
                             .foregroundStyle(Color.calibre.mutedForeground)
                             .multilineTextAlignment(.leading)
@@ -282,7 +283,7 @@ private struct FeedCompactCardRow: View {
     }
 
     private var accessibilityLabel: String {
-        [card.cardModel.brand, card.cardModel.title, card.cardModel.priceText, card.reason?.text]
+        [card.cardModel.brand, card.cardModel.title, card.cardModel.priceText, card.reasonLine]
             .compactMap { $0 }
             .joined(separator: ", ")
     }
@@ -320,6 +321,13 @@ struct FeedShopWindowModule: View {
 /// A listing module's cards, in the lane footprint the app already uses. Every
 /// card is the same card at the same size, and the order is the one it arrived
 /// in.
+///
+/// Every card the server sent is drawn, fill-ins included. The site's grid
+/// trims itself to complete rows because a grid can end on a ragged one; this
+/// is a lane — one row that scrolls — so every card is in a complete row by
+/// construction, and cutting it would only shorten the scroll. What separates
+/// a fill-in from a ranked card is that it prints no reason (`reasonLine`),
+/// and nothing else about it says which it is.
 private struct FeedCardLane: View {
     @Environment(\.browsePush) private var push
 
@@ -365,7 +373,7 @@ private struct FeedCardLane: View {
                             card.cardModel.brand,
                             card.cardModel.title,
                             card.cardModel.priceText,
-                            card.reason?.text,
+                            card.reasonLine,
                         ]
                             .compactMap { $0 }
                             .joined(separator: ", ")
@@ -380,171 +388,117 @@ private struct FeedCardLane: View {
 
 // MARK: - todays_bite
 
-/// The day's read, whole: the claim, the paragraph the desk wrote, who wrote
-/// it, and what it was published against.
+/// The day's read, as a headline.
 ///
-/// A Bite is one short paragraph by construction, so this prints the paragraph
-/// rather than an excerpt and a promise. The sources travel with it — a claim
-/// about the market that cannot be checked is an opinion — and they are real
-/// links, which is why the card is not one large button: a tap target inside
-/// another tap target is not reachable. The reading block opens the Bite, the
-/// sources open themselves, and "Read it" is its own control.
+/// Only the title is on Home: the eyebrow that names the slot, the topic, an
+/// archive chip when the pick came from the archive, and the title itself. The
+/// paragraph, the author, the date, the correction and the sources all live on
+/// the Bite's own page, and the whole block is one button to it — a headline
+/// that opens a read, rather than the read printed between two shelves of
+/// watches. The site draws the same module the same way.
 ///
-/// An archive-slot Bite says so, beside its own original date, and the date is
-/// stated once. Nothing here re-dates an old piece to look like today's.
+/// The route is the server's when it sent one (`bites/<id>`) and the Bite's
+/// own page otherwise: a Bite always has a page, so this module always has
+/// somewhere to go, and a route this build cannot place falls back the same
+/// way rather than leaving the headline dead.
+///
+/// Not a card. The poll below it is one, and two boxes in a row read as two
+/// adverts; a rule above and a serif headline is what marks this as editorial.
 struct FeedBiteModule: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     let module: HomeFeedModule
     let slot: String
     let bite: Bite
-    let onOpen: (Bite) -> Void
+    let onOpen: (FeedActionTarget) -> Void
 
     private var fromArchive: Bool { bite.isArchive || slot == "archive" }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            Button {
-                Haptics.shared.play(.press)
-                onOpen(bite)
-            } label: {
-                reading
-            }
-            .buttonStyle(PressableStyle())
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityHint("Opens the full Bite")
-
-            VStack(alignment: .leading, spacing: Space.s) {
-                Text(byline)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-
-                Button {
-                    Haptics.shared.play(.press)
-                    onOpen(bite)
-                } label: {
-                    HStack(spacing: Space.xs) {
-                        Text(module.action?.label ?? "Read it")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.primary)
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.calibre.primary)
-                    }
-                    .frame(minHeight: Space.touchTarget, alignment: .leading)
-                }
-                .buttonStyle(PressableStyle())
-
-                if !bite.sources.isEmpty {
-                    FeedBiteSources(sources: bite.sources)
-                }
-            }
-            .padding(.horizontal, Space.l)
-            .padding(.bottom, Space.l)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
-        )
-        .padding(.horizontal, Space.margin)
+    private var destination: FeedActionTarget {
+        module.action.flatMap { feedActionTarget($0.route) } ?? .bite(bite.id)
     }
 
-    /// The part that opens the Bite. The phone's column is the reading measure
-    /// — the app is drawn for one hand — so the paragraph needs no width of its
-    /// own beyond the card's.
-    private var reading: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            if let url = bite.image?.url {
-                ListingImageWell(url: url, targetWidth: 1_200)
-                    .frame(height: 120)
-                    .clipShape(
-                        UnevenRoundedRectangle(
-                            topLeadingRadius: Radius.box,
-                            bottomLeadingRadius: 0,
-                            bottomTrailingRadius: 0,
-                            topTrailingRadius: Radius.box,
-                            style: .continuous
-                        )
-                    )
-                    .accessibilityLabel(bite.imageAlt ?? "")
-                    .accessibilityHidden(bite.imageAlt == nil)
-            }
+    /// The eyebrow row sits on one line while it fits. At an accessibility
+    /// size three labels across one phone do not, so they stack — the same
+    /// rule the brand rail and the poll's options follow.
+    private var eyebrowRow: AnyLayout {
+        typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Space.xs))
+            : AnyLayout(HStackLayout(spacing: Space.s))
+    }
 
-            VStack(alignment: .leading, spacing: Space.s) {
-                Eyebrow(module.title, color: Color.calibre.primary)
+    var body: some View {
+        Button {
+            Haptics.shared.play(.press)
+            onOpen(destination)
+        } label: {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Rectangle()
+                    .fill(Color.calibre.border)
+                    .frame(height: 1)
 
-                if fromArchive {
-                    BiteArchiveLabel(date: bite.date)
+                eyebrowRow {
+                    Eyebrow(module.title, color: Color.calibre.primary)
+                    if !bite.topic.isEmpty {
+                        Eyebrow(bite.topic)
+                    }
+                    if fromArchive {
+                        FeedBiteArchiveChip()
+                    }
                 }
+                .padding(.top, Space.s)
 
                 Text(bite.title)
-                    .font(CalibreType.serif(.semiBold, 19, relativeTo: .title3))
+                    .font(CalibreType.sectionTitle)
                     .foregroundStyle(Color.calibre.foreground)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
 
-                // Whole, not teased. Cutting it at three lines would put an
-                // ellipsis through the only sentence the desk wrote, and leave
-                // the card claiming less than it is holding.
-                Text(bite.body)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-                    .lineSpacing(6)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: Space.xs) {
+                    Text(module.action?.label ?? "Read it")
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.primary)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.calibre.primary)
+                }
             }
-            .padding(.horizontal, Space.l)
-            .padding(.top, bite.image?.url == nil ? Space.l : 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(PressableStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Opens the full Bite")
+        .padding(.horizontal, Space.margin)
     }
 
-    /// The desk's name, and the piece's date when the archive label has not
-    /// already given it.
-    private var byline: String {
-        fromArchive ? bite.author : "\(bite.author) · \(bite.date)"
-    }
-
-    /// The paragraph is in here because it is the Bite. Reading out a headline
-    /// and a date and then stopping would hand a VoiceOver reader the promise
-    /// of the piece and none of it.
+    /// What is on screen and nothing more: the slot, the archive note when
+    /// there is one, the topic, the headline. The paragraph is on the page
+    /// this opens, for a VoiceOver reader as for anyone else.
     private var accessibilityLabel: String {
-        let opening = fromArchive ? "From the archive, \(bite.date)" : bite.date
-        return "\(module.title). \(opening). \(bite.title). \(bite.body)"
+        [
+            module.title,
+            fromArchive ? "From the archive" : nil,
+            bite.topic.isEmpty ? nil : bite.topic,
+            bite.title,
+        ]
+        .compactMap { $0 }
+        .joined(separator: ". ")
     }
 }
 
-/// What the claim was published against, as links a reader can actually
-/// follow. Same shape as the Bite's own page, so a source reached from Home
-/// behaves the way it does everywhere else.
-private struct FeedBiteSources: View {
-    let sources: [Bite.Source]
-
+/// "From the archive", without the date. The Bite's own page states the
+/// original date beside this label; Home states only that the pick is an old
+/// one, and never re-dates it.
+private struct FeedBiteArchiveChip: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            Eyebrow("Sources")
-            ForEach(sources, id: \.self) { source in
-                if let url = URL(string: source.href) {
-                    Link(destination: url) {
-                        HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
-                            Text(source.label)
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.primary)
-                                .multilineTextAlignment(.leading)
-                            Image(systemName: "arrow.up.right")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(Color.calibre.primary)
-                        }
-                        .frame(minHeight: Space.touchTarget, alignment: .leading)
-                    }
-                    .buttonStyle(PressableStyle())
-                    .accessibilityLabel("Source, \(source.label)")
-                    .accessibilityHint("Opens in your browser")
-                }
-            }
-        }
-        .padding(.top, Space.xs)
+        Text("From the archive")
+            .font(CalibreType.label)
+            .foregroundStyle(Color.calibre.accentForeground)
+            .padding(.horizontal, Space.m)
+            .padding(.vertical, 5)
+            .background(Color.calibre.accent.opacity(0.7), in: Capsule())
     }
 }
 
