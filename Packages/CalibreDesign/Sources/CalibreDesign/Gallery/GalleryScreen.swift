@@ -118,6 +118,7 @@ public struct GalleryScreen: View {
                     mark("powerReserve") { CalibreMark.powerReserve(0.78, size: 88, trigger: markPlay) }
                     mark("crown") { CalibreMark.crown(size: 88, trigger: markPlay) }
                     mark("box") { CalibreMark.box(size: 88, trigger: markPlay) }
+                    mark("vault") { CalibreMark.vault(size: 88, trigger: markPlay) }
                 }
 
                 // What the surface does when a press mark lands on it. The

@@ -72,6 +72,18 @@ public extension Order {
         return nil
     }
 
+    /// The lead's own mark, and the fact it stands for: the order is paid and
+    /// nothing has shipped yet, so the parcel is being packed. Drawn in the
+    /// lead rather than the journey header — the journey has no leg to show
+    /// yet — and only while `mark(now:)` has nothing else to say, which keeps
+    /// the screen at one mark: a bench verdict or a travelling parcel outranks
+    /// the checkout moment. The web keys its `CheckoutSuccessMoment` on the
+    /// same fact with the same key.
+    func checkoutMarkKey(now: Date = .now) -> String? {
+        guard status == .purchased, mark(now: now) == nil else { return nil }
+        return "checkout:\(id)"
+    }
+
     /// What the parcel's animation is keyed to: the milestone itself.
     ///
     /// Android's order screen keys its box the same way and its comment is the

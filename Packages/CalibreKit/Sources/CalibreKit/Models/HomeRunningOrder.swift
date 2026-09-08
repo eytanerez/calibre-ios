@@ -58,12 +58,15 @@ public enum HomeFeedLoadState: Sendable {
 ///
 /// The member's page is the guest's with more in it. The guest opens with a
 /// shelf of the newest watches; the member opens with the ranked shelf under
-/// their greeting. Both go on to brands and what is popular; the day's Bite
-/// closes the editorial band; and what only a member has — the day's question,
-/// their own watches, the feed's terminator — follows it. A section with
-/// nothing to show is absent, never an empty frame, and a member-only section
-/// is not drawn for a guest even when the server happened to send it: the guest
-/// feed carries a poll and a terminator, and the guest page shows neither.
+/// their greeting. The day's Bite sits directly under that first row of
+/// watches on both pages — above Recently viewed for a member, above the
+/// brands for a guest — so the day's reading is met before the page settles
+/// into shelves. Both go on to brands and what is popular, and what only a
+/// member has — the day's question, their own watches, the feed's terminator
+/// — follows. A section with nothing to show is absent, never an empty frame,
+/// and a member-only section is not drawn for a guest even when the server
+/// happened to send it: the guest feed carries a poll and a terminator, and
+/// the guest page shows neither.
 public enum HomeRunningOrder {
     /// `present` is the set of sections that have something to show. The two
     /// state-derived entries, the skeleton and the retry, are decided by `feed`
@@ -82,6 +85,10 @@ public enum HomeRunningOrder {
         // the same request, and a guest with no network would otherwise be
         // handed a page with nothing on it and no way to ask again. Both
         // audiences get the retry.
+        //
+        // The Bite keeps its slot relative to that first shelf: directly under
+        // it, whichever shelf it is and whether the shelf is drawn, loading or
+        // failed.
         let skeleton: [HomeSection] = switch audience {
         case .member:
             [
@@ -89,12 +96,12 @@ public enum HomeRunningOrder {
                 .feedLoading,
                 .feedUnavailable,
                 .watchesForYou,
+                .bite,
                 .recentlyViewed,
                 .brands,
                 .popular,
                 .freshArrivals,
                 .savedSearches,
-                .bite,
                 .poll,
                 .collection,
                 .endOfFeed,
@@ -104,9 +111,9 @@ public enum HomeRunningOrder {
                 .feedLoading,
                 .feedUnavailable,
                 .freshArrivals,
+                .bite,
                 .brands,
                 .popular,
-                .bite,
             ]
         }
 

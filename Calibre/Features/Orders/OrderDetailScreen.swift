@@ -197,6 +197,10 @@ struct OrderDetailScreen: View {
                 [step.actor?.label, step.sentence, step.body].compactMap { $0 }.joined(separator: ". ")
             )
 
+            if let checkoutKey = order.checkoutMarkKey() {
+                checkoutMoment(checkoutKey)
+            }
+
             VStack(spacing: Space.s) {
                 contactSellerRow(order)
                 passportRow(order)
@@ -212,6 +216,28 @@ struct OrderDetailScreen: View {
             RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
                 .strokeBorder(tone.stroke, lineWidth: 1)
         )
+    }
+
+    /// Paid, and nothing shipped yet: the parcel is being packed, and the
+    /// carton packs itself beside the sentence that says so. The lead's mark
+    /// rather than the journey's — the journey has no leg to draw yet — and
+    /// `Order.checkoutMarkKey()` is what says it is this screen's only one.
+    /// Keyed to the order, so the sixty-second refetch leaves a packed parcel
+    /// packed, and announced once per session like every other milestone.
+    ///
+    /// No `label`: the headline above already says the seller is preparing
+    /// the watch, in words a screen reader reads, and the sentence beside the
+    /// mark carries the rest.
+    private func checkoutMoment(_ key: String) -> some View {
+        HStack(alignment: .center, spacing: Space.m) {
+            CalibreMark.box(size: 40, trigger: key)
+                .markAnnounces(key)
+            Text("Its journey to you starts now — authentication first, then your door.")
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The ground the lead sits on carries the state, so it reads before the

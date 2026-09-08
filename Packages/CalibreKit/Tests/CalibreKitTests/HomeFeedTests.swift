@@ -434,8 +434,8 @@ final class HomeFeedTests: XCTestCase {
         XCTAssertEqual(
             HomeRunningOrder.sections(audience: .member, feed: .loaded, present: Self.everySection),
             [
-                .nextStep, .watchesForYou, .recentlyViewed, .brands, .popular, .freshArrivals,
-                .savedSearches, .bite, .poll, .collection, .endOfFeed,
+                .nextStep, .watchesForYou, .bite, .recentlyViewed, .brands, .popular, .freshArrivals,
+                .savedSearches, .poll, .collection, .endOfFeed,
             ]
         )
 
@@ -446,14 +446,41 @@ final class HomeFeedTests: XCTestCase {
         // under a greeting that has nobody to greet.
         XCTAssertEqual(
             HomeRunningOrder.sections(audience: .guest, feed: .loaded, present: Self.everySection),
-            [.freshArrivals, .brands, .popular, .bite]
+            [.freshArrivals, .bite, .brands, .popular]
+        )
+    }
+
+    /// The Bite sits directly under the first row of watches and above
+    /// Recently viewed — the same slot relative to the first shelf on both
+    /// pages, whichever shelf that is.
+    func testTheBiteSitsDirectlyUnderTheFirstShelfAndAboveRecentlyViewed() throws {
+        let member = HomeRunningOrder.sections(audience: .member, feed: .loaded, present: Self.everySection)
+        let shelf = try XCTUnwrap(member.firstIndex(of: .watchesForYou))
+        let recent = try XCTUnwrap(member.firstIndex(of: .recentlyViewed))
+        XCTAssertEqual(member.firstIndex(of: .bite), shelf + 1)
+        XCTAssertEqual(recent, shelf + 2)
+
+        let guest = HomeRunningOrder.sections(audience: .guest, feed: .loaded, present: Self.everySection)
+        let newest = try XCTUnwrap(guest.firstIndex(of: .freshArrivals))
+        XCTAssertEqual(guest.firstIndex(of: .bite), newest + 1)
+
+        // The slot is relative to the shelf, not to the page: with the shelf
+        // still loading, or failed, the Bite follows whatever stands in for it
+        // and still comes before Recently viewed.
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .member, feed: .loading, present: [.bite, .recentlyViewed, .brands]),
+            [.feedLoading, .bite, .recentlyViewed, .brands]
+        )
+        XCTAssertEqual(
+            HomeRunningOrder.sections(audience: .guest, feed: .failed, present: [.bite, .brands]),
+            [.feedUnavailable, .bite, .brands]
         )
     }
 
     func testASectionWithNothingToShowIsAbsentRatherThanAnEmptyFrame() {
         XCTAssertEqual(
             HomeRunningOrder.sections(audience: .member, feed: .loaded, present: [.bite, .brands, .popular]),
-            [.brands, .popular, .bite]
+            [.bite, .brands, .popular]
         )
         XCTAssertEqual(HomeRunningOrder.sections(audience: .guest, feed: .loaded, present: []), [])
         XCTAssertEqual(HomeRunningOrder.sections(audience: .member, feed: .loaded, present: []), [])

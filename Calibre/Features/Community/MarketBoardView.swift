@@ -153,6 +153,21 @@ struct MarketBoardView: View {
 
     private var skeleton: some View {
         VStack(spacing: Space.l) {
+            // The board is being read, so the wheel says the work is still
+            // going and unmounts with the wait. Never keyed and never held
+            // still: a loop that restarts is a stutter, and a stopped balance
+            // wheel is a stopped watch. The line beside it carries the
+            // meaning — a wheel at rest is not self-evidently "loading".
+            HStack(spacing: Space.m) {
+                CalibreMark.balanceWheel(size: 24)
+                Text("Reading the market")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Reading the market")
+
             ForEach(0..<4, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .fill(Color.calibre.card)

@@ -31,6 +31,8 @@ struct SellGateScreen: View {
     @State private var refreshingReadiness = false
     @State private var showCardStep = false
     @State private var sellerCard: SellerCardState?
+    /// How far setup has got, held at its peak so the crown never winds back.
+    @State private var setupProgress = SellerSetupProgress()
 
     var body: some View {
         ScrollView {
@@ -55,6 +57,13 @@ struct SellGateScreen: View {
             .padding(.horizontal, Space.margin)
             .padding(.top, Space.xl)
             .padding(.bottom, Space.xxl)
+        }
+        // `initial`, so a seller arriving with a step already finished sees
+        // the crown standing at that fact rather than winding for old news —
+        // the announcement is keyed to the count, and the first claim of a
+        // key is the one that plays.
+        .onChange(of: setupStepsDone, initial: true) { _, done in
+            if let done { setupProgress.record(stepsDone: done) }
         }
         .sheet(isPresented: $showSSNStep) {
             SSNStepSheet { session in
@@ -246,7 +255,22 @@ struct SellGateScreen: View {
                 && !SellerSetupSteps.cardStepIsRedundant(card: sellerCard, payoutsComplete: step.isComplete)
             let stepsShown = showsCard ? 2 : 1
             VStack(alignment: .leading, spacing: Space.l) {
-                Eyebrow("Setting up your storefront")
+                HStack(alignment: .center, spacing: Space.m) {
+                    Eyebrow("Setting up your storefront")
+                    Spacer(minLength: Space.s)
+                    // A step finished: the crown winds a click past its
+                    // detent and catches. Keyed to the peak count, so a
+                    // refetch that briefly reports less neither unwinds it
+                    // nor takes it away, and announced once per session per
+                    // count. Nothing is drawn until something has finished —
+                    // a wound crown beside an untouched setup would be a
+                    // fact nobody established. The cards beneath say which
+                    // step, in words; the mark has no label.
+                    if let windKey = setupProgress.markKey {
+                        CalibreMark.crown(size: 36, trigger: windKey)
+                            .markAnnounces(windKey)
+                    }
+                }
 
                 payoutStepCard(step, of: stepsShown)
                 if showsCard {
@@ -265,6 +289,22 @@ struct SellGateScreen: View {
                 Rectangle().frame(maxWidth: .infinity).frame(height: 96).shimmer()
             }
         }
+    }
+
+    /// How many of setup's steps stand finished on the readiness on hand, or
+    /// nil while readiness has not loaded — a load in flight is not zero
+    /// steps done. The count is `SellerSetupSteps.stepsDone`, which counts a
+    /// step only when it is drawn as finished: payouts on the server's own
+    /// `isComplete`, the card as the finished card beside them — and not the
+    /// card `cardStepIsRedundant` folds away, which the web does not count
+    /// either, so both platforms wind the crown on the same key.
+    private var setupStepsDone: Int? {
+        guard let step = services.seller.readiness?.connect.payoutStep else { return nil }
+        return SellerSetupSteps.stepsDone(
+            card: sellerCard,
+            payoutsComplete: step.isComplete,
+            payoutsRejected: step.status == .rejected
+        )
     }
 
     // MARK: Step 1 — payouts

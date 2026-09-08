@@ -25,6 +25,12 @@ struct CrownMark: View {
         .markCanvas(size)
         .onAppear(perform: wind)
         .onChange(of: trigger) { _, _ in wind() }
+        // The other marks switch drawings when stillness changes and so
+        // play from the top the frame a surface stops holding them still.
+        // This one turns a single state, so it has to be told: a crown under
+        // `markAnnounces` appears held (the announcement lands a frame after
+        // the first draw) and would otherwise stand wound for good.
+        .onChange(of: stillness.isRequested) { _, _ in wind() }
         .accessibilityHidden(true)
     }
 

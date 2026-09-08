@@ -486,6 +486,59 @@ final class MarkDrawingTests: XCTestCase {
         }
     }
 
+    /// The ninth mark is a watch in its slot and not a card with a dot on it:
+    /// the recess is arc-ended, the head is the logo's jewel at the logo's own
+    /// ring-to-centre ratio, the shoulders are two short arcs that sit above
+    /// and below it — and nothing joins them across the head.
+    func testTheVaultIsAWatchInItsSlot() {
+        let slot = VaultMark.slot.boundingRect
+        XCTAssertGreaterThan(slot.height, slot.width, "a slot is taller than it is wide")
+        // Arc-ended: nothing straight along the short sides. The only points
+        // the drawing puts on the top or bottom edge are where the two corner
+        // arcs meet, on the centreline — a card would have a run of edge there.
+        let onShortSides = vertices(VaultMark.slot)
+            .filter { abs($0.y - slot.minY) < 0.01 || abs($0.y - slot.maxY) < 0.01 }
+        XCTAssertFalse(onShortSides.isEmpty, "the path reaches its own top and bottom")
+        for point in onShortSides {
+            XCTAssertEqual(point.x, slot.midX, accuracy: 0.5)
+        }
+
+        let ring = VaultMark.ring.boundingRect
+        let centre = VaultMark.jewelCentre.boundingRect
+        XCTAssertEqual(centre.width / ring.width, 4.88 / 10.71, accuracy: 0.001)
+        XCTAssertEqual(ring.midX, centre.midX, accuracy: 0.001)
+        XCTAssertEqual(ring.midY, centre.midY, accuracy: 0.001)
+        XCTAssertTrue(slot.contains(ring), "at rest the head lies inside its slot")
+
+        var lugMoves = 0
+        var lugLines = 0
+        VaultMark.lugs.forEach { element in
+            switch element {
+            case .move: lugMoves += 1
+            case .line: lugLines += 1
+            default: break
+            }
+        }
+        XCTAssertEqual(lugMoves, 2, "one shoulder above, one below")
+        XCTAssertEqual(lugLines, 0, "a line between the shoulders would cross the head")
+        let shoulders = vertices(VaultMark.lugs)
+        XCTAssertTrue(shoulders.contains { $0.y < ring.minY }, "one shoulder sits above the ring")
+        XCTAssertTrue(shoulders.contains { $0.y > ring.maxY }, "one sits below it")
+        for point in shoulders {
+            XCTAssertEqual(hypot(point.x - VaultMark.headCentre.x, point.y - VaultMark.headCentre.y),
+                           VaultMark.lugRadius, accuracy: 0.05)
+        }
+        // Short: each arc is well under a quarter of its circle.
+        XCTAssertLessThan(VaultMark.lugSpan.degrees, 90)
+
+        // The end state is lifted and tilted, and it is the motion's own
+        // numbers rather than a second copy of them.
+        XCTAssertEqual(VaultMark.restedLift.rise, MarkMotion.liftHeight)
+        XCTAssertEqual(VaultMark.restedLift.tilt, MarkMotion.liftTilt.degrees)
+        XCTAssertGreaterThan(MarkMotion.liftHeight, 0)
+        XCTAssertLessThan(MarkMotion.liftTilt.degrees, 0)
+    }
+
     /// A parcel, not a book. The tape stops a long way short of the floor —
     /// a line run all the way down is exactly what made this read as a spine —
     /// and the carton's stroke leaves the top open for the flaps to close.
@@ -577,13 +630,17 @@ final class MarkFillTests: XCTestCase {
     ///
     /// The stamp's head is still in the air on the frame this renders, so its
     /// die's jewel is given at both ends of the fall — where the head has got
-    /// to is a motion state, and this is asking about a shape.
+    /// to is a motion state, and this is asking about a shape. The vault's
+    /// head has the same two positions, in its slot and lifted out of it, and
+    /// its jewel — the logo's own, the one fill that mark is allowed — is
+    /// given at both.
     func testTheMarksAllowedAFillHaveOne() throws {
         let filled: [(String, AnyView, [CGPoint])] = [
             ("stamp", AnyView(CalibreMark.stamp()), [CGPoint(x: 60, y: 60), CGPoint(x: 60, y: 42)]),
             ("waxSeal", AnyView(CalibreMark.waxSeal()), [CGPoint(x: 60, y: 26)]),
             ("loupe", AnyView(CalibreMark.loupe()), [CGPoint(x: 60, y: 60)]),
             ("box", AnyView(CalibreMark.box()), [CGPoint(x: 40, y: 85)]),
+            ("vault", AnyView(CalibreMark.vault()), [CGPoint(x: 60, y: 72), CGPoint(x: 60, y: 53)]),
         ]
 
         for (name, mark, points) in filled {
@@ -599,6 +656,10 @@ final class MarkFillTests: XCTestCase {
             ("dialArc", AnyView(CalibreMark.dialArc(0)), CGPoint(x: 60, y: 78)),
             ("powerReserve", AnyView(CalibreMark.powerReserve(1)), CGPoint(x: 60, y: 60)),
             ("crown", AnyView(CalibreMark.crown()), CGPoint(x: 60, y: 60)),
+            // The vault's recess, above where the lifted head ever reaches:
+            // the one fill in that mark is the jewel's, and the slot stays an
+            // outline.
+            ("vault", AnyView(CalibreMark.vault()), CGPoint(x: 60, y: 20)),
         ]
 
         // Each of these sits at the centre of something that does not move, so

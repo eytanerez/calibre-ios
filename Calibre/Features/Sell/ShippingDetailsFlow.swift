@@ -353,6 +353,13 @@ struct LabelReadyScreen: View {
 
     private var shipment: Shipment? { order.toAuthShipment ?? order.latestShipment }
 
+    /// The fact the carton announces: Calibre has bought this order's label.
+    /// Nil on a payload that does not carry the timestamp, and nothing is
+    /// drawn for nil.
+    private var labelKey: String? {
+        order.sellerLabelCreatedAt == nil ? nil : "label:\(order.id)"
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
@@ -360,10 +367,23 @@ struct LabelReadyScreen: View {
                     Text("Your label is ready")
                         .font(CalibreType.title)
                         .foregroundStyle(Color.calibre.foreground)
-                    Text("Print it, pack the watch snugly, and drop it off. Tracking updates land in your Activity feed.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .center, spacing: Space.m) {
+                        // The seller's label is bought, so the parcel packs
+                        // itself beside the sentence that tells them to pack
+                        // it. Gated on the server's own timestamp rather than
+                        // on having reached this screen, keyed to the order
+                        // so a refreshed payload does not re-seal it, and
+                        // announced once per session. No `label`: the words
+                        // beside it are the words.
+                        if let labelKey {
+                            CalibreMark.box(size: 40, trigger: labelKey)
+                                .markAnnounces(labelKey)
+                        }
+                        Text("Print it, pack the watch snugly, and drop it off. Tracking updates land in your Activity feed.")
+                            .font(CalibreType.body)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
                 if let labelURL = shipment?.labelUrl?.url {

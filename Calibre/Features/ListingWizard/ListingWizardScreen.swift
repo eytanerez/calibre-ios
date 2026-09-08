@@ -21,6 +21,9 @@ struct ListingWizardScreen: View {
     /// Set when Continue is pressed on an incomplete step, to bring the first
     /// offending field into view.
     @State private var scrollTarget: WizardField?
+    /// The last step the draft was kept on the way to — the crown's fact.
+    /// Nil until the first forward step with a draft on the server.
+    @State private var draftMarkKey: String?
 
     var body: some View {
         NavigationStack {
@@ -113,10 +116,24 @@ struct ListingWizardScreen: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .ready:
             VStack(spacing: 0) {
-                ProgressCheckpoints(steps: WizardModel.stepTitles, currentIndex: model.step)
-                    .padding(.horizontal, Space.margin)
-                    .padding(.top, Space.m)
-                    .padding(.bottom, Space.s)
+                HStack(alignment: .center, spacing: Space.m) {
+                    ProgressCheckpoints(steps: WizardModel.stepTitles, currentIndex: model.step)
+                    // The draft was kept on the way to this step: the crown
+                    // winds beside the rail that shows which step. Keyed to
+                    // the draft and the step it was kept at (`advance`), so
+                    // a re-render leaves it caught on its detent and going
+                    // back is not news; announced once per session per key.
+                    // Nothing until the first advance has a draft to keep —
+                    // no server draft exists before Details is completed.
+                    // The rail's captions are the words; the mark has none.
+                    if let draftMarkKey {
+                        CalibreMark.crown(size: 36, trigger: draftMarkKey)
+                            .markAnnounces(draftMarkKey)
+                    }
+                }
+                .padding(.horizontal, Space.margin)
+                .padding(.top, Space.m)
+                .padding(.bottom, Space.s)
 
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -249,10 +266,18 @@ struct ListingWizardScreen: View {
     }
 
     private func advance(_ model: WizardModel, to step: Int) {
+        let from = model.step
+        let to = min(max(step, 0), 3)
         withAnimation(Motion.easeMedium) {
-            model.step = min(max(step, 0), 3)
+            model.step = to
         }
         model.fieldChanged()
+        // Forward, with a draft on the server to keep: the fact the crown
+        // winds on. Back is not an advance and a draft that does not exist
+        // yet cannot have been kept.
+        if to > from, let listingID = model.listing?.id {
+            draftMarkKey = "listing-draft:\(listingID):\(to)"
+        }
     }
 
     private func submit(_ model: WizardModel) {

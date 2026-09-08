@@ -190,11 +190,38 @@ struct CollectionScreen: View {
         }
     }
 
+    /// The fact the vault mark announces: the drawer is open, past the
+    /// biometric gate, and there is something in it. Nil while either is not
+    /// so — an empty vault gets no mark, and neither does one still behind
+    /// Face ID — and nothing is drawn for nil. Once per session: `lock()` on
+    /// the way to the background clears `unlocked`, and unlocking again is
+    /// the same fact, not news.
+    private var vaultOpenedKey: String? {
+        lock.unlocked && !watches.isEmpty ? "vault-opened" : nil
+    }
+
+    /// The title row: the ninth mark, lifting a watch out of its slot beside
+    /// the one line that says what this screen is. The words carry the
+    /// meaning; the mark has no label of its own.
+    private var vaultHeader: some View {
+        HStack(alignment: .center, spacing: Space.m) {
+            CalibreMark.vault(size: 48, trigger: "vault-opened")
+                .markAnnounces(vaultOpenedKey)
+            Text("Every watch you own, kept in its place.")
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+    }
+
     private var list: some View {
         ScrollView {
             // Lazy, because every row is now a full-width photograph: a plain
             // stack would decode the whole drawer before the first one drew.
             LazyVStack(alignment: .leading, spacing: Space.xxl) {
+                vaultHeader
+
                 ForEach(visibleWatches) { watch in
                     CollectionWatchCard(
                         watch: watch,

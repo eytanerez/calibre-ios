@@ -133,6 +133,7 @@ struct LoginScreen: View {
 
     private var header: some View {
         VStack(spacing: Space.m) {
+            SigningInMark(turning: busy)
             CalibreWordmark()
             Text("Welcome back. Sign in to pick up where you left off.")
                 .font(CalibreType.body)
@@ -196,5 +197,78 @@ struct LoginScreen: View {
 
     private func showMessage(_ message: String) {
         errorMessage = message
+    }
+}
+
+/// The Calibre mark above the wordmark, turning while the sign-in request is
+/// in flight: a slow, continuous turn that runs down onto upright once the
+/// response lands.
+///
+/// Purely visual. It reads `turning` and nothing reads it back — the request
+/// is awaited in `signIn()`, the dismiss follows the session, and neither
+/// waits on a frame of this — so it cannot delay a sign-in by a tick.
+///
+/// Driven by a `.task` loop against `ContinuousClock` in this one leaf rather
+/// than by `TimelineView` or a `repeatForever` animation: the timeline
+/// redraws whatever holds it, and a forever animation cannot be eased out of
+/// — retargeting it either unwinds the mark or leaves the loop running
+/// underneath. The arithmetic of the turn is `LogoTurn`'s: it winds in, holds,
+/// and once the answer lands carries on to the last upright it can ease onto
+/// and rests there — a failed sign-in leaves this screen up, and the mark is
+/// oriented, so it cannot be left standing wherever its speed ran out. The
+/// loop ends with the rest, so nothing ticks on an idle screen.
+///
+/// Reduce Motion, from either signal, is a still mark standing upright: no
+/// loop is started, and one already running is stood up rather than left on a
+/// mid frame or spun to rest.
+private struct SigningInMark: View {
+    let turning: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Where the turn has got to, carried across the flip from turning to
+    /// settling and across a retry.
+    @State private var turn = LogoTurn()
+
+    private static let tick: Duration = .milliseconds(16)
+
+    private var motionIsUnwelcome: Bool {
+        reduceMotion || UIAccessibility.isReduceMotionEnabled
+    }
+
+    private static func seconds(_ duration: Duration) -> TimeInterval {
+        let parts = duration.components
+        return TimeInterval(parts.seconds) + TimeInterval(parts.attoseconds) / 1e18
+    }
+
+    var body: some View {
+        CalibreLogoMark(size: 48)
+            .rotationEffect(.degrees(turn.angle))
+            .task(id: turning) { await run() }
+            .onChange(of: motionIsUnwelcome) { _, unwelcome in
+                if unwelcome { turn.stop() }
+            }
+    }
+
+    private func run() async {
+        guard !motionIsUnwelcome else {
+            turn.stop()
+            return
+        }
+        // Nothing to do on a screen whose mark already stands upright.
+        guard turning || !turn.isAtRest else { return }
+        let clock = ContinuousClock()
+        var last = clock.now
+
+        while !Task.isCancelled {
+            guard (try? await clock.sleep(for: Self.tick)) != nil else { return }
+            if motionIsUnwelcome {
+                turn.stop()
+                return
+            }
+            let now = clock.now
+            turn.advance(by: Self.seconds(now - last), turning: turning)
+            last = now
+            if turn.isAtRest { return }
+        }
     }
 }

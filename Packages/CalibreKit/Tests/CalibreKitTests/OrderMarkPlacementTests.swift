@@ -68,6 +68,32 @@ final class OrderMarkPlacementTests: XCTestCase {
         XCTAssertNotEqual(toAuth.transitMarkKey, toBuyer.transitMarkKey)
     }
 
+    // MARK: - The checkout moment
+
+    /// Paid and nothing shipped: the parcel is being packed, and the lead says
+    /// so. The journey header has nothing to draw at the same moment, which is
+    /// what keeps the screen at one mark.
+    func testTheCheckoutMomentDrawsForAPaidOrderThatHasNotShipped() throws {
+        let paid = try order(status: "purchased")
+        XCTAssertEqual(paid.checkoutMarkKey(), "checkout:o1")
+        XCTAssertNil(paid.mark(), "the journey header stands down while the lead carries the parcel")
+    }
+
+    func testTheCheckoutMomentDrawsForNothingElse() throws {
+        for status in ["awaiting_wire", "to_auth", "auth_pass", "auth_fail", "to_buyer", "delivered", "cancelled", "refunded"] {
+            XCTAssertNil(try order(status: status).checkoutMarkKey(), "\(status) is not the checkout moment")
+        }
+    }
+
+    /// The precedence is the helper's, not the view's: a paid order that
+    /// somehow carries the bench's verdict is the stamp's, and the lead's
+    /// parcel stands down rather than making a second mark.
+    func testAnotherMarkOutranksTheCheckoutMoment() throws {
+        let stamped = try order(status: "purchased", authentication: record(verdict: "authenticated"))
+        XCTAssertEqual(stamped.mark(), .stamp)
+        XCTAssertNil(stamped.checkoutMarkKey())
+    }
+
     // MARK: - The stamp
 
     func testTheStampReadsTheVerdictAndNotTheStatus() throws {

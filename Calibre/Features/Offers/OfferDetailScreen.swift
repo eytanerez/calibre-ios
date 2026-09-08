@@ -133,7 +133,22 @@ private struct OfferDetailContent: View {
                 VStack(alignment: .leading, spacing: Space.s) {
                     StatusBadge(presentation.text, tone: presentation.tone)
                     if let deadline = offerLiveDeadline(for: offer) {
-                        CountdownChip(until: deadline)
+                        HStack(spacing: Space.s) {
+                            // The seller's first look, and how much of it is
+                            // left: the gauge stands at its reading beside
+                            // the chip that counts it down. Held still on
+                            // purpose — it is a reading, not an event, so
+                            // there is nothing to announce and no key. The
+                            // window is the server's two timestamps
+                            // (`Offer.firstRoundWindowRemaining`), and the
+                            // gate is a status the seal never shares, which
+                            // is what keeps this screen at one mark.
+                            if let reading = offer.firstRoundWindowRemaining() {
+                                CalibreMark.dialArc(reading, size: 40, trigger: offer.id)
+                                    .markStill(true)
+                            }
+                            CountdownChip(until: deadline)
+                        }
                     }
                 }
                 Spacer(minLength: 0)

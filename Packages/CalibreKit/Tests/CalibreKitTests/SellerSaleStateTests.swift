@@ -196,4 +196,58 @@ final class SellerSaleStateTests: XCTestCase {
             SellerSetupSteps.cardStepIsRedundant(card: try card(), payoutsComplete: true)
         )
     }
+
+    // MARK: - What the crown counts
+
+    private func stepsDone(
+        card: SellerCardState?,
+        payoutsComplete: Bool,
+        payoutsRejected: Bool = false
+    ) -> Int {
+        SellerSetupSteps.stepsDone(
+            card: card,
+            payoutsComplete: payoutsComplete,
+            payoutsRejected: payoutsRejected
+        )
+    }
+
+    /// The case the fold-away exists for, counted: a valid card given in an
+    /// earlier pass, payouts still outstanding. The web draws no card row and
+    /// counts nothing, so a crown here would wind on `seller-setup:1` for a
+    /// step finished long ago — and then announce `seller-setup:2` when
+    /// payouts finish, where the web says `seller-setup:1`.
+    func testAFoldedAwayCardCountsForNothing() throws {
+        XCTAssertEqual(stepsDone(card: try card(), payoutsComplete: false), 0)
+    }
+
+    /// Once payouts finish, the card is drawn beside them as done, and both
+    /// count.
+    func testAFinishedCardBesideFinishedPayoutsCountsAsBoth() throws {
+        XCTAssertEqual(stepsDone(card: try card(), payoutsComplete: true), 2)
+    }
+
+    /// Payouts count on their own; a card that is missing, lapsed or about to
+    /// lapse is drawn as work to do, not as done.
+    func testPayoutsCountWithoutAFinishedCard() throws {
+        XCTAssertEqual(stepsDone(card: nil, payoutsComplete: true), 1)
+        XCTAssertEqual(stepsDone(card: try card(present: false), payoutsComplete: true), 1)
+        XCTAssertEqual(stepsDone(card: try card(valid: "false"), payoutsComplete: true), 1)
+        XCTAssertEqual(stepsDone(card: try card(expiringSoon: "true"), payoutsComplete: true), 1)
+    }
+
+    /// An expiring card beside outstanding payouts is shown, as work to do —
+    /// so it is not folded away, and still counts for nothing.
+    func testAnExpiringCardIsShownButNotCounted() throws {
+        XCTAssertEqual(stepsDone(card: try card(expiringSoon: "true"), payoutsComplete: false), 0)
+    }
+
+    /// A rejected account draws no card at all, so nothing counts, whatever
+    /// the card is doing.
+    func testARejectedAccountCountsNothing() throws {
+        XCTAssertEqual(stepsDone(card: try card(), payoutsComplete: false, payoutsRejected: true), 0)
+        XCTAssertEqual(
+            stepsDone(card: try card(expiringSoon: "true"), payoutsComplete: false, payoutsRejected: true),
+            0
+        )
+    }
 }
