@@ -2,8 +2,22 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// The listings-first home: wordmark and bag up top, search, a quiet
-/// greeting, then shelves of real watches — never a pitch.
+/// Home: wordmark and bag up top, search, anything still in motion, then the
+/// page — the **server-composed feed's** modules placed between the shelves
+/// that are plain queries.
+///
+/// The shelves that used to live here scored listings on the phone — their own
+/// profile, their own weights, their own brand cap — and then padded each lane
+/// out of a second query when it came up short. That is why this app could
+/// never show the same Home as the site, and why "For you" could quietly fill
+/// with popular inventory while keeping a personal heading. Ranking now runs
+/// once, on the server; every title, every selection reason and every omission
+/// that came from the feed is the server's, printed as sent.
+///
+/// `sections` is the page's running order and the only place it is decided —
+/// the same order the web page runs, so the two read alike. A module the server
+/// omitted is absent from that list rather than padded, and a module type this
+/// build has never heard of is not in it at all.
 struct HomeScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -11,6 +25,7 @@ struct HomeScreen: View {
 
     @State private var model: HomeModel?
     @State private var pushed: BrowseDestination?
+    @State private var openedBite: BiteRoute?
     @State private var showCart = false
     /// Set by a `CartSheet` callback (which has already called its own
     /// `dismiss()`); consumed by `.sheet(onDismiss:)` once SwiftUI reports
@@ -38,16 +53,20 @@ struct HomeScreen: View {
                 VStack(alignment: .leading, spacing: Space.l) {
                     headerRow
                     searchButton
-                    greeting
                 }
                 .padding(.horizontal, Space.margin)
                 .padding(.top, Space.s)
 
-                // Anything still in motion sits above the browsing shelves —
-                // "where's my watch" beats "here's another watch".
-                ShipmentTrackerSection()
+                // Anything still in motion sits above the page — "where's my
+                // watch" beats "here's another watch". The orders the feed is
+                // already asking about are left to it, so an awaiting-wire
+                // order is not stated twice on one screen.
+                ShipmentTrackerSection(handledByFeed: model?.orderIDsInFeed ?? [])
 
-                shelves
+                ForEach(Array(sections.enumerated()), id: \.element) { index, section in
+                    sectionView(section)
+                        .fadeUpEntrance(index: index)
+                }
             }
             .padding(.bottom, Space.xxl)
         }
@@ -56,6 +75,9 @@ struct HomeScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $pushed) { destination in
             BrowseDestinationView(destination: destination)
+        }
+        .navigationDestination(item: $openedBite) { route in
+            BiteScreen(slug: route.slug, preloaded: route.preloaded)
         }
         .environment(\.browsePush) { pushed = $0 }
         .onAppear { tutorial.startIfNeeded() }
@@ -69,7 +91,9 @@ struct HomeScreen: View {
             await model?.load()
         }
         .onChange(of: session.isAuthenticated) {
-            Task { await model?.loadAccountBits() }
+            // A feed is composed for one particular reader. Signing in or out
+            // does not update it — it replaces it.
+            Task { await model?.reloadForSessionChange() }
         }
         .onChange(of: services.signals.recentlyViewed) {
             Task { await model?.loadRecentlyViewed() }
@@ -143,9 +167,9 @@ struct HomeScreen: View {
     /// was "Bag, 2 item" for every count above one.
     private var bagLabel: String {
         switch bagCount {
-        case 0: "Bag"
-        case 1: "Bag, 1 item"
-        default: "Bag, \(bagCount) items"
+        case 0: "Cart"
+        case 1: "Cart, 1 item"
+        default: "Cart, \(bagCount) items"
         }
     }
 
@@ -177,113 +201,174 @@ struct HomeScreen: View {
         .accessibilityLabel("Search watches")
     }
 
-    @ViewBuilder
-    private var greeting: some View {
-        if session.isAuthenticated, let name = model?.greetingName {
-            let hour = Calendar.current.component(.hour, from: .now)
-            Text("\(HomeModel.greetingPrefix(hour: hour)), \(name).")
-                .font(CalibreType.serif(.regular, 20, relativeTo: .title3))
-                .foregroundStyle(Color.calibre.secondaryForeground)
-        }
+    // MARK: - The running order
+
+    /// What Home is made of today, top to bottom.
+    ///
+    /// Some shelves the web page carries are deliberately not here, because
+    /// this app does not hold what they are made of. "Price drops on watches
+    /// you've seen" needs the price a listing carried when the reader last
+    /// opened it, and "New since your last visit" needs the moment they last
+    /// left; the on-device signals file keeps listing ids and nothing else.
+    /// Drawing either from what is on hand would mean inventing the comparison,
+    /// so they are skipped rather than approximated.
+    private enum HomeSection: Hashable {
+        case feedLoading
+        case feedUnavailable
+        case nextStep
+        case watchesForYou
+        case bite
+        case recentlyViewed
+        case poll
+        case savedSearches
+        case brands
+        case popular
+        case freshArrivals
+        case collection
+        case endOfFeed
     }
 
-    // MARK: - Shelves
+    private var sections: [HomeSection] {
+        guard let model, model.phase != .loading else { return [.feedLoading] }
+
+        var sections: [HomeSection] = []
+        if model.nextStep != nil { sections.append(.nextStep) }
+        // A failed request is not an empty feed, and it does not take the rest
+        // of the page with it: the shelves below run their own queries and
+        // still draw.
+        if model.phase == .failed { sections.append(.feedUnavailable) }
+        if model.watchesForYou != nil { sections.append(.watchesForYou) }
+        if model.bite != nil { sections.append(.bite) }
+        if !model.recentlyViewed.isEmpty { sections.append(.recentlyViewed) }
+        if model.poll != nil { sections.append(.poll) }
+        if model.savedSearches != nil { sections.append(.savedSearches) }
+        if !model.topBrands.isEmpty { sections.append(.brands) }
+        if !model.popular.isEmpty { sections.append(.popular) }
+        if !model.fresh.isEmpty { sections.append(.freshArrivals) }
+        if model.collection != nil { sections.append(.collection) }
+        if model.endOfFeed != nil { sections.append(.endOfFeed) }
+        return sections
+    }
 
     @ViewBuilder
-    private var shelves: some View {
-        switch model?.phase ?? .loading {
-        case .loading:
+    private func sectionView(_ section: HomeSection) -> some View {
+        switch section {
+        case .feedLoading:
             ListingLaneSkeleton()
             ListingLaneSkeleton()
-        case .failed:
+
+        case .feedUnavailable:
+            // A request that failed is not a quiet day. It says so, and offers
+            // the only useful thing.
             EmptyState(
                 icon: "wifi.slash",
                 title: "The market is out of reach",
-                message: "We couldn't load the home feed. Check your connection and try again.",
+                message: "We couldn't load your home feed. Check your connection and try again.",
                 actionTitle: "Try again"
             ) {
                 Task { await model?.load() }
             }
-        case .loaded:
-            if let model {
-                loadedShelves(model)
-                browseAllButton
-                    .fadeUpEntrance(index: 6)
-            }
-        }
-    }
 
-    @ViewBuilder
-    private func loadedShelves(_ model: HomeModel) -> some View {
-        if !model.forYou.isEmpty {
-            ListingLaneRow(
-                title: "For you",
-                listings: model.forYou,
-                laneKey: "forYou",
-                zoomNamespace: zoomNamespace,
-                onViewAll: { pushed = .results(BrowseFilters(sort: .popular), title: "For You") }
-            )
-            .fadeUpEntrance(index: 0)
-        }
+        case .nextStep:
+            if let module = model?.nextStep { moduleView(module) }
+        case .watchesForYou:
+            if let module = model?.watchesForYou { moduleView(module) }
+        case .bite:
+            if let module = model?.bite { moduleView(module) }
+        case .poll:
+            if let module = model?.poll { moduleView(module) }
+        case .savedSearches:
+            if let module = model?.savedSearches { moduleView(module) }
+        case .collection:
+            if let module = model?.collection { moduleView(module) }
+        case .endOfFeed:
+            if let module = model?.endOfFeed { moduleView(module) }
 
-        if !model.topBrands.isEmpty {
-            brandRail(model.topBrands)
-                .fadeUpEntrance(index: 1)
-        }
-
-        if !model.fresh.isEmpty {
-            ListingLaneRow(
-                title: "Fresh arrivals",
-                listings: model.fresh,
-                laneKey: "fresh",
-                zoomNamespace: zoomNamespace,
-                onViewAll: { pushed = .results(BrowseFilters(sort: .createdDesc), title: "Fresh Arrivals") }
-            )
-            .fadeUpEntrance(index: 2)
-        }
-
-        if !model.popular.isEmpty {
-            ListingLaneRow(
-                title: "Popular right now",
-                listings: model.popular,
-                laneKey: "popular",
-                zoomNamespace: zoomNamespace,
-                onViewAll: { pushed = .results(BrowseFilters(sort: .mostViewed), title: "Popular Right Now") }
-            )
-            .fadeUpEntrance(index: 3)
-        }
-
-        journalTeaser
-            .fadeUpEntrance(index: 4)
-
-        if !model.recentlyViewed.isEmpty {
+        case .recentlyViewed:
             ListingLaneRow(
                 title: "Recently viewed",
-                listings: model.recentlyViewed,
+                listings: model?.recentlyViewed ?? [],
                 laneKey: "recent",
                 zoomNamespace: zoomNamespace,
                 onViewAll: { pushed = .recentlyViewed }
             )
-            .fadeUpEntrance(index: 5)
+
+        case .brands:
+            brandRail(model?.topBrands ?? [])
+
+        case .popular:
+            ListingLaneRow(
+                title: "Popular right now",
+                listings: model?.popular ?? [],
+                laneKey: "popular",
+                zoomNamespace: zoomNamespace,
+                onViewAll: {
+                    pushed = .results(BrowseFilters(sort: .popular), title: "Popular Right Now")
+                }
+            )
+
+        case .freshArrivals:
+            ListingLaneRow(
+                title: "Fresh arrivals",
+                listings: model?.fresh ?? [],
+                laneKey: "fresh",
+                zoomNamespace: zoomNamespace,
+                onViewAll: {
+                    pushed = .results(BrowseFilters(sort: .createdDesc), title: "Fresh Arrivals")
+                }
+            )
         }
     }
 
-    /// The catalog's front door, always reachable from the bottom of a
-    /// loaded home feed — not just from a shelf's "view all".
-    private var browseAllButton: some View {
-        Button {
-            Haptics.shared.play(.press)
-            pushed = .results(BrowseFilters(), title: "All Watches")
-        } label: {
-            Text("Browse all watches")
-                .frame(maxWidth: .infinity)
+    @ViewBuilder
+    private func moduleView(_ module: HomeFeedModule) -> some View {
+        switch module.body {
+        case .nextStep(let step):
+            FeedNextStepCard(module: module, step: step, onAction: open)
+        case .listings:
+            // The two listing-bearing modules are drawn differently on
+            // purpose: one is a shop window and one is an answer to a question
+            // the reader asked us to keep asking.
+            if module.type == "saved_search_matches" {
+                FeedSavedSearchModule(module: module, onAction: open)
+            } else {
+                FeedShopWindowModule(module: module, zoomNamespace: zoomNamespace, onAction: open)
+            }
+        case .bite(let slot, let bite):
+            FeedBiteModule(module: module, slot: slot, bite: bite) { opened in
+                openedBite = BiteRoute(slug: opened.id, preloaded: opened)
+            }
+        case .poll(let prompt):
+            FeedPollModule(module: module, prompt: prompt) { voted in
+                model?.applyVote(voted)
+            }
+        case .collection(let collection):
+            FeedCollectionModule(module: module, collection: collection, onAction: open)
+        case .endOfFeed(let state):
+            FeedEndModule(module: module, state: state, onAction: open) {
+                Task { await model?.load() }
+            }
+        case .unrecognized:
+            // Filtered out above; the switch has to stay exhaustive so a new
+            // case here is a compile error rather than a silent omission.
+            EmptyView()
         }
-        .buttonStyle(.calibre(.primary, fullWidth: true))
-        .padding(.horizontal, Space.margin)
-        .padding(.top, Space.s)
-        .accessibilityLabel("Browse all watches")
-        .accessibilityHint("Opens the full watch catalog")
     }
+
+    private func open(_ target: FeedActionTarget) {
+        switch target {
+        case .browse(let destination):
+            pushed = destination
+        case .route(let route):
+            services.router.push(route)
+        case .tab(let tab):
+            services.router.selectedTab = tab
+        case .bite(let slug):
+            openedBite = BiteRoute(slug: slug, preloaded: nil)
+        }
+    }
+
+    // MARK: - Shop by brand
 
     /// Two across only while a half-width card can still hold a brand name.
     /// At an accessibility size it cannot — "Jaeger-LeCoultre" in half a phone
@@ -355,37 +440,24 @@ struct HomeScreen: View {
         .padding(.horizontal, Space.margin)
     }
 
-    @ViewBuilder
-    private var journalTeaser: some View {
-        if let article = JournalStore.shared.latest {
-            VStack(alignment: .leading, spacing: Space.m) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("The Journal")
-                        .font(CalibreType.sectionTitle)
-                        .foregroundStyle(Color.calibre.foreground)
-                    Spacer()
-                    Button("All stories") {
-                        pushed = .journalIndex
-                    }
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.primary)
-                    .buttonStyle(PressableStyle())
-                }
-
-                JournalCard(article: article) {
-                    pushed = .journalArticle(article.id)
-                }
-            }
-            .padding(.horizontal, Space.margin)
-        }
-    }
-
     // MARK: - Actions
 
     private func openBag() {
         let cartPresented = $showCart
-        session.requireThenPresent("Sign in to see your bag") {
+        session.requireThenPresent("Sign in to see your cart") {
             cartPresented.wrappedValue = true
         }
     }
+}
+
+/// One Bite, pushed from Home.
+///
+/// Carries the copy the feed already had so today's Bite draws the moment it
+/// opens; a Bite named only by an action's route arrives with nothing and the
+/// reader fetches it.
+struct BiteRoute: Identifiable, Hashable {
+    let slug: String
+    let preloaded: Bite?
+
+    var id: String { slug }
 }

@@ -569,13 +569,13 @@ struct ReturnsPolicyScreen: View {
             PolicyDivider()
             PolicyRow(
                 "Calibre generates the label",
-                "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to the authentication centre and is verified before anything is refunded."
+                "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to the authentication centre and is re-authenticated before anything is refunded."
             )
         }
     }
 
     private var whatIsRefunded: some View {
-        PolicySection("What a verified return refunds") {
+        PolicySection("What an authenticated return refunds") {
             PolicyRow(
                 "The refund",
                 "The watch price and the sales tax are refunded in full, less a \(PolicyCopy.returnFee(config)) return fee with a \(PolicyCopy.returnMinimum(config)) minimum — calculated on the watch price alone — and less the original outbound shipping label. The card fee is not refunded. A buyer who paid by wire had no card fee, so an equivalent processing cost is withheld instead and the two outcomes stay comparable."
@@ -610,7 +610,7 @@ struct ReturnsPolicyScreen: View {
             )
             PolicyDivider()
             PolicyRow(
-                "If the returned watch fails verification",
+                "If the returned watch fails re-authentication",
                 "If the wrong watch comes back, or it is damaged, or it turns out to be counterfeit: there is no refund, the seller is paid as though the sale completed, the watch is held, and the buyer's Calibre contact takes the case over urgently."
             )
             PolicyDivider()
@@ -669,7 +669,7 @@ struct SellerPayoutsGuideScreen: View {
             PolicyDivider()
             PolicyRow(
                 "Your first payout",
-                "A new seller's first payout can take 7 to 14 days whichever rule applies. We tell you during onboarding, and the date you see already reflects it."
+                "A new seller's first payout can take about two weeks whichever rule applies. We tell you during onboarding, and the date you see already reflects it."
             )
         }
     }
@@ -708,7 +708,7 @@ struct DealerProgramGuideScreen: View {
     var body: some View {
         PolicyScaffold(
             title: "The dealer program",
-            intro: "A dealer on Calibre is a verified business. Verification is the whole test — there is no queue and nobody to persuade.",
+            intro: "A dealer on Calibre is a verified business. You apply with your business details, Stripe collects and verifies your EIN and entity type — Calibre never sees them, and your banking stays with Stripe too — and if it confirms a registered company your dealer status is granted straight away. If it cannot, someone here reads the application and decides. You hear either way.",
             navigationTitle: "Dealer program"
         ) {
             howToApply
@@ -719,16 +719,20 @@ struct DealerProgramGuideScreen: View {
         .onAppear { services?.config.warm() }
     }
 
+    /// How it is applied for, once.
+    ///
+    /// A "What we collect, and why" row stood under this one and told the same
+    /// EIN / Stripe / Calibre-never-sees-it story a second time, on the same
+    /// screen. The intro above tells it, and the application screen itself
+    /// tells it beside the field that asks — which is the one place a reader
+    /// is actually about to act on it. Saying it a third time here taught
+    /// nobody anything and made the screen longer than the decision it
+    /// supports.
     private var howToApply: some View {
         PolicySection("How to become one") {
             PolicyRow(
                 "Apply with your business details",
-                "You complete a second verification step with your EIN and your business details. When verification clears you are a dealer automatically — no approval queue, and no waiting on a person."
-            )
-            PolicyDivider()
-            PolicyRow(
-                "What we collect, and why",
-                "Your business legal name and EIN are verified so buyers know they are dealing with a real business. Your banking details stay with our payment processor and are never seen by Calibre."
+                "Your business legal name here, then your EIN on Stripe's own form. Dealer status follows Stripe's verdict, or a person here where Stripe cannot decide."
             )
         }
     }

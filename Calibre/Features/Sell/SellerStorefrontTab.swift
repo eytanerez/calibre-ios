@@ -182,7 +182,7 @@ struct SellerStorefrontTab: View {
                 badgeTone: .info,
                 headline: "Your business details are being verified",
                 lines: [
-                    "Nothing more is needed from you. There is no approval queue and no one to wait on — when verification clears, dealer status turns on by itself."
+                    "Nothing more is needed from you. Stripe's verdict decides what happens next: dealer status either turns on by itself or goes to someone here to review."
                 ]
             )
         case .verified:
@@ -208,7 +208,12 @@ struct SellerStorefrontTab: View {
                     .font(CalibreType.sectionTitle)
                     .foregroundStyle(Color.calibre.foreground)
 
-                Text("A dealer is a verified business. We collect your business legal name and EIN, verified through Stripe, so buyers know they are dealing with a real business. Calibre never sees your banking details — they stay with Stripe.")
+                // One line, and the button is the route. The EIN / Stripe /
+                // Calibre-never-sees-it story is told on the application
+                // screen, beside the field that asks for it — a card whose
+                // whole job is "apply?" does not need to retell it before the
+                // seller has decided.
+                Text("A dealer is a verified business.")
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -219,11 +224,6 @@ struct SellerStorefrontTab: View {
                     dealerBenefit("A line about yourself on your storefront")
                     dealerBenefit("Bulk import and volume tools — bulk import is dealer-only")
                 }
-
-                Text("There is no approval queue and no waiting on a person. When verification clears, you are a dealer automatically.")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
 
                 Button {
                     actions.openDealerApplication()

@@ -361,7 +361,7 @@ public struct OrderPayout: Codable, Sendable {
     /// When it should land in the seller's bank — about two business days
     /// after release, and longer for a first payout.
     public let expectedArrivalAt: Date?
-    /// A new seller's first payout may take 7–14 days regardless of timing.
+    /// A new seller's first payout may take about two weeks regardless of timing.
     public let firstPayoutHold: Bool?
     /// The backend's own plain-English status line.
     public let statusLabel: String?

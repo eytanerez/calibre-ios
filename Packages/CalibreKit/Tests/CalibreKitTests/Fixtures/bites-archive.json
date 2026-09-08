@@ -1,0 +1,125 @@
+{
+ "ok": true,
+ "data": {
+  "results": [
+   {
+    "id": "steel-sport-asks-slipped-again",
+    "title": "Steel sport asks slipped again in August, and the accepted prices did not",
+    "topic": "market",
+    "body": "Asking prices on the four steel sport references we track fell for a third straight month on Calibre, down a further two per cent against July. What did not move is what those watches actually sold for: accepted offers held within a percentage point of where they sat in June. The gap is the story. Sellers are still opening high and meeting the market on the way down, which lengthens the time a listing sits without changing the number it eventually closes at. Full sets continue to close that gap fastest.",
+    "author": "Priya Raman",
+    "date": "September 6, 2026",
+    "datePublishedISO": "2026-09-06",
+    "isArchive": false,
+    "archived": false,
+    "image": null,
+    "imageAlt": null,
+    "sources": [
+     {
+      "href": "https://buycalibre.com/market",
+      "label": "Calibre completed sales, June–August 2026"
+     },
+     {
+      "href": "https://buycalibre.com/buy",
+      "label": "Calibre listing archive"
+     }
+    ],
+    "article": {
+     "id": "what-changed-in-the-autumn-market",
+     "title": "What changed in the autumn market"
+    },
+    "next": {
+     "label": "See the market data",
+     "href": "/market"
+    },
+    "correctedOn": null,
+    "correctionNote": null
+   },
+   {
+    "id": "service-parts-outnumber-fakes",
+    "title": "Undisclosed service parts fail more watches at our bench than outright fakes do",
+    "topic": "authentication",
+    "body": "Across a year of authentication at the Calibre bench, the single most common reason a watch fails is a replaced part the seller did not know about — a service dial, an aftermarket bezel insert, a generic crown. Outright counterfeits are a small minority of failures and they are usually obvious within minutes. The honest mistakes take longer and hurt more, because somebody bought that watch in good faith and is now finding out what they own. This is why we photograph the movement every time.",
+    "author": "Calibre Desk",
+    "date": "August 31, 2026",
+    "datePublishedISO": "2026-08-31",
+    "isArchive": false,
+    "archived": false,
+    "image": "/journal/daytona-authentication.jpg",
+    "imageAlt": "A watch movement under a bench loupe, caseback removed.",
+    "sources": [
+     {
+      "href": "https://buycalibre.com/journal/a-year-of-authentication-failures",
+      "label": "A year of authentication failures"
+     }
+    ],
+    "article": {
+     "id": "a-year-of-authentication-failures",
+     "title": "A year of authentication failures"
+    },
+    "next": {
+     "label": "How authentication works",
+     "href": "/how-it-works"
+    },
+    "correctedOn": null,
+    "correctionNote": null
+   },
+   {
+    "id": "papers-prove-less-than-you-think",
+    "title": "A warranty card proves a sale happened. It does not prove this watch was in the box.",
+    "topic": "provenance",
+    "body": "Box and papers reliably raise what a watch sells for, and collectors treat them as proof of authenticity. They are not. A card records that a retailer sold a watch with that serial on that date; it says nothing about the case, dial and movement in front of you now, all of which can be changed afterwards. Papers are provenance, not authentication, and the two get confused most often on the watches where the difference is worth the most money.",
+    "author": "Calibre Desk",
+    "date": "August 24, 2026",
+    "datePublishedISO": "2026-08-24",
+    "isArchive": false,
+    "archived": false,
+    "image": null,
+    "imageAlt": null,
+    "sources": [
+     {
+      "href": "https://buycalibre.com/journal/box-and-papers-what-they-prove",
+      "label": "Box and Papers: What They Prove"
+     }
+    ],
+    "article": {
+     "id": "box-and-papers-what-they-prove",
+     "title": "Box and Papers: What They Prove, and What They Don't"
+    },
+    "next": null,
+    "correctedOn": null,
+    "correctionNote": null
+   },
+   {
+    "id": "tank-must-quiet-climb",
+    "title": "The Tank Must has climbed quietly for two years while nobody called it hot",
+    "topic": "collecting",
+    "body": "Cartier's Tank Must was the cheap way into a Tank when it returned in 2021. It is not any more. Asking prices on the large quartz model are up meaningfully against 2024 on our listings, and the movement has been steady rather than speculative — no spike, no correction, just a slow upward drift as the shape found an audience that was never shopping for a sports watch. Quiet climbs are the ones that survive.",
+    "author": "Priya Raman",
+    "date": "August 13, 2026",
+    "datePublishedISO": "2026-08-13",
+    "isArchive": false,
+    "archived": false,
+    "image": null,
+    "imageAlt": null,
+    "sources": [
+     {
+      "href": "https://buycalibre.com/brands/cartier",
+      "label": "Calibre listing archive, Cartier Tank"
+     }
+    ],
+    "article": {
+     "id": "cartier-tank-must-collecting",
+     "title": "The Tank Must Put Cartier Back on Collectors' Wrists"
+    },
+    "next": {
+     "label": "Browse Cartier",
+     "href": "/brands/cartier"
+    },
+    "correctedOn": null,
+    "correctionNote": null
+   }
+  ],
+  "next_before": "2026-08-13"
+ }
+}

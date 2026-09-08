@@ -2,13 +2,18 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// The Community tab, split into three quiet rooms: Today (the day's two
-/// questions — one about watches, one about Calibre), Market (reference-level
-/// pricing), and the Journal. Guests can read everything; voting funnels
-/// through the sign-in gate.
+/// The Community tab's quiet rooms: Today (the day's two questions — one about
+/// watches, one about Calibre), Market (reference-level pricing), and Bites
+/// (the desk's short, sourced notes). Guests can read everything; voting
+/// funnels through the sign-in gate.
+///
+/// Bites is the editorial room. The Journal room that used to stand here is
+/// gone: Bites replaced it as the thing the desk publishes, and a room holding
+/// a second, older editorial feed beside it is a choice a reader should not
+/// have to make.
 struct CommunityScreen: View {
     enum Section: Hashable {
-        case today, market, journal
+        case today, market, bites
     }
 
     @Environment(AppServices.self) private var services
@@ -27,7 +32,7 @@ struct CommunityScreen: View {
                 items: [
                     (value: .today, label: "Today"),
                     (value: .market, label: "Market"),
-                    (value: .journal, label: "Journal"),
+                    (value: .bites, label: "Bites"),
                 ]
             )
             .padding(.horizontal, Space.margin)
@@ -38,7 +43,7 @@ struct CommunityScreen: View {
                     switch section {
                     case .today: todaySection
                     case .market: marketSection
-                    case .journal: journalSection
+                    case .bites: bitesSection
                     }
                 }
                 .padding(.horizontal, Space.margin)
@@ -155,61 +160,18 @@ struct CommunityScreen: View {
         MarketBoardView()
     }
 
-    // MARK: - Journal
+    // MARK: - Bites
 
-    private var journalSection: some View {
-        VStack(alignment: .leading, spacing: Space.l) {
-            ForEach(JournalStore.shared.articles) { article in
-                NavigationLink(value: Route.journalArticle(article.id)) {
-                    JournalTeaserRow(article: article)
-                }
-                .buttonStyle(PressableStyle())
-            }
-        }
+    /// The whole record, newest first, drawn by the same list the Bites screen
+    /// draws — not a trimmed copy of it that would drift.
+    private var bitesSection: some View {
+        BitesArchiveList()
     }
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
             .foregroundStyle(Color.calibre.foreground)
-    }
-}
-
-/// One Journal article row: thumbnail, category, title, byline — the same
-/// quiet editorial voice as the Journal index itself.
-private struct JournalTeaserRow: View {
-    let article: JournalArticle
-
-    var body: some View {
-        HStack(alignment: .top, spacing: Space.m) {
-            Group {
-                if let image = JournalStore.image(named: article.image) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else {
-                    Color.calibre.border
-                }
-            }
-            .frame(width: 76, height: 76)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-
-            VStack(alignment: .leading, spacing: Space.xs) {
-                Text(article.category.uppercased())
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.primary)
-                Text(article.title)
-                    .font(CalibreType.serif(.semiBold, 17, relativeTo: .headline))
-                    .foregroundStyle(Color.calibre.foreground)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(3)
-                Text(article.readTime)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-            }
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

@@ -256,20 +256,14 @@ final class AuthFlowUITests: XCTestCase {
         while !saveButton.isEnabled, Date() < cardDeadline { usleep(200_000) }
         saveButton.tap()
 
-        // Not asserted here, and deliberately: `session.require` (the gate)
-        // queues the intent but the sheet it drives is presented from
-        // `RootView`, above `MainTabView`'s `.fullScreenCover` for the deck —
-        // and SwiftUI does not present a `.sheet` from an ancestor while a
-        // descendant's `.fullScreenCover` is on screen. Confirmed by hand on
-        // the simulator: tapping Save (or the "Saved" chip) inside the deck
-        // does nothing visible at all — no gate, no "Saved. Undo is
-        // available." pill, card just advances — and the queued sheet only
-        // appears once the deck itself closes. That is a real product bug
-        // (a guest gets zero feedback for the tap that supposedly needs
-        // sign-in), tracked in the review report rather than fixed here. What
-        // this test can honestly assert is the part that does work: the
-        // intent survives the deck closing and is replayed as a real sheet.
-        app.buttons["Close the deck"].tap()
+        // The gate appears right here, over the still-open deck. It used to
+        // need a "Close the deck" tap first: the sheet was presented from
+        // `RootView`, an ancestor of `MainTabView`'s deck `fullScreenCover`,
+        // and SwiftUI defers rather than presents in that arrangement — so a
+        // guest's Save produced no gate at all until the deck was closed. The
+        // deck carries its own gate host now (`ModalLayer`), and
+        // `testGuestSaveInsideDeckRaisesGateWithoutClosingTheDeck` is the
+        // dedicated regression test for it.
 
         // The gate is a sheet now, not a full-screen "Sign In" form — Apple
         // and Google lead, with the credential form folded behind
@@ -286,6 +280,64 @@ final class AuthFlowUITests: XCTestCase {
         snap("13-auth-gate-sheet")
         app.buttons["Not now"].tap()
         sleep(1)
+    }
+
+    /// A guest's Save **inside the deck** must raise the gate at the moment of
+    /// the tap, over the deck itself.
+    ///
+    /// Regression test. The gate sheet used to be presented only from
+    /// `RootView`, an ancestor of the deck's `fullScreenCover` — and SwiftUI
+    /// will not present a sheet from under a cover, it defers it. The tap
+    /// produced no gate at all; the queued sheet surfaced later, attached to
+    /// nothing, the moment the deck was closed.
+    ///
+    /// The structural half of this test is the second assertion: dismissing
+    /// the gate with "Not now" must leave the guest *on the deck*. Under the
+    /// old bug the gate could only be reached with the deck already closed,
+    /// so "Not now" landed on Home.
+    func testGuestSaveInsideDeckRaisesGateWithoutClosingTheDeck() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-hasSeenIntro", "YES",
+            "-guestChosen", "YES",
+            "-disableTutorials",
+            // A hermetic deck: `DeckFeed` deals fixture cards under this flag,
+            // so the test never depends on the development API being up.
+            "-uiTesting",
+            // Opens the deck cover directly — the arrangement under test.
+            "-selectTab", "discover",
+        ]
+        app.launch()
+
+        let saveButton = app.buttons["Save this watch"]
+        XCTAssertTrue(saveButton.waitForExistence(timeout: 10))
+        // The button exists as soon as the deck appears but stays disabled
+        // until a card has actually been dealt.
+        let dealt = Date().addingTimeInterval(8)
+        while !saveButton.isEnabled, Date() < dealt { usleep(200_000) }
+        XCTAssertTrue(saveButton.isEnabled, "The deck never dealt a card to save")
+
+        saveButton.tap()
+
+        // No "Close the deck" tap in between — this is the whole point.
+        let gate = app.staticTexts["Sign in to save watches you love"]
+        if !gate.waitForExistence(timeout: 6) {
+            print("GATE-DEBUG-HIERARCHY-BEGIN\n\(app.debugDescription)\nGATE-DEBUG-HIERARCHY-END")
+        }
+        XCTAssertTrue(
+            gate.exists,
+            "A guest's Save inside the deck must raise the sign-in gate immediately"
+        )
+        snap("21-guest-gate-inside-deck")
+
+        // Declining returns the guest to the deck they were browsing, which is
+        // only possible if the gate was presented over it.
+        app.buttons["Not now"].tap()
+        XCTAssertTrue(
+            app.buttons["Close the deck"].waitForExistence(timeout: 5),
+            "Dismissing the gate must leave the guest on the deck, not back on Home"
+        )
+        XCTAssertTrue(app.buttons["Save this watch"].exists)
     }
 
     // MARK: - Live sign-in / sign-out against the local backend

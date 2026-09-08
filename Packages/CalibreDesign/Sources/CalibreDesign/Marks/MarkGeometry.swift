@@ -94,19 +94,26 @@ extension Path {
     }
 }
 
-/// One answer to "should this mark hold still?", read from both the SwiftUI
-/// environment and UIKit — either saying yes is a yes.
+/// One answer to "should this mark hold still?", read from the SwiftUI
+/// environment, from UIKit, and from the surface itself — any one of them
+/// saying yes is a yes.
 ///
 /// A still mark renders its **end state**: stamped, sealed, filled. Never a
 /// blank frame, and never a frame from the middle of the animation. The point
 /// of the mark is what it says once it has arrived; the motion is only how it
 /// gets there, and that is the part being declined.
+///
+/// The third signal is `View.markStill(_:)`, which a surface uses to make a
+/// mark stand as a fact this session has already been shown rather than
+/// announce it again. It is ORed in rather than consulted instead, so a
+/// surface can never overrule somebody's Reduce Motion setting.
 struct MarkStillness: DynamicProperty {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.markStillnessRequested) private var requestedBySurface
 
     @MainActor
     var isRequested: Bool {
-        reduceMotion || UIAccessibility.isReduceMotionEnabled
+        reduceMotion || requestedBySurface || UIAccessibility.isReduceMotionEnabled
     }
 }
 

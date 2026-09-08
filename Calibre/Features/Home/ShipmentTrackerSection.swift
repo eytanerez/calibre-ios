@@ -12,6 +12,12 @@ struct ShipmentTrackerSection: View {
     @Environment(AuthSession.self) private var session
     @Environment(AppRouter.self) private var router
 
+    /// Orders the feed's own "your next step" module is already asking about.
+    /// The feed states the obligation with its deadline; a tracker card
+    /// underneath saying the same thing more quietly is the same sentence
+    /// twice.
+    var handledByFeed: Set<String> = []
+
     @State private var orders: [Order] = []
     @State private var loaded = false
     /// Order ids the buyer has dismissed, so a card they've waved off doesn't
@@ -24,7 +30,7 @@ struct ShipmentTrackerSection: View {
 
     private var tracked: [Order] {
         orders
-            .filter { $0.isWorthTracking && !dismissed.contains($0.id) }
+            .filter { $0.isWorthTracking && !dismissed.contains($0.id) && !handledByFeed.contains($0.id) }
             .sorted { ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast) }
     }
 

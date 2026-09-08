@@ -1,0 +1,504 @@
+{
+ "ok": true,
+ "data": {
+  "feed_version": 1,
+  "feed_day": "2026-09-07",
+  "generated_at": "2026-09-07T01:59:38Z",
+  "valid_until": "2026-09-07T02:04:38Z",
+  "audience": "guest",
+  "refreshed": false,
+  "degraded": false,
+  "omitted": [],
+  "modules": [
+   {
+    "type": "worth_a_look",
+    "title": "Worth a look",
+    "subtitle": null,
+    "action": {
+     "label": "View all inventory",
+     "route": "buy"
+    },
+    "source_records": [],
+    "cards": [
+     {
+      "id": "0d60d83d-2395-4190-80ce-ba660d149dd3",
+      "listing": {
+       "id": "0d60d83d-2395-4190-80ce-ba660d149dd3",
+       "listing_number": 2418,
+       "seller_id": "13a63933-cefb-4e3b-a012-52c9688ce858",
+       "seller": {
+        "id": "13a63933-cefb-4e3b-a012-52c9688ce858",
+        "username": "lt1209258291u0915",
+        "is_verified_dealer": false,
+        "reputation": {
+         "sales_count": 0,
+         "rating_count": 0,
+         "average_rating": null
+        }
+       },
+       "variant_id": null,
+       "title": "Jaeger-LeCoultre Reverso Classic Q3858522",
+       "brand": "Jaeger-LeCoultre",
+       "model": "Reverso Classic",
+       "reference_number": "Q3858522",
+       "description": null,
+       "price": "36939.56",
+       "currency": "USD",
+       "condition": {
+        "overall": "Worn",
+        "crystal": "Worn",
+        "bezel": "Worn",
+        "bracelet": "Worn",
+        "clasp": "Worn",
+        "caseback": "Worn",
+        "case": "Worn",
+        "dial": "Worn"
+       },
+       "box_papers": false,
+       "box_included": null,
+       "papers_included": null,
+       "booklets_included": null,
+       "production_year": 2021,
+       "returns": {
+        "accepted": false,
+        "window_hours": null
+       },
+       "country_of_origin": null,
+       "hts_code": null,
+       "status": "active",
+       "review_status": "active",
+       "seller_status": "live",
+       "review_events": [],
+       "images": [
+        "/demo-watches/tudor-black-bay-gmt-sg-01.jpeg"
+       ],
+       "estimated_shipping": null,
+       "metrics": {
+        "views": 1463,
+        "watchers": 0
+       },
+       "created_at": "2026-09-04T21:12:09.327444+00:00",
+       "updated_at": "2026-09-07T00:57:53.201104+00:00"
+      },
+      "reason": null,
+      "signal": null
+     },
+     {
+      "id": "d0bd795e-ed21-441a-b21e-371075058565",
+      "listing": {
+       "id": "d0bd795e-ed21-441a-b21e-371075058565",
+       "listing_number": 2103,
+       "seller_id": "597aedd9-dd1c-411a-a30d-7d7aa51a33cf",
+       "seller": {
+        "id": "597aedd9-dd1c-411a-a30d-7d7aa51a33cf",
+        "username": "lt1209258291u0600",
+        "is_verified_dealer": false,
+        "reputation": {
+         "sales_count": 0,
+         "rating_count": 0,
+         "average_rating": null
+        }
+       },
+       "variant_id": null,
+       "title": "IWC Portugieser Chronograph IW371617",
+       "brand": "IWC",
+       "model": "Portugieser Chronograph",
+       "reference_number": "IW371617",
+       "description": null,
+       "price": "34309.95",
+       "currency": "USD",
+       "condition": {
+        "overall": "New",
+        "crystal": "New",
+        "bezel": "New",
+        "bracelet": "New",
+        "clasp": "New",
+        "caseback": "New",
+        "case": "New",
+        "dial": "New"
+       },
+       "box_papers": true,
+       "box_included": null,
+       "papers_included": null,
+       "booklets_included": null,
+       "production_year": 2001,
+       "returns": {
+        "accepted": false,
+        "window_hours": null
+       },
+       "country_of_origin": null,
+       "hts_code": null,
+       "status": "active",
+       "review_status": "active",
+       "seller_status": "live",
+       "review_events": [],
+       "images": [
+        "/demo-watches/tudor-black-bay-gmt-sg-01.jpeg"
+       ],
+       "estimated_shipping": null,
+       "metrics": {
+        "views": 1476,
+        "watchers": 0
+       },
+       "created_at": "2026-09-04T21:12:09.327444+00:00",
+       "updated_at": "2026-09-07T00:57:53.201104+00:00"
+      },
+      "reason": null,
+      "signal": null
+     },
+     {
+      "id": "e99c873b-11bc-4150-b55c-40ee527bea36",
+      "listing": {
+       "id": "e99c873b-11bc-4150-b55c-40ee527bea36",
+       "listing_number": 2311,
+       "seller_id": "50b71312-f6fe-4785-b755-63c3c2af11e2",
+       "seller": {
+        "id": "50b71312-f6fe-4785-b755-63c3c2af11e2",
+        "username": "lt1209258291u0808",
+        "is_verified_dealer": false,
+        "reputation": {
+         "sales_count": 0,
+         "rating_count": 0,
+         "average_rating": null
+        }
+       },
+       "variant_id": null,
+       "title": "Tag Heuer Formula 1 CAZ1010.BA0842",
+       "brand": "Tag Heuer",
+       "model": "Formula 1",
+       "reference_number": "CAZ1010.BA0842",
+       "description": null,
+       "price": "26923.78",
+       "currency": "USD",
+       "condition": {
+        "overall": "Like New",
+        "crystal": "Like New",
+        "bezel": "Like New",
+        "bracelet": "Like New",
+        "clasp": "Like New",
+        "caseback": "Like New",
+        "case": "Like New",
+        "dial": "Like New"
+       },
+       "box_papers": true,
+       "box_included": null,
+       "papers_included": null,
+       "booklets_included": null,
+       "production_year": 2014,
+       "returns": {
+        "accepted": false,
+        "window_hours": null
+       },
+       "country_of_origin": null,
+       "hts_code": null,
+       "status": "active",
+       "review_status": "active",
+       "seller_status": "live",
+       "review_events": [],
+       "images": [
+        "/demo-watches/tudor-black-bay-gmt-sg-01.jpeg"
+       ],
+       "estimated_shipping": null,
+       "metrics": {
+        "views": 1428,
+        "watchers": 0
+       },
+       "created_at": "2026-09-04T21:12:09.327444+00:00",
+       "updated_at": "2026-09-07T00:57:53.201104+00:00"
+      },
+      "reason": null,
+      "signal": null
+     },
+     {
+      "id": "94cf7c3f-3377-4a10-9372-7b308337004d",
+      "listing": {
+       "id": "94cf7c3f-3377-4a10-9372-7b308337004d",
+       "listing_number": 2025,
+       "seller_id": "ad2483bb-7020-4a67-bf4e-586d7f9808a9",
+       "seller": {
+        "id": "ad2483bb-7020-4a67-bf4e-586d7f9808a9",
+        "username": "lt1209258291u0522",
+        "is_verified_dealer": false,
+        "reputation": {
+         "sales_count": 0,
+         "rating_count": 0,
+         "average_rating": null
+        }
+       },
+       "variant_id": null,
+       "title": "Patek Philippe Nautilus 5711 5711/1A-010",
+       "brand": "Patek Philippe",
+       "model": "Nautilus 5711",
+       "reference_number": "5711/1A-010",
+       "description": null,
+       "price": "3048.86",
+       "currency": "USD",
+       "condition": {
+        "overall": "Very Good",
+        "crystal": "Very Good",
+        "bezel": "Very Good",
+        "bracelet": "Very Good",
+        "clasp": "Very Good",
+        "caseback": "Very Good",
+        "case": "Very Good",
+        "dial": "Very Good"
+       },
+       "box_papers": true,
+       "box_included": null,
+       "papers_included": null,
+       "booklets_included": null,
+       "production_year": 2021,
+       "returns": {
+        "accepted": false,
+        "window_hours": null
+       },
+       "country_of_origin": null,
+       "hts_code": null,
+       "status": "active",
+       "review_status": "active",
+       "seller_status": "live",
+       "review_events": [],
+       "images": [
+        "/demo-watches/tudor-black-bay-gmt-sg-01.jpeg"
+       ],
+       "estimated_shipping": null,
+       "metrics": {
+        "views": 1410,
+        "watchers": 0
+       },
+       "created_at": "2026-09-04T21:12:09.327444+00:00",
+       "updated_at": "2026-09-07T00:57:53.201104+00:00"
+      },
+      "reason": null,
+      "signal": null
+     },
+     {
+      "id": "2db602ca-9da3-4c76-8b4a-311d1cf738ca",
+      "listing": {
+       "id": "2db602ca-9da3-4c76-8b4a-311d1cf738ca",
+       "listing_number": 2095,
+       "seller_id": "51958b4d-779c-4e27-92de-45dfe4987512",
+       "seller": {
+        "id": "51958b4d-779c-4e27-92de-45dfe4987512",
+        "username": "lt1209258291u0592",
+        "is_verified_dealer": false,
+        "reputation": {
+         "sales_count": 0,
+         "rating_count": 0,
+         "average_rating": null
+        }
+       },
+       "variant_id": null,
+       "title": "IWC Pilot's Mark XVIII IW327011",
+       "brand": "IWC",
+       "model": "Pilot's Mark XVIII",
+       "reference_number": "IW327011",
+       "description": null,
+       "price": "28092.23",
+       "currency": "USD",
+       "condition": {
+        "overall": "Like New",
+        "crystal": "Like New",
+        "bezel": "Like New",
+        "bracelet": "Like New",
+        "clasp": "Like New",
+        "caseback": "Like New",
+        "case": "Like New",
+        "dial": "Like New"
+       },
+       "box_papers": true,
+       "box_included": null,
+       "papers_included": null,
+       "booklets_included": null,
+       "production_year": 2014,
+       "returns": {
+        "accepted": false,
+        "window_hours": null
+       },
+       "country_of_origin": null,
+       "hts_code": null,
+       "status": "active",
+       "review_status": "active",
+       "seller_status": "live",
+       "review_events": [],
+       "images": [
+        "/demo-watches/tudor-black-bay-gmt-sg-01.jpeg"
+       ],
+       "estimated_shipping": null,
+       "metrics": {
+        "views": 1292,
+        "watchers": 0
+       },
+       "created_at": "2026-09-04T21:12:09.327444+00:00",
+       "updated_at": "2026-09-07T00:57:53.201104+00:00"
+      },
+      "reason": null,
+      "signal": null
+     },
+     {
+      "id": "c52baa3e-272b-4a5c-a161-ec1f9942d917",
+      "listing": {
+       "id": "c52baa3e-272b-4a5c-a161-ec1f9942d917",
+       "listing_number": 2355,
+       "seller_id": "daebd493-70ec-44dc-8c91-ef5746ba23c5",
+       "seller": {
+        "id": "daebd493-70ec-44dc-8c91-ef5746ba23c5",
+        "username": "lt1209258291u0852",
+        "is_verified_dealer": false,
+        "reputation": {
+         "sales_count": 0,
+         "rating_count": 0,
+         "average_rating": null
+        }
+       },
+       "variant_id": null,
+       "title": "IWC Pilot's Mark XVIII IW327011",
+       "brand": "IWC",
+       "model": "Pilot's Mark XVIII",
+       "reference_number": "IW327011",
+       "description": null,
+       "price": "19923.57",
+       "currency": "USD",
+       "condition": {
+        "overall": "Like New",
+        "crystal": "Like New",
+        "bezel": "Like New",
+        "bracelet": "Like New",
+        "clasp": "Like New",
+        "caseback": "Like New",
+        "case": "Like New",
+        "dial": "Like New"
+       },
+       "box_papers": false,
+       "box_included": null,
+       "papers_included": null,
+       "booklets_included": null,
+       "production_year": 2016,
+       "returns": {
+        "accepted": false,
+        "window_hours": null
+       },
+       "country_of_origin": null,
+       "hts_code": null,
+       "status": "active",
+       "review_status": "active",
+       "seller_status": "live",
+       "review_events": [],
+       "images": [
+        "/demo-watches/tudor-black-bay-gmt-sg-01.jpeg"
+       ],
+       "estimated_shipping": null,
+       "metrics": {
+        "views": 1391,
+        "watchers": 0
+       },
+       "created_at": "2026-09-04T21:12:09.327444+00:00",
+       "updated_at": "2026-09-07T00:57:53.201104+00:00"
+      },
+      "reason": null,
+      "signal": null
+     }
+    ]
+   },
+   {
+    "type": "todays_bite",
+    "title": "Today's bite",
+    "subtitle": null,
+    "action": {
+     "label": "Read it",
+     "route": "bites/steel-sport-asks-slipped-again"
+    },
+    "source_records": [
+     {
+      "type": "bite",
+      "id": "steel-sport-asks-slipped-again"
+     }
+    ],
+    "slot": "fresh",
+    "bite": {
+     "id": "steel-sport-asks-slipped-again",
+     "title": "Steel sport asks slipped again in August, and the accepted prices did not",
+     "topic": "market",
+     "body": "Asking prices on the four steel sport references we track fell for a third straight month on Calibre, down a further two per cent against July. What did not move is what those watches actually sold for: accepted offers held within a percentage point of where they sat in June. The gap is the story. Sellers are still opening high and meeting the market on the way down, which lengthens the time a listing sits without changing the number it eventually closes at. Full sets continue to close that gap fastest.",
+     "author": "Priya Raman",
+     "date": "September 6, 2026",
+     "datePublishedISO": "2026-09-06",
+     "isArchive": false,
+     "archived": false,
+     "image": null,
+     "imageAlt": null,
+     "sources": [
+      {
+       "href": "https://buycalibre.com/market",
+       "label": "Calibre completed sales, June–August 2026"
+      },
+      {
+       "href": "https://buycalibre.com/buy",
+       "label": "Calibre listing archive"
+      }
+     ],
+     "article": {
+      "id": "what-changed-in-the-autumn-market",
+      "title": "What changed in the autumn market"
+     },
+     "next": {
+      "label": "See the market data",
+      "href": "/market"
+     },
+     "correctedOn": null,
+     "correctionNote": null
+    }
+   },
+   {
+    "type": "todays_poll",
+    "title": "Today's question",
+    "subtitle": null,
+    "action": null,
+    "source_records": [
+     {
+      "type": "community_prompt",
+      "id": "8e8e941f-a173-5263-b8a5-42f212a21884"
+     }
+    ],
+    "poll": {
+     "id": "8e8e941f-a173-5263-b8a5-42f212a21884",
+     "question": "The most overexposed watch right now?",
+     "kind": "watch",
+     "options": [
+      {
+       "key": "royal-oak",
+       "label": "Royal Oak"
+      },
+      {
+       "key": "nautilus",
+       "label": "Nautilus"
+      },
+      {
+       "key": "daytona",
+       "label": "Daytona"
+      },
+      {
+       "key": "none-of-them-they-earned-it",
+       "label": "None of them — they earned it"
+      }
+     ],
+     "asked_on": "2026-09-07",
+     "closed": false,
+     "my_vote": null,
+     "results": null
+    }
+   },
+   {
+    "type": "end_of_feed",
+    "title": "Nothing here is based on you yet. Save a search or add a watch to your collection, and it starts to be.",
+    "subtitle": null,
+    "action": {
+     "label": "Browse all inventory",
+     "route": "buy"
+    },
+    "source_records": [],
+    "state": "impersonal"
+   }
+  ]
+ }
+}

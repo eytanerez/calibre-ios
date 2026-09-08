@@ -1,6 +1,30 @@
 import Foundation
 import Observation
 
+/// One field of a PATCH: set to something, or emptied.
+///
+/// A nil `VaultFieldEdit?` is the third case and the default one — the key is
+/// never written, and the server leaves the column alone.
+public enum VaultFieldEdit: Encodable, Equatable, Sendable {
+    case set(String)
+    case clear
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .set(let value): try container.encode(value)
+        case .clear: try container.encodeNil()
+        }
+    }
+
+    /// What a text box holds, as an edit: typing something sets it, clearing
+    /// it out empties it. Whitespace alone is an empty box.
+    public static func text(_ raw: String) -> VaultFieldEdit {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? .clear : .set(trimmed)
+    }
+}
+
 /// The member's Collection. Calibre purchases land here automatically on
 /// delivery; manual adds cover watches bought elsewhere.
 @MainActor
@@ -59,6 +83,42 @@ public final class VaultStore {
         )
         watches.insert(created, at: 0)
         return created
+    }
+
+    /// An edit to one watch the caller owns — `PATCH /vault/{id}`.
+    ///
+    /// The server reads an ABSENT key as "leave this alone" and a null as
+    /// "clear it", and Swift's synthesised encoding writes a nil optional as an
+    /// absent key. So a field that has to be cleared cannot be expressed as
+    /// `nil`, and `VaultFieldEdit` is what draws the two apart: `nil` means the
+    /// caller is not touching the field, `.clear` means they are emptying it.
+    ///
+    /// Identity fields are deliberately not here. Editing one makes the server
+    /// discard the stored estimate and re-match the catalog row, which is a
+    /// different act from renaming a watch or writing a note about it.
+    @discardableResult
+    public func update(
+        id: String,
+        photoUrl: VaultFieldEdit? = nil,
+        notes: VaultFieldEdit? = nil,
+        nickname: VaultFieldEdit? = nil
+    ) async throws -> VaultWatch {
+        struct Payload: Encodable {
+            let photoUrl: VaultFieldEdit?
+            let notes: VaultFieldEdit?
+            let nickname: VaultFieldEdit?
+        }
+        let updated: VaultWatch = try await client.send(
+            try Endpoint.json(
+                method: .patch,
+                path: "/vault/\(id)",
+                payload: Payload(photoUrl: photoUrl, notes: notes, nickname: nickname)
+            )
+        )
+        if let index = watches.firstIndex(where: { $0.id == id }) {
+            watches[index] = updated
+        }
+        return updated
     }
 
     /// The owner's own watches at this reference that are free to be listed —
@@ -169,10 +229,14 @@ public final class VaultStore {
         watches = []
     }
 
-    /// Sum of cached estimates, for the header tile.
-    public var estimatedTotal: Double {
-        watches.reduce(0) { total, watch in
-            total + (Double(watch.estimatedValue ?? "") ?? 0)
-        }
-    }
+    // There is deliberately no total here.
+    //
+    // What was here summed `estimatedValue` with a `?? 0`, which cannot tell a
+    // watch Calibre has refused to value from a watch it valued at nothing —
+    // so a collection of five unvalued watches added up to $0 and a collection
+    // where one refusal sat among four figures quietly under-reported itself.
+    // `VaultEstimate` is the whole answer and only its `ok` state carries a
+    // figure; no consumer surface prints one, and a column of numbers Calibre
+    // withholds in most cases would add up to the one figure on the screen
+    // that could not be true.
 }

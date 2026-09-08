@@ -217,7 +217,7 @@ struct SellerListingsTab: View {
         if listings.isEmpty {
             EmptyState(
                 icon: "camera",
-                title: "Your shop is ready for its first watch",
+                title: "Your storefront is ready for its first watch",
                 message: "Six photos, one calm flow — most sellers list in under five minutes.",
                 aside: "The camera already in your hand is the right one.",
                 actionTitle: "List a watch",

@@ -2,17 +2,26 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-// MARK: - The four rooms
+// MARK: - The rooms
 
 /// The seller's shop, in the order of their day: what am I selling, who wants
-/// it, how is it going, who am I.
+/// it, what have I sold and where is the money, how is it going, who am I. The
+/// order is the point and is not configurable.
+///
+/// Sales and payouts used to be filed under Performance, beside the shop's
+/// figures — so "when am I paid for this one" was a question answered on the
+/// analytics tab. Work a seller has to do and money they are owed are not
+/// analysis, and they have their own room now.
 ///
 /// The raw values are persisted (`@AppStorage`), so they are the wire format
-/// of a preference and must not be renamed to follow a title change.
+/// of a preference and must not be renamed to follow a title change: Insights
+/// keeps `performance` as its stored value, which is also what lands a seller
+/// who last used the old tab on the room that inherited its analysis.
 enum SellerTab: String, CaseIterable, Identifiable {
     case listings
     case offers
-    case performance
+    case orders
+    case insights = "performance"
     case storefront
 
     var id: String { rawValue }
@@ -21,7 +30,8 @@ enum SellerTab: String, CaseIterable, Identifiable {
         switch self {
         case .listings: "Listings"
         case .offers: "Offers"
-        case .performance: "Performance"
+        case .orders: "Orders & payouts"
+        case .insights: "Insights"
         case .storefront: "Storefront"
         }
     }
@@ -32,7 +42,8 @@ enum SellerTab: String, CaseIterable, Identifiable {
         switch self {
         case .listings: "Shows your inventory"
         case .offers: "Shows offers buyers have made"
-        case .performance: "Shows how your shop is doing"
+        case .orders: "Shows your sales and your money"
+        case .insights: "Shows how the shop is doing"
         case .storefront: "Shows how your storefront reads"
         }
     }
@@ -63,18 +74,17 @@ struct SellerTabBadge: Equatable {
 /// breakpoint is guessed and no label is shrunk to keep a layout that stopped
 /// working.
 ///
-/// **It used to be equal-width segments, and that is what clipped
-/// "Performance" to "Performa…".** `ViewThatFits` measures a candidate's
-/// *ideal* width and this one's was honest — the four labels do sum to less
-/// than the strip. What it cannot see is the division: `.frame(maxWidth:
-/// .infinity)` then hands every segment exactly a quarter of the strip
-/// regardless of what is in it, and a quarter of a 375pt phone's 335pt of
-/// content width is 83.75pt against the 89.8pt "Performance" measures at
-/// `bodyMedium`. So the candidate that fit as a whole truncated in its parts,
-/// and it truncated *only* when no tab carried a count badge — with badges the
-/// sum went over and the scrolling rail took over instead, which is why the
-/// clipped word came and went. `TabStripLayout` distributes the slack rather
-/// than the width, so a segment is never narrower than its own word.
+/// **It used to be equal-width segments, and that is what clipped the longest
+/// label mid-word.** `ViewThatFits` measures a candidate's *ideal* width and
+/// that measurement was honest — the labels did sum to less than the strip.
+/// What it cannot see is the division: `.frame(maxWidth: .infinity)` then hands
+/// every segment an equal share of the strip regardless of what is in it, and
+/// an equal share is narrower than the longest word. So the candidate that fit
+/// as a whole truncated in its parts, and it truncated *only* while no tab
+/// carried a count badge — with badges the sum went over and the scrolling rail
+/// took over instead, which is why the clipped word came and went.
+/// `TabStripLayout` distributes the slack rather than the width, so a segment
+/// is never narrower than its own word.
 struct TabStripLayout: Layout {
     /// The strip's natural width is the sum of what its segments need. Under
     /// an unspecified proposal — which is what `ViewThatFits` measures with —
@@ -112,18 +122,16 @@ struct TabStripLayout: Layout {
 
 // MARK: - The bar
 
-/// The shop's tab bar: four peers over a hairline, a copper rule that wipes in
-/// under the selected label, and a count on the ones with work waiting.
+/// The shop's tab bar: peers over a hairline, a copper rule that wipes in under
+/// the selected label, and a count on the ones with work waiting.
 ///
-/// The four labels are set one rung down the scale from `SegmentedTabs`'
-/// `bodyMedium`, at `CalibreType.label`. That is what buys the fit rather than
-/// an abbreviation: measured in Geist Medium, the four words come to 225.0pt at
-/// 13pt against 259.6pt at 15pt, and a narrow phone's strip is 335pt wide with
-/// two count badges taking 63.8pt of it. At 15pt that combination overflows and
-/// the strip has to scroll; at 13pt it fits with room to spare. `SegmentedTabs`
-/// carries three short labels and no badges, so it keeps the larger size — the
-/// shared treatment is the full-strength labels and the copper rule, not a
-/// point size.
+/// The labels are set one rung down the scale from `SegmentedTabs`'
+/// `bodyMedium`, at `CalibreType.label`. That is what buys width back rather
+/// than an abbreviation — no label here is ever shortened, and where the row
+/// still will not fit a phone it scrolls instead. `SegmentedTabs` carries a few
+/// short labels and no badges, so it keeps the larger size; the shared
+/// treatment is the full-strength labels and the copper rule, not a point
+/// size.
 ///
 /// It draws exactly what `SegmentedTabs` draws — every label at full strength,
 /// one weight, and the rule sized to the word rather than to the segment — but
@@ -257,7 +265,7 @@ struct SellerShopActions {
     var openStorefrontPage: () -> Void
     var openDealerApplication: () -> Void
     /// Cross-tab jump: switch to Listings with one status already filtered,
-    /// so a figure on Performance leads to the rows behind it.
+    /// so a figure on Insights leads to the rows behind it.
     var showListings: (SellerListingFilter) -> Void
     var reload: () async -> Void
 }
@@ -300,7 +308,7 @@ extension View {
 /// the same margins.
 struct SellerTabStripHarness: View {
     @State private var plain: SellerTab = .listings
-    @State private var badged: SellerTab = .performance
+    @State private var badged: SellerTab = .insights
 
     private static let widths: [(name: String, content: CGFloat)] = [
         ("375pt phone", 335),

@@ -66,7 +66,7 @@ struct CartSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Your bag", detents: [.large]) {
+        SheetScaffold(title: "Your Cart", detents: [.large]) {
             List {
                 if isLoading, bagItems.isEmpty, services.commerce.watchlist.isEmpty {
                     loadingRows.cartRow(bottom: Space.xxl)
@@ -101,16 +101,16 @@ struct CartSheet: View {
             if count > 0 { tutorial.startIfNeeded() }
         }
         .alert(
-            "Take this watch out of your bag?",
+            "Take this watch out of your cart?",
             isPresented: removalDialogPresented,
             presenting: removalCandidate
         ) { item in
-            Button("Remove from bag", role: .destructive) {
+            Button("Remove from cart", role: .destructive) {
                 Task { await removeBagItem(item) }
             }
             Button("Keep it", role: .cancel) {}
         } message: { item in
-            Text("\(item.listing?.title ?? "This watch") leaves your bag. You can always add it again.")
+            Text("\(item.listing?.title ?? "This watch") leaves your cart. You can always add it again.")
         }
     }
 
@@ -121,7 +121,7 @@ struct CartSheet: View {
         if bagItems.isEmpty {
             EmptyState(
                 icon: "bag",
-                title: "Your bag is empty",
+                title: "Your cart is empty",
                 message: "When a watch speaks to you, add it here. Buy one, or several together — it's one payment either way.",
                 actionTitle: "Browse the market"
             ) {
@@ -476,7 +476,7 @@ struct CartSheet: View {
                 Button {
                     Task { await moveToBag(item) }
                 } label: {
-                    Label("Move to bag", systemImage: "bag")
+                    Label("Add to cart", systemImage: "bag")
                 }
             }
             Button(role: .destructive) {
@@ -494,7 +494,7 @@ struct CartSheet: View {
         .accessibilityLabel("Options for \(item.listing?.title ?? "saved watch")")
     }
 
-    /// Native swipe actions mirror the overflow menu: Move to bag when the
+    /// Native swipe actions mirror the overflow menu: Add to cart when the
     /// watch is still available, Remove always — same underlying calls, no
     /// duplicated logic.
     @ViewBuilder
@@ -503,7 +503,7 @@ struct CartSheet: View {
             Button {
                 Task { await moveToBag(item) }
             } label: {
-                Label("Move to bag", systemImage: "bag")
+                Label("Add to cart", systemImage: "bag")
             }
             .tint(Color.calibre.primary)
         }
@@ -575,7 +575,7 @@ struct CartSheet: View {
         do {
             try await services.commerce.removeCartItem(id: item.id)
             deselected.remove(item.listingId)
-            toasts.show(title: "Removed from your bag")
+            toasts.show(title: "Removed from your cart")
         } catch {
             Haptics.shared.play(.error)
             toasts.show(title: "Couldn't remove it", message: error.browseMessage, tone: .error)
@@ -613,10 +613,10 @@ struct CartSheet: View {
                 try await commerce.toggleWatch(listingID: item.listingId)
             }
             Haptics.shared.play(.save)
-            toasts.show(title: "In your bag", message: "Ready when you are.", tone: .success)
+            toasts.show(title: "In your cart", message: "Ready when you are.", tone: .success)
         } catch {
             Haptics.shared.play(.error)
-            toasts.show(title: "Couldn't move it to your bag", message: error.browseMessage, tone: .error)
+            toasts.show(title: "Couldn't move it to your cart", message: error.browseMessage, tone: .error)
         }
     }
 }

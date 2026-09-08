@@ -4,8 +4,9 @@ import SwiftUI
 
 /// The dealer application. Two fields here — the legal name the business is
 /// registered under and its country — then the embedded verification step,
-/// which collects the EIN on Stripe's own form. Nothing is reviewed by a
-/// person: when verification clears, dealer status turns on by itself.
+/// which collects the EIN on Stripe's own form. If Stripe confirms a
+/// registered company, dealer status is granted straight away; if it cannot,
+/// a person at Calibre reviews the application and decides.
 ///
 /// This is the one seller-facing screen that names Stripe, because naming the
 /// verifier is the honest way to say where the business details go and why
@@ -99,7 +100,7 @@ struct DealerApplicationScreen: View {
 
     private var explainer: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            Text("A dealer is a verified business. Verifying takes two pieces of information and no waiting on a person.")
+            Text("A dealer is a verified business. Verifying takes two pieces of information, and Stripe's verdict decides what happens next.")
                 .font(CalibreType.body)
                 .foregroundStyle(Color.calibre.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -119,7 +120,7 @@ struct DealerApplicationScreen: View {
 
             CalloutBand(
                 icon: "checkmark.seal",
-                message: "There is no approval queue. When verification clears, you are a dealer automatically."
+                message: "If Stripe confirms a registered company, dealer status is granted straight away; if it cannot, someone at Calibre reviews the application and decides."
             )
 
             if let benefits = benefitsLine {
@@ -309,7 +310,7 @@ struct DealerApplicationScreen: View {
         dismiss()
         toasts.show(
             title: "Details submitted",
-            message: "We'll update your shop the moment verification clears.",
+            message: "We'll update your storefront the moment verification clears.",
             tone: .success
         )
     }

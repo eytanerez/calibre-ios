@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": {
+  "slot": "fresh",
+  "bite": {
+   "id": "steel-sport-asks-slipped-again",
+   "title": "Steel sport asks slipped again in August, and the accepted prices did not",
+   "topic": "market",
+   "body": "Asking prices on the four steel sport references we track fell for a third straight month on Calibre, down a further two per cent against July. What did not move is what those watches actually sold for: accepted offers held within a percentage point of where they sat in June. The gap is the story. Sellers are still opening high and meeting the market on the way down, which lengthens the time a listing sits without changing the number it eventually closes at. Full sets continue to close that gap fastest.",
+   "author": "Priya Raman",
+   "date": "September 6, 2026",
+   "datePublishedISO": "2026-09-06",
+   "isArchive": false,
+   "archived": false,
+   "image": null,
+   "imageAlt": null,
+   "sources": [
+    {
+     "href": "https://buycalibre.com/market",
+     "label": "Calibre completed sales, June–August 2026"
+    },
+    {
+     "href": "https://buycalibre.com/buy",
+     "label": "Calibre listing archive"
+    }
+   ],
+   "article": {
+    "id": "what-changed-in-the-autumn-market",
+    "title": "What changed in the autumn market"
+   },
+   "next": {
+    "label": "See the market data",
+    "href": "/market"
+   },
+   "correctedOn": null,
+   "correctionNote": null
+  }
+ }
+}

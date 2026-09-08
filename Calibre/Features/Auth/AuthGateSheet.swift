@@ -161,7 +161,12 @@ struct AuthGateSheet: View {
         }, onError: { errorMessage = $0 })
 
         if ok {
+            Observability.log(.info, "sign-in succeeded")
             Haptics.shared.play(.success)
+        } else {
+            // The reason, not the credentials — `errorMessage` is the
+            // backend's own sentence and never carries what was typed.
+            Observability.log(.warning, "sign-in failed: \(errorMessage ?? "canceled")")
         }
     }
 }

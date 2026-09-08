@@ -2,7 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Without this key registerForRemoteNotifications fails outright with
+	     "no valid aps-environment entitlement", so the app never gets a token.
+	     "development" is what a locally signed build needs; automatic signing
+	     rewrites it to "production" for a TestFlight or App Store archive. -->
 	<key>aps-environment</key>
 	<string>development</string>
+
+	<!-- Sign in with Apple. Guideline 4.8 requires a privacy-preserving login
+	     wherever a third-party one is offered, and AuthGateSheet offers Google,
+	     so this is not optional for App Store review.
+
+	     AppleSignInButton has always been complete; it failed at runtime with
+	     ASAuthorizationError.unknown purely because this entitlement was absent
+	     — the file used to say "no paid team", which stopped being true when
+	     the app moved onto team KVXR84LZH3. The matching capability is enabled
+	     on the com.buycalibre.calibre App ID as a primary App ID. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

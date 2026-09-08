@@ -125,7 +125,7 @@ struct OpenBuyerRequestsScreen: View {
         EmptyState(
             icon: "sparkle.magnifyingglass",
             title: "Verified dealers can browse buyer requests",
-            message: "A buyer request carries a budget and a name, so it stays with verified businesses. Completing dealer verification with your EIN and business details makes you one automatically — there is no approval queue.",
+            message: "A buyer request carries a budget and a name, so it stays with verified businesses. Applying takes a minute, and the application screen says what it asks for.",
             actionTitle: "Apply to become a dealer",
             action: { showDealerApplication = true }
         )

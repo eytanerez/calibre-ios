@@ -76,8 +76,8 @@ struct YouScreen: View {
                 }
 
                 linkedSection(title: "Explore") {
-                    NavigationLink { JournalScreen() } label: {
-                        rowLabel(icon: "text.book.closed", label: "The Journal")
+                    NavigationLink { BitesArchiveScreen() } label: {
+                        rowLabel(icon: "text.book.closed", label: "Bites")
                     }.buttonStyle(PressableStyle())
                     divider
                     NavigationLink { MarketplaceGuideScreen() } label: {
@@ -169,7 +169,7 @@ struct YouScreen: View {
                     Text("You're browsing as a guest")
                         .font(CalibreType.sectionTitle)
                         .foregroundStyle(Color.calibre.foreground)
-                    Text("Sign in to save watches, make offers, and sell from your collection.")
+                    Text("Sign in to save watches, make offers, and sell from your Vault.")
                         .font(CalibreType.body)
                         .foregroundStyle(Color.calibre.mutedForeground)
                 }

@@ -51,11 +51,12 @@ struct SupportChatScreen: View {
 
     /// The named person on the Calibre side, once one is assigned. Everything
     /// below falls back to the generic wording while this is nil.
-    private var contactName: String? {
-        guard let name = conversation?.assignedContact?.displayName else { return nil }
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
+    ///
+    /// Off the payload every time, and nowhere else. There is no list of names
+    /// in this app to go stale when the people change — adding, renaming or
+    /// reassigning a contact is the server's to do, and this screen finds out
+    /// the same way the customer does.
+    private var contactName: String? { conversation?.assignedContact?.name }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -70,11 +71,14 @@ struct SupportChatScreen: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(contactName.map { "You're talking with \($0)" } ?? "Message Calibre")
+        VStack(alignment: .leading, spacing: Space.s) {
+            Text(conversation?.title() ?? "New conversation")
                 .font(CalibreType.bodySemiBold)
                 .foregroundStyle(Color.calibre.foreground)
                 .fixedSize(horizontal: false, vertical: true)
+
+            contactCard
+
             Text(statusLine)
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
@@ -89,6 +93,28 @@ struct SupportChatScreen: View {
         .background(Color.calibre.card)
         .overlay(alignment: .bottom) { Rectangle().fill(Color.calibre.border).frame(height: 1) }
         .accessibilityElement(children: .combine)
+    }
+
+    /// Who is answering, named rather than left to be inferred.
+    ///
+    /// An initials circle and nothing else — never a photograph. Nobody has
+    /// uploaded one and this is not the surface to start asking. The letters
+    /// are derived from the assigned contact's own name at render, so a
+    /// renamed or reassigned contact needs nothing changed here.
+    @ViewBuilder private var contactCard: some View {
+        if let contact = conversation?.assignedContact, let name = contact.name {
+            HStack(spacing: Space.s) {
+                AvatarInitial(initials: contact.initials, size: .s)
+                VStack(alignment: .leading, spacing: 0) {
+                    Eyebrow("Your contact at Calibre")
+                    Text(name)
+                        .font(CalibreType.bodySemiBold)
+                        .foregroundStyle(Color.calibre.foreground)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Your contact at Calibre, \(name)")
+        }
     }
 
     /// Where the thread stands right now. Every conversation state is named
@@ -125,7 +151,7 @@ struct SupportChatScreen: View {
                 ScrollView {
                     LazyVStack(spacing: Space.m) {
                         ForEach(conversation.messages) { message in
-                            SupportBubble(message: message) { url in
+                            SupportBubble(message: message, contactName: contactName) { url in
                                 router.handle(url: url)
                             }
                             .id(message.id)
@@ -481,6 +507,9 @@ struct SupportChatScreen: View {
 
 private struct SupportBubble: View {
     let message: SupportMessage
+    /// Who the Calibre side of this thread is, when a contact is assigned.
+    /// Nil falls back to the house name rather than to a name of its own.
+    let contactName: String?
     /// Where a chip goes. The reference serialises to `calibre://order/<id>`,
     /// which `AppRouter.handle(url:)` already understands, so a chip carries no
     /// route table of its own.
@@ -493,7 +522,9 @@ private struct SupportBubble: View {
             if isCustomer { Spacer(minLength: 40) }
             VStack(alignment: isCustomer ? .trailing : .leading, spacing: 3) {
                 if !isCustomer {
-                    Text("Calibre").font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                    Text(contactName ?? "Calibre")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
                 }
                 if !message.body.isEmpty {
                     Text(attributedBody)

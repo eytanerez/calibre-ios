@@ -138,7 +138,7 @@ struct ListingDetailScreen: View {
                     CalloutBand(
                         icon: "checkmark.shield",
                         title: "Authenticated by Calibre",
-                        message: "Inspected at our authentication center before it ships."
+                        message: "Inspected at our authentication centre before it ships."
                     ) {
                         showAuthenticationInfo = true
                     }
@@ -289,7 +289,7 @@ struct ListingDetailScreen: View {
                 Button {
                     addToBag()
                 } label: {
-                    Label("Add to Bag", systemImage: "bag")
+                    Label("Add to Cart", systemImage: "bag")
                 }
                 .buttonStyle(.calibre(.ghost, fullWidth: true))
                 .unavailable(!canTransact(listing))
@@ -305,7 +305,7 @@ struct ListingDetailScreen: View {
     /// nothing is greyed.
     private func actionsHint(_ listing: Listing) -> String? {
         if isOwnListing(listing) {
-            return "This is your own listing, so you can't buy, bag or save it."
+            return "This is your own listing, so you can't buy, add to cart or save it."
         }
         switch listing.status {
         case .active: return nil
@@ -386,7 +386,7 @@ struct ListingDetailScreen: View {
                         Haptics.shared.play(.press)
                         messageSeller(listing)
                     } label: {
-                        Label("Message Seller", systemImage: "bubble.left.and.bubble.right")
+                        Label("Contact seller", systemImage: "bubble.left.and.bubble.right")
                     }
                     .buttonStyle(.calibre(.ghost, fullWidth: true))
                 }
@@ -462,7 +462,7 @@ struct ListingDetailScreen: View {
             CalloutBand(
                 icon: "person.crop.circle.badge.checkmark",
                 title: "This is your listing",
-                message: "You can't buy, bag, or save your own watch. Manage it from Sell."
+                message: "You can't buy, add to cart, or save your own watch. Manage it from Sell."
             )
         }
     }
@@ -609,7 +609,7 @@ struct ListingDetailScreen: View {
         let sellerID = listing.sellerId
         let listingTitle = listing.title
         let listingReference = listing.referenceNumber
-        session.require("Sign in to message the seller") {
+        session.require("Sign in to contact the seller") {
             do {
                 let thread = try await messaging.openThread(
                     listingID: listingID,
@@ -692,33 +692,33 @@ struct ListingDetailScreen: View {
         let toasts = toasts
         let listingID = listingID
         let analyticsListing = analyticsListing
-        session.require("Sign in to add this watch to your bag") {
+        session.require("Sign in to add this watch to your cart") {
             do {
                 let cart = try await commerce.loadCart()
                 if cart.contains(where: { $0.listingId == listingID }) {
-                    toasts.show(title: "Already in your bag")
+                    toasts.show(title: "Already in your cart")
                     return
                 }
                 try await commerce.addToCart(listingID: listingID)
                 Analytics.watchAddedToCart(analyticsListing)
                 Haptics.shared.play(.save)
                 toasts.show(
-                    title: "In your bag",
+                    title: "In your cart",
                     message: cart.isEmpty
                         ? "Ready when you are."
-                        : "That's \(cart.count + 1) in your bag — buy them together or one at a time.",
+                        : "That's \(cart.count + 1) in your cart — buy them together or one at a time.",
                     tone: .success
                 )
             } catch {
                 Haptics.shared.play(.error)
-                if let refusal = Self.refusalToast(error, verb: "bag") {
+                if let refusal = Self.refusalToast(error, verb: "add to cart") {
                     toasts.show(title: refusal.title, message: refusal.message, tone: .error)
                     // The server has just told us something this screen's copy
                     // of the listing does not know. Re-read it so the buttons
                     // agree with the answer.
                     await load()
                 } else {
-                    toasts.show(title: "Couldn't add to your bag", message: error.browseMessage, tone: .error)
+                    toasts.show(title: "Couldn't add to your cart", message: error.browseMessage, tone: .error)
                 }
             }
         }

@@ -3,8 +3,8 @@ import CalibreKit
 import SwiftUI
 
 /// The Sell tab root. Guests get the warm explainer with a sign-in gate;
-/// signed-in members see the onboarding gate until Stripe Connect payouts
-/// are ready (`can_list`), then the seller dashboard.
+/// signed-in members see the seller dashboard, or the onboarding gate where
+/// there is nothing yet for the onboarding to be covering.
 struct SellScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -28,7 +28,6 @@ struct SellScreen: View {
                     .environment(sell)
             } else {
                 Color.calibre.background
-                    .onAppear { sell = SellSession(services: services) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -36,6 +35,14 @@ struct SellScreen: View {
         .navigationTitle("Sell")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(session.isAuthenticated)-\(retryToken)") {
+            // The session is built here rather than in an `onAppear` on the
+            // placeholder because `reload()` reads through it: the setup gate
+            // below asks the seller-ops store whether this seller has sales,
+            // and a session that had not been created yet would have made that
+            // question unanswerable exactly when it is being asked.
+            if sell == nil {
+                sell = SellSession(services: services)
+            }
             await reload()
         }
     }
@@ -50,7 +57,7 @@ struct SellScreen: View {
             case .gate:
                 SellGateScreen(mode: .onboarding(onReadinessChange: { readiness in
                     withAnimation(Motion.easeMedium) {
-                        phase = readiness.canAccessDashboard ? .dashboard : .gate
+                        if readiness.canAccessDashboard { phase = .dashboard }
                     }
                 }))
             case .dashboard:
@@ -58,7 +65,7 @@ struct SellScreen: View {
             case .failed(let message):
                 EmptyState(
                     icon: "wifi.slash",
-                    title: "We couldn't reach your shop",
+                    title: "We couldn't reach your storefront",
                     message: message,
                     actionTitle: "Try again",
                     action: {
@@ -77,8 +84,18 @@ struct SellScreen: View {
         }
         do {
             let readiness = try await services.seller.loadReadiness()
+            // Written out rather than as `canAccessDashboard || await …` so the
+            // probe below is only made when the answer is still open — a
+            // seller who can already reach their shop is not made to wait on
+            // two more requests to be shown it.
+            let openDashboard: Bool
+            if readiness.canAccessDashboard {
+                openDashboard = true
+            } else {
+                openDashboard = await hasWorkToProtect()
+            }
             withAnimation(Motion.easeMedium) {
-                phase = readiness.canAccessDashboard ? .dashboard : .gate
+                phase = openDashboard ? .dashboard : .gate
             }
         } catch {
             // A transient readiness hiccup shouldn't blank an already-showing
@@ -87,6 +104,33 @@ struct SellScreen: View {
                 phase = .failed(sellErrorMessage(error))
             }
         }
+    }
+
+    /// Whether there is a shop underneath the onboarding worth keeping on
+    /// screen.
+    ///
+    /// Setup-blocked and empty are different facts, and only together do they
+    /// make the onboarding the whole page. A seller with nothing yet has
+    /// nothing it could be covering. A seller who already has inventory or a
+    /// sale — setup went stale, Stripe reopened a requirement — must still
+    /// reach their listings, offers, sales and storefront; replacing all of it
+    /// with "Start selling on Calibre" is what reads as having lost the
+    /// account. Listing stays blocked either way; that is the readiness
+    /// payload's call, not this one's, and the dashboard says so at the top.
+    ///
+    /// A read that failed is "unknown", not "nothing exists" — so only a pair
+    /// of successful, empty reads collapses the tab. Anything else falls
+    /// through to the dashboard, which is the safe default this screen had
+    /// before the gate was narrowed.
+    private func hasWorkToProtect() async -> Bool {
+        guard let sell else { return true }
+        async let listingsRead = try? services.seller.loadMyListings()
+        // The same page size the dashboard loads, so this read is the one it
+        // would have made rather than a smaller one that replaces its list.
+        async let salesRead = try? sell.ops.loadSales(pageSize: 30)
+        let (listings, sales) = await (listingsRead, salesRead)
+        guard let listings, let sales else { return true }
+        return !listings.isEmpty || !sales.results.isEmpty
     }
 
     /// The gate's shape, shimmering while readiness loads.

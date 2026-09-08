@@ -22,8 +22,15 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     public let photoUrl: String?
     public let acquiredPrice: String?
     public let acquiredDate: String?
+    /// Narrowed by the server rather than renamed: it now carries a figure in
+    /// the `ok` state and null in every other. Nothing consumer-facing prints
+    /// it — see `VaultEstimate` for the whole answer and for why.
     public let estimatedValue: String?
     public let estimatedAt: String?
+    /// Absent on a payload served by a deployment that predates the estimate
+    /// block, and absent has to stay absent: inventing a state for it would
+    /// put a sentence about evidence under a watch nobody looked up.
+    public let estimate: VaultEstimate?
     public let createdAt: String?
 
     public var displayTitle: String {
@@ -35,6 +42,135 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     /// catalog. The two read differently and are set differently: a nickname
     /// is written in the hand, a brand and model never are.
     public var isNicknamed: Bool { nickname != nil }
+
+    /// The stamp's key on the vault detail, and the fact it stands for. Nil
+    /// where Calibre does not vouch for this watch, and nil is the whole gate.
+    ///
+    /// Read `authenticated` literally. It is the server's own answer to "does
+    /// Calibre stand behind this watch" (`_is_authenticated` in
+    /// `app/api/views/vault.py`), computed there precisely so the claim cannot
+    /// come to mean three slightly different things on three platforms — and
+    /// re-deriving it here from `source` would be that second copy. It is
+    /// **not** a passport code and it is not a position in any sequence: a
+    /// mark keyed to a step of a journey stamps whatever is standing on that
+    /// step, including a watch that got there by failing.
+    ///
+    /// It is also not `Order.authentication.verdict`, which is what the order
+    /// screen's stamp reads. This payload carries no verdict string at all —
+    /// `GET /vault/{id}` has no authentication block — so the two surfaces
+    /// gate on the two different facts their two payloads actually carry,
+    /// rather than one of them inferring the other's. The web's vault detail
+    /// gates its stamp on this same flag.
+    ///
+    /// The key names the event and not the screen, so a watch already stamped
+    /// in this session stands still when the screen is opened again.
+    public var authenticationMarkKey: String? {
+        guard authenticated else { return nil }
+        return "vault-authenticated:\(id)"
+    }
+}
+
+/// What Calibre will say about a watch's worth, or why it will not.
+///
+/// The server keeps the states apart because they are different sentences to
+/// whoever reads them, and only `ok` carries a figure — so an absence can
+/// never be read as a figure of zero, and a zero under `ok` is a real one.
+///
+/// `state` stays a `String` on the wire side. A state this build has never
+/// heard of has to arrive as itself rather than throwing the whole collection
+/// away or being folded into a neighbouring state that says something else.
+public struct VaultEstimate: Decodable, Equatable, Sendable {
+    public let state: String
+    /// Carried only by `ok`. No Calibre surface prints it.
+    public let value: String?
+    public let asOf: String?
+    public let scope: String?
+    public let basis: String?
+    public let sampleSize: Int?
+    public let windowDays: Int?
+
+    public var kind: VaultEstimateState? { VaultEstimateState(rawValue: state) }
+}
+
+/// The five answers `GET /vault` can give about a figure
+/// (`app/services/market_stats.py`).
+public enum VaultEstimateState: String, Sendable {
+    case ok
+    case stale
+    case insufficientEvidence = "insufficient_evidence"
+    case unidentified
+    case notEstimated = "not_estimated"
+}
+
+public extension VaultEstimate {
+    /// The sentence an owner is shown, or none.
+    ///
+    /// Calibre's estimate of somebody's own watch is never printed as a figure
+    /// — that decision is settled and this property does not reopen it. What
+    /// these sentences do is explain an ABSENCE the owner can already see, and
+    /// only the two refusals have an absence to explain:
+    ///
+    /// - `ok` — there is a current figure and no surface prints one. "We have
+    ///   it and will not show it" is worse than saying nothing.
+    /// - `stale` — the same, about a figure that has outlived its window.
+    ///   Fresh or stale is a distinction about a number nobody sees.
+    /// - `notEstimated` — nobody has looked yet, so there is nothing to explain.
+    /// - an unrecognised state — this build cannot know what it means, and a
+    ///   guess would be a sentence about somebody's watch that Calibre never
+    ///   said.
+    ///
+    /// The two that speak must never collapse into one line: not knowing WHICH
+    /// watch this is and having looked at the right watch and found too little
+    /// are different findings, and the second one means the reference is
+    /// understood.
+    ///
+    /// So the two sentences are built to stay apart in the reading, not only in
+    /// the switch:
+    ///
+    /// - `unidentified` names the failure — Calibre could not tell which watch
+    ///   this is from the brand and reference on it — and says the consequence,
+    ///   that it has not been valued. Nothing in it claims the reference is
+    ///   known, because it is not.
+    /// - `insufficientEvidence` opens by granting the reference ("We know this
+    ///   reference") and only then withholds the figure, because that
+    ///   concession is the whole difference between the two. It is worded
+    ///   verbatim as the web words it in `frontend/src/lib/vaultApi.ts`: the
+    ///   same refusal reaching the same owner through two surfaces has to
+    ///   reach them in the same words.
+    var note: String? {
+        switch kind {
+        case .unidentified:
+            "Calibre could not tell which watch this is from the brand and reference on it, so it has not been valued."
+        case .insufficientEvidence:
+            "We know this reference, but too few have sold to show a price yet."
+        case .ok, .stale, .notEstimated, .none:
+            nil
+        }
+    }
+}
+
+/// The owner's photograph of their own watch, as a link.
+///
+/// Calibre has no endpoint that stores a picture for a watch in somebody's
+/// vault — `vault_watches.photo_url` is a link and there is nothing behind it
+/// that would take an upload. So the app asks for a link and says that is what
+/// it is asking for; it does not offer a picker it could not honour.
+public enum VaultPhotoLink {
+    /// Only https, and only one that parses.
+    ///
+    /// Everything else a URL field can be handed — `http:` (which the app
+    /// will not load), `javascript:`, `data:`, a bare filename — is not a
+    /// photograph either, and saving one stores a value that renders as
+    /// nothing.
+    public static func usable(_ raw: String) -> URL? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed),
+              url.scheme?.lowercased() == "https",
+              let host = url.host(), !host.isEmpty
+        else { return nil }
+        return url
+    }
 }
 
 /// One of the seller's own watches that a listing being written might be —
@@ -64,7 +200,7 @@ public struct VaultMatch: Decodable, Equatable, Sendable, Identifiable {
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         if !named.isEmpty { return named }
-        return reference ?? "A watch in your collection"
+        return reference ?? "A watch in your Vault"
     }
 }
 

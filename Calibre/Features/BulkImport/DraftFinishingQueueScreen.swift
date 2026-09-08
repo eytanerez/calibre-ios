@@ -55,7 +55,7 @@ struct DraftFinishingQueueScreen: View {
                     EmptyState(
                         icon: "checkmark.circle",
                         title: "Every draft is complete",
-                        message: "Nothing from this import needs attention — submit them from your shop whenever you're ready."
+                        message: "Nothing from this import needs attention — submit them from your storefront whenever you're ready."
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if index < queue.count {
@@ -67,8 +67,8 @@ struct DraftFinishingQueueScreen: View {
                 } else if !skipped.isEmpty {
                     EmptyState(
                         icon: "arrow.uturn.backward",
-                        title: "\(skipped.count) draft\(skipped.count == 1 ? "" : "s") still waiting",
-                        message: "You skipped \(skipped.count == 1 ? "one" : "\(skipped.count)"). Take another lap through just those, or come back to them from your shop.",
+                        title: "Drafts still waiting",
+                        message: "You skipped \(skipped.count == 1 ? "one" : "\(skipped.count)"). Take another lap through just those, or come back to them from your storefront.",
                         actionTitle: "Finish the skipped \(skipped.count == 1 ? "one" : "ones")",
                         action: { replaySkipped() }
                     )

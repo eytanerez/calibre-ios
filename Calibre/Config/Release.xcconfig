@@ -1,14 +1,23 @@
-// SideStore distribution — talks to the local backend on the dev laptop
-// through a Cloudflare Tunnel (quick tunnels rotate on restart; update this
-// alongside Debug.xcconfig's iphoneos entry when the tunnel URL changes).
-// Routes are served at the origin root (no /api prefix).
-API_BASE_URL = https:/$()/candidate-accessible-transportation-abs.trycloudflare.com
+// TestFlight distribution — talks to the calibre-server box over a Tailscale
+// Funnel. The previous value here was a Cloudflare *quick* tunnel, whose
+// hostname is regenerated on every restart; by the time anyone installed the
+// build it had already stopped resolving (NXDOMAIN) and every request failed.
+// A Funnel hostname is tied to the machine and survives reboots, so this does
+// not need touching again.
+//
+// Routes sit under /api, not the origin root: nginx on the box fronts four
+// services on one Funnel port and strips the prefix before the backend sees
+// it, so the backend still serves the root contract in mobile-api.md. Safe
+// because every request is built with baseURL.appending(path:), which keeps
+// the prefix; /media/... URLs are re-based onto the origin at decode time and
+// nginx routes those straight through.
+API_BASE_URL = https:/$()/calibre-server.tailcad178.ts.net/api
 
-// calibre-messaging has no Release tunnel of its own yet — this is a
-// placeholder so the build has a well-formed URL to compile against.
-// SideStore builds will fail to reach it at runtime until it gets its own
-// Cloudflare Tunnel (see the note on API_BASE_URL above for the pattern).
-MESSAGING_API_BASE_URL = http:/$()/localhost:8020
+// This was http://localhost:8020 in a *Release* build: on a phone that is the
+// phone, so messaging could never work for a tester, and plain http would have
+// been refused by ATS anyway. calibre-messaging now runs on the same box and
+// nginx routes /messaging to it.
+MESSAGING_API_BASE_URL = https:/$()/calibre-server.tailcad178.ts.net/messaging
 
 // Shows Apple Pay in the payment sheet. Completing one additionally needs the
 // com.apple.developer.in-app-payments entitlement and merchant id
@@ -23,5 +32,26 @@ APPLE_PAY_ENABLED = YES
 // capture is a no-op. Supply a real project key in a local override or CI
 // build setting to turn it on. The host has a working default because it is
 // not a secret; only the key gates the feature.
-CALIBRE_POSTHOG_KEY =
+CALIBRE_POSTHOG_KEY = ***REMOVED***
 CALIBRE_POSTHOG_HOST = https:/$()/us.i.posthog.com
+
+// Crash/error reporting (Sentry) and log shipping (Better Stack). Empty in the
+// tracked config exactly like the PostHog key above, and for the same reason:
+// Calibre/App/Observability.swift treats an empty value as "this service is
+// off" — the SDK is never started, no network call is made, and a build that
+// shipped before the key arrived cannot crash on launch. THIS is the file
+// TestFlight builds read, so these are the two lines to paste into.
+CALIBRE_SENTRY_DSN = https:/$()/***REMOVED***@o4511961825935360.ingest.us.sentry.io/4512047575203840
+CALIBRE_BETTERSTACK_TOKEN = ***REMOVED***
+// The source's own ingesting host (Better Stack → Sources → calibre-ios →
+// "Ingesting host"), without a scheme because // would start a comment here.
+// The shared in.logs.betterstack.com refuses tokens from per-source sources.
+CALIBRE_BETTERSTACK_HOST = s2743596.us-west-2a.betterstackdata.com
+
+// Every release build talks to the staging box today (see API_BASE_URL), so
+// PostHog's Analytics.environment must say so too — it resolves through the
+// STAGING compilation condition, which is otherwise never defined and would
+// leave it reporting "production" while Sentry and Better Stack report
+// "staging" for the same session. Remove STAGING the day a production backend
+// exists.
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = STAGING

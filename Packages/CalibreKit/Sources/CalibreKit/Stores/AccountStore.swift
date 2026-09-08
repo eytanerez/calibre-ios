@@ -42,6 +42,27 @@ public final class AccountStore {
         )
     }
 
+    // MARK: - Profile completion
+
+    /// Fills in what a social sign-in never asked for. Send only the fields
+    /// the member actually answered — the endpoint writes exactly what is
+    /// present — and hand the returned user straight back to `AuthSession`,
+    /// which is where `profile_complete` is re-read from.
+    ///
+    /// It refuses with the ordinary `APIError.server`: 400 carries the
+    /// backend's own sentence about the offending field, 409 means the
+    /// username is spoken for.
+    public func completeProfile(_ fields: ProfileCompletionFields) async throws -> CurrentUser {
+        let response: ProfileCompletionResponse = try await client.send(
+            try Endpoint.json(
+                method: .patch,
+                path: "/account/profile-completion",
+                payload: fields
+            )
+        )
+        return response.user
+    }
+
     // MARK: - Notification preferences
 
     @discardableResult

@@ -7,9 +7,12 @@ import SwiftUI
 /// light theme, white on dark. On credential we send the identity token (and
 /// the name parts Apple only supplies on first authorization) to /auth/apple.
 ///
-/// The app is currently built without the SiwA entitlement (no paid team),
-/// so authorization fails with ASAuthorizationError.unknown — we surface a
-/// calm provisioning note instead of an error. The flow itself is complete.
+/// The entitlement is now present (com.apple.developer.applesignin, with the
+/// matching capability on the com.buycalibre.calibre App ID), so this works.
+/// It previously failed with ASAuthorizationError.unknown purely because the
+/// entitlement was missing on a free team; the unknown-error branch below is
+/// kept because that is still what a mis-provisioned build reports, and a calm
+/// note beats a raw error if signing ever regresses.
 struct AppleSignInButton: View {
     @Environment(AuthSession.self) private var session
     @Environment(\.colorScheme) private var colorScheme

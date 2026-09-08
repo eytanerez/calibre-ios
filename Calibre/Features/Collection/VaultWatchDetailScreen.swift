@@ -2,35 +2,50 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// One watch in the member's vault: what Calibre knows about the reference,
-/// what the reference is worth, and what the owner recorded themselves.
+/// One watch in the member's vault: their photograph of it, the records that
+/// belong to it, what Calibre knows about the reference, and what the owner
+/// recorded themselves.
 ///
 /// A pushed route rather than a sheet — it is a page about a thing, it can be
 /// linked to, and it can push further (the Passport, the marketplace) without
 /// stacking modals. It renders inside the Vault tab's gate; see `vaultGate`.
 ///
-/// Three answers are possible, and the screen says which one it is rather
-/// than smoothing them together:
+/// Three answers are possible about the reference, and the screen says which
+/// one it is rather than smoothing them together:
 ///   • the reference is ours and priced — the sheet and the chart;
 ///   • the reference is ours and unpriced — the sheet and one honest line
 ///     where the chart would be. Never a substituted figure: the owner's
 ///     estimate is a differently-derived number, and two prices side by side
 ///     are worse than one absence;
 ///   • the reference isn't ours yet — the catalog-gap form.
+///
+/// What Calibre thinks this particular watch is worth is not printed here in
+/// any state. `VaultEstimate.note` explains the two absences that have an
+/// explanation and stays quiet for the rest.
 struct VaultWatchDetailScreen: View {
     let vaultID: String
 
     @Environment(AppServices.self) private var services
 
     @State private var detail: VaultWatchDetail?
+    /// The owner's own row, which this screen can change — a photograph, a
+    /// note. Held apart from `detail` so a save redraws the screen without a
+    /// second round trip for the catalog half, which did not move.
+    @State private var watch: VaultWatch?
     @State private var price: MarketReferencePrice?
     @State private var series: MarketSeries?
     /// Set only when the price lookup itself failed — which is a different
     /// sentence from "this reference has no published price".
     @State private var priceUnreachable = false
+    /// The price lookup has finished, whatever it found. The screen draws as
+    /// soon as the watch arrives and the price follows a moment later, so
+    /// without this the estimate's sentence flashes up under every watch and
+    /// then withdraws itself the instant a published price lands beside it.
+    @State private var priceResolved = false
     @State private var isLoading = true
     @State private var loadFailed = false
     @State private var showGapSheet = false
+    @State private var showPhotoSheet = false
 
     /// The uppercase micro labels over the performance windows and the stat
     /// cells sit below caption2 on purpose, but the literal froze them at 10pt
@@ -40,8 +55,8 @@ struct VaultWatchDetailScreen: View {
 
     var body: some View {
         Group {
-            if let detail {
-                content(detail)
+            if let detail, let watch {
+                content(detail, watch)
             } else if loadFailed {
                 EmptyState(
                     icon: "wifi.slash",
@@ -57,7 +72,7 @@ struct VaultWatchDetailScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .calibrePageBackground()
-        .navigationTitle(detail?.watch.displayTitle ?? "Watch")
+        .navigationTitle(watch?.displayTitle ?? "Watch")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             guard detail == nil else { return }
@@ -65,9 +80,16 @@ struct VaultWatchDetailScreen: View {
         }
         .refreshable { await load() }
         .sheet(isPresented: $showGapSheet) {
-            if let detail {
-                CatalogGapSheet(watch: detail.watch) {
+            if let watch {
+                CatalogGapSheet(watch: watch) {
                     Task { await load() }
+                }
+            }
+        }
+        .sheet(isPresented: $showPhotoSheet) {
+            if let watch {
+                VaultPhotoLinkSheet(watch: watch) { saved in
+                    self.watch = saved
                 }
             }
         }
@@ -80,6 +102,7 @@ struct VaultWatchDetailScreen: View {
         do {
             let payload = try await services.vault.detail(id: vaultID)
             detail = payload
+            watch = payload.watch
             await loadPrice(for: payload.referenceRow)
         } catch {
             if detail == nil { loadFailed = true }
@@ -89,6 +112,8 @@ struct VaultWatchDetailScreen: View {
 
     private func loadPrice(for row: VaultReferenceRow?) async {
         priceUnreachable = false
+        priceResolved = false
+        defer { priceResolved = true }
         guard let row else {
             price = nil
             series = nil
@@ -108,7 +133,11 @@ struct VaultWatchDetailScreen: View {
     private var skeleton: some View {
         ScrollView {
             VStack(spacing: Space.l) {
-                ForEach(0..<3, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(Color.calibre.card)
+                    .aspectRatio(1, contentMode: .fit)
+                    .shimmer()
+                ForEach(0..<2, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         .fill(Color.calibre.card)
                         .frame(height: 140)
@@ -121,23 +150,37 @@ struct VaultWatchDetailScreen: View {
 
     // MARK: - Content
 
-    private func content(_ detail: VaultWatchDetail) -> some View {
+    private func content(_ detail: VaultWatchDetail, _ watch: VaultWatch) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
-                header(detail.watch)
+                hero(watch)
+                records(watch)
+                VaultOwnerNote(watch: watch) { saved in self.watch = saved }
                 marketSection(detail)
                 specSheet(detail)
-                catalogGap(detail)
-                ownerFacts(detail.watch)
+                catalogGap(detail, watch)
+                ownerFacts(watch)
                 serviceHistory(detail.serviceRecords)
-                sellButton(detail.watch)
+                sellButton(watch)
             }
             .padding(Space.l)
         }
     }
 
-    private func header(_ watch: VaultWatch) -> some View {
-        VStack(alignment: .leading, spacing: Space.s) {
+    // MARK: - The photograph and what it is
+
+    private func hero(_ watch: VaultWatch) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            GeometryReader { proxy in
+                VaultPhotoFrame(watch: watch, variant: .hero, side: proxy.size.width)
+            }
+            .aspectRatio(1, contentMode: .fit)
+
+            Button(watch.photoUrl == nil ? "Add a photo" : "Change the photo") {
+                showPhotoSheet = true
+            }
+            .buttonStyle(.calibre(.ghost))
+
             if let brand = watch.brand {
                 Text(brand.uppercased())
                     .font(CalibreType.label)
@@ -155,8 +198,64 @@ struct VaultWatchDetailScreen: View {
             Text(subtitle(watch))
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
+
             if watch.authenticated {
-                AuthenticatedBadge()
+                HStack(spacing: Space.m) {
+                    AuthenticatedBadge()
+                    // Calibre's bench passed this watch. Said once, then simply
+                    // standing — `markAnnounces` presses it the first time this
+                    // session shows the fact and holds it stamped every time
+                    // after, and holds it stamped from the first frame under
+                    // Reduce Motion.
+                    //
+                    // No label: the badge beside it carries the words, and a
+                    // mark that repeats them reads the fact out twice to a
+                    // screen reader. `CalibreMark` hides every drawing.
+                    //
+                    // The one illustrated moment on this screen. The
+                    // authentication report opens in a sheet, which is its own
+                    // surface with this one behind it, so the loupe there can
+                    // never be this screen's second mark — the same reason
+                    // `OrderMarks` gives for leaving it out of the order
+                    // screen's precedence.
+                    //
+                    // Off-square because it was pressed by hand. The angle is
+                    // the Passport cover's.
+                    if let key = watch.authenticationMarkKey {
+                        CalibreMark.stamp(size: 44, trigger: key)
+                            .rotationEffect(.degrees(-11))
+                            .markAnnounces(key)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, Space.xs)
+            } else {
+                // A watch somebody typed in is a watch nobody at Calibre has
+                // held, however handsome its card. The flag is the server's,
+                // not this screen's reading of `source`.
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    StatusBadge("Unverified", tone: .neutral)
+                    Text("Calibre hasn't inspected this watch. It's here because you said you own it.")
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, Space.xs)
+            }
+
+            // What the market lookup came back with, in words, for the two
+            // states that explain an absence the owner can see. No figure in
+            // any state.
+            //
+            // Withheld where the reference has a published price below, which
+            // is the one case with no absence to explain: "we cannot put a
+            // figure on it" above a chart of figures is a contradiction to
+            // read, however carefully the two are distinguished further down.
+            if priceResolved, price == nil, let note = watch.estimate?.note {
+                Text(note)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, Space.xs)
             }
         }
@@ -176,6 +275,40 @@ struct VaultWatchDetailScreen: View {
             parts.append(String(year))
         }
         return parts.isEmpty ? "No reference on file" : parts.joined(separator: " \u{00B7} ")
+    }
+
+    // MARK: - The records that belong to this watch
+
+    /// Above the market and the specifications on purpose: the price is about
+    /// the reference, and these are about THIS watch.
+    @ViewBuilder
+    private func records(_ watch: VaultWatch) -> some View {
+        if watch.passportCode != nil || watch.authenticated {
+            VStack(alignment: .leading, spacing: Space.m) {
+                sectionTitle("Records")
+
+                if let code = watch.passportCode {
+                    NavigationLink(value: Route.passport(code)) {
+                        HStack(spacing: Space.s) {
+                            Image(systemName: "doc.text")
+                            Text("View Passport")
+                        }
+                    }
+                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                }
+
+                // Offered wherever Calibre stands behind the watch. The vault
+                // payload carries nothing about the document, so nothing here
+                // claims one exists — the route answers for itself, and its
+                // not-found branch offers the way on rather than a dead end.
+                if watch.authenticated {
+                    AuthenticationReportRow(
+                        source: .vault(watch.id),
+                        passportCode: watch.passportCode
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - What the reference is worth
@@ -299,7 +432,7 @@ struct VaultWatchDetailScreen: View {
     }
 
     @ViewBuilder
-    private func catalogGap(_ detail: VaultWatchDetail) -> some View {
+    private func catalogGap(_ detail: VaultWatchDetail, _ watch: VaultWatch) -> some View {
         // A row with no spec filled in is a name and nothing else, so it still
         // gets the form — `in_catalog` is the server's word for that, and the
         // client takes it rather than re-deciding.
@@ -331,25 +464,14 @@ struct VaultWatchDetailScreen: View {
     @ViewBuilder
     private func ownerFacts(_ watch: VaultWatch) -> some View {
         let rows = ownerRows(watch)
-        if !rows.isEmpty || watch.passportCode != nil || watch.notes != nil {
+        if !rows.isEmpty {
             VStack(alignment: .leading, spacing: Space.m) {
                 sectionTitle("Your record")
-                if !rows.isEmpty {
-                    SpecList(rows)
-                }
-                if let notes = watch.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(CalibreType.body)
+                SpecList(rows)
+                if watch.acquiredPrice != nil {
+                    Text("Only you see what you paid.")
+                        .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
-                }
-                if let code = watch.passportCode {
-                    NavigationLink(value: Route.passport(code)) {
-                        HStack(spacing: Space.s) {
-                            Image(systemName: "doc.text")
-                            Text("View Passport")
-                        }
-                    }
-                    .buttonStyle(.calibre(.secondary))
                 }
             }
         }
@@ -417,13 +539,16 @@ struct VaultWatchDetailScreen: View {
         .padding(Space.l)
     }
 
+    /// Available, and quiet. A collection is not a shopfront, so this is the
+    /// secondary button at the foot of the screen rather than the one strong
+    /// action on a page about a watch somebody is keeping.
     private func sellButton(_ watch: VaultWatch) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Button("Sell") {
                 Haptics.shared.play(.press)
                 services.router.startListing(prefill: ListingPrefill(vaultWatch: watch))
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.calibre(.secondary, fullWidth: true))
             Text("Starts a listing with what we already know about this watch. You set the price.")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)

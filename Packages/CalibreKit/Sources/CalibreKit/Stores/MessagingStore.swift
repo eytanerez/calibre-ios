@@ -49,9 +49,10 @@ public final class MessagingStore {
     }
 
     /// Opens a thread on a listing, or returns the existing one — idempotent
-    /// per (listing, buyer) on the server, so tapping "Message Seller" twice
-    /// from the PDP can never fork the conversation into two threads neither
-    /// party can follow.
+    /// per (listing, buyer) on the server, so tapping "Contact seller" twice —
+    /// from the PDP, or from the order screen, which reaches the same thread
+    /// for the same listing — can never fork the conversation into two threads
+    /// neither party can follow.
     public func openThread(
         listingID: String,
         sellerID: String,

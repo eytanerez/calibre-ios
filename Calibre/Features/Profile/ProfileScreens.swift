@@ -698,7 +698,7 @@ struct NotificationSettingsScreen: View {
                     toggle("Tracking", "Shipping and delivery updates", prefs.trackingUpdates) {
                         NotificationPreferencesPatch(trackingUpdates: $0)
                     }
-                    toggle("Messages", "Replies from Calibre support", prefs.messageUpdates) {
+                    toggle("Support", "Replies from Calibre support", prefs.messageUpdates) {
                         NotificationPreferencesPatch(messageUpdates: $0)
                     }
                     toggle("Saved watches", "Price drops on watches you've saved", prefs.watchlistAlerts) {

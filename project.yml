@@ -21,6 +21,13 @@ packages:
   PostHog:
     url: https://github.com/PostHog/posthog-ios
     exactVersion: 3.69.6
+  # Crash/error reporting. App target only, like PostHog, and wired from
+  # Calibre/App/Observability.swift. Pinned to the same sentry-cocoa version
+  # the admin app pins (admin-ios/project.yml) so one Sentry project sees one
+  # SDK version across every Calibre client.
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa
+    exactVersion: 8.58.4
 
 configFiles:
   Debug: Calibre/Config/Debug.xcconfig
@@ -50,6 +57,7 @@ targets:
       - package: PostHog
         products:
           - PostHog
+      - package: Sentry
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.buycalibre.calibre
@@ -90,6 +98,11 @@ targets:
         CalibreApplePayEnabled: $(APPLE_PAY_ENABLED)
         CalibrePostHogKey: $(CALIBRE_POSTHOG_KEY)
         CalibrePostHogHost: $(CALIBRE_POSTHOG_HOST)
+        # Empty in both tracked xcconfigs. Observability.swift reads these and
+        # starts nothing when the value is blank — see Config/Release.xcconfig.
+        CalibreSentryDSN: $(CALIBRE_SENTRY_DSN)
+        CalibreBetterStackToken: $(CALIBRE_BETTERSTACK_TOKEN)
+        CalibreBetterStackHost: $(CALIBRE_BETTERSTACK_HOST)
   CalibreUITests:
     type: bundle.ui-testing
     platform: iOS

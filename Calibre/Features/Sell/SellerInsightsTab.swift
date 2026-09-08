@@ -4,22 +4,21 @@ import SwiftUI
 
 /// How the shop is doing, and what buyers are asking for.
 ///
-/// Every figure here is one the server sent. Nothing on this tab is worked
-/// out from another number: where the payload is silent the line is absent,
-/// and where it is silent about a *ratio* the tab says so in words rather
-/// than printing a zero nobody measured.
-struct SellerPerformanceTab: View {
+/// Analysis only. The sales themselves and the money owed on them are on
+/// Orders & payouts: what a seller is due is not a measure of how the shop is
+/// doing, and filing it under analysis is what made "when am I paid for this
+/// one" a question you answered on a metrics screen.
+///
+/// Every figure here is one the server sent. Nothing on this tab is worked out
+/// from another number: where the payload is silent the line is absent, and
+/// where it is silent about a *ratio* the tab says so in words rather than
+/// printing a zero nobody measured.
+struct SellerInsightsTab: View {
     let metrics: SellerDashboardMetrics
     let whatToList: [ListingSuggestion]
-    /// The seller's sales, newest first, as the ops store loaded them.
-    let sales: [Order]
     /// Open buyer requests. Verified dealers only — empty for everyone else.
     let requests: [WatchRequest]
     let actions: SellerShopActions
-
-    /// Enough of the sales list to show the shape of the week without the tab
-    /// turning into a second inventory.
-    private static let recentSalesShown = 5
 
     var body: some View {
         Group {
@@ -28,7 +27,6 @@ struct SellerPerformanceTab: View {
             if !inventoryTiles.isEmpty {
                 inventoryAtAGlance.sellRow()
             }
-            recentSales.sellRow()
             if !whatToList.isEmpty {
                 demand.sellRow()
             }
@@ -103,11 +101,16 @@ struct SellerPerformanceTab: View {
 
     // MARK: - The money
 
+    /// What has been sold against what reached the seller.
+    ///
+    /// The pending-payout figure used to close this section. It is money the
+    /// seller is owed rather than a reading of the shop, and it sits on Orders
+    /// & payouts beside the sales it belongs to.
     private var money: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             SellSectionHeader("The money")
 
-            if metrics.grossSales.value == 0, metrics.pendingPayoutTotal.value == 0 {
+            if metrics.grossSales.value == 0 {
                 Text("Nothing has sold yet. When it does, this is where what buyers paid and what reached you sit side by side.")
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.mutedForeground)
@@ -132,12 +135,6 @@ struct SellerPerformanceTab: View {
                             label: "What reached you",
                             value: PriceFormatter.format(metrics.netSales.value),
                             emphasized: true
-                        )
-                        Rectangle().fill(Color.calibre.border).frame(height: 1)
-                        SellFigureRow(
-                            label: "Still to be released",
-                            value: PriceFormatter.format(metrics.pendingPayoutTotal.value),
-                            caption: "Yours already, and on its way \u{2014} a payout is sent once the buyer has the watch."
                         )
                     }
                 }
@@ -202,93 +199,23 @@ struct SellerPerformanceTab: View {
         }
     }
 
-    // MARK: - Recent sales
-
-    private var recentSales: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("Recent sales")
-            if sales.isEmpty {
-                Text("When a watch sells, everything you need to ship it lands here.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                SellCard {
-                    VStack(spacing: 0) {
-                        let shown = Array(sales.prefix(Self.recentSalesShown))
-                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, order in
-                            saleRow(order)
-                            if index < shown.count - 1 {
-                                Rectangle().fill(Color.calibre.border).frame(height: 1)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func saleRow(_ order: Order) -> some View {
-        let badge = SellerStatusDisplay.badge(forOrder: order.status)
-        let needsLabel = order.sellerActionState == "sold_awaiting_label_creation"
-        return Button {
-            actions.openSale(order.id)
-        } label: {
-            HStack(spacing: Space.m) {
-                SellThumb(url: order.listing?.image?.url, size: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(order.listing?.title ?? "Sold watch")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
-                        .lineLimit(1)
-                    StatusBadge(badge.text, tone: badge.tone)
-                }
-                Spacer(minLength: Space.s)
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(PriceFormatter.format(order.subtotal.value, currency: order.currency))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
-                    // The compact payout line: what this sale pays and where
-                    // that payout stands. The full ledger is one tap away on
-                    // the sale itself.
-                    if let payout = payoutLine(order) {
-                        Text(payout)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                            .multilineTextAlignment(.trailing)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Text(needsLabel ? "Add shipping details" : "View sale")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
-                }
-            }
-            .padding(.horizontal, Space.l)
-            .padding(.vertical, Space.m)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityElement(children: .combine)
-    }
-
-    /// "You receive $9,400 \u{00B7} Scheduled" \u{2014} both halves the server's, and
-    /// the line is simply absent when it has not stated the amount.
-    private func payoutLine(_ order: Order) -> String? {
-        guard let amount = order.payoutBlock?.amount?.value else { return nil }
-        let money = PriceFormatter.format(amount, currency: order.currency)
-        guard let status = order.payoutBlock?.statusLabel, !status.isEmpty else {
-            return "You receive \(money)"
-        }
-        return "You receive \(money) \u{00B7} \(status)"
-    }
-
     // MARK: - What buyers are asking for
 
+    /// References buyers are watching and searching for here, set against how
+    /// many are listed.
+    ///
+    /// It was headed "What to list next", which is stocking advice — a claim
+    /// about what a dealer should go and spend money on. What the panel holds
+    /// is on-site engagement counts and the server's one-line reason; it knows
+    /// nothing about what a reference costs at auction, what this seller can
+    /// source, or what anyone pays for one anywhere else. So it says what it
+    /// measured and leaves the buying decision to the dealer.
     private var demand: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            SellSectionHeader("What to list next")
+            Eyebrow("Demand signals")
+            SellSectionHeader("Interest on Calibre")
 
-            Text("References buyers are watching, where there isn\u{2019}t much for sale.")
+            Text("References buyers here are watching and searching for, set against how many are listed. These are on-site counts, not a valuation and not a market read.")
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -369,6 +296,10 @@ struct SellerPerformanceTab: View {
 
     /// A single summary row rather than the requests themselves — the tab
     /// stays scannable; the full list lives one tap away.
+    ///
+    /// Watches buyers asked for by name. It sits on Insights because that is
+    /// what it is: evidence of what people came here wanting, not an
+    /// instruction about what to stock.
     private var buyerRequests: some View {
         Button {
             actions.openBuyerRequests()
@@ -376,13 +307,14 @@ struct SellerPerformanceTab: View {
             HStack(spacing: Space.m) {
                 IconTile(systemName: "sparkle.magnifyingglass")
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Buyers are looking for \(requests.count) watch\(requests.count == 1 ? "" : "es")")
+                    Text("Watches buyers have asked for by name")
                         .font(CalibreType.bodyMedium)
                         .foregroundStyle(Color.calibre.foreground)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("List against an open request")
+                    Text("Source one and list it with the details filled in. The buyer is told when a match goes live.")
                         .font(CalibreType.caption)
                         .foregroundStyle(Color.calibre.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")

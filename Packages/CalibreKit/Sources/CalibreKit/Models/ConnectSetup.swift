@@ -195,7 +195,7 @@ extension ConnectStatus {
             return PayoutSetupStep(
                 status: status,
                 title: "Stripe is reviewing your details",
-                body: "Nothing needed from you. We'll open your shop as soon as they're done.",
+                body: "Nothing needed from you. We'll open your storefront as soon as they're done.",
                 tone: .calm,
                 itemsTitle: reviewItems.isEmpty ? nil : "What they're looking at:",
                 items: reviewItems,

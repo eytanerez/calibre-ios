@@ -433,18 +433,29 @@ final class ReturnFlowModel {
         return "Send the watch back to us"
     }
 
+    /// One word for one fact. The bench doing the return leg is the same bench
+    /// that did the outbound leg, so it is named the same way the outbound
+    /// copy names it — **re-authenticated**, never "checked" or "verified".
+    /// This is the screen where money is at stake: a buyer reading "checked"
+    /// here and "authenticated" everywhere else has to work out whether they
+    /// are the same examination, and the answer they guess decides whether
+    /// they believe the refund is safe.
+    ///
+    /// The three states below describe one examination at three moments, so
+    /// they say it with one verb. `re-authentication` is also the noun the
+    /// terms use for the failure (`TermsPage.tsx`, `ReturnsPage.tsx`).
     var detail: String {
         if isRefunded {
-            return "The watch passed its check and your refund has been issued. Card refunds usually take a few days to appear on your statement."
+            return "The watch passed re-authentication and your refund has been issued. Card refunds usually take a few days to appear on your statement."
         }
         if isCancelled {
             return "Your return window picks up where it left off."
         }
         if isBackWithUs {
-            return "Our authenticators are checking that it's the same watch, in the same condition, and still genuine. Your refund follows that check."
+            return "It's being re-authenticated — the same watch, in the same condition, still genuine. Your refund follows."
         }
         if isInTransit {
-            return "Once it arrives, we check that it's the same watch, in the same condition, and still genuine. Your refund follows that check."
+            return "Once it arrives it's re-authenticated — the same watch, in the same condition, still genuine. Your refund follows."
         }
         return "Use the label below, and let us know once you've handed it over. The clock on your return window has stopped."
     }
@@ -674,7 +685,7 @@ private struct ReturnQuoteView: View {
                 )
                 ReturnFactRow(
                     icon: "checkmark.shield",
-                    text: "The watch goes back to our authentication center and is checked — the same watch, in the same condition, still genuine — before anything is refunded."
+                    text: "The watch goes back to our authentication centre and is re-authenticated — the same watch, in the same condition, still genuine — before anything is refunded."
                 )
             }
 

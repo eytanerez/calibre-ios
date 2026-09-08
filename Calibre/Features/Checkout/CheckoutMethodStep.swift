@@ -42,9 +42,12 @@ struct CheckoutMethodStep: View {
                     .foregroundStyle(Color.calibre.foreground)
 
                 // What is being paid for, before how. One payment covers the
-                // whole set, so the set is on screen when the method is chosen.
+                // whole set, so the set is on screen when the method is chosen
+                // — and each watch carries its own return terms here, because
+                // the single-watch disclosure below stands down for a set and
+                // this card is the only place they would otherwise be said.
                 if model.isMultiItem {
-                    CheckoutItemsCard(items: model.items, showsReturnTerms: false)
+                    CheckoutItemsCard(items: model.items)
                 }
 
                 if let dropped = model.droppedWatch {

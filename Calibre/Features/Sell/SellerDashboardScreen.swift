@@ -2,17 +2,18 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-/// The seller's shop — tab root once `can_list` is true.
+/// The seller's shop — the tab root a seller reaches once they have a shop to
+/// look at.
 ///
-/// Four tabs, in the order of the seller's day: what am I selling, who wants
-/// it, how is it going, who am I. This screen owns the loads, the state the
-/// tabs share and every verb they can reach for; each tab owns its own
-/// reading of it.
+/// The tabs run in the order of the seller's day: what am I selling, who wants
+/// it, what have I sold and where is the money, how is it going, who am I. This
+/// screen owns the loads, the state the tabs share and every verb they can
+/// reach for; each tab owns its own reading of it.
 ///
-/// Two things deliberately sit *above* the tabs rather than inside one: the
-/// card-on-file banner, and the queue of what needs the seller next. Both are
-/// true whichever tab is open, and an offer that needs answering must not be
-/// something you only find by picking the right room.
+/// Three things deliberately sit *above* the tabs rather than inside one: the
+/// setup-blocked notice, the card-on-file banner, and the queue of what needs
+/// the seller next. All are true whichever tab is open, and an offer that needs
+/// answering must not be something you only find by picking the right room.
 struct SellerDashboardScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -33,6 +34,14 @@ struct SellerDashboardScreen: View {
     /// content in place rather than hiding it behind the skeleton again.
     @State private var hasRevealedContent = false
     @State private var requests: [WatchRequest] = []
+    /// The sales read failed and left nothing behind. Tracked separately from
+    /// the dashboard's own error because Orders & payouts has to tell a seller
+    /// their sales did not load rather than that they have none — the two are
+    /// the same empty list and very different sentences.
+    @State private var salesFailed = false
+    /// Presents seller setup over the shop for a seller who is blocked but has
+    /// work here to come back to.
+    @State private var showSetup = false
     @State private var wizardContext: WizardContext?
     @State private var saleDetailOrderID: String?
     @State private var showBulkImports = false
@@ -72,8 +81,8 @@ struct SellerDashboardScreen: View {
 
     private static let shopStep = TutorialStep(
         id: "shop",
-        title: "Running your shop",
-        message: "Your shop is four tabs: what you're selling, who wants it, how it's going, and how buyers see you. Swipe any listing left — or press and hold it — for Edit, Submit and Delete. And whatever needs you next stays above the tabs, whichever one you're in.",
+        title: "Running your storefront",
+        message: "Your storefront has a tab for each part of the day: what you're selling, who wants it, what you've sold and the money on it, how it's going, and how buyers see you. Swipe any listing left — or press and hold it — for Edit, Submit and Delete. And whatever needs you next stays above the tabs, whichever one you're in.",
         advance: .tapToContinue
     )
 
@@ -93,6 +102,10 @@ struct SellerDashboardScreen: View {
         List {
             header
 
+            if setupIsBlocked {
+                setupBlockedNotice.sellRow()
+            }
+
             if let sellerCard, sellerCard.needsAttention {
                 sellerCardBanner(sellerCard).sellRow()
             }
@@ -100,7 +113,7 @@ struct SellerDashboardScreen: View {
             if let loadError, !hasRevealedContent {
                 EmptyState(
                     icon: "wifi.slash",
-                    title: "Your shop didn't load",
+                    title: "Your storefront didn't load",
                     message: loadError,
                     actionTitle: "Try again",
                     action: { Task { await load() } }
@@ -173,6 +186,23 @@ struct SellerDashboardScreen: View {
         .sheet(isPresented: $showSellerCard) {
             SellerCardScreen { saved in
                 sellerCard = saved
+            }
+        }
+        // Setup over the shop rather than instead of it. A sheet, so the way
+        // back out is the gesture every other sheet in the app answers to —
+        // a seller sent here is not sent away from their own listings.
+        .sheet(isPresented: $showSetup) {
+            NavigationStack {
+                SellGateScreen(mode: .onboarding(onReadinessChange: { readiness in
+                    if readiness.canAccessDashboard { showSetup = false }
+                }))
+                .navigationTitle("Finish setting up")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { showSetup = false }
+                    }
+                }
             }
         }
         .sheet(isPresented: $showOpenRequests) {
@@ -274,6 +304,18 @@ struct SellerDashboardScreen: View {
         ) {
             badges[.offers] = badge
         }
+        // Counted from the same sales the tab renders, not from the
+        // dashboard's own figure: the two are fetched separately, and a badge
+        // taken from the other request can promise a row the list does not
+        // have. A failed sales read leaves this at zero, and a zero never
+        // badges.
+        let awaitingShipping = sell.ops.sales.filter { $0.sellerNextStep.needsShippingDetails }.count
+        if let badge = SellerTabBadge(
+            count: awaitingShipping,
+            spoken: { $0 == 1 ? "1 needs shipping details" : "\($0) need shipping details" }
+        ) {
+            badges[.orders] = badge
+        }
         return badges
     }
 
@@ -293,11 +335,17 @@ struct SellerDashboardScreen: View {
                 listings: listings,
                 actions: shopActions
             )
-        case .performance:
-            SellerPerformanceTab(
+        case .orders:
+            SellerOrdersTab(
+                metrics: dashboard.metrics,
+                sales: sell.ops.sales,
+                salesFailed: salesFailed,
+                actions: shopActions
+            )
+        case .insights:
+            SellerInsightsTab(
                 metrics: dashboard.metrics,
                 whatToList: dashboard.whatToList,
-                sales: sell.ops.sales,
                 requests: requests,
                 actions: shopActions
             )
@@ -390,8 +438,17 @@ struct SellerDashboardScreen: View {
         requests = result
     }
 
+    /// A failed sales read is remembered rather than swallowed. `try?` alone
+    /// left the store's list empty and indistinguishable from a seller who has
+    /// never sold anything, and Orders & payouts would then have told someone
+    /// who is owed money that there was none.
     private func loadSales() async {
-        _ = try? await sell.ops.loadSales(pageSize: 30)
+        do {
+            _ = try await sell.ops.loadSales(pageSize: 30)
+            salesFailed = false
+        } catch {
+            salesFailed = true
+        }
     }
 
     /// The imports that left drafts behind.
@@ -453,7 +510,7 @@ struct SellerDashboardScreen: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             HStack(alignment: .firstTextBaseline) {
-                Text("\(session.user?.username ?? "Your")'s shop")
+                Text("\(session.user?.username ?? "Your")'s storefront")
                     .font(CalibreType.title)
                     .foregroundStyle(Color.calibre.foreground)
                 Spacer()
@@ -478,6 +535,41 @@ struct SellerDashboardScreen: View {
             }
         }
         .sellRow(top: Space.l, bottom: Space.l)
+    }
+
+    // MARK: - Setup still blocked
+
+    /// True when this seller cannot clear the setup gate but is on the shop
+    /// anyway, because `SellScreen` found inventory or a sale here worth
+    /// keeping in front of them.
+    private var setupIsBlocked: Bool {
+        services.seller.readiness?.canAccessDashboard == false
+    }
+
+    /// What is still outstanding, at the top of the shop rather than instead of
+    /// it.
+    ///
+    /// New listings stay blocked while this is here — that is the readiness
+    /// payload's call and nothing on this screen overrides it. What changed is
+    /// that a seller who already has inventory, offers, sales and a storefront
+    /// keeps all of it in front of them while they finish, rather than being
+    /// handed a page headed "Start selling on Calibre" that reads as having
+    /// lost the account.
+    ///
+    /// Both lines are the payout step's own words, so this notice cannot
+    /// describe a requirement differently from the setup screen behind it.
+    @ViewBuilder
+    private var setupBlockedNotice: some View {
+        if let step = services.seller.readiness?.connect.payoutStep {
+            CalloutBand(
+                icon: "exclamationmark.circle",
+                title: step.title ?? "Finish setting up payouts",
+                message: step.body,
+                action: { showSetup = true }
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityHint("Opens your seller setup")
+        }
     }
 
     // MARK: - Card on file

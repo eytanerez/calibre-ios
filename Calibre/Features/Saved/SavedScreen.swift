@@ -74,8 +74,11 @@ struct SavedScreen: View {
                     SegmentedTabs(
                         selection: $tab,
                         items: [
-                            (.watches, "Watches (\(items.count))"),
-                            (.searches, "Searches (\(searches.count))"),
+                            // No tally beside the list that is right there —
+                            // the pane below each tab is the count, and it is
+                            // never out of date the way a label is.
+                            (.watches, "Watches"),
+                            (.searches, "Searches"),
                         ]
                     )
                     .padding(.horizontal, Space.margin)

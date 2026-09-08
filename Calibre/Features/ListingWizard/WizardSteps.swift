@@ -280,7 +280,7 @@ private struct VaultMatchAsk: View {
             if model.linkedVaultWatchID != nil {
                 CalloutBand(
                     icon: "checkmark.seal",
-                    title: "Linked to your collection",
+                    title: "Linked to your Vault",
                     message: confirmation
                 )
             } else if !model.vaultMatches.isEmpty {
@@ -308,7 +308,7 @@ private struct VaultMatchAsk: View {
                         Text("Is this one you already own?")
                             .font(CalibreType.sectionTitle)
                             .foregroundStyle(Color.calibre.foreground)
-                        Text("That reference matches a watch in your collection. If it's the same watch, this listing carries on its Passport rather than starting a second one for it.")
+                        Text("That reference matches a watch in your Vault. If it's the same watch, this listing carries on its Passport rather than starting a second one for it.")
                             .font(CalibreType.body)
                             .foregroundStyle(Color.calibre.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)

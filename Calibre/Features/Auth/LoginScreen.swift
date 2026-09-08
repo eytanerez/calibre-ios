@@ -186,8 +186,11 @@ struct LoginScreen: View {
         }, onError: { errorMessage = $0 })
 
         if ok {
+            Observability.log(.info, "sign-in succeeded")
             Haptics.shared.play(.success)
             toasts.show(title: "Welcome back", message: "You're signed in.", tone: .success)
+        } else {
+            Observability.log(.warning, "sign-in failed: \(errorMessage ?? "canceled")")
         }
     }
 

@@ -68,6 +68,10 @@ struct MainTabView: View {
                 DiscoverScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
             }
+            // The deck raises guest gates of its own — Save, the Saved chip,
+            // and every gated action on a listing opened inside it. The root's
+            // sheet cannot reach over this cover, so the cover carries one.
+            .authGate(for: .deck)
         }
     }
 }

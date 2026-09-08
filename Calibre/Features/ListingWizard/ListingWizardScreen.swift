@@ -292,7 +292,7 @@ struct ListingWizardScreen: View {
         if hasDraft, model?.submitted != true, model?.isEdit != true {
             toasts.show(
                 title: "Draft saved",
-                message: "Pick it back up any time from your shop."
+                message: "Pick it back up any time from your storefront."
             )
         }
         onFinished()

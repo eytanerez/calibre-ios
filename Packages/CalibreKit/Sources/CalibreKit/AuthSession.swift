@@ -2,13 +2,53 @@ import Foundation
 import Observation
 
 /// The signed-in user as the backend reports it.
+///
+/// Everything below `roles` arrived with the profile-completion work and is
+/// optional on purpose. A server that predates it omits the keys entirely, and
+/// a client that refused to decode the session over a missing key would sign
+/// every member out against an older deployment.
 public struct CurrentUser: Codable, Sendable, Equatable {
     public let id: String
     public let email: String
     public let username: String
     public let roles: [String]
+    /// `buyer_profiles.first_name` — not a column on `users`.
+    public let firstName: String?
+    /// `buyer_profiles.last_name`.
+    public let lastName: String?
+    public let phone: String?
+    /// The backend's single verdict on whether this account has everything a
+    /// purchase needs: first name, last name, phone, username and email, all
+    /// non-empty. Clients gate their completion prompt on this and never
+    /// re-derive the rule — the field list is the backend's contract, and two
+    /// implementations of it would drift the first time it changed.
+    ///
+    /// **Absent means complete.** `nil` is what a deployment that predates the
+    /// flag sends, and a member on that backend must not be held behind a gate
+    /// nothing can satisfy.
+    public let profileComplete: Bool?
 
     public var isAdmin: Bool { roles.contains("admin") }
+
+    public init(
+        id: String,
+        email: String,
+        username: String,
+        roles: [String],
+        firstName: String? = nil,
+        lastName: String? = nil,
+        phone: String? = nil,
+        profileComplete: Bool? = nil
+    ) {
+        self.id = id
+        self.email = email
+        self.username = username
+        self.roles = roles
+        self.firstName = firstName
+        self.lastName = lastName
+        self.phone = phone
+        self.profileComplete = profileComplete
+    }
 }
 
 /// Something the user tried to do while signed out — replayed after sign-in.
@@ -36,6 +76,27 @@ public final class AuthSession {
     /// launch-time `/auth/me` validation is temporarily offline. A definitive
     /// 401 + rejected refresh clears the tokens and flips this back to false.
     public private(set) var isAuthenticated = false
+
+    /// The **one** place the completion gate is decided, so the two ways into
+    /// it — a sign-in that lands a fresh user, and the launch-time restore in
+    /// `bootstrap()` — cannot disagree about whether to raise it.
+    ///
+    /// Only an explicit `false` gates. A signed-out session (no user) has
+    /// nothing to complete, and `profile_complete` absent from the payload is
+    /// an older backend, which counts as complete: see `CurrentUser`.
+    public var needsProfileCompletion: Bool {
+        user?.profileComplete == false
+    }
+
+    /// Replaces the session's user with a payload the server just returned —
+    /// `PATCH account/profile-completion` answers with the same user object
+    /// login does, so the gate can re-read `profile_complete` from it without
+    /// a second round trip. Tokens are untouched: this is the same session,
+    /// with fuller details.
+    public func replaceUser(with user: CurrentUser) {
+        guard isAuthenticated else { return }
+        self.user = user
+    }
 
     /// Fired every time `clearSession()` runs — manual sign-out, a definitive
     /// refresh-token rejection, or a bootstrap validation failure alike.

@@ -11,9 +11,12 @@ struct CalibreApp: App {
     init() {
         CalibreFonts.register()
 
-        // Configures PostHog once, or does nothing at all when no key is
-        // built in. Must precede any screen that could emit.
-        Analytics.start()
+        // Analytics, crash reporting and log shipping, once. Each service is
+        // started only if its key is built in; with none set this is a no-op
+        // that makes no network call. `Observability.start()` is what starts
+        // `Analytics` (it owns the PostHog seam) — see Observability.swift.
+        // Must precede any screen that could emit.
+        Observability.start()
 
         // Keep original image bytes in an app-owned disk cache so the same
         // watch is not downloaded again for card, row, and gallery sizes.
@@ -83,6 +86,23 @@ struct RootView: View {
         return .main
     }
 
+    /// The finish-your-profile gate, raised from `needsProfileCompletion` —
+    /// the single predicate on the session — so every way a user arrives
+    /// reach it identically: a sign-in through `AuthGateSheet` (or the Me tab's
+    /// `LoginScreen`), and the launch-time restore in the `.task` below.
+    ///
+    /// It is a layer in this ZStack rather than a `.fullScreenCover` on
+    /// purpose. Every path that raises it is a modal dismissing itself on the
+    /// same state change — the auth sheet, the login cover — and a UIKit
+    /// presentation asked for while another is animating away is the chained
+    /// double-modal trap the root sheet below was consolidated to avoid. A
+    /// layer has nothing to race: it is simply there, revealed as the modal
+    /// above it goes. Non-dismissable follows from that; there is no gesture
+    /// and no control that could close it, only the sign-out on the screen.
+    private var showsProfileGate: Bool {
+        bootstrapped && services.auth.needsProfileCompletion
+    }
+
     /// The one sheet the root can present. A reset link outranks the mid-action
     /// sign-in sheet; consolidating into a single `.sheet(item:)` avoids the
     /// chained double-sheet trap.
@@ -90,7 +110,12 @@ struct RootView: View {
         if let token = services.router.passwordResetToken {
             return .resetPassword(token)
         }
-        if services.auth.pendingIntent != nil, phase == .main {
+        // Only when the root is the layer on screen. A sheet presented from
+        // here while a descendant's `fullScreenCover` is up is not shown, it
+        // is *deferred* — the guest sees nothing, then meets the gate later
+        // attached to nothing, when the cover closes. The cover presents its
+        // own gate instead; see `ModalLayer`.
+        if services.auth.pendingIntent != nil, phase == .main, services.router.gateLayer == .root {
             return .authGate
         }
         return nil
@@ -118,8 +143,20 @@ struct RootView: View {
                 MainTabView()
                     .transition(phaseTransition)
             }
+
+            if showsProfileGate {
+                ProfileCompletionView()
+                    .transition(.opacity)
+                    // Above every phase, and above the tab bar with it.
+                    .zIndex(1)
+                    // Keeps VoiceOver inside the gate: without it the shell
+                    // underneath stays in the rotor, and a screen you cannot
+                    // dismiss would still be swipeable past.
+                    .accessibilityAddTraits(.isModal)
+            }
         }
         .animation(Motion.easeSlow, value: phase)
+        .animation(Motion.easeMedium, value: showsProfileGate)
         // One window-level recogniser covers every screen and sheet: tapping
         // off a field closes the keyboard and drops focus.
         .dismissesKeyboardOnBackgroundTap()
@@ -146,13 +183,16 @@ struct RootView: View {
                 }
             }
         }
-        // Analytics identity follows the session, observed here in the app
+        // The observed identity follows the session, watched here in the app
         // layer rather than hooked into AuthSession. Watching `user?.id`
         // covers all three ways it can move — sign-in, sign-out, and the
         // launch-time restore that `bootstrap()` performs — with one call.
-        // `Analytics.sessionChanged` is idempotent, so `initial: true` is safe.
+        // `Observability.identify` fans that out to PostHog, Sentry and the
+        // log shipper, passing nil through as a reset rather than as an
+        // identity, so no service is ever handed a nil user. It is idempotent,
+        // which is what makes `initial: true` safe.
         .onChange(of: services.auth.user?.id, initial: true) { _, userID in
-            Analytics.sessionChanged(to: userID)
+            Observability.identify(userID: userID)
         }
         .onOpenURL { url in
             // Stripe gets first refusal. Redirect-based methods (Cash App Pay,
@@ -189,8 +229,15 @@ struct RootView: View {
         .task {
             await services.auth.bootstrap()
             bootstrapped = true
+            // Tokens survived but /auth/me never answered — the session is
+            // being kept on faith (see `bootstrap`), and that is worth a line
+            // when someone is looking at why a launch behaved oddly.
+            if services.auth.isAuthenticated, services.auth.user == nil {
+                Observability.log(.warning, "session restore incomplete")
+            }
             if services.auth.isAuthenticated {
                 services.push.refreshRegistration()
+                await services.push.requestAuthorizationIfNeeded()
                 // A restored session skips the intro (see `phase`), but until
                 // now it skipped it *without remembering*, so the flag stayed
                 // false underneath a member who was using the app. Signing out
@@ -233,6 +280,16 @@ struct RootView: View {
                 }
             }
             #endif
+        }
+        // The launch task above only fires once, so a member who signs in
+        // during a session would not be asked until the next cold start.
+        // Signing in is the moment the prompt makes sense, which is what it
+        // was missing: the only caller of requestAuthorization was a toggle
+        // buried in Profile, so most members were never asked at all and the
+        // backend held no token to send to.
+        .onChange(of: services.auth.isAuthenticated) { _, isAuthenticated in
+            guard isAuthenticated else { return }
+            Task { await services.push.requestAuthorizationIfNeeded() }
         }
     }
 

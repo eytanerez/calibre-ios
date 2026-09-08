@@ -33,12 +33,18 @@
 	<string>$(API_BASE_URL)</string>
 	<key>CalibreApplePayEnabled</key>
 	<string>$(APPLE_PAY_ENABLED)</string>
+	<key>CalibreBetterStackHost</key>
+	<string>$(CALIBRE_BETTERSTACK_HOST)</string>
+	<key>CalibreBetterStackToken</key>
+	<string>$(CALIBRE_BETTERSTACK_TOKEN)</string>
 	<key>CalibreMessagingBaseURL</key>
 	<string>$(MESSAGING_API_BASE_URL)</string>
 	<key>CalibrePostHogHost</key>
 	<string>$(CALIBRE_POSTHOG_HOST)</string>
 	<key>CalibrePostHogKey</key>
 	<string>$(CALIBRE_POSTHOG_KEY)</string>
+	<key>CalibreSentryDSN</key>
+	<string>$(CALIBRE_SENTRY_DSN)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>

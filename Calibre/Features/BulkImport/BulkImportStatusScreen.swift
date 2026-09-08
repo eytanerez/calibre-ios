@@ -98,7 +98,7 @@ struct BulkImportStatusScreen: View {
         EmptyState(
             icon: "tray.and.arrow.down",
             title: "Bulk import is for verified dealers",
-            message: "A dealer is a verified business. Completing the second verification step with your EIN and business details makes you one automatically — there is no approval queue and no waiting on a person. Dealer status also brings the lower seller rate and a badge buyers can see.",
+            message: "A dealer is a verified business: complete the second verification step with your EIN and business details, and Stripe's verdict decides whether that grant is automatic or goes to someone here to review. Dealer status also brings the lower seller rate and a badge buyers can see.",
             actionTitle: "Apply to become a dealer",
             action: { showDealerApplication = true }
         )

@@ -118,11 +118,16 @@ private struct OfferDetailContent: View {
                 // moment (CALIBRE_BY_HAND_CONTRACTS.md §4) and this is the one
                 // screen in the negotiation that reaches it, so the budget of
                 // one illustrated moment per step is spent here and nowhere
-                // else in the flow. It presses when the screen first shows an
-                // agreed offer and again if the status changes under it;
-                // under Reduce Motion it is simply already sealed.
+                // else in the flow. It presses when the status changes under
+                // the screen; under Reduce Motion it is simply already sealed.
+                //
+                // And it presses only once per app session for a given
+                // agreement: `trigger:` alone would re-strike the seal on
+                // every push, and an offer opened four times in an afternoon
+                // is one agreement, not four.
                 if isAgreed(offer) {
                     CalibreMark.waxSeal(size: 44, trigger: offer.status)
+                        .markAnnounces("offer-agreed:\(offer.id):\(offer.status.rawValue)")
                 }
 
                 VStack(alignment: .leading, spacing: Space.s) {

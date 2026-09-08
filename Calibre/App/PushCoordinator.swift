@@ -134,6 +134,25 @@ final class PushCoordinator: NSObject {
         }
     }
 
+    /// Asks for permission the first time a signed-in member reaches the app,
+    /// and only then.
+    ///
+    /// `requestAuthorization()` existed from the start but its only caller was
+    /// the Profile toggle, so a member who never opened that screen was never
+    /// asked — the app held no token, and every push the backend sent went
+    /// nowhere. Nothing surfaced that: the send path reports success against a
+    /// device list that is simply empty.
+    ///
+    /// Gated on `.notDetermined` so a member who said no is not asked again on
+    /// every launch (iOS would refuse anyway, but the intent matters), and on
+    /// being signed in so the prompt lands with some context rather than cold
+    /// on first open.
+    @discardableResult
+    func requestAuthorizationIfNeeded() async -> Bool {
+        guard await authorizationStatus() == .notDetermined else { return false }
+        return await requestAuthorization()
+    }
+
     /// Re-registers with the backend on launch/sign-in if we already hold a
     /// token (APNs tokens rotate).
     func refreshRegistration() {
@@ -142,15 +161,44 @@ final class PushCoordinator: NSObject {
         }
     }
 
+    /// Which APNs host will accept this device's token.
+    ///
+    /// This used to be `#if DEBUG ? "sandbox" : "production"`, which is the
+    /// build configuration — but APNs decides from the `aps-environment`
+    /// entitlement, and the two disagree for any Release build installed
+    /// straight onto a device: it reported "production" while holding a
+    /// sandbox token, and every push to it came back 400 BadDeviceToken.
+    ///
+    /// Verified 2026-09-07 on a Release-to-device install: production was
+    /// rejected, sandbox delivered the same payload to the same token.
+    ///
+    /// The failure was silent, which is the worst part — the backend records a
+    /// send, APNs answers cleanly, and nobody is notified. Reading the profile
+    /// the binary was actually signed with is the only source that agrees with
+    /// whoever is going to reject the token.
+    ///
+    /// TestFlight and App Store builds have no embedded profile and are
+    /// production, which is why the old code happened to be right for them and
+    /// this returns "production" when the profile is absent or unreadable.
+    private static func apsEnvironment() -> String {
+        guard
+            let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+            let data = try? Data(contentsOf: url),
+            let raw = String(data: data, encoding: .isoLatin1),
+            let range = raw.range(of: "<key>aps-environment</key>")
+        else { return "production" }
+
+        // The value is the first <string> after the key; anything else means a
+        // profile shape we do not recognise, and production is the safe read.
+        let tail = raw[range.upperBound...].prefix(200)
+        return tail.contains("<string>development</string>") ? "sandbox" : "production"
+    }
+
     func didRegister(deviceToken data: Data) {
         let token = data.map { String(format: "%02x", $0) }.joined()
         deviceToken = token
         Task {
-            #if DEBUG
-            let environment = "sandbox"
-            #else
-            let environment = "production"
-            #endif
+            let environment = Self.apsEnvironment()
             try? await account.registerDevice(token: token, environment: environment)
         }
     }

@@ -66,6 +66,24 @@ public struct OrderAuthentication: Codable, Sendable, Hashable {
     /// reaching a person are different facts, and only this one can be
     /// confirmed by somebody who opened the box.
     public let arrivedAt: Date?
+    /// The day the bench expects to be finished, as a calendar day.
+    ///
+    /// `expected_out_on` is a `Date` column and arrives as bare `YYYY-MM-DD`
+    /// (`_serialize_authentication` calls `.isoformat()` on a `date`). Two
+    /// things follow, and the first is the reason this initializer exists at
+    /// all: `ISO8601DateFormatter` returns nil for a string with no time, so
+    /// the decoder every payload goes through **threw** on it — and because
+    /// the synthesized initializer let that throw travel, one bench date took
+    /// the whole `Order` with it, and with it the order page and every row of
+    /// a list it appeared in. Nothing read this field, so nothing looked wrong;
+    /// the order simply failed to load.
+    ///
+    /// The second is that a calendar day is not an instant. Read as midnight
+    /// UTC it is the day before the one the bench wrote down for every reader
+    /// west of Greenwich — told to them confidently. It is built from its own
+    /// components against the reader's calendar instead, so the day that comes
+    /// back out is the day that went in. Anything carrying a time is an
+    /// instant and is still read as one.
     public let expectedOutOn: Date?
     public let shippedAt: Date?
     public let report: AuthenticationReportRef?
@@ -79,12 +97,95 @@ public struct OrderAuthentication: Codable, Sendable, Hashable {
         case authCase = "case"
     }
 
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        recordId = try container.decode(String.self, forKey: .recordId)
+        number = try container.decode(String.self, forKey: .number)
+        kind = try container.decode(String.self, forKey: .kind)
+        stage = try container.decode(AuthenticationStage.self, forKey: .stage)
+        step = try container.decode(AuthenticationStep.self, forKey: .step)
+        holdReason = try container.decodeIfPresent(String.self, forKey: .holdReason)
+        verdict = try container.decodeIfPresent(String.self, forKey: .verdict)
+        serviceRecommended = try container.decodeIfPresent(Bool.self, forKey: .serviceRecommended)
+        arrivedAt = try container.decodeIfPresent(Date.self, forKey: .arrivedAt)
+        expectedOutOn = try CalendarDay.decode(from: container, forKey: .expectedOutOn)
+        shippedAt = try container.decodeIfPresent(Date.self, forKey: .shippedAt)
+        report = try container.decodeIfPresent(AuthenticationReportRef.self, forKey: .report)
+        authCase = try container.decodeIfPresent(OrderCaseRef.self, forKey: .authCase)
+    }
+
     /// A person at Calibre is looking at this watch more closely.
     ///
     /// A state of the RECORD, not of the order: the order sits at `to_auth`
     /// throughout, which is why nothing before this could tell a hold from
     /// ordinary progress.
     public var isHeld: Bool { stage == .inHand && step == .onHold }
+
+    /// What a hold is called out loud.
+    ///
+    /// Here rather than in a view because the order's lead and the card a
+    /// seller surface can draw must say the same thing, and two copies of a
+    /// paragraph are two copies to keep in step.
+    public var holdTitle: String { "We are taking a closer look at your watch" }
+
+    /// The paragraph under it.
+    ///
+    /// The reason for the hold is not named. It is private to the two parties
+    /// while it is open, and naming it would be Calibre's finding announced
+    /// before Calibre has finished making it — which is why a service hold and
+    /// every other hold deliberately differ only in what they promise next.
+    public var holdBody: String {
+        if holdReason == "service" || serviceRecommended == true {
+            return "Our authentication centre found something worth a second opinion on how this watch is running. "
+                + "Nothing is decided and nothing has changed about your order. A person at Calibre is reviewing it "
+                + "and will write to you with what we found and what we suggest."
+        }
+        return "Your watch is with our authentication centre and a person at Calibre is reviewing it before it goes "
+            + "any further. Nothing is decided yet. We will write to you with what we found, and you will be asked "
+            + "before anything about your order changes."
+    }
+}
+
+/// A calendar day on the wire, read as a calendar day.
+///
+/// Kept apart from the decoder's own date strategy because the two are reading
+/// different things. That strategy reads an *instant* — a moment the same all
+/// over the world — and every other date in these payloads is one. A day the
+/// bench wrote on a record is not: it is a square on a calendar, and the reader
+/// should see the square, not the moment its edge falls on in their zone.
+enum CalendarDay {
+    /// The day at the reader's own midnight, or nil.
+    ///
+    /// Nil rather than a throw is the deliberate part. This is one line on a
+    /// screen full of them, and a value that cannot be read must cost that line
+    /// and nothing else — never the record it sits on, and never the order page
+    /// behind that. Every reader of the field already treats nil as "we were
+    /// not told", which is exactly what an unreadable value means.
+    static func decode<Key: CodingKey>(
+        from container: KeyedDecodingContainer<Key>,
+        forKey key: Key
+    ) throws -> Date? {
+        guard container.contains(key) else { return nil }
+        // `try?` flattens here, so a null and a value of the wrong JSON type
+        // both arrive as nil and both fall through to the line below.
+        if let raw = try? container.decodeIfPresent(String.self, forKey: key), let day = day(from: raw) {
+            return day
+        }
+        // Not the date-only shape: a deployment sending a timestamp here is
+        // sending an instant, and the decoder's own strategy is what reads one.
+        return try? container.decodeIfPresent(Date.self, forKey: key)
+    }
+
+    /// `YYYY-MM-DD` and nothing else — built from its own components against
+    /// the reader's calendar, which is what makes the day survive the trip.
+    static func day(from raw: String) -> Date? {
+        let parts = raw.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 3,
+              parts[0].count == 4, parts[1].count == 2, parts[2].count == 2,
+              let year = Int(parts[0]), let month = Int(parts[1]), let dayOfMonth = Int(parts[2])
+        else { return nil }
+        return Calendar.current.date(from: DateComponents(year: year, month: month, day: dayOfMonth))
+    }
 }
 
 // MARK: - The report

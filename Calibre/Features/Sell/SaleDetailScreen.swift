@@ -403,7 +403,7 @@ struct SaleDetailScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 if payout?.firstPayoutHold == true {
-                    Text("This is one of your first sales, so this payout may take 7 to 14 days to arrive. After that, payouts settle on the normal schedule.")
+                    Text("This is one of your first sales, so this payout may take about two weeks to arrive. After that, payouts settle on the normal schedule.")
                         .font(CalibreType.label)
                         .foregroundStyle(Color.calibre.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
@@ -655,7 +655,9 @@ struct SaleDetailScreen: View {
         case "refunded": "Refunded"
         case .some(let other) where !other.isEmpty:
             other.replacingOccurrences(of: "_", with: " ").capitalized
-        default: "Scheduled"
+        // Nothing was sent. "Scheduled" would promise a payout this build has
+        // no word for, so the state that says it does not know says so.
+        default: SellerPayoutState(wireValue: order.payoutStatus).label
         }
     }
 

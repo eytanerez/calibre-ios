@@ -36,7 +36,7 @@ final class DiscoverAndInfoUITests: XCTestCase {
         snap("discover-explained")
     }
 
-    func testJournalAndFeePagesAreFirstClassDestinations() throws {
+    func testBitesAndFeePagesAreFirstClassDestinations() throws {
         let app = returningApp()
         app.launch()
 
@@ -45,14 +45,23 @@ final class DiscoverAndInfoUITests: XCTestCase {
         // The "You" tab was renamed "Me" — same screen, same rows.
         tabs.buttons["Me"].tap()
 
-        let journal = app.buttons["The Journal"]
-        XCTAssertTrue(journal.waitForExistence(timeout: 5))
-        journal.tap()
-        XCTAssertTrue(app.navigationBars["Journal"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Stories from the world of watches, written by the Calibre desk."].exists)
-        snap("journal-index")
+        // The Journal row became Bites when Bites replaced the Journal: the
+        // row opens the library, and the index it used to open is gone
+        // rather than hidden.
+        let bites = app.buttons["Bites"]
+        XCTAssertTrue(bites.waitForExistence(timeout: 5))
+        bites.tap()
+        XCTAssertTrue(app.navigationBars["Bites"].waitForExistence(timeout: 5))
+        // The library reached the record. Its rows are editorial and change
+        // with what the desk publishes, so the assertion is that the archive
+        // arrived rather than on any particular claim in it.
+        XCTAssertFalse(
+            app.staticTexts["The archive is out of reach"].waitForExistence(timeout: 5),
+            "the Bites library did not load"
+        )
+        snap("bites-library")
 
-        app.navigationBars["Journal"].buttons.element(boundBy: 0).tap()
+        app.navigationBars["Bites"].buttons.element(boundBy: 0).tap()
 
         let fees = app.buttons["Fees and payments"]
         XCTAssertTrue(fees.waitForExistence(timeout: 5))

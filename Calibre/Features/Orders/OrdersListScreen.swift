@@ -73,14 +73,17 @@ struct OrdersListScreen: View {
                         )
                         .padding(.top, Space.xxl)
                     } else {
-                        LazyVStack(spacing: Space.l) {
-                            ForEach(sections) { section in
-                                if section.isPurchase {
-                                    purchaseGroup(section)
-                                } else if let order = section.orders.first {
-                                    orderButton(order)
-                                }
-                            }
+                        let split = partitions
+                        LazyVStack(alignment: .leading, spacing: Space.xl) {
+                            // What a buyer opens this list for is whether
+                            // anything is theirs to do, and one undifferentiated
+                            // column answered that only by being read all the
+                            // way down.
+                            partition("Waiting on you", sections: split.waitingOnYou)
+                            partition(
+                                split.waitingOnYou.isEmpty ? "Your orders" : "Everything else",
+                                sections: split.everythingElse
+                            )
                         }
                         .padding(Space.margin)
                     }
@@ -118,6 +121,45 @@ struct OrdersListScreen: View {
             buckets[key]?.append(row)
         }
         return order.map { OrderSection(id: $0, orders: buckets[$0] ?? []) }
+    }
+
+    /// The list split in two, each side keeping the order the server returned.
+    ///
+    /// One pass, so a row can land on exactly one side. A purchase goes to the
+    /// waiting side when any of its watches does, because the group is one row
+    /// of the list and half a purchase cannot sit in each partition.
+    private var partitions: (waitingOnYou: [OrderSection], everythingElse: [OrderSection]) {
+        var waiting: [OrderSection] = []
+        var rest: [OrderSection] = []
+        for section in sections {
+            if section.orders.contains(where: { $0.nextStep().actor == .you }) {
+                waiting.append(section)
+            } else {
+                rest.append(section)
+            }
+        }
+        return (waiting, rest)
+    }
+
+    /// One partition, or nothing at all — a heading over no rows is a heading
+    /// that has to be explained.
+    @ViewBuilder private func partition(_ title: String, sections: [OrderSection]) -> some View {
+        if !sections.isEmpty {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Text(title)
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+                VStack(spacing: Space.l) {
+                    ForEach(sections) { section in
+                        if section.isPurchase {
+                            purchaseGroup(section)
+                        } else if let order = section.orders.first {
+                            orderButton(order)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private func orderButton(_ order: Order) -> some View {
@@ -194,17 +236,26 @@ struct OrderRow: View {
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    private var step: OrderNextStep { order.nextStep() }
+
     var body: some View {
         HStack(spacing: Space.m) {
             OrderThumb(url: order.listing?.image?.url)
 
             VStack(alignment: .leading, spacing: 4) {
                 titleLine
-                Text(order.arrivalSummary ?? order.statusSummary)
+                if let actor = step.actor {
+                    Eyebrow(actor.label)
+                }
+                // The same sentence this order's own screen leads with, from
+                // the same function. What it replaces was keyed to the status
+                // word, so a row and the screen behind it could — and did —
+                // describe the same order differently.
+                Text(step.sentence)
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
-                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
-                statusLine
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                totalText
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
@@ -234,22 +285,6 @@ struct OrderRow: View {
             HStack(spacing: Space.s) {
                 titleText
                 numberText
-            }
-        }
-    }
-
-    /// Same trade one line down: a long total and a wide status pill cannot
-    /// share a row once the type is large enough.
-    @ViewBuilder private var statusLine: some View {
-        if typeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: Space.xs) {
-                StatusBadge(order.statusLabel, tone: order.statusTone)
-                totalText
-            }
-        } else {
-            HStack(spacing: Space.s) {
-                StatusBadge(order.statusLabel, tone: order.statusTone)
-                totalText
             }
         }
     }
@@ -304,6 +339,12 @@ private struct OrderRowSkeleton: View {
 
 // MARK: - Status presentation
 
+/// The status word, said the marketplace's way.
+///
+/// Not what the order screens read any more. They read `Order.nextStep()`,
+/// which can tell a seller still holding the watch from the bench holding it
+/// and a status word cannot. These stay for the home feed's shipment tracker,
+/// which is the one surface left that presents an order by its status alone.
 extension Order {
     var statusLabel: String {
         switch status {
@@ -324,7 +365,7 @@ extension Order {
         switch status {
         case .awaitingWire: "Complete your wire transfer to secure this watch."
         case .purchased: "Paid. The seller is preparing to ship it to authentication."
-        case .toAuth: "On its way to our authentication center."
+        case .toAuth: "On its way to our authentication centre."
         case .authPass: "Authenticated by our watchmakers. Shipping to you next."
         case .authFail: "We found an issue during authentication. Our team will follow up by email."
         case .toBuyer: "Shipped to you and on the way."

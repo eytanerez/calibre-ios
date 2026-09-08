@@ -307,7 +307,7 @@ struct DiscoverScreen: View {
         undoExpiry?.cancel()
         // The pill appears beside the deck, nowhere near where focus is; without
         // this it comes and goes without ever being mentioned.
-        A11y.announce(record.kind == .save ? "Saved. Undo is available." : "Passed. Undo is available.")
+        A11y.announce(undoAnnouncement(for: record))
         // Five seconds is barely enough to hear that the pill exists, let alone
         // move focus to it. Stretched only while something is navigating by
         // focus — everyone else still gets exactly five.
@@ -316,6 +316,23 @@ struct DiscoverScreen: View {
             try? await Task.sleep(for: window)
             guard !Task.isCancelled else { return }
             undoable = nil
+        }
+    }
+
+    /// What the pill's arrival actually means.
+    ///
+    /// A guest's save has not happened yet — `session.require` has just put the
+    /// sign-in gate on screen and nothing is written until they come back
+    /// through it — so "Saved." would announce a promise the app has not kept.
+    /// The card still leaves the deck either way, which is what the pill undoes.
+    private func undoAnnouncement(for record: UndoRecord) -> String {
+        switch record.kind {
+        case .pass:
+            "Passed. Undo is available."
+        case .save:
+            session.isAuthenticated
+                ? "Saved. Undo is available."
+                : "Sign in to save this watch. Undo is available."
         }
     }
 

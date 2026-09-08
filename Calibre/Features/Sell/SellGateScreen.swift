@@ -5,11 +5,12 @@ import SwiftUI
 /// "Start selling on Calibre" — the Sell tab root until Connect payouts are
 /// ready. Guests see the same story with a sign-in gate on the CTA.
 ///
-/// A signed-in seller sees their setup instead of the pitch: two steps,
-/// payouts then the card, with step one rendering whichever of the backend's
-/// six states they are actually in (`ConnectSetupStatus`). Nothing here traps
-/// anyone — the tab bar stays put, every sheet dismisses, and the card step
-/// can be taken before or after payouts.
+/// A signed-in seller sees their setup instead of the pitch: payouts, then the
+/// card, with the payouts step rendering whichever of the backend's states they
+/// are actually in (`ConnectSetupStatus`). The card is only drawn where it is
+/// still something to do — see `setupSection`. Nothing here traps anyone: the
+/// tab bar stays put, every sheet dismisses, and the card step can be taken
+/// before or after payouts.
 struct SellGateScreen: View {
     enum Mode {
         case guest
@@ -164,8 +165,8 @@ struct SellGateScreen: View {
 
     // MARK: - The guest story
 
-    /// How selling works, for someone who hasn't signed in. A member sees
-    /// their own two steps instead — the pitch has already been made to them.
+    /// How selling works, for someone who hasn't signed in. A member sees their
+    /// own setup instead — the pitch has already been made to them.
     private var storyRow: some View {
         HStack(alignment: .top, spacing: Space.m) {
             gateStep(icon: "building.columns", title: "Payouts with Stripe", caption: "Verify your details once")
@@ -215,7 +216,7 @@ struct SellGateScreen: View {
         VStack(spacing: Space.s) {
             Text("You verify your details once with our payments partner. Calibre never sees your banking information.")
             // Disclosed during onboarding, not after the first sale.
-            Text("Your first payout may take 7 to 14 days while your account is established. After that, payouts arrive on the normal schedule.")
+            Text("Your first payout may take about two weeks while your account is established. After that, payouts arrive on the normal schedule.")
         }
         .font(CalibreType.caption)
         .foregroundStyle(Color.calibre.mutedForeground)
@@ -224,7 +225,7 @@ struct SellGateScreen: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    // MARK: - The seller's own two steps
+    // MARK: - The seller's own setup
 
     @ViewBuilder
     private var setupSection: some View {
@@ -233,11 +234,24 @@ struct SellGateScreen: View {
         // in flight, and a shimmer says that better than a made-up step would.
         if let connect = services.seller.readiness?.connect {
             let step = connect.payoutStep
+            // Two reasons the card is not drawn. A rejected account can never
+            // list, so the card is not this screen's business in any card
+            // state. And a card already on file while payouts are the thing
+            // actually outstanding is a finished step, not a step — showing it
+            // is what told a seller arriving from the dealer application's
+            // seller-setup link that there were two things to do when there
+            // was one. `cardStepIsRedundant` keeps the expiring-card warning
+            // out of that rule.
+            let showsCard = step.status != .rejected
+                && !SellerSetupSteps.cardStepIsRedundant(card: sellerCard, payoutsComplete: step.isComplete)
+            let stepsShown = showsCard ? 2 : 1
             VStack(alignment: .leading, spacing: Space.l) {
-                Eyebrow("Setting up your shop")
+                Eyebrow("Setting up your storefront")
 
-                payoutStepCard(step)
-                cardStepCard(payoutsComplete: step.isComplete)
+                payoutStepCard(step, of: stepsShown)
+                if showsCard {
+                    cardStepCard(payoutsComplete: step.isComplete)
+                }
 
                 // A rejected account is a dead end, and a promise about payout
                 // timing on top of it would read as a suggestion to try again.
@@ -255,10 +269,10 @@ struct SellGateScreen: View {
 
     // MARK: Step 1 — payouts
 
-    private func payoutStepCard(_ step: PayoutSetupStep) -> some View {
+    private func payoutStepCard(_ step: PayoutSetupStep, of stepsShown: Int) -> some View {
         SetupStepCard(
             number: 1,
-            of: 2,
+            of: stepsShown,
             name: "Payouts with Stripe",
             state: step.isComplete ? .done : (step.tone == .attention ? .attention : .current)
         ) {
@@ -527,7 +541,7 @@ struct SellGateScreen: View {
                 Haptics.shared.play(.success)
                 toasts.show(
                     title: "Payouts are ready",
-                    message: "Your shop is open — list your first watch whenever you like.",
+                    message: "Your storefront is open — list your first watch whenever you like.",
                     tone: .success
                 )
             }
@@ -553,8 +567,11 @@ private enum SetupStepState {
     case attention
 }
 
-/// A step in seller setup, said as "Step 1 of 2" so neither half looks like
-/// the whole job. The marker carries the state; the content is the step's own.
+/// A step in seller setup, said as "Step 1 of 2" while there are two, so
+/// neither half looks like the whole job. Where only one is drawn the counter
+/// is dropped: "Step 1 of 1" is a stepper for a job with no steps in it, and it
+/// leaves a seller looking for the one that is missing. The marker carries the
+/// state; the content is the step’s own.
 private struct SetupStepCard<Content: View>: View {
     let number: Int
     let of: Int
@@ -568,9 +585,11 @@ private struct SetupStepCard<Content: View>: View {
                 HStack(spacing: Space.m) {
                     marker
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Step \(number) of \(of)")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                        if of > 1 {
+                            Text("Step \(number) of \(of)")
+                                .font(CalibreType.caption)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                        }
                         Text(name)
                             .font(CalibreType.bodyMedium)
                             .foregroundStyle(Color.calibre.foreground)
