@@ -11,3 +11,5 @@ xcuserdata/
 # projects' git objects, one pack of which is over GitHub's 100MB file
 # limit and rejects the push outright. Rebuilt by Xcode on demand.
 .spm-cache/
+# Observability keys, never committed (see Config/Secrets.xcconfig.example)
+Calibre/Config/Secrets.xcconfig

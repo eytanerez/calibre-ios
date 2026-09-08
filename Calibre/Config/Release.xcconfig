@@ -32,7 +32,7 @@ APPLE_PAY_ENABLED = YES
 // capture is a no-op. Supply a real project key in a local override or CI
 // build setting to turn it on. The host has a working default because it is
 // not a secret; only the key gates the feature.
-CALIBRE_POSTHOG_KEY = ***REMOVED***
+CALIBRE_POSTHOG_KEY =
 CALIBRE_POSTHOG_HOST = https:/$()/us.i.posthog.com
 
 // Crash/error reporting (Sentry) and log shipping (Better Stack). Empty in the
@@ -41,8 +41,8 @@ CALIBRE_POSTHOG_HOST = https:/$()/us.i.posthog.com
 // off" — the SDK is never started, no network call is made, and a build that
 // shipped before the key arrived cannot crash on launch. THIS is the file
 // TestFlight builds read, so these are the two lines to paste into.
-CALIBRE_SENTRY_DSN = https:/$()/***REMOVED***@o4511961825935360.ingest.us.sentry.io/4512047575203840
-CALIBRE_BETTERSTACK_TOKEN = ***REMOVED***
+CALIBRE_SENTRY_DSN =
+CALIBRE_BETTERSTACK_TOKEN =
 // The source's own ingesting host (Better Stack → Sources → calibre-ios →
 // "Ingesting host"), without a scheme because // would start a comment here.
 // The shared in.logs.betterstack.com refuses tokens from per-source sources.
@@ -55,3 +55,8 @@ CALIBRE_BETTERSTACK_HOST = s2743596.us-west-2a.betterstackdata.com
 // "staging" for the same session. Remove STAGING the day a production backend
 // exists.
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = STAGING
+
+// Real keys live in Secrets.xcconfig beside this file — untracked and
+// gitignored, so nothing secret is ever committed. The `?` makes the include
+// optional: without the file the keys above stay empty and every service is off.
+#include? "Secrets.xcconfig"

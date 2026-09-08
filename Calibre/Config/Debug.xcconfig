@@ -29,13 +29,18 @@ APPLE_PAY_ENABLED = YES
 // capture is a no-op. Supply a real project key in a local override or CI
 // build setting to turn it on. The host has a working default because it is
 // not a secret; only the key gates the feature.
-CALIBRE_POSTHOG_KEY = ***REMOVED***
+CALIBRE_POSTHOG_KEY =
 CALIBRE_POSTHOG_HOST = https:/$()/us.i.posthog.com
 
 // Crash/error reporting (Sentry) and log shipping (Better Stack). Empty on
 // Debug on purpose — see Release.xcconfig and Calibre/App/Observability.swift
 // for what an empty value does (nothing: no SDK start, no network call, no
 // crash). Paste a DSN/token here only to exercise the wiring locally.
-CALIBRE_SENTRY_DSN = https:/$()/***REMOVED***@o4511961825935360.ingest.us.sentry.io/4512047575203840
-CALIBRE_BETTERSTACK_TOKEN = ***REMOVED***
+CALIBRE_SENTRY_DSN =
+CALIBRE_BETTERSTACK_TOKEN =
 CALIBRE_BETTERSTACK_HOST = s2743596.us-west-2a.betterstackdata.com
+
+// Real keys live in Secrets.xcconfig beside this file — untracked and
+// gitignored, so nothing secret is ever committed. The `?` makes the include
+// optional: without the file the keys above stay empty and every service is off.
+#include? "Secrets.xcconfig"
