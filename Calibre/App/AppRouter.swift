@@ -18,7 +18,11 @@ enum Route: Hashable {
     case offer(String)
     case journal
     case journalArticle(String)
+    /// The list of the customer's own support conversations. Support opens
+    /// here, not on a thread — there is more than one now.
     case supportChat
+    /// One support conversation, by id. A reply push names its own thread.
+    case supportThread(String)
     case messages
     /// One buyer↔seller conversation, by its calibre-messaging thread id.
     case messageThread(String)
@@ -177,7 +181,7 @@ final class AppRouter {
             .home
         case .journal, .journalArticle, .poll:
             .community
-        case .order, .offer, .alerts, .supportChat, .messages, .messageThread:
+        case .order, .offer, .alerts, .supportChat, .supportThread, .messages, .messageThread:
             .you
         case .vaultWatch:
             .collection
@@ -232,8 +236,17 @@ final class AppRouter {
         case "passport":
             guard let code = segments.first else { return false }
             open(.passport(code))
+        // `support` and `support/<thread id>` are both live: the customer
+        // push now names its conversation, and a build that only understood
+        // the bare word would have dropped the id in silence.
         case "support":
-            open(.supportChat)
+            if let id = segments.first, !id.isEmpty {
+                open(.supportThread(id))
+            } else if let thread = queryValue("thread", in: url), !thread.isEmpty {
+                open(.supportThread(thread))
+            } else {
+                open(.supportChat)
+            }
         case "alerts":
             open(.alerts)
         case "auth":
@@ -278,8 +291,16 @@ final class AppRouter {
         case "passport", "passports":
             guard segments.count > 1 else { return false }
             open(.passport(segments[1]))
+        // The reply email's CTA for a signed-in customer is
+        // `/support?thread=<id>`; the bare path is still the list.
         case "support":
-            open(.supportChat)
+            if segments.count > 1, !segments[1].isEmpty {
+                open(.supportThread(segments[1]))
+            } else if let thread = queryValue("thread", in: url), !thread.isEmpty {
+                open(.supportThread(thread))
+            } else {
+                open(.supportChat)
+            }
         case "auth":
             guard segments.count > 1, segments[1].lowercased() == "reset-password",
                   let token = queryValue("token", in: url), !token.isEmpty else { return false }

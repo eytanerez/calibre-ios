@@ -4,9 +4,26 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Message Calibre — works for guests and signed-in users. Guests give an
-/// email on their first message so support can reply; the thread survives
-/// relaunch via a persisted token. Polls every 20 seconds while open.
+/// Which conversation this screen is. Support holds several per customer now,
+/// so opening the composer is no longer the same thing as knowing which
+/// thread the words will land in.
+enum SupportEntry: Hashable {
+    /// One conversation, named. Writing here continues it even when it is
+    /// closed — going back to a thread on purpose is not the same as starting
+    /// one, and the server treats it that way.
+    case thread(String)
+    /// A fresh conversation, whatever else exists.
+    case newThread
+    /// Continue the most recent conversation if the **server** says writing
+    /// now continues it, and otherwise open a new one. The rule is a 24-hour
+    /// window and it lives in one place, on the server; this asks for the
+    /// answer rather than recomputing it from a timestamp.
+    case resumeOrNew
+}
+
+/// One support conversation — works for guests and signed-in users. Guests
+/// give an email on their first message so support can reply; their threads
+/// survive relaunch via persisted tokens. Polls every 20 seconds while open.
 struct SupportChatScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -14,16 +31,30 @@ struct SupportChatScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var draft: String
+    private let entry: SupportEntry
 
     /// `seed` is a first message written on the customer's behalf, for the
     /// screens that send someone here from a dead end rather than from a
     /// question of their own. It lands in the composer as a draft they can
     /// edit or delete — never as a message already sent, because the send is
     /// theirs to make.
-    init(seed: String = "") {
+    init(entry: SupportEntry = .resumeOrNew, seed: String = "") {
+        self.entry = entry
         _draft = State(initialValue: seed)
     }
 
+    /// The conversation on screen, held here rather than read off the store:
+    /// the list and a thread can both be alive at once, and a single shared
+    /// slot means whichever loaded last wins.
+    @State private var conversation: SupportConversation?
+    /// Set once this screen knows it is writing into a brand-new thread — the
+    /// New chat button, or a most-recent thread the server called stale.
+    @State private var startsNewThread = false
+    /// Set when a conversation was named and could not be opened — somebody
+    /// else's, or gone. The composer stays shut rather than writing somewhere
+    /// nobody asked for.
+    @State private var threadUnavailable = false
+    @State private var loading = false
     @State private var guestEmail = ""
     @State private var sending = false
     @State private var errorText: String?
@@ -44,7 +75,6 @@ struct SupportChatScreen: View {
     @State private var linkedRecords: [RecordRef] = []
     @State private var showingRecordPicker = false
 
-    private var conversation: SupportConversation? { services.support.conversation }
     private var needsGuestEmail: Bool {
         !session.isAuthenticated && services.support.guestToken == nil
     }
@@ -65,7 +95,7 @@ struct SupportChatScreen: View {
             composer
         }
         .calibrePageBackground()
-        .navigationTitle("Support")
+        .navigationTitle(conversation?.title() ?? "New conversation")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadAndPoll() }
     }
@@ -176,6 +206,16 @@ struct SupportChatScreen: View {
                     }
                 }
             }
+        } else if loading {
+            CalibreLoadingView("Opening this conversation")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if threadUnavailable {
+            EmptyState(
+                icon: "bubble.left.and.bubble.right",
+                title: "We couldn't open this conversation",
+                message: "It may have been closed on our side. Go back and start a new chat — we will still have your history."
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             EmptyState(
                 icon: "bubble.left.and.bubble.right",
@@ -402,7 +442,8 @@ struct SupportChatScreen: View {
     }
 
     private var canSend: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !threadUnavailable
+            && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && (!needsGuestEmail || InputValidation.isValidEmail(guestEmail))
             && !sending
             && !uploading
@@ -411,6 +452,9 @@ struct SupportChatScreen: View {
     /// Why the send is off. Otherwise the only account of it is a grey fill,
     /// and VoiceOver's flat "dimmed".
     private var sendHint: String {
+        if threadUnavailable {
+            return "This conversation could not be opened"
+        }
         if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return "Write a message first"
         }
@@ -486,11 +530,18 @@ struct SupportChatScreen: View {
         errorText = nil
         defer { sending = false }
         do {
-            _ = try await services.support.send(
+            // Once there is a conversation on screen, every message names it
+            // outright rather than leaving the server to guess — including a
+            // closed one, where naming the thread is the customer going back
+            // to it on purpose. Only the very first message of a new chat
+            // travels with `newThread`.
+            conversation = try await services.support.send(
                 RecordRefs.compose(text: body, refs: linkedRecords),
                 authenticated: session.isAuthenticated,
                 guestEmail: needsGuestEmail ? InputValidation.trimmed(guestEmail).lowercased() : nil,
-                attachmentIDs: attachments.map(\.id)
+                attachmentIDs: attachments.map(\.id),
+                threadID: conversation?.id,
+                newThread: conversation == nil && startsNewThread
             )
             draft = ""
             attachments = []
@@ -502,12 +553,43 @@ struct SupportChatScreen: View {
         }
     }
 
+    /// Opens whichever conversation this entry names, then keeps it fresh.
+    ///
+    /// The resume decision is the server's: `/support/thread` answers with the
+    /// most recently active conversation whether or not writing continues it,
+    /// and `resumable` on that payload is the answer. Recomputing the window
+    /// from `lastMessageAt` here would be a second copy of a rule that has one
+    /// home, and the two copies would disagree the first time either moved.
     private func loadAndPoll() async {
-        _ = try? await services.support.loadThread(authenticated: session.isAuthenticated)
+        loading = true
+        switch entry {
+        case .thread(let id):
+            conversation = try? await services.support.loadThread(id: id, authenticated: session.isAuthenticated)
+            // A named conversation that will not open must not fall through
+            // to the composer. With no thread on screen the send would carry
+            // neither an id nor the new-chat flag, and the server would apply
+            // its resume rule — putting the words in whichever conversation
+            // is most recent rather than the one the person opened.
+            threadUnavailable = conversation == nil
+        case .newThread:
+            startsNewThread = true
+        case .resumeOrNew:
+            let latest = try? await services.support.loadThread(authenticated: session.isAuthenticated)
+            if let latest, latest.resumable {
+                conversation = latest
+            } else {
+                startsNewThread = true
+            }
+        }
+        loading = false
+
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(20))
             guard !Task.isCancelled else { return }
-            _ = try? await services.support.loadThread(authenticated: session.isAuthenticated)
+            guard let id = conversation?.id else { continue }
+            if let refreshed = try? await services.support.loadThread(id: id, authenticated: session.isAuthenticated) {
+                conversation = refreshed
+            }
         }
     }
 }

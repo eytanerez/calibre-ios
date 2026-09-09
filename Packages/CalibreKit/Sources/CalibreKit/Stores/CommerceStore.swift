@@ -13,6 +13,9 @@ public final class CommerceStore {
     /// Listing ids currently watched — drives instant heart toggles.
     public private(set) var watchedListingIDs: Set<String> = []
     public private(set) var addresses: [Address] = []
+    /// Watches that sold out from under this member, waiting to be shown to
+    /// them. Pending until acknowledged — see `acknowledgeListingNotices`.
+    public private(set) var listingNotices: [ListingGoneNotice] = []
 
     /// Bumped by `reset()`. Every method below that writes `cart`,
     /// `watchlist`, `watchedListingIDs`, or `addresses` captures this before
@@ -37,6 +40,48 @@ public final class CommerceStore {
         watchlist = []
         watchedListingIDs = []
         addresses = []
+        listingNotices = []
+    }
+
+    // MARK: - Sold notices
+    //
+    // A sale evicts the watch from every cart and saved list, and the person
+    // is told once. The telling is a two-step on purpose: this read leaves the
+    // notices pending, and `acknowledgeListingNotices` burns them. Cart and
+    // Saved both refetch when their tab appears, so a mark-on-read design
+    // would spend somebody's one notice while the phone was in a pocket.
+
+    /// Reads what is pending. Writes nothing — call it beside `loadCart` and
+    /// `loadWatchlist`.
+    @discardableResult
+    public func loadListingNotices() async throws -> [ListingGoneNotice] {
+        let generation = sessionGeneration
+        let page: ListingGoneNoticePage = try await client.send(Endpoint(path: "/listing-notices"))
+        if generation == sessionGeneration {
+            listingNotices = page.notices
+        }
+        return page.notices
+    }
+
+    /// Burns the notices the client has actually put on screen. Idempotent and
+    /// scoped to the caller: acknowledging twice moves nothing and answers
+    /// zero, and ids belonging to somebody else match nothing.
+    ///
+    /// Answers how many rows this call moved from pending to shown.
+    @discardableResult
+    public func acknowledgeListingNotices(ids: [String]) async throws -> Int {
+        guard !ids.isEmpty else { return 0 }
+        let generation = sessionGeneration
+        struct Payload: Encodable { let ids: [String] }
+        struct Response: Decodable { let acknowledged: Int }
+        let response: Response = try await client.send(
+            try Endpoint.json(method: .post, path: "/listing-notices/seen", payload: Payload(ids: ids))
+        )
+        if generation == sessionGeneration {
+            let burned = Set(ids)
+            listingNotices.removeAll { burned.contains($0.id) }
+        }
+        return response.acknowledged
     }
 
     // MARK: - Cart

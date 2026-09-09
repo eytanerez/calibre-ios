@@ -27,6 +27,11 @@ struct AlertItem: Identifiable, Hashable, Codable {
     let body: String
     let route: String?
     let receivedAt: Date
+    /// Still written, no longer read by anything: the inbox is cleared rather
+    /// than ticked off. The key stays on the wire because these rows are
+    /// persisted, and a `JSONDecoder` handed an archive with a key it has no
+    /// property for is fine, while one missing a key it needs is not — the
+    /// whole saved inbox would fail to decode and quietly come back empty.
     var read: Bool
 }
 
@@ -41,7 +46,10 @@ final class AlertsInbox {
     @ObservationIgnored private let key = "calibre.alerts.inbox"
     @ObservationIgnored private let cap = 100
 
-    var unreadCount: Int { items.lazy.filter { !$0.read }.count }
+    /// What is left in the inbox — the same thing the signed-in badge counts.
+    /// A guest's inbox is emptied by clearing, not by reading, so this is the
+    /// row count and not the unread count.
+    var remainingCount: Int { items.count }
 
     init() {
         if let data = UserDefaults.standard.data(forKey: key),
@@ -61,14 +69,15 @@ final class AlertsInbox {
         persist()
     }
 
-    func markAllRead() {
-        items = items.map { var copy = $0; copy.read = true; return copy }
+    /// Empties the local inbox. Permanent and invisible, exactly as the
+    /// signed-in one is — there is no history view to fall back on.
+    func clearAll() {
+        items = []
         persist()
     }
 
-    func markRead(_ id: String) {
-        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
-        items[index].read = true
+    func clear(_ id: String) {
+        items.removeAll { $0.id == id }
         persist()
     }
 
@@ -305,7 +314,11 @@ final class PushCoordinator: NSObject {
         case "seller": return id.map { .seller($0) }
         case "brand": return id.map { .brand($0) }
         case "journal": return id.map { .journalArticle($0) }
-        case "support": return .supportChat
+        // Both spellings are live. The customer reply push now sends
+        // `support/<conversation id>`; it used to send the bare word, and a
+        // build that only knew one of the two either drops the id or drops
+        // the tap.
+        case "support": return id.map { .supportThread($0) } ?? .supportChat
         case "alerts": return .alerts
         default: return nil
         }

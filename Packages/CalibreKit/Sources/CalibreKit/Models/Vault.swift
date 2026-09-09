@@ -335,6 +335,13 @@ public struct WatchReferenceSpecsDraft: Equatable, Sendable {
 }
 
 /// One in-app notification (server-side inbox shared with the web bell).
+///
+/// A notification is *cleared*, not read. `readAt` still exists and still
+/// means "seen in the inbox", but the inbox is now emptied rather than
+/// ticked off: clearing stamps `clearedAt` on the server and the row is never
+/// listed again. There is no history view and no undo, by ruling — which is
+/// why `clearedAt` is only ever non-nil on the response to the call that
+/// cleared it, never on a row that came back from the list.
 public struct ServerNotification: Decodable, Equatable, Sendable, Identifiable {
     public let id: String
     public let category: String
@@ -342,7 +349,28 @@ public struct ServerNotification: Decodable, Equatable, Sendable, Identifiable {
     public let body: String
     public let route: String
     public let readAt: String?
+    public let clearedAt: String?
     public let createdAt: String?
+
+    public init(
+        id: String,
+        category: String,
+        title: String,
+        body: String,
+        route: String,
+        readAt: String? = nil,
+        clearedAt: String? = nil,
+        createdAt: String? = nil
+    ) {
+        self.id = id
+        self.category = category
+        self.title = title
+        self.body = body
+        self.route = route
+        self.readAt = readAt
+        self.clearedAt = clearedAt
+        self.createdAt = createdAt
+    }
 }
 
 public struct ServerNotificationList: Decodable, Equatable, Sendable {
@@ -350,7 +378,49 @@ public struct ServerNotificationList: Decodable, Equatable, Sendable {
     public let page: Int
     public let pageSize: Int
     public let total: Int
+    /// What is still in this member's inbox — the badge. Counts everything
+    /// not cleared, whether or not it has been read.
+    public let remainingCount: Int
+    /// The same number under its old key. The server moved the value rather
+    /// than the key so that a build shipped before the ruling keeps drawing a
+    /// correct badge; nothing new should read this.
     public let unreadCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case results, page, pageSize, total, remainingCount, unreadCount
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        results = try container.decode([ServerNotification].self, forKey: .results)
+        page = ((try? container.decodeIfPresent(Int.self, forKey: .page)) ?? nil) ?? 1
+        pageSize = ((try? container.decodeIfPresent(Int.self, forKey: .pageSize)) ?? nil) ?? results.count
+        total = ((try? container.decodeIfPresent(Int.self, forKey: .total)) ?? nil) ?? results.count
+        let unread = (try? container.decodeIfPresent(Int.self, forKey: .unreadCount)) ?? nil
+        // A server that predates the ruling sends only `unread_count`, and a
+        // hard `decode` of the new key would empty the whole inbox screen
+        // over a missing integer. The two keys carry the same number once
+        // both sides have shipped.
+        remainingCount = ((try? container.decodeIfPresent(Int.self, forKey: .remainingCount)) ?? nil)
+            ?? unread
+            ?? results.count
+        unreadCount = unread ?? remainingCount
+    }
+
+    public init(
+        results: [ServerNotification],
+        page: Int = 1,
+        pageSize: Int = 50,
+        total: Int = 0,
+        remainingCount: Int = 0
+    ) {
+        self.results = results
+        self.page = page
+        self.pageSize = pageSize
+        self.total = total
+        self.remainingCount = remainingCount
+        self.unreadCount = remainingCount
+    }
 }
 
 public struct SavedSearchSummary: Decodable, Equatable, Sendable, Identifiable {

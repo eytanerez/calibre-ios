@@ -71,6 +71,12 @@ struct CartSheet: View {
                 if isLoading, bagItems.isEmpty, services.commerce.watchlist.isEmpty {
                     loadingRows.cartRow(bottom: Space.xxl)
                 } else {
+                    // Above the bag, because the watches it is about have
+                    // already been taken out of it — there is nothing left in
+                    // the list below to point at.
+                    ListingGoneNoticeBanner(surface: .cart, insetsFromPage: false)
+                        .cartRow(bottom: 0)
+
                     bagSection.cartRow(bottom: savedItems.isEmpty ? Space.xxl : Space.xl)
 
                     if !savedItems.isEmpty {
@@ -251,7 +257,11 @@ struct CartSheet: View {
                     lineWidth: 1
                 )
         )
-        .opacity(available ? 1 : 0.6)
+        // Dimmed only when there is genuinely nowhere to go. A watch on hold
+        // is a live row again — its page opens for the person holding it and
+        // says On hold — so greying it was papering over a dead end that no
+        // longer exists.
+        .opacity((item.listing?.opensForHolder ?? false) ? 1 : 0.6)
         .animation(Motion.easeFast, value: selected)
     }
 
@@ -540,7 +550,12 @@ struct CartSheet: View {
         let commerce = services.commerce
         async let cart = try? commerce.loadCart()
         async let watchlist = try? commerce.loadWatchlist()
-        _ = await (cart, watchlist)
+        // Reads what is pending and burns nothing. The banner acknowledges,
+        // once it has actually rendered — this sheet reloads every time it is
+        // opened, and a read that acknowledged would spend the one notice a
+        // person gets about a watch before they had a chance to see it.
+        async let notices = try? commerce.loadListingNotices()
+        _ = await (cart, watchlist, notices)
         isLoading = false
     }
 

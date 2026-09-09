@@ -34,10 +34,9 @@ public enum GuardAction: String, Codable, Sendable {
 
 /// `GET /threads` / `POST /threads` — one buyer↔seller conversation.
 ///
-/// Deliberately thin: no counterparty name, no message preview, no unread
-/// count. The server denormalises only `listing_title`/`listing_reference`
-/// onto the thread row (so a list renders without a per-row fetch); anything
-/// else a richer inbox would want isn't in this service's response yet.
+/// The row now carries what a list row needs: the last delivered line, when it
+/// was delivered, and how many messages the caller has not read. There is
+/// still no counterparty name.
 public struct MessageThread: Codable, Sendable, Identifiable, Equatable {
     public let id: String
     public let listingId: String
@@ -48,6 +47,110 @@ public struct MessageThread: Codable, Sendable, Identifiable, Equatable {
     public let state: ThreadState
     public let lastMessageAt: Date?
     public let createdAt: Date
+
+    /// The most recently **delivered** message, whitespace already collapsed
+    /// and cut to a wire-size cap by the server — a single line, but a long
+    /// one, so a row still needs `lineLimit`.
+    ///
+    /// Never a held or denied message, for either party: a sender whose
+    /// message is under review sees the previous delivered line here while the
+    /// thread screen shows them their own held text. A send that does not
+    /// change this row is that, and not a bug.
+    ///
+    /// It does not say who wrote it. There is no sender on this payload, so
+    /// there is no honest way to draw a "You:" prefix.
+    ///
+    /// Nil means the thread has no delivered message yet — newly opened, or
+    /// every message so far held by the guard.
+    public let lastMessagePreview: String?
+    /// When the previewed message was delivered. The two always describe the
+    /// same event, so this is the timestamp to draw beside the preview.
+    ///
+    /// It equals `lastMessageAt` in the ordinary case, and can be later than
+    /// the message's place in the transcript for one the moderation queue
+    /// released — the stamp is when a person approved it. That is intended.
+    /// Nil exactly when the preview is nil.
+    public let lastMessagePreviewAt: Date?
+    /// Messages from the other participant, delivered, and not yet marked read
+    /// by the caller. Per-caller: the two sides see different numbers on the
+    /// same thread. Never a "they read yours" receipt — no such thing exists
+    /// in this service.
+    ///
+    /// It goes to zero through `POST /threads/{id}/read`, which returns no
+    /// body, so the list is refetched (or the row zeroed) afterwards.
+    public let unreadCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id, listingId, buyerId, sellerId, listingTitle, listingReference
+        case state, lastMessageAt, createdAt
+        case lastMessagePreview, lastMessagePreviewAt, unreadCount
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        listingId = try container.decode(String.self, forKey: .listingId)
+        buyerId = try container.decode(String.self, forKey: .buyerId)
+        sellerId = try container.decode(String.self, forKey: .sellerId)
+        listingTitle = ((try? container.decodeIfPresent(String.self, forKey: .listingTitle)) ?? nil)
+        listingReference = ((try? container.decodeIfPresent(String.self, forKey: .listingReference)) ?? nil)
+        state = try container.decode(ThreadState.self, forKey: .state)
+        lastMessageAt = (try? container.decodeIfPresent(Date.self, forKey: .lastMessageAt)) ?? nil
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        lastMessagePreview = ((try? container.decodeIfPresent(String.self, forKey: .lastMessagePreview)) ?? nil)
+        lastMessagePreviewAt = (try? container.decodeIfPresent(Date.self, forKey: .lastMessagePreviewAt)) ?? nil
+        // Three fields the service only started sending tonight. A hard
+        // decode of the count would turn a service one deploy behind into an
+        // inbox that will not open at all.
+        unreadCount = ((try? container.decodeIfPresent(Int.self, forKey: .unreadCount)) ?? nil) ?? 0
+    }
+
+    public init(
+        id: String,
+        listingId: String,
+        buyerId: String,
+        sellerId: String,
+        listingTitle: String? = nil,
+        listingReference: String? = nil,
+        state: ThreadState = .open,
+        lastMessageAt: Date? = nil,
+        createdAt: Date,
+        lastMessagePreview: String? = nil,
+        lastMessagePreviewAt: Date? = nil,
+        unreadCount: Int = 0
+    ) {
+        self.id = id
+        self.listingId = listingId
+        self.buyerId = buyerId
+        self.sellerId = sellerId
+        self.listingTitle = listingTitle
+        self.listingReference = listingReference
+        self.state = state
+        self.lastMessageAt = lastMessageAt
+        self.createdAt = createdAt
+        self.lastMessagePreview = lastMessagePreview
+        self.lastMessagePreviewAt = lastMessagePreviewAt
+        self.unreadCount = unreadCount
+    }
+
+    /// The same thread with its unread count zeroed — what the list shows the
+    /// moment somebody opens it, so the mark does not linger until a refetch.
+    public func markedRead() -> MessageThread {
+        MessageThread(
+            id: id,
+            listingId: listingId,
+            buyerId: buyerId,
+            sellerId: sellerId,
+            listingTitle: listingTitle,
+            listingReference: listingReference,
+            state: state,
+            lastMessageAt: lastMessageAt,
+            createdAt: createdAt,
+            lastMessagePreview: lastMessagePreview,
+            lastMessagePreviewAt: lastMessagePreviewAt,
+            unreadCount: 0
+        )
+    }
 }
 
 /// `GET /threads/{id}/messages` — one message. A message this client can see

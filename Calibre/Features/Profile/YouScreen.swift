@@ -90,7 +90,7 @@ struct YouScreen: View {
                 }
 
                 linkedSection(title: "Help") {
-                    NavigationLink { SupportChatScreen() } label: {
+                    NavigationLink { SupportThreadsScreen() } label: {
                         rowLabel(icon: "bubble.left.and.bubble.right", label: "Support")
                     }.buttonStyle(PressableStyle())
                     divider

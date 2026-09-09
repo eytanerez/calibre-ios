@@ -56,7 +56,10 @@ public enum SupportSender: String, Codable, Sendable {
 // FIXTURE-PENDING: the signed-in capture couldn't be recorded (backend
 // mid-migration); the guest capture legitimately returns `data: null`. Shape
 // from `serialize_thread` in app/api/views/support_chat.py.
-/// `/support/thread` — the caller's support conversation, or nil if none.
+/// `/support/thread` and `/support/threads/{id}` — one support conversation.
+///
+/// A customer now has as many of these as they have written in about; this is
+/// one of them, not "the" one.
 public struct SupportConversation: Codable, Sendable, Identifiable {
     public let id: String
     public let status: SupportConversationStatus
@@ -65,6 +68,45 @@ public struct SupportConversation: Codable, Sendable, Identifiable {
     public let messages: [SupportMessage]
     /// Present once a contact is assigned; nil before then.
     public let assignedContact: SupportContact?
+    /// The server's own name for this conversation — the date it was opened.
+    /// Nil only against a server that predates the field, which is what
+    /// `title(now:)` is still here to cover.
+    public let serverTitle: String?
+    /// `status == "closed"`, derived on the server so it can never disagree
+    /// with `status`.
+    public let resolved: Bool
+    /// Whether writing now continues *this* conversation rather than opening
+    /// a new one. The 24-hour window behind it lives on the server, in one
+    /// place, and this client does not reimplement it — it reads this field.
+    public let resumable: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, status, createdAt, lastMessageAt, messages, assignedContact
+        case serverTitle = "title"
+        case resolved, resumable
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        status = try container.decode(SupportConversationStatus.self, forKey: .status)
+        // Both stamps are decoded permissively. A support thread is a whole
+        // screen, and a timestamp the shared ISO-8601 strategy cannot parse —
+        // a date with no time in it, say — must cost the reader the line it
+        // would have drawn, never the conversation.
+        createdAt = (try? container.decodeIfPresent(Date.self, forKey: .createdAt)) ?? nil
+        lastMessageAt = (try? container.decodeIfPresent(Date.self, forKey: .lastMessageAt)) ?? nil
+        messages = ((try? container.decodeIfPresent([SupportMessage].self, forKey: .messages)) ?? nil) ?? []
+        assignedContact = (try? container.decodeIfPresent(SupportContact.self, forKey: .assignedContact)) ?? nil
+        serverTitle = ((try? container.decodeIfPresent(String.self, forKey: .serverTitle)) ?? nil)
+            .flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
+        let closed = status == .closed
+        resolved = ((try? container.decodeIfPresent(Bool.self, forKey: .resolved)) ?? nil) ?? closed
+        // A server that does not send `resumable` is one that cannot hold two
+        // conversations either, so "keep writing into the one thread there is"
+        // is the honest default for it.
+        resumable = ((try? container.decodeIfPresent(Bool.self, forKey: .resumable)) ?? nil) ?? !closed
+    }
 
     /// The heading this conversation is read under.
     ///
@@ -83,6 +125,11 @@ public struct SupportConversation: Codable, Sendable, Identifiable {
     /// the web (`supportThreadTitle`) and Android
     /// (`supportConversationTitle`) both fall back to.
     public func title(now: Date = .now) -> String {
+        // The server names the thread by its date now, in the customer's own
+        // timezone and its own words. Deriving one here is the fallback, not
+        // the rule — two clients naming the same thread differently is how
+        // "which conversation is this" stops having an answer.
+        if let serverTitle { return serverTitle }
         guard !messages.isEmpty else { return "New conversation" }
         guard let createdAt else { return "Support" }
         let sameYear = Calendar.current.component(.year, from: createdAt)
@@ -144,8 +191,75 @@ public struct SupportAttachment: Codable, Sendable, Identifiable {
 }
 
 /// POST `/support/messages` response — `{"thread": ..., "guest_token": ...}`.
-/// `guestToken` is only issued the first time a guest writes in.
+/// A guest is issued a token the first time they write in, and again for each
+/// new conversation they start; the client keeps every one it is given.
 public struct SupportPostResult: Codable, Sendable {
     public let thread: SupportConversation
     public let guestToken: String?
+}
+
+/// Who opened the conversation. Calibre writes first when it is reaching out
+/// about an order rather than answering a question.
+public enum SupportThreadOrigin: String, Codable, Sendable {
+    case customer
+    case calibre
+    case unknown
+
+    public init(from decoder: Decoder) throws {
+        self = try decodeWireStatus(from: decoder, fallback: .unknown)
+    }
+}
+
+/// One row of `GET /support/threads` — the customer's list of their own
+/// conversations with Calibre.
+public struct SupportThreadSummary: Codable, Sendable, Identifiable {
+    public let id: String
+    public let status: SupportConversationStatus
+    /// The date it was opened, as the server words it. Never the first
+    /// message — a standing ruling, because a thread named after its opening
+    /// line repeats a sentence already on screen.
+    public let title: String
+    /// `status == "closed"`, derived server-side.
+    public let resolved: Bool
+    /// Whether writing now continues this conversation. The window is the
+    /// server's; this is the answer, not the inputs to it.
+    public let resumable: Bool
+    public let origin: SupportThreadOrigin
+    public let createdAt: Date?
+    public let lastMessageAt: Date?
+    /// The last message, record references flattened. Empty when the thread
+    /// has none.
+    public let snippet: String
+    public let assignedContact: SupportContact?
+    /// Guests only, and absent entirely for a signed-in caller: which of the
+    /// tokens the caller presented reached this row. It is their own value
+    /// echoed back, not a new grant.
+    public let guestToken: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, status, title, resolved, resumable, origin
+        case createdAt, lastMessageAt, snippet, assignedContact, guestToken
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        status = try container.decode(SupportConversationStatus.self, forKey: .status)
+        let closed = status == .closed
+        // The list is the way into every conversation a customer has. One row
+        // whose title or timestamp the decoder dislikes must cost that row a
+        // line, never the customer their whole history — so every field below
+        // the identity is optional at the wire and has a truthful stand-in.
+        title = ((try? container.decodeIfPresent(String.self, forKey: .title)) ?? nil)
+            .flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
+            ?? "Support"
+        resolved = ((try? container.decodeIfPresent(Bool.self, forKey: .resolved)) ?? nil) ?? closed
+        resumable = ((try? container.decodeIfPresent(Bool.self, forKey: .resumable)) ?? nil) ?? !closed
+        origin = ((try? container.decodeIfPresent(SupportThreadOrigin.self, forKey: .origin)) ?? nil) ?? .unknown
+        createdAt = (try? container.decodeIfPresent(Date.self, forKey: .createdAt)) ?? nil
+        lastMessageAt = (try? container.decodeIfPresent(Date.self, forKey: .lastMessageAt)) ?? nil
+        snippet = ((try? container.decodeIfPresent(String.self, forKey: .snippet)) ?? nil) ?? ""
+        assignedContact = (try? container.decodeIfPresent(SupportContact.self, forKey: .assignedContact)) ?? nil
+        guestToken = ((try? container.decodeIfPresent(String.self, forKey: .guestToken)) ?? nil)
+    }
 }

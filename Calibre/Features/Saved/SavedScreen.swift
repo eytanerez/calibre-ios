@@ -83,6 +83,14 @@ struct SavedScreen: View {
                     )
                     .padding(.horizontal, Space.margin)
 
+                    // Above whichever pane is showing, because a watch that
+                    // sold has to be told about whether or not there is still
+                    // a grid underneath — if the only thing you had saved is
+                    // the thing that sold, the list below is empty.
+                    if tab == .watches {
+                        ListingGoneNoticeBanner(surface: .saved)
+                    }
+
                     switch tab {
                     case .watches: watchesPane
                     case .searches: searchesPane
@@ -447,7 +455,12 @@ struct SavedScreen: View {
         // The brand list is what lets a composed watchlist title be split
         // into brand / model / reference; usually warm, never blocking.
         async let metadata: Void = { _ = try? await services.catalog.loadMetadata() }()
-        _ = await (watchlist, alerts, metadata)
+        // Reads the pending sold notices; it writes nothing and burns
+        // nothing. The banner is what acknowledges them, once it is on
+        // screen — this tab refetches every time it appears, and a read that
+        // acknowledged would spend somebody's one notice in their pocket.
+        async let notices: Void = { _ = try? await services.commerce.loadListingNotices() }()
+        _ = await (watchlist, alerts, metadata, notices)
         guard generation == loadGeneration, !Task.isCancelled else { return }
         isLoading = false
     }

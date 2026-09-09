@@ -9,7 +9,10 @@ public final class ServerAlertsStore {
     @ObservationIgnored private let client: APIClient
 
     public private(set) var notifications: [ServerNotification] = []
-    public private(set) var unreadCount: Int = 0
+    /// What is still in the inbox. The badge counts what is left, not what is
+    /// unread — a member who has read everything and cleared nothing still
+    /// has an inbox with things in it, and the number says so.
+    public private(set) var remainingCount: Int = 0
     public private(set) var savedSearches: [SavedSearchSummary] = []
 
     public init(client: APIClient) {
@@ -22,22 +25,50 @@ public final class ServerAlertsStore {
             Endpoint(path: "/account/notifications", query: [URLQueryItem(name: "page_size", value: String(pageSize))])
         )
         notifications = response.results
-        unreadCount = response.unreadCount
+        remainingCount = response.remainingCount
         return response.results
     }
 
-    public func markRead(id: String) async throws {
-        struct Payload: Encodable { let read: Bool }
-        let updated: ServerNotification = try await client.send(
-            try Endpoint.json(method: .patch, path: "/account/notifications/\(id)", payload: Payload(read: true))
+    /// Clears one notification: the row leaves the inbox for good.
+    ///
+    /// A soft stamp on the server rather than a delete, because a deferred
+    /// email hangs off the notification row and a delete would strand it —
+    /// but from this app it is simply gone. There is no history and no undo,
+    /// so nothing here keeps the row around.
+    ///
+    /// Idempotent: clearing a row that was already cleared answers 200 with
+    /// the original stamp, so a second tap on a slow network is harmless.
+    @discardableResult
+    public func clear(id: String) async throws -> ServerNotification {
+        let cleared: ServerNotification = try await client.send(
+            Endpoint(method: .delete, path: "/account/notifications/\(id)")
         )
-        if let index = notifications.firstIndex(where: { $0.id == id }) {
-            let wasUnread = notifications[index].readAt == nil
-            notifications[index] = updated
-            if wasUnread {
-                unreadCount = max(unreadCount - 1, 0)
-            }
+        drop(id: id)
+        return cleared
+    }
+
+    /// Empties the inbox. Answers with how many rows this call actually swept
+    /// — rows cleared earlier keep their own stamp and are not counted again.
+    @discardableResult
+    public func clearAll() async throws -> Int {
+        struct Response: Decodable {
+            let cleared: Int
+            let remainingCount: Int?
         }
+        let response: Response = try await client.send(
+            Endpoint(method: .delete, path: "/account/notifications")
+        )
+        notifications = []
+        remainingCount = response.remainingCount ?? 0
+        return response.cleared
+    }
+
+    /// Takes a row out of the local inbox and off the badge without waiting
+    /// for a refetch, so a clear reads as instant.
+    private func drop(id: String) {
+        guard let index = notifications.firstIndex(where: { $0.id == id }) else { return }
+        notifications.remove(at: index)
+        remainingCount = max(remainingCount - 1, 0)
     }
 
     /// Reports that the *push* for this notification was tapped.
@@ -54,15 +85,11 @@ public final class ServerAlertsStore {
         )
         // `readAt` is left alone on purpose. Opened and read are two facts on
         // the server, and a tap only establishes the first; the row stays
-        // unread in the inbox until it is opened there.
-    }
-
-    public func markAllRead() async throws {
-        struct Response: Decodable { let markedRead: Int }
-        let _: Response = try await client.send(
-            Endpoint(method: .post, path: "/account/notifications/read-all")
-        )
-        try? await load()
+        // unread in the inbox until it is cleared there.
+        //
+        // Nothing in this app marks a notification read any more. The inbox is
+        // cleared, not ticked off, so the PATCH and read-all endpoints — which
+        // the server keeps live for the web bell — have no caller here.
     }
 
     // MARK: - Saved searches
@@ -103,7 +130,7 @@ public final class ServerAlertsStore {
 
     public func reset() {
         notifications = []
-        unreadCount = 0
+        remainingCount = 0
         savedSearches = []
     }
 }

@@ -330,11 +330,24 @@ extension ListingSummary {
 
     var isAvailable: Bool { status == .active }
 
-    /// "Sold" / "Reserved" badge for saved and bagged watches that got away.
+    /// Whether this watch's own page will open for the person looking at this
+    /// row. A member with it saved or in their cart can now read a listing on
+    /// hold and see the On hold state there — they used to be 404'd, which is
+    /// the dead end the greying and the badge were papering over. Anything
+    /// further gone than that still has no page to send them to.
+    var opensForHolder: Bool { status == .active || status == .reserved }
+
+    /// The state badge for saved and bagged watches. "On hold" is the same
+    /// word the listing page uses, because it is now the same destination.
+    ///
+    /// The sold case is kept for the rollout and nothing else: a sale takes
+    /// the row out of every cart and saved list, so a sold tile is a row from
+    /// a server that has not shipped the eviction yet. The person is told by
+    /// the notice, not by finding a tile.
     var unavailableBadge: (text: String, tone: StatusBadge.Tone)? {
         switch status {
+        case .reserved: ("On hold", .warning)
         case .sold: ("Sold", .neutral)
-        case .reserved: ("Reserved", .warning)
         case .active: nil
         default: ("No longer listed", .neutral)
         }

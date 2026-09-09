@@ -1,30 +1,99 @@
 import Foundation
 import Observation
 
-/// Support chat — works for guests and signed-in users alike. A guest's first
-/// message returns a `guest_token` we persist so their thread survives relaunch
-/// (mirrors the web widget's localStorage token).
+/// Support chat — works for guests and signed-in users alike. A customer has
+/// as many conversations as they have written in about; this store holds the
+/// list of them and whichever one is open.
+///
+/// A guest's message returns a `guest_token` we persist so their thread
+/// survives relaunch (mirrors the web widget's localStorage token). Starting
+/// a second conversation as a guest mints a second token, so the device keeps
+/// a set of them and presents all of them when it asks for the list.
 @MainActor
 @Observable
 public final class SupportStore {
     @ObservationIgnored private let client: APIClient
     @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private let guestTokenKey = "calibre.support.guestToken"
+    /// The single token this app stored before a guest could have more than
+    /// one conversation. Still read, once, so nobody loses the thread they
+    /// already had; never written again.
+    @ObservationIgnored private let legacyGuestTokenKey = "calibre.support.guestToken"
+    @ObservationIgnored private let guestTokensKey = "calibre.support.guestTokens"
 
     public private(set) var conversation: SupportConversation?
+    public private(set) var threads: [SupportThreadSummary] = []
 
     public init(client: APIClient, defaults: UserDefaults = .standard) {
         self.client = client
         self.defaults = defaults
     }
 
-    /// The persisted guest token, if this device has written in as a guest.
-    public var guestToken: String? {
-        defaults.string(forKey: guestTokenKey)
+    /// Every guest token this device holds, oldest first. Empty for a device
+    /// that has only ever been signed in.
+    public var guestTokens: [String] {
+        let stored = defaults.stringArray(forKey: guestTokensKey) ?? []
+        guard stored.isEmpty else { return stored }
+        return defaults.string(forKey: legacyGuestTokenKey).map { [$0] } ?? []
     }
 
-    /// Loads the caller's thread — via the auth session when signed in, or the
-    /// stored guest token otherwise. Nil when no conversation exists yet.
+    /// The most recent guest token — what a single-thread call still sends.
+    public var guestToken: String? { guestTokens.last }
+
+    /// The server caps the repeated `token` parameter, so a device that has
+    /// somehow collected more than the cap sends its most recent ones.
+    private static let guestTokenLimit = 20
+
+    private func remember(guestToken token: String) {
+        var tokens = guestTokens
+        guard !tokens.contains(token) else { return }
+        tokens.append(token)
+        if tokens.count > Self.guestTokenLimit {
+            tokens.removeFirst(tokens.count - Self.guestTokenLimit)
+        }
+        defaults.set(tokens, forKey: guestTokensKey)
+    }
+
+    private func guestTokenQuery() -> [URLQueryItem] {
+        guestTokens.suffix(Self.guestTokenLimit).map { URLQueryItem(name: "token", value: $0) }
+    }
+
+    /// The customer's conversations, newest activity first. A guest is
+    /// answered with exactly the threads their own tokens name.
+    @discardableResult
+    public func listThreads(authenticated: Bool) async throws -> [SupportThreadSummary] {
+        struct Response: Decodable { let results: [SupportThreadSummary] }
+        let response: Response = try await client.send(
+            Endpoint(
+                path: "/support/threads",
+                query: authenticated ? [] : guestTokenQuery(),
+                requiresAuth: authenticated
+            )
+        )
+        threads = response.results
+        return response.results
+    }
+
+    /// One conversation by id. A thread that is not the caller's and a thread
+    /// that does not exist are the same 404, by design.
+    @discardableResult
+    public func loadThread(id: String, authenticated: Bool) async throws -> SupportConversation {
+        let thread: SupportConversation = try await client.send(
+            Endpoint(
+                path: "/support/threads/\(id)",
+                query: authenticated ? [] : guestTokenQuery(),
+                requiresAuth: authenticated
+            )
+        )
+        conversation = thread
+        return thread
+    }
+
+    /// Loads the caller's most recently active thread — via the auth session
+    /// when signed in, or the stored guest tokens otherwise. Nil when no
+    /// conversation exists yet.
+    ///
+    /// It answers with that thread whether or not writing into it would
+    /// continue it; `resumable` on the payload is how the caller knows which.
     @discardableResult
     public func loadThread(authenticated: Bool) async throws -> SupportConversation? {
         var query: [URLQueryItem] = []
@@ -76,26 +145,39 @@ public final class SupportStore {
     }
 
     /// Posts a message. Guests must supply `guestEmail` on their first message;
-    /// the returned guest token is persisted automatically. `attachmentIDs`
-    /// claims files already staged through `uploadAttachment`.
+    /// any guest token the response carries is persisted automatically.
+    /// `attachmentIDs` claims files already staged through `uploadAttachment`.
+    ///
+    /// Which conversation it lands on, in the server's order of precedence:
+    /// `threadID` names one outright (and writes to it even when it is
+    /// closed — naming a thread is somebody deliberately going back to it);
+    /// `newThread` opens a fresh one whatever else exists; neither, and the
+    /// server applies its own resume rule. The 24-hour window is not
+    /// reimplemented here, and must not be.
     @discardableResult
     public func send(
         _ body: String,
         authenticated: Bool,
         guestEmail: String? = nil,
-        attachmentIDs: [String] = []
+        attachmentIDs: [String] = [],
+        threadID: String? = nil,
+        newThread: Bool = false
     ) async throws -> SupportConversation {
         struct Payload: Encodable {
             let body: String
             let email: String?
             let token: String?
             let attachmentIds: [String]?
+            let threadId: String?
+            let newThread: Bool?
         }
         let payload = Payload(
             body: body,
             email: authenticated ? nil : guestEmail,
             token: authenticated ? nil : guestToken,
-            attachmentIds: attachmentIDs.isEmpty ? nil : attachmentIDs
+            attachmentIds: attachmentIDs.isEmpty ? nil : attachmentIDs,
+            threadId: threadID,
+            newThread: newThread ? true : nil
         )
         let result: SupportPostResult = try await client.send(
             try Endpoint.json(
@@ -106,7 +188,7 @@ public final class SupportStore {
             )
         )
         if let token = result.guestToken {
-            defaults.set(token, forKey: guestTokenKey)
+            remember(guestToken: token)
         }
         conversation = result.thread
         return result.thread
@@ -178,11 +260,12 @@ public final class SupportStore {
         return "Your order"
     }
 
-    /// Clears the persisted guest token. Called at sign-out — not at sign-in,
-    /// where the server is the one that reconciles a guest thread with the
-    /// account it belongs to.
+    /// Clears every persisted guest token. Called at sign-out — not at
+    /// sign-in, where the server is the one that reconciles a guest thread
+    /// with the account it belongs to.
     public func forgetGuestToken() {
-        defaults.removeObject(forKey: guestTokenKey)
+        defaults.removeObject(forKey: guestTokensKey)
+        defaults.removeObject(forKey: legacyGuestTokenKey)
     }
 
     /// Drops the thread held in memory — wired to
@@ -197,5 +280,6 @@ public final class SupportStore {
     /// actually changes hands.
     public func reset() {
         conversation = nil
+        threads = []
     }
 }

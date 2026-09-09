@@ -66,15 +66,31 @@ struct MessagesListScreen: View {
                         NavigationLink {
                             MessageThreadScreen(threadID: thread.id)
                         } label: {
-                            ThreadRow(thread: thread, isSeller: thread.sellerId == session.user?.id)
+                            ThreadRow(thread: thread)
                         }
                         .buttonStyle(PressableStyle())
+                        // Opening the thread is what marks it read, and the
+                        // read POST answers with no body — so the row is
+                        // zeroed here rather than waiting for a refetch that
+                        // may not happen until the next visit.
+                        .simultaneousGesture(TapGesture().onEnded {
+                            markRead(thread)
+                        })
                     }
                 }
                 .padding(Space.margin)
             }
             .refreshable { await load() }
         }
+    }
+
+    /// Zeroes one row's unread mark. The server call is the thread screen's
+    /// own (`markRead` on appear); this is only the list catching up with it,
+    /// so a failure there is not something to report twice.
+    private func markRead(_ thread: MessageThread) {
+        guard thread.unreadCount > 0 else { return }
+        guard let index = threads.firstIndex(where: { $0.id == thread.id }) else { return }
+        threads[index] = thread.markedRead()
     }
 
     private func load() async {
@@ -94,7 +110,6 @@ struct MessagesListScreen: View {
 
 private struct ThreadRow: View {
     let thread: MessageThread
-    let isSeller: Bool
 
     var body: some View {
         HStack(spacing: Space.m) {
@@ -106,8 +121,8 @@ private struct ThreadRow: View {
                     .foregroundStyle(Color.calibre.foreground)
                     .lineLimit(1)
                 Text(subtitle)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(unread ? CalibreType.label : CalibreType.caption)
+                    .foregroundStyle(unread ? Color.calibre.foreground : Color.calibre.mutedForeground)
                     .lineLimit(1)
             }
 
@@ -117,9 +132,20 @@ private struct ThreadRow: View {
                 Text(dateText)
                     .font(CalibreType.caption)
                     .foregroundStyle(Color.calibre.mutedForeground)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                if unread {
+                    // The count, not a bare dot: how many are waiting is the
+                    // thing the list can now say and could not before.
+                    Text(String(thread.unreadCount))
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.primaryForeground)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.calibre.primary, in: Capsule())
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                }
             }
         }
         .padding(Space.l)
@@ -129,15 +155,30 @@ private struct ThreadRow: View {
                 .strokeBorder(Color.calibre.border, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
+        .accessibilityValue(unread ? "\(thread.unreadCount) unread" : "")
     }
 
+    private var unread: Bool { thread.unreadCount > 0 }
+
+    /// The last delivered line, which is what a person is actually looking for
+    /// in a list of conversations. The generic "A buyer messaged you" it
+    /// replaced was true of every row and told nobody anything.
+    ///
+    /// A thread with no delivered message yet is a real state — just opened,
+    /// or everything in it still held by the guard — and says so rather than
+    /// borrowing a sentence.
     private var subtitle: String {
         if thread.state == .blocked { return "This conversation is closed" }
-        return isSeller ? "A buyer messaged you" : "You messaged the seller"
+        if let preview = thread.lastMessagePreview, !preview.isEmpty { return preview }
+        return "No messages yet"
     }
 
+    /// The preview's own stamp, which describes the same event as the words
+    /// beside it. `lastMessageAt` is the fallback, and a thread with neither
+    /// falls back to when it was opened.
     private var dateText: String {
-        (thread.lastMessageAt ?? thread.createdAt).formatted(date: .abbreviated, time: .omitted)
+        (thread.lastMessagePreviewAt ?? thread.lastMessageAt ?? thread.createdAt)
+            .formatted(date: .abbreviated, time: .omitted)
     }
 }
 
