@@ -60,15 +60,7 @@ struct ForgotPasswordScreen: View {
                 Haptics.shared.play(.press)
                 Task { await submit() }
             } label: {
-                HStack(spacing: Space.s) {
-                    if busy {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(Color.calibre.primaryForeground)
-                    }
-                    Text("Send reset link")
-                }
-                .frame(maxWidth: .infinity)
+                CalibreBusyLabel("Send reset link", busy: busy)
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
             .disabled(!canSubmit)
@@ -170,15 +162,7 @@ struct ResetPasswordScreen: View {
                     Haptics.shared.play(.press)
                     Task { await submit() }
                 } label: {
-                    HStack(spacing: Space.s) {
-                        if busy {
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(Color.calibre.primaryForeground)
-                        }
-                        Text("Set new password")
-                    }
-                    .frame(maxWidth: .infinity)
+                    CalibreBusyLabel("Set new password", busy: busy)
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
                 .disabled(!canSubmit)

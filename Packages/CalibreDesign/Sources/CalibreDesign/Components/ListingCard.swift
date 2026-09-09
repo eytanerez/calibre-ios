@@ -14,10 +14,22 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
     /// Seller is a verified business — earns the dealer badge.
     public let isVerifiedDealer: Bool
     /// "Why you're seeing this" — a recommendation reason, when the surface
-    /// supplies one. Renders last, under the price. §4 puts it there because
-    /// a reason above the brand pushes brand/model/price down by a line and
-    /// breaks the alignment of every card standing beside it.
+    /// supplies one. It renders directly above the price, which is Eytan's
+    /// ruling: the reason is what makes the price make sense, so it is read
+    /// first.
+    ///
+    /// The reason a shelf of cards used to stay level was that this line sat
+    /// last, where nothing followed it. Above the price it is load-bearing
+    /// again, and `reservesReasonLine` is what keeps the shelf level instead.
     public let reason: String?
+    /// Hold the reason's height on this card whether or not it has a reason.
+    ///
+    /// A shelf where some cards were justified and some were not put its
+    /// prices on two different lines the moment the reason moved above them.
+    /// The shelf is the only thing that knows whether any of its cards carry
+    /// a reason, so the shelf sets this on all of them; a browse grid, which
+    /// never carries one, leaves it off and spends no space.
+    public let reservesReasonLine: Bool
 
     public init(
         id: String,
@@ -30,7 +42,8 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         watcherCount: Int? = nil,
         imageURL: URL? = nil,
         isVerifiedDealer: Bool = false,
-        reason: String? = nil
+        reason: String? = nil,
+        reservesReasonLine: Bool = false
     ) {
         self.id = id
         self.brand = brand
@@ -43,6 +56,7 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         self.imageURL = imageURL
         self.isVerifiedDealer = isVerifiedDealer
         self.reason = reason
+        self.reservesReasonLine = reservesReasonLine
     }
 }
 
@@ -106,6 +120,43 @@ private struct SteadyLine<Content: View>: View {
     }
 }
 
+/// How many lines of the caption face a recommendation reason may print, and
+/// therefore how tall the slot that holds one is. One number, read by the
+/// reason itself and by the ghost that reserves its space, so the two can
+/// never come to disagree.
+private let listingCardReasonLines = 2
+
+/// The reason's slot, whose height does not depend on whether this card has a
+/// reason to put in it.
+///
+/// Same trick as `SteadyLine` and for the same reason, one size larger: the
+/// ghost is as many lines of the caption face as a reason may print, drawn at
+/// zero opacity and hidden from VoiceOver, so a card with nothing to say
+/// spends exactly the space a card with something to say spends. At an
+/// accessibility size the reason is allowed to run as long as it needs, so the
+/// ghost stands down rather than fighting real text for the height.
+private struct SteadyReasonSlot<Content: View>: View {
+    let reserved: Bool
+    let unlimited: Bool
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if reserved, !unlimited {
+                Text(verbatim: ghost)
+                    .font(CalibreType.caption)
+                    .hidden()
+                    .accessibilityHidden(true)
+            }
+            content
+        }
+    }
+
+    private var ghost: String {
+        Array(repeating: "Ag", count: listingCardReasonLines).joined(separator: "\n")
+    }
+}
+
 /// The one listing card. Every grid and lane of watches on every surface uses
 /// it, and the element order below is fixed across the product
 /// (CALIBRE_FINAL_PUSH_CONTRACTS.md §4):
@@ -116,8 +167,8 @@ private struct SteadyLine<Content: View>: View {
 ///     BRAND                                          year
 ///     Model name
 ///     Ref. 0000000
+///     [ reason, when supplied — its slot held for the whole shelf ]
 ///     $ price                        [ verified-dealer chip ]
-///     [ reason, when supplied ]
 ///
 /// The dealer mark sits on the price row rather than on a line of its own —
 /// Eytan, 2026-08-30: *"make the dealer mark on the right of the listing cards
@@ -264,6 +315,30 @@ public struct ListingCard<ImageContent: View>: View {
                 // price down. The price takes its width first (`layoutPriority`)
                 // and the badge is `.fixedSize()` so "Dealer" can never wrap
                 // into a second line and change the row's height.
+                // Why this watch, before what it costs. A reason read after
+                // the figure is a justification; read before it, it is the
+                // thing that makes the figure mean something.
+                //
+                // On a shelf that carries reasons at all, the slot is held on
+                // every card — see `reservesReasonLine`. Without that, one
+                // unjustified card among five would lift its own price two
+                // lines and the shelf would read as a staircase, which is the
+                // misalignment that put this line under the price in the
+                // first place.
+                if model.reservesReasonLine || !(model.reason ?? "").isEmpty {
+                    SteadyReasonSlot(
+                        reserved: model.reservesReasonLine,
+                        unlimited: typeSize.isAccessibilitySize
+                    ) {
+                        if let reason = model.reason, !reason.isEmpty {
+                            Text(reason)
+                                .font(CalibreType.caption)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .lineLimit(typeSize.isAccessibilitySize ? nil : listingCardReasonLines)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
                 HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                     Text(model.priceText)
                         .font(CalibreType.price)
@@ -281,13 +356,6 @@ public struct ListingCard<ImageContent: View>: View {
                     if model.isVerifiedDealer { dealerMark }
                 }
                 .padding(.top, 1)
-                if let reason = model.reason, !reason.isEmpty {
-                    Text(reason)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                        .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
             }
             .padding(.horizontal, 2)
         }

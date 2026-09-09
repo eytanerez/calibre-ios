@@ -125,15 +125,7 @@ struct AuthGateSheet: View {
                 Haptics.shared.play(.press)
                 Task { await signIn() }
             } label: {
-                HStack(spacing: Space.s) {
-                    if busy {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(Color.calibre.primaryForeground)
-                    }
-                    Text("Sign In")
-                }
-                .frame(maxWidth: .infinity)
+                CalibreBusyLabel("Sign In", busy: busy)
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
             .disabled(!canSubmit)

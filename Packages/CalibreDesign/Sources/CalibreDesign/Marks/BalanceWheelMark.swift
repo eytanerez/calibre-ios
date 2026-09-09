@@ -8,9 +8,15 @@ struct BalanceWheelMark: View {
     @State private var swing: Double = 0
 
     let size: CGFloat
+    /// The ink. Copper is the mark's own colour and stays the default, but a
+    /// wheel spinning inside a filled button has to be that button's
+    /// foreground or it is copper on copper and cannot be seen at all — which
+    /// is the whole reason this parameter exists.
+    let tint: Color?
 
-    init(size: CGFloat) {
+    init(size: CGFloat, tint: Color? = nil) {
         self.size = size
+        self.tint = tint
     }
 
     var body: some View {
@@ -22,7 +28,7 @@ struct BalanceWheelMark: View {
     }
 
     private var wheel: some View {
-        Self.rim.stroke(Color.calibre.primary, style: MarkGrid.style)
+        Self.rim.stroke(tint ?? Color.calibre.primary, style: MarkGrid.style)
     }
 
     static var rim: Path {

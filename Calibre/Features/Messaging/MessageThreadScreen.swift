@@ -46,8 +46,7 @@ struct MessageThreadScreen: View {
 
     @ViewBuilder private var messagesList: some View {
         if loading && messages.isEmpty {
-            ProgressView()
-                .tint(Color.calibre.primary)
+            CalibreLoadingView("Opening this conversation")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let loadErrorText, messages.isEmpty {
             EmptyState(
@@ -125,9 +124,16 @@ struct MessageThreadScreen: View {
                 .accessibilityHint(canSend ? "" : "Write a message first")
             }
         }
+        // Liquid glass, from the one helper both composers share. The bar is
+        // the same material on Support and on Messages; only the controls
+        // above differ, which is the whole point of the split.
+        //
+        // Nothing here adds a keyboard inset. SwiftUI's automatic avoidance
+        // already lifts this bar, and a container inset on top of it counts
+        // the keyboard twice — a documented trap, and the hole it leaves is a
+        // whole keyboard tall.
         .padding(Space.margin)
-        .background(Color.calibre.card)
-        .overlay(alignment: .top) { Rectangle().fill(Color.calibre.border).frame(height: 1) }
+        .calibreComposerSurface()
     }
 
     private var canSend: Bool {

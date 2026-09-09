@@ -61,7 +61,12 @@ extension HomeFeedCard {
     /// here. `nil` means the server could not justify one — or that the card
     /// is a fill-in, which nobody justified — and the card says nothing rather
     /// than saying something plausible.
-    var cardModel: ListingCardModel {
+    ///
+    /// `reservesReason` is the lane's answer, not this card's: the reason now
+    /// sits above the price, so a card with nothing to say has to hold the
+    /// space anyway or its price climbs above its neighbours'. Only the lane
+    /// can see all of its cards, so only the lane can decide.
+    func cardModel(reservesReason: Bool = false) -> ListingCardModel {
         let base = listing.cardModel
         return ListingCardModel(
             id: base.id,
@@ -74,17 +79,22 @@ extension HomeFeedCard {
             watcherCount: base.watcherCount,
             imageURL: base.imageURL,
             isVerifiedDealer: base.isVerifiedDealer,
-            reason: reasonLine
+            reason: reasonLine,
+            reservesReasonLine: reservesReason
         )
     }
+
+    /// The shared card projection, carrying the server's selection reason and
+    /// reserving nothing.
+    var cardModel: ListingCardModel { cardModel() }
 
     /// The same card for a lane that draws the signal chip itself.
     ///
     /// The chip and the watcher count want the same corner of the photograph,
     /// so a card carrying a signal gives the corner to the chip. Nothing else
     /// about the card changes.
-    var laneCardModel: ListingCardModel {
-        let base = cardModel
+    func laneCardModel(reservesReason: Bool) -> ListingCardModel {
+        let base = cardModel(reservesReason: reservesReason)
         guard signal != nil else { return base }
         return ListingCardModel(
             id: base.id,
@@ -97,7 +107,8 @@ extension HomeFeedCard {
             watcherCount: nil,
             imageURL: base.imageURL,
             isVerifiedDealer: base.isVerifiedDealer,
-            reason: base.reason
+            reason: base.reason,
+            reservesReasonLine: base.reservesReasonLine
         )
     }
 }
@@ -338,6 +349,15 @@ private struct FeedCardLane: View {
     @ScaledMetric(relativeTo: .body) private var scaledCardWidth: CGFloat = 168
     private var cardWidth: CGFloat { calibreLaneCardWidth(scaledCardWidth) }
 
+    /// Whether anything in this lane was justified. If one card carries a
+    /// reason then every card in the lane holds the space for one, because the
+    /// reason sits above the price and an unheld slot lifts that card's price
+    /// clear of its neighbours'. A lane where the server justified nothing —
+    /// recently viewed, say — spends no space at all.
+    private var reservesReason: Bool {
+        cards.contains { $0.reasonLine != nil }
+    }
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: Space.l) {
@@ -349,7 +369,7 @@ private struct FeedCardLane: View {
                             zoom: ListingZoomSource(id: sourceID, namespace: zoomNamespace)
                         ))
                     } label: {
-                        ListingCard(model: card.laneCardModel) { url in
+                        ListingCard(model: card.laneCardModel(reservesReason: reservesReason)) { url in
                             ListingImageWell(url: url)
                         }
                         // The chip lands in the photograph's top-right corner,
@@ -766,19 +786,45 @@ struct FeedCollectionModule: View {
         .padding(.horizontal, Space.margin)
     }
 
-    /// The valued count is said out loud beside the total, so the figure can
-    /// never be read as what the whole collection is worth. With nothing
-    /// valued there is no total to print, and the counts stand alone.
     private var summary: String {
-        let watches = "\(collection.watchCount) watch\(collection.watchCount == 1 ? "" : "es")"
-        let authenticated = "\(collection.authenticatedCount) authenticated"
-        guard let total = collection.estimatedTotal,
+        CollectionSummaryCopy.sentence(
+            watchCount: collection.watchCount,
+            authenticatedCount: collection.authenticatedCount,
+            estimatedTotal: collection.estimatedTotal,
+            valuedCount: collection.valuedCount
+        )
+    }
+}
+
+/// The one sentence under the member's own collection, written in one place.
+///
+/// Three clients read one payload and said three different things about
+/// somebody's own money: the website "estimated at $X across N of them", this
+/// app "$X across N valued", and Android printed no figure at all. The wording
+/// is being settled on the website, and this type exists so that settling it
+/// here is a single edit rather than a hunt — nothing else in the app composes
+/// this sentence.
+///
+/// What must survive any rewording: the valued count is said out loud beside
+/// the total, so the figure can never be read as what the whole collection is
+/// worth. With nothing valued there is no total to print, and the counts stand
+/// alone.
+enum CollectionSummaryCopy {
+    static func sentence(
+        watchCount: Int,
+        authenticatedCount: Int,
+        estimatedTotal: String?,
+        valuedCount: Int
+    ) -> String {
+        let watches = "\(watchCount) watch\(watchCount == 1 ? "" : "es")"
+        let authenticated = "\(authenticatedCount) authenticated"
+        guard let total = estimatedTotal,
               let value = Decimal(string: total, locale: Locale(identifier: "en_US_POSIX")),
-              collection.valuedCount > 0 else {
+              valuedCount > 0 else {
             return "\(watches) · \(authenticated)"
         }
         let priced = PriceFormatter.format(value)
-        return "\(watches) · \(authenticated) · \(priced) across \(collection.valuedCount) valued"
+        return "\(watches) · \(authenticated) · \(priced) across \(valuedCount) valued"
     }
 }
 

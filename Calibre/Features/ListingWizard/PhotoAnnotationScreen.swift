@@ -113,7 +113,10 @@ struct PhotoAnnotationScreen: View {
             } else if state.error != nil {
                 Color.calibre.secondary
             } else {
-                ProgressView().tint(Color(white: 1))
+                // White for the same reason as the preview screen's: the
+                // ground is the photograph, and no palette token means "ink
+                // over a picture" in both themes.
+                CalibreInlineLoading(size: 28, tint: Color(white: 1))
             }
         }
         .onAppear { measure() }

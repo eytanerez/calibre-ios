@@ -234,9 +234,16 @@ struct SupportChatScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        // Liquid glass, from the one helper both composers share. The bar is
+        // the same material on Support and on Messages; only the controls
+        // above differ, which is the whole point of the split.
+        //
+        // Nothing here adds a keyboard inset. SwiftUI's automatic avoidance
+        // already lifts this bar, and a container inset on top of it counts
+        // the keyboard twice — a documented trap, and the hole it leaves is a
+        // whole keyboard tall.
         .padding(Space.margin)
-        .background(Color.calibre.card)
-        .overlay(alignment: .top) { Rectangle().fill(Color.calibre.border).frame(height: 1) }
+        .calibreComposerSurface()
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
@@ -345,7 +352,7 @@ struct SupportChatScreen: View {
         } label: {
             Group {
                 if uploading {
-                    ProgressView().controlSize(.small).tint(Color.calibre.primary)
+                    CalibreInlineLoading(size: 18)
                 } else {
                     Image(systemName: "paperclip")
                         .font(.system(size: 16, weight: .medium))
@@ -674,7 +681,7 @@ private struct RecordPickerSheet: View {
             }
             .overlay {
                 if loading && options.isEmpty {
-                    ProgressView().tint(Color.calibre.primary)
+                    CalibreLoadingView("Finding your records")
                 }
             }
         }

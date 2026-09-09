@@ -578,14 +578,7 @@ struct ReturnFlowSheet: View {
     }
 
     private var loading: some View {
-        VStack(spacing: Space.l) {
-            ProgressView()
-            Text("Working out your exact refund.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, Space.xxl)
+        CalibreLoadingView("Working out your exact refund.")
     }
 
     private var openedHeader: some View {

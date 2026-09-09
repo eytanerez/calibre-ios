@@ -23,15 +23,11 @@ struct GoogleSignInButton: View {
             Haptics.shared.play(.press)
             Task { await run() }
         } label: {
-            HStack(spacing: Space.s) {
-                if busy {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(Color.calibre.mutedForeground)
-                }
-                Text("Continue with Google")
-            }
-            .frame(maxWidth: .infinity)
+            CalibreBusyLabel(
+                "Continue with Google",
+                busy: busy,
+                tint: Color.calibre.mutedForeground
+            )
         }
         .buttonStyle(.calibre(.secondary, fullWidth: true))
         .disabled(busy)

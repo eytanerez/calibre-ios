@@ -204,7 +204,12 @@ struct PhotoPreviewScreen: View {
                 if let image = state.image {
                     image.resizable().scaledToFit()
                 } else {
-                    ProgressView().tint(Color(white: 1))
+                    // White because the ground is the photograph itself, on
+                    // black, in both themes. The palette has no token for ink
+                    // over an arbitrary picture, and the one it does have for
+                    // light ink flips dark in dark mode — which is exactly
+                    // wrong here.
+                    CalibreInlineLoading(size: 28, tint: Color(white: 1))
                 }
             }
         } else {

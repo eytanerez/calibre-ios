@@ -85,11 +85,10 @@ struct SSNStepSheet: View {
                     Button {
                         submit()
                     } label: {
-                        if busy {
-                            ProgressView().tint(Color.calibre.primaryForeground)
-                        } else {
-                            Text("Continue to Stripe")
-                        }
+                        // The words stay. A button that goes blank on the
+                        // screen where an SSN is handed over reads as a
+                        // failure rather than as work.
+                        CalibreBusyLabel("Continue to Stripe", busy: busy)
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
                     .disabled(busy || digits.count != 9)

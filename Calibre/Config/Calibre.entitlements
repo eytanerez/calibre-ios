@@ -22,5 +22,23 @@
 	<array>
 		<string>Default</string>
 	</array>
+
+	<!-- Apple Pay. Exactly the same story as Sign in with Apple above: the
+	     button has always rendered, because APPLE_PAY_ENABLED is YES in both
+	     xcconfigs, and PassKit refused to open the sheet on a device because no
+	     provisioning profile granted this merchant. The tap simply did nothing.
+
+	     This entitlement can only be signed by a paid team, which is why the
+	     file used to omit it — that reasoning died with the move to team
+	     KVXR84LZH3. The merchant id must be created on that team and enabled as
+	     a capability on the com.buycalibre.calibre App ID, and the same
+	     merchant id must be paired with a payment-processing certificate in
+	     Stripe, before a real payment can complete. Without the portal half the
+	     sheet still will not open; with it, StripeSupport's
+	     applePayMerchantID is the string that has to match. -->
+	<key>com.apple.developer.in-app-payments</key>
+	<array>
+		<string>merchant.com.buycalibre.calibre</string>
+	</array>
 </dict>
 </plist>

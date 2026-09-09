@@ -179,9 +179,7 @@ struct RegisterScreen: View {
         case .idle:
             EmptyView()
         case .checking:
-            ProgressView()
-                .controlSize(.small)
-                .tint(Color.calibre.mutedForeground)
+            CalibreInlineLoading(size: 16, tint: Color.calibre.mutedForeground)
         case .available:
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 15))
@@ -369,15 +367,7 @@ struct RegisterScreen: View {
                     Haptics.shared.play(.press)
                     Task { await submit() }
                 } label: {
-                    HStack(spacing: Space.s) {
-                        if busy {
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(Color.calibre.primaryForeground)
-                        }
-                        Text("Create account")
-                    }
-                    .frame(maxWidth: .infinity)
+                    CalibreBusyLabel("Create account", busy: busy)
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
                 .disabled(!stepTwoComplete || busy)

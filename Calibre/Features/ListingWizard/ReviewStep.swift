@@ -53,11 +53,12 @@ struct ReviewStep: View {
                 Button {
                     onSubmit()
                 } label: {
-                    if model.submitting {
-                        ProgressView().tint(Color.calibre.primaryForeground)
-                    } else {
-                        Text(model.isEdit ? "Resubmit for approval" : "Submit for review")
-                    }
+                    // The words stay while it submits — a blank button at the
+                    // moment a listing goes to review reads as a failure.
+                    CalibreBusyLabel(
+                        model.isEdit ? "Resubmit for approval" : "Submit for review",
+                        busy: model.submitting
+                    )
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
                 .disabled(!canSubmit || model.submitting)
@@ -199,7 +200,7 @@ struct ReviewStep: View {
                         }
                     } else if model.previewing {
                         HStack(spacing: Space.s) {
-                            ProgressView().controlSize(.small).tint(Color.calibre.primary)
+                            CalibreInlineLoading(size: 18)
                             Text("Working out what you'll receive")
                                 .font(CalibreType.label)
                                 .foregroundStyle(Color.calibre.mutedForeground)
@@ -289,6 +290,9 @@ struct ReviewStep: View {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(Color.calibre.success)
         case .uploading:
+            // Deliberately not the balance wheel. Every photo slot draws one
+            // of these, so a batch upload would put a row of looping marks on
+            // one screen, and the marks budget allows one.
             ProgressView().controlSize(.small).tint(Color.calibre.primary)
         case .failed:
             Image(systemName: "exclamationmark.circle.fill")

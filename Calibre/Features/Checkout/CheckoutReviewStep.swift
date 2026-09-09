@@ -232,7 +232,11 @@ struct CheckoutReviewStep: View {
                     }
                     .payWithApplePayButtonStyle(.automatic)
                     .frame(height: Space.touchTarget)
-                    .disabled(model.payState.isBusy || model.confirmingOrder)
+                    .disabled(
+                        model.payState.isBusy
+                            || model.confirmingOrder
+                            || model.applePayRefusedToOpen
+                    )
                     .accessibilityLabel("Pay with Apple Pay")
                 }
             }
@@ -314,9 +318,7 @@ struct CheckoutReviewStep: View {
     /// The check is quick and quiet, but it is happening, so it says so.
     private var cardCheckRow: some View {
         HStack(spacing: Space.s) {
-            ProgressView()
-                .controlSize(.small)
-                .tint(Color.calibre.primary)
+            CalibreInlineLoading(size: 18)
             Text("Checking your card…")
                 .font(CalibreType.label)
                 .foregroundStyle(Color.calibre.mutedForeground)
@@ -502,9 +504,7 @@ struct CheckoutReviewStep: View {
 
     private func busyRow(_ text: String) -> some View {
         HStack(spacing: Space.m) {
-            ProgressView()
-                .controlSize(.small)
-                .tint(Color.calibre.primary)
+            CalibreInlineLoading(size: 20)
             Text(text)
                 .font(CalibreType.bodyMedium)
                 .foregroundStyle(Color.calibre.secondaryForeground)

@@ -19,12 +19,17 @@ API_BASE_URL = https:/$()/calibre-server.tailcad178.ts.net/api
 // nginx routes /messaging to it.
 MESSAGING_API_BASE_URL = https:/$()/calibre-server.tailcad178.ts.net/messaging
 
-// Shows Apple Pay in the payment sheet. Completing one additionally needs the
-// com.apple.developer.in-app-payments entitlement and merchant id
-// merchant.com.buycalibre.calibre registered to a *paid* Apple Developer
-// account. Until that exists, Apple Pay works in the Simulator and fails at
-// authorization on a sideloaded device — the entitlement is deliberately not
-// in Calibre.entitlements, because a free-Apple-ID re-sign can't carry it.
+// Shows Apple Pay in the payment sheet. Calibre.entitlements now carries
+// com.apple.developer.in-app-payments for merchant.com.buycalibre.calibre, so
+// this flag no longer stands alone; the remaining half is portal work, and it
+// is not code. The merchant id has to exist on team KVXR84LZH3, Apple Pay has
+// to be enabled as a capability on the com.buycalibre.calibre App ID, and the
+// merchant has to be paired with a payment-processing certificate in Stripe.
+// Until all three exist a tap opens no sheet and CheckoutModel says so out
+// loud rather than sitting there silently, which is what it used to do.
+//
+// Keep the flag. It is the only way to hide the button for a build signed by
+// a team that cannot carry the entitlement.
 APPLE_PAY_ENABLED = YES
 
 // Product analytics (PostHog). Deliberately EMPTY in the tracked config — an

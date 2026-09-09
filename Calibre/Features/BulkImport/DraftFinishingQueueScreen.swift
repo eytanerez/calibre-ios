@@ -265,11 +265,13 @@ struct DraftFinishingQueueScreen: View {
                     Button {
                         Task { await saveAndNext(item) }
                     } label: {
-                        if saving {
-                            ProgressView().tint(Color.calibre.primaryForeground)
-                        } else {
-                            Text(willSubmit ? "Send to review" : "Save & next")
-                        }
+                        // The words stay while it saves. This button used to
+                        // swap its label for a spinner, which took away the
+                        // one thing that said what was being saved.
+                        CalibreBusyLabel(
+                            willSubmit ? "Send to review" : "Save & next",
+                            busy: saving
+                        )
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
                     .disabled(saving || !canSave)

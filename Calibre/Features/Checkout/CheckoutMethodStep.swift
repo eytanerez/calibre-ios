@@ -64,19 +64,10 @@ struct CheckoutMethodStep: View {
                     DiscountPresentationNotice(breakdown: breakdown)
                 }
 
+                // Wire first, because wire is the default and a selected card
+                // that sits second reads as an accident. The order is the same
+                // on the website and on Android.
                 VStack(spacing: Space.m) {
-                    MethodCard(
-                        icon: "creditcard",
-                        title: "Card or Apple Pay",
-                        subtitle: cardSubtitle,
-                        detail: cardDetail,
-                        detailLoading: model.preparingCardIntent && model.cardFeeText == nil,
-                        isSelected: model.method == .card
-                    ) {
-                        Haptics.shared.play(.selection)
-                        model.method = .card
-                    }
-
                     MethodCard(
                         icon: "building.columns",
                         title: "Wire transfer",
@@ -87,6 +78,18 @@ struct CheckoutMethodStep: View {
                     ) {
                         Haptics.shared.play(.selection)
                         model.method = .wire
+                    }
+
+                    MethodCard(
+                        icon: "creditcard",
+                        title: cardMethodTitle,
+                        subtitle: cardSubtitle,
+                        detail: cardDetail,
+                        detailLoading: model.preparingCardIntent && model.cardFeeText == nil,
+                        isSelected: model.method == .card
+                    ) {
+                        Haptics.shared.play(.selection)
+                        model.method = .card
                     }
                 }
                 .tutorialAnchor("checkout.methods")
@@ -266,6 +269,14 @@ struct CheckoutMethodStep: View {
     /// card as adding a cost — the wire route earns a discount instead.
     private var isDiscountMode: Bool {
         model.breakdown?.isDiscountPresentation == true
+    }
+
+    /// Only promise Apple Pay where the review step will actually offer it.
+    /// A buyer with no wallet, or a build that cannot present one, reads
+    /// "Card" — the review step is where the promise gets kept or broken, and
+    /// `canOfferApplePay` is the same value it asks.
+    private var cardMethodTitle: String {
+        model.canOfferApplePay ? "Card or Apple Pay" : "Card"
     }
 
     private var cardSubtitle: String {

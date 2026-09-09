@@ -390,15 +390,10 @@ struct BusyLabel: View {
     let busy: Bool
 
     var body: some View {
-        HStack(spacing: Space.s) {
-            if busy {
-                ProgressView()
-                    .controlSize(.small)
-                    .tint(Color.calibre.primaryForeground)
-            }
-            Text(title)
-        }
-        .frame(maxWidth: .infinity)
+        // The wheel joins the words rather than replacing them: a button that
+        // goes blank at the moment money moves has taken away the one thing
+        // that said what it is doing.
+        CalibreBusyLabel(title, busy: busy)
     }
 }
 

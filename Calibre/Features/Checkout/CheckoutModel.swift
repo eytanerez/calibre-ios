@@ -161,7 +161,12 @@ final class CheckoutModel {
 
     // MARK: Method + pricing
 
-    var method: CheckoutMethod = .card
+    /// Wire is the default, and the method cards list it first to match. The
+    /// default is safe to change on its own here because nothing acts on it
+    /// until `continueFromMethod()` — the deposit is placed by that tap, not
+    /// by the selection, which is why iOS needs no second "committed" variable
+    /// the way the website does.
+    var method: CheckoutMethod = .wire
     private(set) var cardIntent: NativeCheckoutIntent?
     private(set) var pricingError: String?
     private(set) var pricingProblem: CheckoutProblem?
@@ -273,6 +278,19 @@ final class CheckoutModel {
     @ObservationIgnored private let authenticationContext = CheckoutAuthenticationContext()
     @ObservationIgnored private var applePayCheckout: ApplePayCheckout?
     @ObservationIgnored private var applePayContext: STPApplePayContext?
+    /// True from the first word PassKit says back — the wallet handing over a
+    /// PaymentMethod, or the sheet finishing for any reason including a plain
+    /// cancel. It is the only thing that separates "the sheet is open and the
+    /// buyer is reading it" from "the sheet never opened", because
+    /// `presentApplePay`'s completion fires either way.
+    @ObservationIgnored private var applePayAnswered = false
+    /// PassKit refused to raise the sheet on this device. Observed, not
+    /// inferred: the watchdog below sets it only after PassKit has been given
+    /// its chance and said nothing. It is a fact about the build's
+    /// entitlements rather than about this tap, so a second tap would fail the
+    /// same way — the button goes dead-looking on purpose, beside a message
+    /// that names the two routes that do work.
+    private(set) var applePayRefusedToOpen = false
 
     init(
         listingIDs: [String],
@@ -998,8 +1016,14 @@ final class CheckoutModel {
 
     /// Raises the wallet. Everything after the buyer authorizes runs through
     /// `ApplePayCheckout` into the same gate the card form uses.
+    ///
+    /// The re-entry guard is the live context rather than `payState`, because
+    /// the watchdog below hands `payState` back while a sheet may still be up.
+    /// Stripe asserts on a second `presentApplePay` against the same context,
+    /// and the SDK holds both the delegate and the context weakly, so building
+    /// a second pair would deallocate the first mid-payment.
     func startApplePay() {
-        guard let breakdown, canOfferApplePay else { return }
+        guard let breakdown, canOfferApplePay, applePayContext == nil else { return }
         cardRefusal = nil
         paymentProblem = nil
 
@@ -1013,10 +1037,51 @@ final class CheckoutModel {
             paymentProblem = CheckoutProblem(
                 message: "Apple Pay isn't available for this order. You can pay by card or by wire."
             )
+            applePayCheckout = nil
             return
         }
         applePayContext = context
-        context.presentApplePay()
+        applePayAnswered = false
+        // Claimed before the sheet goes up, the way the card path claims it, so
+        // the pay bar says something is happening. `applePayFinished` and the
+        // watchdog are the two ways back out of it.
+        payState = .confirming
+        context.presentApplePay { [weak self] in
+            // Stripe hops to the main queue before calling this, so the
+            // isolation is already true and the assumption only says so to the
+            // compiler — the closure itself carries no isolation of its own.
+            MainActor.assumeIsolated { self?.watchForSilentApplePay() }
+        }
+    }
+
+    /// Apple Pay used to fail as a tap that changed nothing. `presentApplePay`
+    /// takes a completion, but Stripe throws away the one signal that matters:
+    /// `PKPaymentAuthorizationController.present` reports whether the sheet
+    /// actually opened, and the SDK calls our completion with that Bool
+    /// discarded. So when PassKit refuses — no in-app-payments entitlement, no
+    /// registered merchant, no processing certificate — no sheet appears, no
+    /// delegate method ever runs, and nothing on screen moves.
+    ///
+    /// This waits a beat past that completion and, if PassKit has still said
+    /// nothing at all, says so in the buyer's own words. A buyer who is simply
+    /// reading an open sheet cannot see the message, and the first delegate
+    /// callback clears it, so being wrong here costs nothing; staying silent
+    /// costs the sale.
+    ///
+    /// Apple Pay stays claimed after a silent failure. A refusal is a property
+    /// of the build's entitlements, not of this tap, so it would refuse again
+    /// identically — the message points at card and wire because those are the
+    /// two things that will actually work.
+    private func watchForSilentApplePay() {
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, !self.applePayAnswered, self.applePayContext != nil else { return }
+            self.payState = .idle
+            self.applePayRefusedToOpen = true
+            self.paymentProblem = CheckoutProblem(
+                message: "We couldn't open Apple Pay on this device. You can pay by card or by wire."
+            )
+        }
     }
 
     /// Every line already priced by the server. Nothing here adds up to a
@@ -1070,6 +1135,10 @@ final class CheckoutModel {
     /// goes through. Returns the client secret Stripe needs to close its
     /// sheet; throws so a refusal shows inside the sheet rather than behind it.
     func authorizeWalletPayment(paymentMethodID: String) async throws -> String {
+        // PassKit has spoken, so the silent-failure watchdog is moot and any
+        // message it already wrote is wrong.
+        applePayAnswered = true
+        paymentProblem = nil
         guard let intent = cardIntent else { throw CheckoutMessageError.lost }
         _ = try await gateThenConfirm(
             paymentMethodID: paymentMethodID,
@@ -1080,9 +1149,14 @@ final class CheckoutModel {
     }
 
     func applePayFinished(succeeded: Bool, error: Error?) {
+        applePayAnswered = true
         applePayCheckout = nil
         applePayContext = nil
         payState = .idle
+        // The sheet did open, so whatever the watchdog wrote while it was up
+        // described a failure that did not happen. Anything real about this
+        // attempt is written below.
+        paymentProblem = nil
 
         guard succeeded else {
             if let refusal = error as? CardRefusalError {

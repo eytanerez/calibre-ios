@@ -74,15 +74,7 @@ struct ProfileCompletionView: View {
                         Haptics.shared.play(.press)
                         Task { await submit() }
                     } label: {
-                        HStack(spacing: Space.s) {
-                            if busy {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .tint(Color.calibre.primaryForeground)
-                            }
-                            Text("Save and continue")
-                        }
-                        .frame(maxWidth: .infinity)
+                        CalibreBusyLabel("Save and continue", busy: busy)
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
                     .disabled(!canSubmit)

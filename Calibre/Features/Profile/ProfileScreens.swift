@@ -109,7 +109,7 @@ struct ProfileScreen: View {
                     ) { Task { await load() } }
                     .padding(.top, Space.xxl)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.xxl)
+                    CalibreLoadingView("Opening your profile")
                 }
             }
             .padding(Space.margin)
@@ -411,13 +411,11 @@ struct PaymentMethodScreen: View {
                         Button {
                             Task { await startAddOrReplaceCard() }
                         } label: {
-                            HStack(spacing: Space.s) {
-                                Text("Add another card")
-                                if isPreparingSetup || isSyncingAfterSetup {
-                                    ProgressView().tint(Color.calibre.foreground)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
+                            CalibreBusyLabel(
+                                "Add another card",
+                                busy: isPreparingSetup || isSyncingAfterSetup,
+                                tint: Color.calibre.foreground
+                            )
                         }
                         .buttonStyle(.calibre(.secondary, fullWidth: true))
                         .disabled(isPreparingSetup || isSyncingAfterSetup)
@@ -717,7 +715,7 @@ struct NotificationSettingsScreen: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Space.s)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.xxl)
+                    CalibreLoadingView("Reading your notification settings")
                 }
             }
             .padding(Space.margin)

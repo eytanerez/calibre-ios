@@ -25,8 +25,13 @@ public enum CalibreMark {
     public static let defaultSize: CGFloat = MarkGrid.side
 
     /// Work in progress — any loading state.
-    public static func balanceWheel(size: CGFloat = defaultSize) -> some View {
-        BalanceWheelMark(size: size)
+    ///
+    /// `tint` is nil for the copper the mark is drawn in everywhere it stands
+    /// on the page. Pass a colour only where the ground underneath is itself
+    /// copper — inside a filled button, above all — because the mark's own
+    /// ink on that ground is invisible rather than quiet.
+    public static func balanceWheel(size: CGFloat = defaultSize, tint: Color? = nil) -> some View {
+        BalanceWheelMark(size: size, tint: tint)
     }
 
     /// Authentication passed.

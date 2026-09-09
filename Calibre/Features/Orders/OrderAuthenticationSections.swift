@@ -162,7 +162,8 @@ struct AuthenticationReportRow: View {
                             actionTitle: "Try again"
                         ) { Task { await load() } }
                     } else {
-                        ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                        CalibreLoadingView("Opening the report")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
                 .navigationTitle("Report")
@@ -395,7 +396,7 @@ struct AuthCaseCard: View {
                 }
             }
         } else {
-            ProgressView()
+            CalibreLoadingView()
         }
     }
 

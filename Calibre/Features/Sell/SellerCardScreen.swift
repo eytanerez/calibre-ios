@@ -24,8 +24,7 @@ struct SellerCardScreen: View {
                 if let model {
                     content(model)
                 } else {
-                    ProgressView()
-                        .tint(Color.calibre.primary)
+                    CalibreLoadingView("Reading your card on file")
                         .frame(maxWidth: .infinity, minHeight: 240)
                 }
             }
@@ -193,16 +192,14 @@ struct SellerCardScreen: View {
                 Button {
                     model.save()
                 } label: {
-                    HStack(spacing: Space.s) {
-                        if model.busy {
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(Color.calibre.primary)
-                        }
-                        Text("Replace card")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.primary)
-                    }
+                    CalibreBusyLabel(
+                        "Replace card",
+                        busy: model.busy,
+                        tint: Color.calibre.primary,
+                        fullWidth: false
+                    )
+                    .font(CalibreType.label)
+                    .foregroundStyle(Color.calibre.primary)
                     .frame(minHeight: Space.touchTarget, alignment: .leading)
                 }
                 .buttonStyle(PressableStyle())

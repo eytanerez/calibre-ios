@@ -34,13 +34,7 @@ struct ConnectOnboardingScreen: View {
     var body: some View {
         ZStack {
             Color.calibre.background.ignoresSafeArea()
-            VStack(spacing: Space.l) {
-                ProgressView()
-                    .tint(Color.calibre.primary)
-                Text("Opening secure verification…")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-            }
+            CalibreLoadingView("Opening secure verification…")
             ConnectOnboardingHost(
                 clientSecret: clientSecret,
                 publishableKey: publishableKey,

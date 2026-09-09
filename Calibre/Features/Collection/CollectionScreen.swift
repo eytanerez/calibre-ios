@@ -6,10 +6,9 @@ import SwiftUI
 /// it. Calibre purchases arrive automatically on delivery — authenticated,
 /// with their Passport — and manual adds cover the rest of the drawer.
 ///
-/// A collection is not a shopfront. What a card carries is the picture, what
-/// the owner calls it, what it is, and the way into its records; selling is
-/// available and quiet, and what somebody paid is theirs and stays on the
-/// watch's own screen.
+/// A collection is not a shopfront. What a row carries is the picture, what
+/// the owner calls it, what it is, what they paid for it, and the way into its
+/// records; selling is available and quiet.
 struct CollectionScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
@@ -170,23 +169,35 @@ struct CollectionScreen: View {
         isLoading = false
     }
 
+    /// The shape of what is coming, which is now a list of rows rather than a
+    /// column of square photographs. A skeleton that draws the old layout is
+    /// worse than none: it promises a screen the drawer will not become.
     private var skeleton: some View {
         ScrollView {
-            VStack(spacing: Space.xl) {
-                ForEach(0..<2, id: \.self) { _ in
-                    VStack(alignment: .leading, spacing: Space.m) {
+            VStack(spacing: 0) {
+                ForEach(0..<5, id: \.self) { _ in
+                    HStack(alignment: .top, spacing: Space.m) {
                         RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                             .fill(Color.calibre.card)
-                            .aspectRatio(1, contentMode: .fit)
+                            .frame(width: 72, height: 72)
                             .shimmer()
-                        RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                            .fill(Color.calibre.card)
-                            .frame(width: 160, height: 18)
-                            .shimmer()
+                        VStack(alignment: .leading, spacing: Space.s) {
+                            RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                                .fill(Color.calibre.card)
+                                .frame(width: 180, height: 18)
+                                .shimmer()
+                            RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                                .fill(Color.calibre.card)
+                                .frame(width: 120, height: 14)
+                                .shimmer()
+                        }
+                        Spacer(minLength: 0)
                     }
+                    .padding(.vertical, Space.m)
                 }
             }
-            .padding(Space.l)
+            .padding(.horizontal, Space.l)
+            .padding(.top, Space.m)
         }
     }
 
@@ -215,17 +226,25 @@ struct CollectionScreen: View {
         }
     }
 
+    /// The drawer, as a list. The website keeps a card grid because a wide
+    /// screen can hold one; a phone showed one full-width photograph per watch
+    /// and turned a collection of a dozen into a morning's scrolling. A row
+    /// carries the same facts in the height of its thumbnail.
     private var list: some View {
         ScrollView {
-            // Lazy, because every row is now a full-width photograph: a plain
-            // stack would decode the whole drawer before the first one drew.
-            LazyVStack(alignment: .leading, spacing: Space.xxl) {
+            // Lazy because a long drawer would otherwise decode every
+            // thumbnail before the first row drew.
+            LazyVStack(alignment: .leading, spacing: 0) {
                 vaultHeader
+                    .padding(.bottom, Space.l)
 
-                ForEach(visibleWatches) { watch in
-                    CollectionWatchCard(
+                ForEach(Array(visibleWatches.enumerated()), id: \.element.id) { index, watch in
+                    CollectionWatchRow(
                         watch: watch,
                         photoFrames: photoFrames,
+                        // The hairline separates rows, so the last one has
+                        // nothing under it to separate from.
+                        showsHairline: index < visibleWatches.count - 1,
                         onRemove: { confirmRemove = watch },
                         onList: {
                             Haptics.shared.play(.press)
@@ -272,14 +291,25 @@ private struct SettleIntoPlace: ViewModifier {
     }
 }
 
-/// One watch in the collection: the owner's photograph of it, what they call
-/// it, what it is, and the two records that belong to it.
-private struct CollectionWatchCard: View {
+/// One watch in the collection, as a row: the owner's photograph small enough
+/// that the drawer reads as a drawer, what they call it, what it is, what they
+/// paid, and the way into its records.
+///
+/// The website keeps its card grid — a wide screen can hold one. The phone
+/// cannot, and a column of full-width photographs made a dozen watches into a
+/// scroll nobody finished. That split is deliberate.
+private struct CollectionWatchRow: View {
     let watch: VaultWatch
     let photoFrames: Namespace.ID
+    let showsHairline: Bool
     let onRemove: () -> Void
     let onList: () -> Void
     let onPassport: (String) -> Void
+
+    /// The thumbnail's side. Square, because the vault's photographs are
+    /// framed square everywhere else and a row is not the place to re-crop
+    /// somebody's own picture of their watch.
+    private let thumbnailSide: CGFloat = 72
 
     /// One definition, shared by the ⋯ menu and the long-press menu, so both
     /// always offer exactly the same things.
@@ -303,40 +333,35 @@ private struct CollectionWatchCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            // Only the card's reading half is the link. The affordances below
-            // sit outside it, because a button nested inside a NavigationLink's
-            // label never gets the tap.
-            //
-            // A destination rather than a `Route` value, so the push can carry
-            // the photograph's own frame into the screen it opens. Reaching the
-            // same screen any other way — a passport link, a notification — has
-            // no frame to lift from and gets an ordinary push, which is right.
-            NavigationLink {
-                VaultWatchDetailScreen(vaultID: watch.id)
-                    .navigationTransition(.zoom(sourceID: watch.id, in: photoFrames))
-            } label: {
-                VStack(alignment: .leading, spacing: Space.m) {
-                    GeometryReader { proxy in
-                        VaultPhotoFrame(watch: watch, variant: .card, side: proxy.size.width)
-                            .matchedTransitionSource(id: watch.id, in: photoFrames)
-                    }
-                    .aspectRatio(1, contentMode: .fit)
-
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: Space.m) {
+                // Only the reading half is the link. The ⋯ sits outside it,
+                // because a button nested inside a NavigationLink's label
+                // never gets the tap.
+                //
+                // A destination rather than a `Route` value, so the push can
+                // carry the photograph's own frame into the screen it opens.
+                // Reaching the same screen any other way — a passport link, a
+                // notification — has no frame to lift from and gets an
+                // ordinary push, which is right.
+                NavigationLink {
+                    VaultWatchDetailScreen(vaultID: watch.id)
+                        .navigationTransition(.zoom(sourceID: watch.id, in: photoFrames))
+                } label: {
                     HStack(alignment: .top, spacing: Space.m) {
+                        VaultPhotoFrame(watch: watch, variant: .card, side: thumbnailSide)
+                            .matchedTransitionSource(id: watch.id, in: photoFrames)
+
                         VStack(alignment: .leading, spacing: Space.xs) {
                             // One chip, whichever it is, and the server's flag
                             // is the only thing that decides which. A watch
                             // somebody typed in is a watch nobody at Calibre
                             // has held, however good its photograph looks.
-                            Group {
-                                if watch.authenticated {
-                                    AuthenticatedBadge()
-                                } else {
-                                    StatusBadge("Unverified", tone: .neutral)
-                                }
+                            if watch.authenticated {
+                                AuthenticatedBadge()
+                            } else {
+                                StatusBadge("Unverified", tone: .neutral)
                             }
-                            .padding(.bottom, Space.xs)
 
                             // A name the owner gave the watch is theirs, and it
                             // is set in their hand. A brand and model is the
@@ -345,47 +370,34 @@ private struct CollectionWatchCard: View {
                                 .font(
                                     watch.isNicknamed
                                         ? CalibreType.hand
-                                        : CalibreType.serif(.semiBold, 20, relativeTo: .title3)
+                                        : CalibreType.serif(.semiBold, 17, relativeTo: .headline)
                                 )
                                 .foregroundStyle(Color.calibre.foreground)
                                 .multilineTextAlignment(.leading)
+
                             Text(subtitle)
                                 .font(CalibreType.caption)
                                 .foregroundStyle(Color.calibre.mutedForeground)
                                 .multilineTextAlignment(.leading)
+
+                            // What they paid, where they have told us. Nothing
+                            // is invented for a watch with no figure on it —
+                            // and this is never Calibre's estimate, which is
+                            // settled as a number no owner is shown.
+                            if let acquired = acquiredText {
+                                Text(acquired)
+                                    .font(CalibreType.priceSmall)
+                                    .foregroundStyle(Color.calibre.foreground)
+                                    .accessibilityLabel("Acquired for \(acquired)")
+                            }
                         }
+
                         Spacer(minLength: 0)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.calibre.mutedForeground)
-                            .padding(.top, Space.xs)
                     }
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(PressableStyle())
-            .accessibilityLabel("Open \(watch.displayTitle)")
-
-            HStack(spacing: Space.m) {
-                // The record Calibre keeps for this watch, in reach. It used
-                // to be the third item of an overflow menu, behind a Sell
-                // button, on a screen about watches somebody is keeping.
-                if let code = watch.passportCode {
-                    NavigationLink(value: Route.passport(code)) {
-                        HStack(spacing: Space.s) {
-                            Image(systemName: "doc.text")
-                            Text("Passport")
-                        }
-                    }
-                    .buttonStyle(.calibre(.secondary))
-                }
-
-                // Available, and quiet.
-                Button("Sell", action: onList)
-                    .buttonStyle(.calibre(.ghost))
-
-                Spacer(minLength: 0)
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("Open \(watch.displayTitle)")
 
                 Menu {
                     rowActions
@@ -398,8 +410,20 @@ private struct CollectionWatchCard: View {
                 }
                 .accessibilityLabel("Options for \(watch.displayTitle)")
             }
+            .padding(.vertical, Space.m)
+
+            if showsHairline {
+                Rectangle()
+                    .fill(Color.calibre.border)
+                    .frame(height: 1)
+            }
         }
         .contextMenu { rowActions }
+    }
+
+    private var acquiredText: String? {
+        guard let raw = watch.acquiredPrice, let value = Decimal(string: raw) else { return nil }
+        return PriceFormatter.format(value)
     }
 
     private var subtitle: String {

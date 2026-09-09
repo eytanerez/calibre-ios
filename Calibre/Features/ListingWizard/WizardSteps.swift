@@ -818,6 +818,9 @@ struct PriceStep: View {
                 .foregroundStyle(Color.calibre.foreground)
             Spacer()
             if model.previewing {
+                // Stays a system spinner on purpose. The marks vocabulary
+                // forbids a mark on a price, and this stands exactly where
+                // the figure is about to be.
                 ProgressView().controlSize(.small).tint(Color.calibre.primary)
             } else {
                 Text(netText)
@@ -927,6 +930,9 @@ struct PriceStep: View {
                 .foregroundStyle(Color.calibre.mutedForeground)
             Spacer()
             if busy {
+                // A system spinner, for the same reason as the net-proceeds
+                // row above: this is the slot a figure lands in, and no mark
+                // goes on a price.
                 ProgressView().controlSize(.small).tint(Color.calibre.primary)
             } else {
                 Text(value)
