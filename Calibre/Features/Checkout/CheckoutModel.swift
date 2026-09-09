@@ -679,17 +679,33 @@ final class CheckoutModel {
     /// carries over.
     func continueWithoutReservedWatch() async {
         guard let reservedWatch, canContinueWithoutReservedWatch else { return }
+
+        // Which payment the buyer had actually STARTED, read before
+        // `invalidatePricing()` throws it away. This is not the same question
+        // as `method`, and the difference became dangerous the day wire became
+        // the default: `method` is merely what is selected, so a buyer who has
+        // not reached the payment step at all still reads as `.wire`, and
+        // resuming on that would call `startWire()` and place a $250
+        // authorization on a card for a step they never asked for. Recovering
+        // from a watch going out of stock must not move money.
+        let wasPayingByWire = wireCheckout != nil || wireHold != nil
+        let wasPayingByCard = cardIntent != nil
+
         listingIDs.removeAll { $0 == reservedWatch.listingID }
         droppedWatch = reservedWatch
         self.reservedWatch = nil
         invalidatePricing()
         pricingError = nil
         pricingProblem = nil
-        switch method {
-        case .card:
-            await prepareCardIntent()
-        case .wire:
+
+        // Re-establish only what was already in flight. A buyer still on an
+        // earlier step keeps their place and prices again the ordinary way when
+        // they reach payment; a card intent costs nothing to remake, and a wire
+        // checkout is only re-opened for somebody who had already opened one.
+        if wasPayingByWire {
             await startWire()
+        } else if wasPayingByCard {
+            await prepareCardIntent()
         }
     }
 
@@ -1136,8 +1152,13 @@ final class CheckoutModel {
     /// sheet; throws so a refusal shows inside the sheet rather than behind it.
     func authorizeWalletPayment(paymentMethodID: String) async throws -> String {
         // PassKit has spoken, so the silent-failure watchdog is moot and any
-        // message it already wrote is wrong.
+        // message it already wrote is wrong. The LATCH has to go with the
+        // message: it disables the Apple Pay button for the rest of the
+        // session, and the watchdog's own three seconds is shorter than a
+        // person reading a sheet and authorizing with their face — so leaving
+        // it set would take Apple Pay away from the buyer it just worked for.
         applePayAnswered = true
+        applePayRefusedToOpen = false
         paymentProblem = nil
         guard let intent = cardIntent else { throw CheckoutMessageError.lost }
         _ = try await gateThenConfirm(
@@ -1155,7 +1176,10 @@ final class CheckoutModel {
         payState = .idle
         // The sheet did open, so whatever the watchdog wrote while it was up
         // described a failure that did not happen. Anything real about this
-        // attempt is written below.
+        // attempt is written below. The latch clears with the message for the
+        // same reason: a buyer who cancelled a sheet that worked must still be
+        // able to tap Apple Pay again.
+        applePayRefusedToOpen = false
         paymentProblem = nil
 
         guard succeeded else {
