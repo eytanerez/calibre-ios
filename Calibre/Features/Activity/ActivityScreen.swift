@@ -20,6 +20,7 @@ struct ActivityScreen: View {
                 selection: $segment,
                 items: [(.offers, "Offers"), (.orders, "Orders"), (.alerts, "Alerts")]
             )
+            .calibrePageSwipe(selection: $segment, values: [.offers, .orders, .alerts])
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.s)
 

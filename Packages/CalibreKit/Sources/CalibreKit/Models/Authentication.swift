@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The record
 
-/// The five stages a watch moves through at the authentication centre.
+/// The five stages a watch moves through at the authentication center.
 public enum AuthenticationStage: String, Codable, Sendable {
     case incoming, inHand = "in_hand", ready, shipped, closed
     case unknown
@@ -136,11 +136,11 @@ public struct OrderAuthentication: Codable, Sendable, Hashable {
     /// every other hold deliberately differ only in what they promise next.
     public var holdBody: String {
         if holdReason == "service" || serviceRecommended == true {
-            return "Our authentication centre found something worth a second opinion on how this watch is running. "
+            return "Our authentication center found something worth a second opinion on how this watch is running. "
                 + "Nothing is decided and nothing has changed about your order. A person at Calibre is reviewing it "
                 + "and will write to you with what we found and what we suggest."
         }
-        return "Your watch is with our authentication centre and a person at Calibre is reviewing it before it goes "
+        return "Your watch is with our authentication center and a person at Calibre is reviewing it before it goes "
             + "any further. Nothing is decided yet. We will write to you with what we found, and you will be asked "
             + "before anything about your order changes."
     }
@@ -201,6 +201,127 @@ public struct AuthenticationReport: Codable, Sendable {
     public let version: Int
     public let issuedAt: Date?
     public let downloadFilename: String?
+    /// Immutable findings from the issued report, shaped for native clients.
+    /// Optional so reports issued by an older server still decode and can
+    /// offer their archived PDF without falling back to embedded web content.
+    public let content: AuthenticationReportContent?
+}
+
+public struct AuthenticationReportContent: Codable, Sendable {
+    public let schemaVersion: Int
+    public let version: Int
+    public let issuedAt: Date?
+    public let issuedOn: String?
+    public let headLabel: String
+    public let title: String
+    public let lede: String?
+    public let record: AuthenticationReportRecord
+    public let result: AuthenticationReportResult
+    public let timepiece: [AuthenticationReportValueRow]
+    public let condition: AuthenticationReportCondition
+    public let inclusions: [AuthenticationReportInclusion]
+    public let performance: [AuthenticationReportPerformance]
+    public let visual: [AuthenticationReportVisualFinding]
+    public let technical: [AuthenticationReportTechnicalFinding]
+    public let notes: [AuthenticationReportNote]
+    public let findingsFooter: String?
+    public let photographs: [AuthenticationReportPhotograph]
+    public let gallery: [AuthenticationReportPhotograph]
+    public let links: AuthenticationReportLinks
+}
+
+public struct AuthenticationReportRecord: Codable, Sendable {
+    public let id: String?
+    public let number: String?
+    public let kind: String?
+    public let verdict: String?
+    public let serviceRecommended: Bool?
+    public let serial: String?
+    public let arrivedAt: Date?
+    public let verdictAt: Date?
+}
+
+public struct AuthenticationReportResult: Codable, Sendable {
+    public let verdict: String?
+    public let label: String
+    public let qualifier: String?
+    public let date: String?
+}
+
+public struct AuthenticationReportValueRow: Codable, Sendable, Identifiable {
+    public var id: String { label }
+    public let label: String
+    public let value: String
+    public let tabular: Bool?
+    public let strong: Bool?
+}
+
+public struct AuthenticationReportCondition: Codable, Sendable {
+    public let lede: String?
+    public let overall: String?
+    public let scale: [String]
+    public let rows: [AuthenticationReportConditionRow]
+    public let footnote: String?
+}
+
+public struct AuthenticationReportConditionRow: Codable, Sendable, Identifiable {
+    public var id: String { component }
+    public let component: String
+    public let label: String
+    public let seller: String
+    public let calibre: String
+    public let agrees: Bool
+}
+
+public struct AuthenticationReportInclusion: Codable, Sendable, Identifiable {
+    public var id: String { key }
+    public let key: String
+    public let label: String
+    public let present: Bool
+    public let detail: String?
+}
+
+public struct AuthenticationReportPerformance: Codable, Sendable, Identifiable {
+    public var id: String { label }
+    public let label: String
+    public let detail: String
+    public let verdict: String?
+}
+
+public struct AuthenticationReportVisualFinding: Codable, Sendable, Identifiable {
+    public var id: String { component }
+    public let component: String
+    public let label: String
+    public let note: String
+}
+
+public struct AuthenticationReportTechnicalFinding: Codable, Sendable, Identifiable {
+    public var id: String { key }
+    public let key: String
+    public let label: String
+    public let value: String
+    public let explanation: String?
+}
+
+public struct AuthenticationReportNote: Codable, Sendable, Identifiable {
+    public var id: String { key }
+    public let key: String
+    public let title: String
+    public let body: String
+}
+
+public struct AuthenticationReportPhotograph: Codable, Sendable, Identifiable {
+    public let id: String
+    public let index: Int?
+    public let slot: String?
+    public let title: String?
+    public let caption: String?
+    public let url: MediaURL
+}
+
+public struct AuthenticationReportLinks: Codable, Sendable {
+    public let report: MediaURL?
+    public let passport: MediaURL?
 }
 
 // MARK: - The case

@@ -423,6 +423,7 @@ struct SellGateScreen: View {
             // back into an account that cannot be approved.
             NavigationLink {
                 SupportChatScreen(seed: payoutRejectedSupportMessage)
+                    .routeStackNode()
             } label: {
                 Text(title).frame(maxWidth: .infinity)
             }

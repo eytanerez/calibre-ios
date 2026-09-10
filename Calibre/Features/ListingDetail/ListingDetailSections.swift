@@ -251,7 +251,7 @@ struct AuthenticationInfoSheet: View {
         SheetScaffold(title: "Inspected before it ships", detents: [.medium, .large]) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Every watch sold on Calibre travels to the authentication centre before it travels to you. Nothing ships buyer-direct.")
+                    Text("Every watch sold on Calibre travels to the authentication center before it travels to you. Nothing ships buyer-direct.")
                         .font(CalibreType.body)
                         .foregroundStyle(Color.calibre.secondaryForeground)
                         .lineSpacing(5)
@@ -265,6 +265,11 @@ struct AuthenticationInfoSheet: View {
                         icon: "clock.badge.checkmark",
                         title: "Condition verified",
                         message: "The listing's condition grading is confirmed part by part. If anything doesn't match, the sale doesn't proceed."
+                    )
+                    infoRow(
+                        icon: "wrench.and.screwdriver",
+                        title: "1-year mechanical warranty",
+                        message: "Every watch that passes authentication includes a one-year mechanical warranty in Calibre's name."
                     )
                     infoRow(
                         icon: "shippingbox",

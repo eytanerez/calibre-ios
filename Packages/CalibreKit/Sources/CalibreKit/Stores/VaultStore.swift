@@ -96,15 +96,22 @@ public final class VaultStore {
     /// Identity fields are deliberately not here. Editing one makes the server
     /// discard the stored estimate and re-match the catalog row, which is a
     /// different act from renaming a watch or writing a note about it.
+    ///
+    /// `photo_url` is deliberately not here either, and its absence is load
+    /// bearing. The column still exists and the server still accepts a write
+    /// to it, but this app no longer has a link form to write one from
+    /// (contracts §9d) — and a PATCH that named the column while meaning
+    /// nothing by it would wipe the seller's photograph of a watch that
+    /// arrived from a Calibre order, leaving the card with no cover at all the
+    /// moment the owner deletes their own uploads. Never sending the key is
+    /// what keeps that from being one careless argument away.
     @discardableResult
     public func update(
         id: String,
-        photoUrl: VaultFieldEdit? = nil,
         notes: VaultFieldEdit? = nil,
         nickname: VaultFieldEdit? = nil
     ) async throws -> VaultWatch {
         struct Payload: Encodable {
-            let photoUrl: VaultFieldEdit?
             let notes: VaultFieldEdit?
             let nickname: VaultFieldEdit?
         }
@@ -112,13 +119,91 @@ public final class VaultStore {
             try Endpoint.json(
                 method: .patch,
                 path: "/vault/\(id)",
-                payload: Payload(photoUrl: photoUrl, notes: notes, nickname: nickname)
+                payload: Payload(notes: notes, nickname: nickname)
             )
         )
         if let index = watches.firstIndex(where: { $0.id == id }) {
             watches[index] = updated
         }
         return updated
+    }
+
+    // MARK: - The owner's own photographs
+
+    /// The gallery as the server holds it — `GET /vault/{id}/photos`.
+    ///
+    /// Every verb below answers with the same shape and every one of them
+    /// folds the answer back into the cached row, so the collection card
+    /// behind the sheet redraws on the cover the write just settled instead of
+    /// waiting for the next full load.
+    @discardableResult
+    public func photos(id: String) async throws -> VaultGallery {
+        let gallery: VaultGallery = try await client.send(Endpoint(path: "/vault/\(id)/photos"))
+        apply(gallery, to: id)
+        return gallery
+    }
+
+    /// Adds one photograph. It lands last; the cover is whatever sorts first,
+    /// so the first one uploaded to an empty gallery becomes the cover by
+    /// arriving rather than by being named one.
+    ///
+    /// One file per request, because that is the shape of the route: a
+    /// multi-file upload that fails partway is a state nobody can read.
+    /// Refusals come back as `APIError.server` carrying the server's own
+    /// sentence and a `details.code` — show the sentence, and switch on the
+    /// code only where the app has something better to do than say it.
+    @discardableResult
+    public func addPhoto(
+        id: String,
+        data: Data,
+        filename: String,
+        contentType: String
+    ) async throws -> VaultGalleryAddition {
+        var form = MultipartForm()
+        form.addFile("file", filename: filename, contentType: contentType, data: data)
+        let added: VaultGalleryAddition = try await client.send(
+            Endpoint(method: .post, path: "/vault/\(id)/photos", body: .multipart(form))
+        )
+        apply(added.gallery, to: id)
+        return added
+    }
+
+    /// Removes one photograph for good — `DELETE`. There is no tombstone and
+    /// no undo: contracts §9d, and the sheet asks first for that reason.
+    @discardableResult
+    public func deletePhoto(id: String, photoID: String) async throws -> VaultGallery {
+        let gallery: VaultGallery = try await client.send(
+            Endpoint(method: .delete, path: "/vault/\(id)/photos/\(photoID)")
+        )
+        apply(gallery, to: id)
+        return gallery
+    }
+
+    /// Moves one photograph to a position, zero-based — the drag, and the only
+    /// way to change the cover. There is deliberately no "make this the cover"
+    /// verb: the cover is position zero, so making one the cover is moving it
+    /// there.
+    ///
+    /// A position past the end is clamped by the server rather than refused,
+    /// which is what a drag onto the end of a gallery another device just
+    /// shortened means.
+    @discardableResult
+    public func movePhoto(id: String, photoID: String, to position: Int) async throws -> VaultGallery {
+        struct Payload: Encodable { let position: Int }
+        let gallery: VaultGallery = try await client.send(
+            try Endpoint.json(
+                method: .patch,
+                path: "/vault/\(id)/photos/\(photoID)",
+                payload: Payload(position: position)
+            )
+        )
+        apply(gallery, to: id)
+        return gallery
+    }
+
+    private func apply(_ gallery: VaultGallery, to id: String) {
+        guard let index = watches.firstIndex(where: { $0.id == id }) else { return }
+        watches[index] = watches[index].applying(gallery)
     }
 
     /// The owner's own watches at this reference that are free to be listed —

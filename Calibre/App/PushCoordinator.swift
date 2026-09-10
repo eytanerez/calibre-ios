@@ -17,6 +17,9 @@ struct DecodedPush: Sendable {
     /// push queued by a build that predates the field, which is the only
     /// reason a tap would go unreported.
     let notificationID: String?
+    let kind: String?
+    let listingID: String?
+    let listingStatus: String?
 }
 
 /// One received notification, kept in the local Alerts inbox.
@@ -27,6 +30,16 @@ struct AlertItem: Identifiable, Hashable, Codable {
     let body: String
     let route: String?
     let receivedAt: Date
+    /// The server `Notification` row this push was sent for, where it carried
+    /// one. It is what a `notifications_cleared` push names, so it is what a
+    /// clear made on another device can be matched against. Optional because a
+    /// push queued before the field existed has none.
+    var notificationID: String?
+    /// Moderation metadata. Optional so saved rows from older builds continue
+    /// to decode, and so unrelated notifications carry no empty fields.
+    var kind: String?
+    var listingID: String?
+    var listingStatus: String?
     /// Still written, no longer read by anything: the inbox is cleared rather
     /// than ticked off. The key stays on the wire because these rows are
     /// persisted, and a `JSONDecoder` handed an archive with a key it has no
@@ -58,11 +71,34 @@ final class AlertsInbox {
         }
     }
 
-    func record(id: String = UUID().uuidString, category: String, title: String, body: String, route: String?, at: Date) {
+    func record(
+        id: String = UUID().uuidString,
+        category: String,
+        title: String,
+        body: String,
+        route: String?,
+        notificationID: String? = nil,
+        kind: String? = nil,
+        listingID: String? = nil,
+        listingStatus: String? = nil,
+        at: Date
+    ) {
         // Dedupe: the same push arrives twice (foreground present, then tap).
         guard !items.contains(where: { $0.id == id }) else { return }
         items.insert(
-            AlertItem(id: id, category: category, title: title, body: body, route: route, receivedAt: at, read: false),
+            AlertItem(
+                id: id,
+                category: category,
+                title: title,
+                body: body,
+                route: route,
+                receivedAt: at,
+                notificationID: notificationID,
+                kind: kind,
+                listingID: listingID,
+                listingStatus: listingStatus,
+                read: false
+            ),
             at: 0
         )
         if items.count > cap { items.removeLast(items.count - cap) }
@@ -78,6 +114,19 @@ final class AlertsInbox {
 
     func clear(_ id: String) {
         items.removeAll { $0.id == id }
+        persist()
+    }
+
+    /// Drops the rows a `notifications_cleared` push named.
+    ///
+    /// The ids on the wire are server `Notification` ids, and a row here is
+    /// keyed by the APNs request identifier — so the match is on what the
+    /// original push carried, which is the same join key the tap report uses.
+    func clearServerRows(ids: Set<String>) {
+        guard !ids.isEmpty else { return }
+        let before = items.count
+        items.removeAll { $0.notificationID.map(ids.contains) ?? false }
+        guard items.count != before else { return }
         persist()
     }
 
@@ -97,6 +146,11 @@ final class AlertsInbox {
 final class PushCoordinator: NSObject {
     @ObservationIgnored private let account: AccountStore
     @ObservationIgnored private var deviceToken: String?
+    @ObservationIgnored private let auth: AuthSession
+    @ObservationIgnored private let registration: PushDeviceRegistrar
+    @ObservationIgnored private var signingOutUserID: String?
+    private static let tokenCacheKey = "calibre.push.latestDeviceToken"
+    private struct CachedToken: Codable { let token: String; let environment: String }
     @ObservationIgnored weak var router: AppRouter?
     @ObservationIgnored weak var alerts: AlertsInbox?
     @ObservationIgnored weak var serverAlerts: ServerAlertsStore?
@@ -109,10 +163,49 @@ final class PushCoordinator: NSObject {
 
     /// A cold-start route parked until the tab shell is ready to receive it.
     private(set) var pendingRoute: String?
+    private var pendingKind: String?
+    private var pendingListingID: String?
+    private var pendingListingStatus: String?
 
-    init(account: AccountStore) {
+    init(account: AccountStore, auth: AuthSession) {
         self.account = account
+        self.auth = auth
+        self.registration = PushDeviceRegistrar { target in
+            guard auth.isAuthenticated, auth.user?.id == target.userID else { throw CancellationError() }
+            do {
+                try await account.registerDevice(token: target.token, environment: target.environment)
+            } catch {
+                Observability.log(.warning, "push device registration failed")
+                throw error
+            }
+        }
         super.init()
+        if let data = UserDefaults.standard.data(forKey: Self.tokenCacheKey),
+           let cached = try? JSONDecoder().decode(CachedToken.self, from: data),
+           cached.environment == Self.apsEnvironment() {
+            deviceToken = cached.token
+            registration.setToken(cached.token, environment: cached.environment)
+        }
+    }
+
+    /// Identity changes include restored sessions and A → B without a guest
+    /// interval. Notification permission belongs to the device, not its user.
+    func accountDidChange(to userID: String?) {
+        registration.setUser(nil)
+        if signingOutUserID != userID { signingOutUserID = nil }
+        guard userID != nil else { return }
+        Task { await requestAuthorizationIfNeeded() }
+    }
+
+    private func activateRegistration() {
+        guard auth.isAuthenticated, let userID = auth.user?.id,
+              signingOutUserID != userID else { return }
+        registration.setUser(userID)
+        registration.refresh()
+        // Keep asking APNs for the authoritative current token. The cached
+        // token lets an account switch re-associate without waiting on a
+        // callback for a token that has not changed.
+        UIApplication.shared.registerForRemoteNotifications()
     }
 
     func attach(router: AppRouter, alerts: AlertsInbox, serverAlerts: ServerAlertsStore) {
@@ -135,7 +228,7 @@ final class PushCoordinator: NSObject {
             let granted = try await UNUserNotificationCenter.current()
                 .requestAuthorization(options: [.alert, .badge, .sound])
             if granted {
-                UIApplication.shared.registerForRemoteNotifications()
+                activateRegistration()
             }
             return granted
         } catch {
@@ -158,15 +251,29 @@ final class PushCoordinator: NSObject {
     /// on first open.
     @discardableResult
     func requestAuthorizationIfNeeded() async -> Bool {
-        guard await authorizationStatus() == .notDetermined else { return false }
-        return await requestAuthorization()
+        switch await authorizationStatus() {
+        case .notDetermined:
+            return await requestAuthorization()
+        case .authorized, .provisional, .ephemeral:
+            // Permission survives reinstall/restore independently of our
+            // defaults. Always restore the backend registration on sign-in.
+            activateRegistration()
+            return true
+        default:
+            return false
+        }
     }
 
     /// Re-registers with the backend on launch/sign-in if we already hold a
     /// token (APNs tokens rotate).
     func refreshRegistration() {
-        if UserDefaults.standard.bool(forKey: "calibre.push.requested") {
-            UIApplication.shared.registerForRemoteNotifications()
+        Task {
+            switch await authorizationStatus() {
+            case .authorized, .provisional, .ephemeral:
+                activateRegistration()
+            default:
+                break
+            }
         }
     }
 
@@ -206,22 +313,43 @@ final class PushCoordinator: NSObject {
     func didRegister(deviceToken data: Data) {
         let token = data.map { String(format: "%02x", $0) }.joined()
         deviceToken = token
-        Task {
-            let environment = Self.apsEnvironment()
-            try? await account.registerDevice(token: token, environment: environment)
+        let environment = Self.apsEnvironment()
+        if let data = try? JSONEncoder().encode(CachedToken(token: token, environment: environment)) {
+            UserDefaults.standard.set(data, forKey: Self.tokenCacheKey)
         }
+        registration.setToken(token, environment: environment)
     }
 
-    /// Called on sign-out to stop delivery to this device's token.
-    func unregisterOnSignOut() {
-        guard let token = deviceToken else { return }
-        Task { try? await account.unregisterDevice(token: token) }
+    /// Finish an in-flight POST before deleting, so a late callback cannot
+    /// resurrect the old user's association after their sign-out.
+    func unregisterOnSignOut() async {
+        guard let userID = auth.user?.id else { return }
+        signingOutUserID = userID
+        await registration.unregister(
+            userID: userID,
+            fallbackToken: deviceToken,
+            environment: Self.apsEnvironment()
+        ) { [auth, account] target in
+            guard auth.user?.id == target.userID else { return }
+            try await account.unregisterDevice(token: target.token)
+        }
     }
 
     /// Records a decoded push (deduped by id) and, on a tap, reports the open
     /// and navigates.
     func handle(_ push: DecodedPush, receivedAt: Date, foreground: Bool) {
-        alerts?.record(id: push.id, category: push.category, title: push.title, body: push.body, route: push.route, at: receivedAt)
+        alerts?.record(
+            id: push.id,
+            category: push.category,
+            title: push.title,
+            body: push.body,
+            route: push.route,
+            notificationID: push.notificationID,
+            kind: push.kind,
+            listingID: push.listingID,
+            listingStatus: push.listingStatus,
+            at: receivedAt
+        )
         // A foreground push surfaces as a banner (via the delegate) and is not
         // an open — seeing a banner is not reading the message.
         guard !foreground else { return }
@@ -230,7 +358,12 @@ final class PushCoordinator: NSObject {
         // still has to land somewhere: the inbox, where the notification
         // itself is. Swallowing the tap is the one outcome that reads as the
         // app being broken.
-        open(route: push.route ?? Self.inboxRoute)
+        open(
+            route: push.route ?? Self.inboxRoute,
+            kind: push.kind,
+            listingID: push.listingID,
+            listingStatus: push.listingStatus
+        )
     }
 
     /// The tap, told to both halves of the record: our own row (so the
@@ -248,6 +381,101 @@ final class PushCoordinator: NSObject {
             // see depends on it.
             try? await serverAlerts?.markOpened(id: notificationID)
         }
+    }
+
+    // MARK: - Notifications cleared somewhere else
+
+    /// What one device's clear says to every other device the member holds.
+    ///
+    /// Every value on the wire is a string on both platforms. FCM's data map
+    /// is string-to-string and the two clients must read one payload, so this
+    /// does not expect numbers even where iOS could have sent them. The one
+    /// exception is `aps.badge`, which is Apple's own field and Apple's own
+    /// type; it says the same thing as `remainingCount` and either may be used.
+    struct ClearedSync: Sendable {
+        /// The rows that went. Empty on a clear-all — see `clearedAll`.
+        let ids: Set<String>
+        /// Everything went. The list is deliberately NOT sent in this case: a
+        /// background APNs payload is capped at 4KB, and an inbox of a few
+        /// hundred ids does not fit, so it would be truncated or dropped and
+        /// leave a card on a phone with nothing coming to remove it.
+        let clearedAll: Bool
+        /// What the bell and the app icon should read now. The server's count,
+        /// not one derived from what this device happened to be holding.
+        ///
+        /// Optional because absent has to mean "the server did not say".
+        /// Defaulting it to zero reads a payload that mentions no count as a
+        /// phone with an empty inbox, and a clear of two rows out of forty
+        /// would then wipe the badge and empty the bell on every *other*
+        /// device the member holds. Today's backend sends both fields, so that
+        /// is a branch nothing takes — which is exactly the shape that becomes
+        /// the only branch the day the payload changes, silently.
+        let remaining: Int?
+
+        /// The type this payload announces itself as. Read this key first.
+        static let type = "notifications_cleared"
+
+        /// Nil for anything that is not a clear announcement.
+        init?(userInfo: [AnyHashable: Any]) {
+            guard userInfo["type"] as? String == Self.type else { return nil }
+            let raw = (userInfo["notification_ids"] as? String) ?? ""
+            ids = Set(
+                raw.split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+            )
+            clearedAll = (userInfo["cleared_all"] as? String) == "true"
+            let count = (userInfo["remaining_count"] as? String).flatMap(Int.init)
+            remaining = count ?? (userInfo["aps"] as? [AnyHashable: Any])
+                .flatMap { $0["badge"] as? Int } ?? 0
+        }
+    }
+
+    /// Takes the cards off this phone that were cleared on another one.
+    ///
+    /// Three places have to agree afterwards: the notification centre, the
+    /// inbox screen, and the number on the app icon.
+    func applyCleared(_ sync: ClearedSync) async {
+        await Self.removeDelivered(sync)
+        alerts?.clearServerRows(ids: sync.ids)
+        if sync.clearedAll { alerts?.clearAll() }
+        serverAlerts?.applyCleared(
+            ids: Array(sync.ids),
+            clearedAll: sync.clearedAll,
+            remaining: sync.remaining
+        )
+        // A payload that named no count is left to say nothing about the
+        // badge. Everything went is the one case this can answer on its own.
+        if let remaining = sync.remaining {
+            try? await UNUserNotificationCenter.current().setBadgeCount(remaining)
+        } else if sync.clearedAll {
+            try? await UNUserNotificationCenter.current().setBadgeCount(0)
+        }
+    }
+
+    /// Pulls the delivered notifications out of the tray.
+    ///
+    /// `removeDeliveredNotifications(withIdentifiers:)` takes APNs *request*
+    /// identifiers, which iOS minted when the alert arrived — the server has
+    /// never seen them and cannot send them. So the delivered notifications
+    /// are read back and matched on the `notification_id` their own payload
+    /// carried, which is the id the server does know.
+    private static func removeDelivered(_ sync: ClearedSync) async {
+        let centre = UNUserNotificationCenter.current()
+        guard !sync.clearedAll else {
+            // Everything of Calibre's, because the payload cannot carry the
+            // list. This app's notification centre holds only Calibre's own.
+            centre.removeAllDeliveredNotifications()
+            return
+        }
+        let delivered = await centre.deliveredNotifications()
+        let requests = delivered.compactMap { notification -> String? in
+            let carried = notification.request.content.userInfo["notification_id"] as? String
+            guard let carried, sync.ids.contains(carried) else { return nil }
+            return notification.request.identifier
+        }
+        guard !requests.isEmpty else { return }
+        centre.removeDeliveredNotifications(withIdentifiers: requests)
     }
 
     /// Extracts the Sendable fields we need from a raw APNs payload. Runs in
@@ -271,7 +499,10 @@ final class PushCoordinator: NSObject {
             body: body,
             route: route,
             category: category,
-            notificationID: userInfo["notification_id"] as? String
+            notificationID: userInfo["notification_id"] as? String,
+            kind: userInfo["kind"] as? String,
+            listingID: userInfo["listing_id"] as? String,
+            listingStatus: userInfo["listing_status"] as? String
         )
     }
 
@@ -287,8 +518,24 @@ final class PushCoordinator: NSObject {
     /// Navigates to a route string like "order/123", "offer/45", "listing/9",
     /// "support", "alerts". Parked until the shell is ready if the router isn't
     /// attached yet (cold start).
-    func open(route: String) {
-        guard let router else { pendingRoute = route; return }
+    func open(
+        route: String,
+        kind: String? = nil,
+        listingID: String? = nil,
+        listingStatus: String? = nil
+    ) {
+        guard let router else {
+            pendingRoute = route
+            pendingKind = kind
+            pendingListingID = listingID
+            pendingListingStatus = listingStatus
+            return
+        }
+        if Self.isSellerModeration(kind: kind, status: listingStatus),
+           let listingID = listingID ?? Self.listingID(from: route) {
+            router.openSellerListing(id: listingID)
+            return
+        }
         // An unparseable route opens the inbox rather than doing nothing: the
         // notification is there either way, and a shipped build has no way of
         // knowing what the server started sending after it.
@@ -299,7 +546,31 @@ final class PushCoordinator: NSObject {
     func drainPendingRoute() {
         guard let route = pendingRoute else { return }
         pendingRoute = nil
-        open(route: route)
+        let kind = pendingKind
+        let listingID = pendingListingID
+        let listingStatus = pendingListingStatus
+        pendingKind = nil
+        pendingListingID = nil
+        pendingListingStatus = nil
+        open(route: route, kind: kind, listingID: listingID, listingStatus: listingStatus)
+    }
+
+    /// Approval keeps using the public buyer route because the listing is
+    /// live. Every decision that leaves it unavailable opens the owner's copy
+    /// in Sell, where the reason and editable fields are present.
+    static func isSellerModeration(kind: String?, status: String?) -> Bool {
+        switch kind?.lowercased() {
+        case "listing_needs_more_info", "listing_needs_changes", "listing_rejected", "listing_taken_down":
+            return true
+        default:
+            return status == "draft" || status == "rejected" || status == "archived"
+        }
+    }
+
+    private static func listingID(from route: String) -> String? {
+        let parts = route.split(separator: "/", maxSplits: 2).map(String.init)
+        guard parts.first == "listing", parts.count > 1 else { return nil }
+        return parts[1]
     }
 
     /// Parses a push/deep-link route string into an app `Route`.
@@ -333,7 +604,16 @@ extension PushCoordinator: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        let decoded = PushCoordinator.decode(userInfo: notification.request.content.userInfo, id: notification.request.identifier)
+        let userInfo = notification.request.content.userInfo
+        // A clear announcement is not something to show. It should never reach
+        // here — it carries no alert — but a banner saying a notification was
+        // removed is the one outcome worth being sure of.
+        if let sync = PushCoordinator.ClearedSync(userInfo: userInfo) {
+            Task { @MainActor in await applyCleared(sync) }
+            completionHandler([])
+            return
+        }
+        let decoded = PushCoordinator.decode(userInfo: userInfo, id: notification.request.identifier)
         Task { @MainActor in
             handle(decoded, receivedAt: .now, foreground: true)
         }
@@ -357,19 +637,59 @@ extension PushCoordinator: UNUserNotificationCenterDelegate {
 /// Bridges UIKit's app-delegate APNs callbacks to the SwiftUI world. The active
 /// `PushCoordinator` is handed in by the app root.
 final class PushAppDelegate: NSObject, UIApplicationDelegate {
-    static weak var coordinator: PushCoordinator?
+    static weak var coordinator: PushCoordinator? {
+        didSet {
+            guard let coordinator, let token = pendingDeviceToken else { return }
+            pendingDeviceToken = nil
+            coordinator.didRegister(deviceToken: token)
+        }
+    }
+    /// UIKit may deliver a token before the SwiftUI root has attached its
+    /// coordinator. Retain that callback until the live root is ready.
+    private static var pendingDeviceToken: Data?
 
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        Task { @MainActor in Self.coordinator?.didRegister(deviceToken: deviceToken) }
+        Task { @MainActor in
+            if let coordinator = Self.coordinator {
+                coordinator.didRegister(deviceToken: deviceToken)
+            } else {
+                Self.pendingDeviceToken = deviceToken
+            }
+        }
+    }
+
+    /// The silent half of push: a payload with `content-available` and no
+    /// alert, which is how one device tells the others that the member cleared
+    /// something. It arrives here and nowhere else — it shows nothing, so
+    /// there is no banner to present and no tap to receive.
+    ///
+    /// Needs the `remote-notification` background mode, declared in
+    /// `project.yml`; without it iOS delivers this only while the app is
+    /// already in the foreground, which is the one case it is least needed.
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        guard let sync = PushCoordinator.ClearedSync(userInfo: userInfo) else {
+            completionHandler(.noData)
+            return
+        }
+        Task { @MainActor in
+            await Self.coordinator?.applyCleared(sync)
+            completionHandler(.newData)
+        }
     }
 
     func application(
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
-        // Expected on Simulator and unprovisioned builds — no-op.
+        #if !targetEnvironment(simulator)
+        Observability.log(.warning, "APNs device registration failed")
+        #endif
     }
 }

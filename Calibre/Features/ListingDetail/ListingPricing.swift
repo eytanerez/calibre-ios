@@ -46,22 +46,52 @@ final class ListingPricingModel {
     private(set) var phase: Phase = .listedPriceOnly
     private(set) var breakdown: CheckoutBreakdown?
 
-    /// Default OFF, per the display rules, and deliberately never persisted:
-    /// a fresh model is built for each listing so the all-in view is always an
-    /// explicit choice.
-    var allInShown = false
+    /// Whether the buyer wants to see the all-in price.
+    ///
+    /// **A preference of the person's, not state of the listing.** It used to
+    /// be a plain stored property on a model built fresh per watch, so turning
+    /// it on and opening the next watch turned it off again — somebody who
+    /// shops for totals had to ask for the total on every single listing. The
+    /// address the quote is priced against is already remembered; this is the
+    /// other half of the same answer, and it is read back on every watch.
+    ///
+    /// Default OFF for a buyer who has never touched it, per the display
+    /// rules: the seller's listed price is what a first visit shows.
+    var allInShown: Bool {
+        get {
+            access(keyPath: \.allInShown)
+            return defaults.bool(forKey: Self.allInPreferenceKey)
+        }
+        set {
+            withMutation(keyPath: \.allInShown) {
+                defaults.set(newValue, forKey: Self.allInPreferenceKey)
+            }
+        }
+    }
+
+    static let allInPreferenceKey = "listingAllInPricing"
+
     /// The discount-presentation companion — reveals the lower wire price.
-    /// Also default OFF.
+    /// Default OFF and not persisted: it is offered on the minority of
+    /// listings priced this way, and it answers "what would wire cost here",
+    /// which is a question about this watch rather than a standing choice.
     var wirePriceShown = false
 
     @ObservationIgnored private let listingID: String
     @ObservationIgnored private let catalog: CatalogStore
     @ObservationIgnored private let commerce: CommerceStore
+    @ObservationIgnored private let defaults: UserDefaults
 
-    init(listingID: String, catalog: CatalogStore, commerce: CommerceStore) {
+    init(
+        listingID: String,
+        catalog: CatalogStore,
+        commerce: CommerceStore,
+        defaults: UserDefaults = .standard
+    ) {
         self.listingID = listingID
         self.catalog = catalog
         self.commerce = commerce
+        self.defaults = defaults
     }
 
     // MARK: Loading
@@ -94,9 +124,14 @@ final class ListingPricingModel {
         }
     }
 
+    /// Clears the quote and the controls that read from it.
+    ///
+    /// `allInShown` is deliberately left alone: it is the buyer's standing
+    /// preference, and a signed-out visit or a listing with no address to
+    /// price against is not them changing their mind. Writing false here
+    /// would erase the preference on the way past.
     private func reset(to phase: Phase) {
         breakdown = nil
-        allInShown = false
         wirePriceShown = false
         self.phase = phase
     }
@@ -111,12 +146,13 @@ final class ListingPricingModel {
     }
 
     /// The headline figure in the buy box. Always a server-supplied number:
-    /// the grand total when the buyer asked for the all-in view, the quoted
+    /// the wire total when the buyer asked for the all-in view, the quoted
     /// card price under the discount presentation, and otherwise the seller's
     /// listed price exactly as it was published.
     func headlinePrice(for listing: Listing) -> String {
         if allInShown, let breakdown {
-            return PriceFormatter.format(breakdown.grandTotal.value, currency: breakdown.currency)
+            let total = breakdown.totals?.wire?.value ?? breakdown.grandTotal.value
+            return PriceFormatter.format(total, currency: breakdown.currency)
         }
         if let breakdown, breakdown.isDiscountPresentation, let display = breakdown.display {
             return PriceFormatter.format(display.price.value, currency: breakdown.currency)
@@ -151,11 +187,11 @@ final class ListingPricingModel {
     var headlineCaption: String {
         if allInShown {
             if isTaxUnavailable {
-                // The headline is `grandTotal`, which is missing its tax line.
+                // The headline is the wire total, which is missing its tax line.
                 // Calling that "all in" would be the one wrong word here.
-                return "The card fee and shipping are included. Sales tax is not — it could not be calculated just now."
+                return "The wire price and shipping are included. Sales tax is not — it could not be calculated just now."
             }
-            return "All in — the card fee, sales tax, and shipping are included."
+            return "Full cost delivered — the wire price, sales tax, and shipping are included."
         }
         if isDiscountPresentation {
             return "This is the card price. Taxes and shipping are calculated at checkout."
@@ -169,13 +205,8 @@ final class ListingPricingModel {
         guard let breakdown else { return [] }
         let currency = breakdown.currency
         var rows: [(label: String, value: String)] = [
-            ("Watch", PriceFormatter.format(breakdown.subtotal.value, currency: currency))
+            ("Watch price by wire", PriceFormatter.format(breakdown.subtotal.value, currency: currency))
         ]
-        // Breakdown v2 sends `card_fee.amount`; older payloads only have the
-        // legacy convenience-fee key.
-        if let fee = breakdown.cardFee?.amount.value ?? breakdown.cardConvenienceFee?.value, fee > 0 {
-            rows.append(("Card fee", PriceFormatter.format(fee, currency: currency)))
-        }
         if isTaxUnavailable {
             // The server sends 0.00 here during an outage, and a tax row that
             // is dropped — or printed as zero — reads as "no tax is owed".
@@ -187,8 +218,11 @@ final class ListingPricingModel {
         }
         rows.append(("Shipping", PriceFormatter.format(breakdown.shipping.value, currency: currency)))
         rows.append((
-            isTaxUnavailable ? "Total paying by card, before tax" : "Total",
-            PriceFormatter.format(breakdown.grandTotal.value, currency: currency)
+            isTaxUnavailable ? "Full cost delivered, before tax" : "Full cost delivered",
+            PriceFormatter.format(
+                breakdown.totals?.wire?.value ?? breakdown.grandTotal.value,
+                currency: currency
+            )
         ))
         return rows
     }
@@ -275,10 +309,10 @@ struct ListingPriceControls: View {
     private var quotedControls: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             toggleRow(
-                title: "Show the all-in price",
+                title: "Show the full cost delivered",
                 detail: model.isTaxUnavailable
-                    ? "The watch, the card fee, and shipping to your address. Sales tax could not be calculated just now."
-                    : "The watch, the card fee, sales tax, and shipping to your address.",
+                    ? "The wire price and shipping to your address. Sales tax could not be calculated just now."
+                    : "The wire price, sales tax, and shipping to your address.",
                 isOn: $model.allInShown
             )
 

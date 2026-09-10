@@ -28,6 +28,7 @@ struct JournalArticleScreen: View {
         Group {
             if let bite {
                 BiteScreen(slug: bite.id, preloaded: bite)
+                    .routeStackNode()
             } else if settled {
                 BitesArchiveScreen()
             } else {

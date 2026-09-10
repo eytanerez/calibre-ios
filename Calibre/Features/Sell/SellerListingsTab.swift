@@ -152,7 +152,7 @@ struct SellerListingsTab: View {
             // The row modifier goes inside the branch: hung off the
             // `ViewBuilder` it would decorate the empty branch too, and a
             // decorated `EmptyView` is how a list grows a row of nothing.
-            .sellRow(bottom: Space.m)
+            .sellRow(top: Space.m, bottom: Space.l)
         }
     }
 
@@ -219,7 +219,6 @@ struct SellerListingsTab: View {
                 icon: "camera",
                 title: "Your storefront is ready for its first watch",
                 message: "Six photos, one calm flow — most sellers list in under five minutes.",
-                aside: "The camera already in your hand is the right one.",
                 actionTitle: "List a watch",
                 action: { actions.listWatch(nil) }
             )

@@ -27,6 +27,9 @@ public struct CurrentUser: Codable, Sendable, Equatable {
     /// flag sends, and a member on that backend must not be held behind a gate
     /// nothing can satisfy.
     public let profileComplete: Bool?
+    /// The member's named Calibre contact. Optional for compatibility with
+    /// older API deployments and accounts that have not been assigned yet.
+    public let assignedContact: SupportContact?
 
     public var isAdmin: Bool { roles.contains("admin") }
 
@@ -38,7 +41,8 @@ public struct CurrentUser: Codable, Sendable, Equatable {
         firstName: String? = nil,
         lastName: String? = nil,
         phone: String? = nil,
-        profileComplete: Bool? = nil
+        profileComplete: Bool? = nil,
+        assignedContact: SupportContact? = nil
     ) {
         self.id = id
         self.email = email
@@ -48,6 +52,7 @@ public struct CurrentUser: Codable, Sendable, Equatable {
         self.lastName = lastName
         self.phone = phone
         self.profileComplete = profileComplete
+        self.assignedContact = assignedContact
     }
 }
 

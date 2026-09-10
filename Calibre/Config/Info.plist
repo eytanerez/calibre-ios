@@ -58,6 +58,10 @@
 	<string>Calibre uses Face ID to keep your vault private, so only you can see the watches you own.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Calibre lets you choose existing photos of your watch when creating a listing.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

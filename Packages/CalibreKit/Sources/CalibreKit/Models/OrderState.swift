@@ -130,11 +130,11 @@ public extension Order {
         case .labelBought:
             return "The seller has their label. Your watch is with them until they hand it to the carrier."
         case .inTransit:
-            return "With the carrier, on its way to our authentication centre."
+            return "With the carrier, on its way to our authentication center."
         case .deliveredUnconfirmed:
-            return "It has reached our authentication centre and is waiting to be checked in by hand."
+            return "It has reached our authentication center and is waiting to be checked in by hand."
         case .onTheBench:
-            return "On the bench at our authentication centre."
+            return "On the bench at our authentication center."
         }
     }
 
@@ -147,9 +147,9 @@ public extension Order {
         case .inTransit:
             return "The carrier has your watch and it is on its way to authentication."
         case .deliveredUnconfirmed:
-            return "Your watch has reached the authentication centre and is waiting to be checked in by hand."
+            return "Your watch has reached the authentication center and is waiting to be checked in by hand."
         case .onTheBench:
-            return "Your watch is on the bench at the authentication centre."
+            return "Your watch is on the bench at the authentication center."
         }
     }
 
@@ -226,7 +226,7 @@ public extension Order {
             if let state = activeReturn.state, returnAtTheBench.contains(state) {
                 return OrderNextStep(
                     actor: .calibre,
-                    headline: "Your return is with our authentication centre",
+                    headline: "Your return is with our authentication center",
                     next: "We authenticate it again, then your refund is issued."
                 )
             }
@@ -284,7 +284,7 @@ public extension Order {
         case .toAuth:
             // The authored sentence, which is the only thing that tells the
             // three holders of a `to_auth` watch apart.
-            let headline = arrivalSummary ?? "Your watch is on its way to our authentication centre."
+            let headline = arrivalSummary ?? "Your watch is on its way to our authentication center."
             switch arrivalPhase {
             case .labelBought:
                 return OrderNextStep(
@@ -344,7 +344,7 @@ public extension Order {
             return OrderNextStep(
                 actor: .calibre,
                 headline: "This watch did not pass",
-                body: "Our authentication centre could not authenticate it, so the sale is off. You are being "
+                body: "Our authentication center could not authenticate it, so the sale is off. You are being "
                     + "refunded in full, including the card processing fee, and you owe nothing.",
                 next: "Your Calibre contact will write to you with what we found."
             )
@@ -397,7 +397,7 @@ public extension Order {
     static let timelineStepNames = [
         "Order placed",
         "Shipped to authentication",
-        "At the authentication centre",
+        "At the authentication center",
         "Authentication",
         "Shipped to you",
         "Delivered",

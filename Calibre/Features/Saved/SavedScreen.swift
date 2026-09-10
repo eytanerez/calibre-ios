@@ -99,6 +99,7 @@ struct SavedScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .calibrePageSwipe(selection: $tab, values: [.watches, .searches])
         .calibrePageBackground()
         .navigationTitle("Saved")
         .navigationBarTitleDisplayMode(.inline)
@@ -156,8 +157,7 @@ struct SavedScreen: View {
             EmptyState(
                 icon: "heart",
                 title: "Nothing saved yet",
-                message: "Watches you save appear here so you can compare and act when the moment is right.",
-                aside: "The one you keep going back to counts."
+                message: "Watches you save appear here so you can compare and act when the moment is right."
             )
         } else {
             grid
@@ -334,8 +334,7 @@ struct SavedScreen: View {
             EmptyState(
                 icon: "bell.badge",
                 title: "No saved searches",
-                message: "Save a search and we'll watch the market for you — you'll hear from us the moment something matches.",
-                aside: "Set it once; we'll do the looking."
+                message: "Save a search and we'll watch the market for you — you'll hear from us the moment something matches."
             )
         } else {
             ScrollView {

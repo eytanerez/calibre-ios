@@ -10,6 +10,7 @@ struct ListingDetailScreen: View {
     @Environment(AuthSession.self) private var session
     @Environment(ToastCenter.self) private var toasts
     @Environment(\.browsePush) private var push
+    @Environment(\.routePush) private var routePush
 
     let listingID: String
 
@@ -21,7 +22,8 @@ struct ListingDetailScreen: View {
     @State private var showAuthenticationInfo = false
     @State private var showMakeOfferStub = false
     /// Display pricing — the read-only quote behind the all-in toggle. Built
-    /// fresh per listing so the toggle always starts off.
+    /// fresh per listing, because the quote is this watch's; the toggle itself
+    /// is the buyer's own preference and survives the rebuild.
     @State private var pricing: ListingPricingModel?
     @State private var showAddressBook = false
     @Namespace private var similarNamespace
@@ -120,13 +122,9 @@ struct ListingDetailScreen: View {
     private func content(_ listing: Listing) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
-                // The marks travel on this payload already; asking for them
-                // separately would give the gallery a source that can
-                // disagree with the photos it is drawing over.
                 ListingGallery(
                     images: listing.images.map(\.url),
-                    condition: listing.condition?.overall,
-                    annotations: listing.annotations
+                    condition: listing.condition?.overall
                 ) { page in
                     lightbox = LightboxContext(page: page)
                 }
@@ -138,7 +136,7 @@ struct ListingDetailScreen: View {
                     CalloutBand(
                         icon: "checkmark.shield",
                         title: "Authenticated by Calibre",
-                        message: "Inspected at our authentication centre before it ships."
+                        message: "Inspected at our authentication center before it ships, with a 1-year mechanical warranty."
                     ) {
                         showAuthenticationInfo = true
                     }
@@ -186,7 +184,7 @@ struct ListingDetailScreen: View {
                 }
             }
 
-            Text(pricing?.headlineCaption ?? "Taxes and shipping calculated at checkout.")
+            Text("Final price may include tax and shipping. See breakdown below.")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -258,7 +256,7 @@ struct ListingDetailScreen: View {
 
             if let openOffer {
                 Button("Offer pending — view") {
-                    services.router.push(.offer(openOffer.id))
+                    routePush(.offer(openOffer.id))
                 }
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
             } else {
@@ -440,7 +438,6 @@ struct ListingDetailScreen: View {
             message: reason == .sold
                 ? "It found an owner. The market moves — there may well be another like it."
                 : "The seller took this watch off the market.",
-            aside: "Nothing here to wait for.",
             actionTitle: "Find another"
         ) {
             push(.search)
@@ -499,11 +496,17 @@ struct ListingDetailScreen: View {
         isAvailable(listing) && !isOwnListing(listing)
     }
 
+    /// The badge beside the price. "On hold" is the buyer's word for
+    /// `.reserved` on every surface they can reach it from — the saved and
+    /// bagged tiles say it (`BrowseSupport.unavailableBadge`) and the band
+    /// lower down this same page says it, so the badge above them cannot say
+    /// "Reserved" without the page contradicting itself. "Reserved" is the
+    /// seller's word and stays on the seller's screens.
     private func availabilityBadge(_ listing: Listing) -> (text: String, tone: StatusBadge.Tone)? {
         switch listing.status {
         case .active: nil
         case .sold: ("Sold", .neutral)
-        case .reserved: ("Reserved", .warning)
+        case .reserved: ("On hold", .warning)
         default: ("No longer listed", .neutral)
         }
     }
@@ -539,8 +542,8 @@ struct ListingDetailScreen: View {
             similar = resolvedSimilar
             openOffer = resolvedOffer
 
-            // A fresh model per listing, so the all-in toggle always starts
-            // off — never inherited from the last watch the buyer looked at.
+            // A fresh model per listing: the quote is priced against this
+            // watch and this address, and nothing about the last one carries.
             let model = ListingPricingModel(
                 listingID: listingID,
                 catalog: catalog,
@@ -602,7 +605,7 @@ struct ListingDetailScreen: View {
     /// navigation `push(.seller(...))` above uses, so Back returns here
     /// rather than jumping to a different tab.
     private func messageSeller(_ listing: Listing) {
-        let router = services.router
+        let routePush = routePush
         let toasts = toasts
         let messaging = services.messaging
         let listingID = listingID
@@ -617,7 +620,7 @@ struct ListingDetailScreen: View {
                     listingTitle: listingTitle,
                     listingReference: listingReference
                 )
-                router.push(.messageThread(thread.id))
+                routePush(.messageThread(thread.id))
             } catch {
                 Haptics.shared.play(.error)
                 toasts.show(

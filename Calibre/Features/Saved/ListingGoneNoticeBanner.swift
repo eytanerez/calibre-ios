@@ -54,6 +54,16 @@ struct ListingGoneNoticeBanner: View {
         }
         .onAppear { adopt() }
         .onChange(of: services.commerce.listingNotices) { _, _ in adopt() }
+        // `adopt()` refuses to spend a notice while the scene is not active,
+        // and the two triggers above will not come round again on their own:
+        // `onAppear` fires once per view identity, and a refetch that returns
+        // the same pending rows is `Equatable`-equal, so it publishes no
+        // change. Without this, notices that land while the app is backgrounded
+        // — the ordinary case, the Saved/Cart fetch still in flight when the
+        // phone goes in a pocket — are never shown at all.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { adopt() }
+        }
     }
 
     private var card: some View {
@@ -78,6 +88,10 @@ struct ListingGoneNoticeBanner: View {
 
                 Button {
                     Haptics.shared.play(.press)
+                    // Closing answers the notices on screen and only those.
+                    // Recorded on the store so it outlives this view, which a
+                    // tab switch destroys.
+                    services.commerce.dismissListingNotices(ids: showing.map(\.id))
                     withAnimation(Motion.easeFast) { showing = [] }
                 } label: {
                     Image(systemName: "xmark")
@@ -179,9 +193,13 @@ struct ListingGoneNoticeBanner: View {
     /// here and not part of the read that produced these rows. `onAppear` is
     /// the first moment this view is genuinely on screen, and the scene phase
     /// check keeps a background refresh from counting as having been read.
+    ///
+    /// Refusing on an inactive scene defers the adoption rather than
+    /// cancelling it, which is why the scene becoming active is a trigger of
+    /// its own above.
     private func adopt() {
         guard scenePhase == .active else { return }
-        let pending = services.commerce.listingNotices
+        let pending = services.commerce.showableListingNotices
         guard !pending.isEmpty else { return }
         let known = Set(showing.map(\.id))
         let fresh = pending.filter { !known.contains($0.id) }

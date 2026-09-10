@@ -11,6 +11,7 @@ struct ShipmentTrackerSection: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(AppRouter.self) private var router
+    @Environment(\.routePush) private var routePush
 
     /// Orders the feed's own "your next step" module is already asking about.
     /// The feed states the obligation with its deadline; a tracker card
@@ -45,7 +46,7 @@ struct ShipmentTrackerSection: View {
                     ForEach(tracked) { order in
                         TrackedOrderCard(
                             order: order,
-                            onOpen: { router.push(.order(order.id)) },
+                            onOpen: { routePush(.order(order.id)) },
                             onDismiss: { dismiss(order) }
                         )
                     }

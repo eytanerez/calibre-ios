@@ -14,9 +14,6 @@ import SwiftUI
 /// Everything except `balanceWheel` fires once, when it appears and again
 /// whenever `trigger` changes. `balanceWheel` is the one that loops, because
 /// looping is the thing it is saying.
-///
-/// `vault` is the ninth, added as the product decision §4 asks for: the
-/// contracts file, the web gallery and the Android gallery carry the same row.
 @MainActor
 public enum CalibreMark {
     /// The square a mark renders on when the caller does not say. The geometry
@@ -91,17 +88,5 @@ public enum CalibreMark {
         trigger: AnyHashable = 0
     ) -> some View {
         BoxMark(size: size, trigger: trigger)
-    }
-
-    /// Kept — a watch in its place. The Vault opened with something in it.
-    ///
-    /// The ninth mark. The same name on web (`vault`) and Android
-    /// (`CalibreMark.Vault`); it fires once per session, on `vault-opened`,
-    /// and an empty vault gets no mark.
-    public static func vault(
-        size: CGFloat = defaultSize,
-        trigger: AnyHashable = 0
-    ) -> some View {
-        VaultMark(size: size, trigger: trigger)
     }
 }

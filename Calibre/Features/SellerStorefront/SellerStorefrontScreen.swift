@@ -127,11 +127,6 @@ struct SellerStorefrontScreen: View {
                 .foregroundStyle(Color.calibre.secondaryForeground)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
-        } else if storefront.isVerifiedDealer {
-            Text("@\(storefront.username) hasn't written a storefront line yet.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

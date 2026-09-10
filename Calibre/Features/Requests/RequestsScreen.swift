@@ -8,6 +8,7 @@ struct RequestsScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(ToastCenter.self) private var toasts
+    @Environment(\.routePush) private var routePush
 
     @State private var requests: [WatchRequest] = []
     @State private var loaded = false
@@ -87,7 +88,7 @@ struct RequestsScreen: View {
         if request.status == .fulfilled, let listingID = request.fulfilledListingId {
             actions.append(
                 RowAction("View match", systemImage: "arrow.up.right") {
-                    services.router.push(.listing(listingID))
+                    routePush(.listing(listingID))
                 }
             )
         }

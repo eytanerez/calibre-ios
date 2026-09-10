@@ -8,7 +8,9 @@ import Observation
 /// A guest's message returns a `guest_token` we persist so their thread
 /// survives relaunch (mirrors the web widget's localStorage token). Starting
 /// a second conversation as a guest mints a second token, so the device keeps
-/// a set of them and presents all of them when it asks for the list.
+/// a set of them and presents all of them when it asks for the list — and,
+/// when it writes, presents the one belonging to the conversation being
+/// written into, because a token proves one conversation and not the rest.
 @MainActor
 @Observable
 public final class SupportStore {
@@ -36,8 +38,49 @@ public final class SupportStore {
         return defaults.string(forKey: legacyGuestTokenKey).map { [$0] } ?? []
     }
 
-    /// The most recent guest token — what a single-thread call still sends.
+    /// The most recent guest token — what a call that names no conversation
+    /// sends, because a new conversation is what the newest token belongs to.
     public var guestToken: String? { guestTokens.last }
+
+    /// Which conversation each token this device holds actually proves.
+    ///
+    /// A guest token is a bearer token for **one** conversation, not for the
+    /// mailbox: the server resolves a named thread against the tokens
+    /// presented with it and answers 404 for anything they do not name. So a
+    /// write into an older conversation has to travel with that
+    /// conversation's own token; the newest one is refused as somebody
+    /// else's. Filled in by `send`, which learns the pairing when a token is
+    /// minted, and by `listThreads`, where the server echoes each row's token
+    /// back beside it.
+    @ObservationIgnored private var tokensByThread: [String: String] = [:]
+
+    /// The token that proves `threadID`, or the newest token when nothing is
+    /// named.
+    ///
+    /// A miss asks the server, because the thread list is the only place a
+    /// token and the conversation it proves appear together and a guest can
+    /// land on a conversation from a link without ever opening the list. Only
+    /// worth a request for a device holding more than one token: with one
+    /// token there is nothing to choose between.
+    private func guestToken(forThread threadID: String?) async -> String? {
+        guard let threadID else { return guestToken }
+        if let known = knownGuestToken(forThread: threadID) { return known }
+        guard guestTokens.count > 1 else { return guestToken }
+        _ = try? await listThreads(authenticated: false)
+        return knownGuestToken(forThread: threadID) ?? guestToken
+    }
+
+    /// The recorded token for a conversation, without asking the server. A
+    /// token that has since been forgotten is not offered — sign-out empties
+    /// the set, and a pointer that outlived it proves nothing.
+    private func knownGuestToken(forThread threadID: String) -> String? {
+        let held = guestTokens
+        if let recorded = tokensByThread[threadID], held.contains(recorded) { return recorded }
+        if let listed = threads.first(where: { $0.id == threadID })?.guestToken, held.contains(listed) {
+            return listed
+        }
+        return nil
+    }
 
     /// The server caps the repeated `token` parameter, so a device that has
     /// somehow collected more than the cap sends its most recent ones.
@@ -70,6 +113,9 @@ public final class SupportStore {
             )
         )
         threads = response.results
+        for thread in response.results where thread.guestToken != nil {
+            tokensByThread[thread.id] = thread.guestToken
+        }
         return response.results
     }
 
@@ -122,15 +168,23 @@ public final class SupportStore {
     /// exists (admin-contracts §11.8, binding).
     ///
     /// Images and PDFs only, at most 10MB each.
+    ///
+    /// `threadID` is the conversation the file is being written into. It
+    /// decides nothing on the server — a guest's upload is staged against
+    /// whichever thread the token proves — which is exactly why it has to be
+    /// passed: staged against the newest conversation, a file attached to an
+    /// older one is claimed by a `send` scoped to that older thread and found
+    /// nowhere.
     @discardableResult
     public func uploadAttachment(
         filename: String,
         contentType: String,
         data: Data,
-        authenticated: Bool
+        authenticated: Bool,
+        threadID: String? = nil
     ) async throws -> SupportAttachment {
         var form = MultipartForm()
-        if !authenticated, let token = guestToken {
+        if !authenticated, let token = await guestToken(forThread: threadID) {
             form.addField("token", value: token)
         }
         form.addFile("file", filename: filename, contentType: contentType, data: data)
@@ -171,10 +225,16 @@ public final class SupportStore {
             let threadId: String?
             let newThread: Bool?
         }
+        // The token that proves the conversation being written into — not the
+        // newest one. `threadID` names a thread the server will only accept
+        // from a caller who can prove it, and each of a guest's tokens proves
+        // one conversation, so replying to anything but their latest with the
+        // latest token is a 404 and the words are lost.
+        let token = authenticated ? nil : await guestToken(forThread: threadID)
         let payload = Payload(
             body: body,
             email: authenticated ? nil : guestEmail,
-            token: authenticated ? nil : guestToken,
+            token: token,
             attachmentIds: attachmentIDs.isEmpty ? nil : attachmentIDs,
             threadId: threadID,
             newThread: newThread ? true : nil
@@ -187,8 +247,15 @@ public final class SupportStore {
                 requiresAuth: authenticated
             )
         )
-        if let token = result.guestToken {
-            remember(guestToken: token)
+        // Both halves of the pairing are in hand here and nowhere else on this
+        // path: the conversation the message landed in, and the token that now
+        // proves it — freshly minted when the response carries one, otherwise
+        // the one this call presented.
+        if let minted = result.guestToken {
+            remember(guestToken: minted)
+            tokensByThread[result.thread.id] = minted
+        } else if let token {
+            tokensByThread[result.thread.id] = token
         }
         conversation = result.thread
         return result.thread
@@ -266,6 +333,7 @@ public final class SupportStore {
     public func forgetGuestToken() {
         defaults.removeObject(forKey: guestTokensKey)
         defaults.removeObject(forKey: legacyGuestTokenKey)
+        tokensByThread = [:]
     }
 
     /// Drops the thread held in memory — wired to

@@ -26,6 +26,7 @@ struct VaultWatchDetailScreen: View {
     let vaultID: String
 
     @Environment(AppServices.self) private var services
+    @Environment(\.routePush) private var routePush
 
     @State private var detail: VaultWatchDetail?
     /// The owner's own row, which this screen can change — a photograph, a
@@ -77,6 +78,8 @@ struct VaultWatchDetailScreen: View {
         .task {
             guard detail == nil else { return }
             await load()
+            // The verification mark settles in place when this screen loads.
+            // A second full-screen stamp hid navigation and jolted the page.
         }
         .refreshable { await load() }
         .sheet(isPresented: $showGapSheet) {
@@ -88,8 +91,11 @@ struct VaultWatchDetailScreen: View {
         }
         .sheet(isPresented: $showPhotoSheet) {
             if let watch {
-                VaultPhotoLinkSheet(watch: watch) { saved in
-                    self.watch = saved
+                VaultPhotographsSheet(watch: watch) { gallery in
+                    // Every photo verb answers with the whole gallery and the
+                    // cover as it now stands, so the hero behind the sheet
+                    // redraws on the answer rather than on a second fetch.
+                    self.watch = self.watch?.applying(gallery)
                 }
             }
         }
@@ -176,7 +182,12 @@ struct VaultWatchDetailScreen: View {
             }
             .aspectRatio(1, contentMode: .fit)
 
-            Button(watch.photoUrl == nil ? "Add a photo" : "Change the photo") {
+            // One door to the gallery whether or not there is anything in it
+            // yet. The old pair of titles was keyed to a single link column
+            // being set or not; a gallery is added to, arranged and thinned
+            // from the same sheet, so a title that promised one of those would
+            // be wrong most of the times it was read.
+            Button(watch.gallery.isEmpty ? "Add your photographs" : "Your photographs") {
                 showPhotoSheet = true
             }
             .buttonStyle(.calibre(.ghost))
@@ -202,29 +213,8 @@ struct VaultWatchDetailScreen: View {
             if watch.authenticated {
                 HStack(spacing: Space.m) {
                     AuthenticatedBadge()
-                    // Calibre's bench passed this watch. Said once, then simply
-                    // standing — `markAnnounces` presses it the first time this
-                    // session shows the fact and holds it stamped every time
-                    // after, and holds it stamped from the first frame under
-                    // Reduce Motion.
-                    //
-                    // No label: the badge beside it carries the words, and a
-                    // mark that repeats them reads the fact out twice to a
-                    // screen reader. `CalibreMark` hides every drawing.
-                    //
-                    // The one illustrated moment on this screen. The
-                    // authentication report opens in a sheet, which is its own
-                    // surface with this one behind it, so the loupe there can
-                    // never be this screen's second mark — the same reason
-                    // `OrderMarks` gives for leaving it out of the order
-                    // screen's precedence.
-                    //
-                    // Off-square because it was pressed by hand. The angle is
-                    // the Passport cover's.
                     if let key = watch.authenticationMarkKey {
-                        CalibreMark.stamp(size: 44, trigger: key)
-                            .rotationEffect(.degrees(-11))
-                            .markAnnounces(key)
+                        VaultAuthenticationLogo(trigger: key)
                     }
                     Spacer(minLength: 0)
                 }
@@ -288,7 +278,9 @@ struct VaultWatchDetailScreen: View {
                 sectionTitle("Records")
 
                 if let code = watch.passportCode {
-                    NavigationLink(value: Route.passport(code)) {
+                    Button {
+                        routePush(.passport(code))
+                    } label: {
                         HStack(spacing: Space.s) {
                             Image(systemName: "doc.text")
                             Text("View Passport")
@@ -303,7 +295,7 @@ struct VaultWatchDetailScreen: View {
                 // not-found branch offers the way on rather than a dead end.
                 if watch.authenticated {
                     AuthenticationReportRow(
-                        source: .vault(watch.id),
+                        source: .vaultWatch(watch.id),
                         passportCode: watch.passportCode
                     )
                 }
@@ -612,5 +604,33 @@ struct VaultWatchDetailScreen: View {
         .padding(Space.m)
         .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+    }
+}
+
+/// A small house mark arriving beside the authentication claim. It confirms
+/// the relationship without covering the watch or delaying navigation.
+private struct VaultAuthenticationLogo: View {
+    let trigger: String
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var arrived = false
+
+    var body: some View {
+        CalibreLogoMark(size: 28)
+            .offset(y: reduceMotion || arrived ? 0 : -7)
+            .opacity(reduceMotion || arrived ? 1 : 0.35)
+            .accessibilityHidden(true)
+            .task(id: trigger) {
+                guard !reduceMotion else {
+                    arrived = true
+                    return
+                }
+                var reset = Transaction(animation: nil)
+                reset.disablesAnimations = true
+                withTransaction(reset) { arrived = false }
+                await Task.yield()
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: 0.24)) { arrived = true }
+            }
     }
 }

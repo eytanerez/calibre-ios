@@ -107,25 +107,6 @@ enum MarkMotion {
     static let dip: TimeInterval = 0.12
     /// And then it is gone.
     static let whip: TimeInterval = 0.38
-
-    // MARK: - lift · vault
-
-    /// The head settles into its slot before it comes up — the wind-up beat,
-    /// at production length.
-    static let sink: TimeInterval = 0.05
-    /// How far it settles, in grid units.
-    static let sinkDepth: CGFloat = 2
-    /// The rise itself, accelerating out of the slot.
-    static let rise: TimeInterval = 0.20
-    /// Where the head comes to rest above where it lay, in grid units.
-    static let liftHeight: CGFloat = 19
-    /// It goes this far past its rest and settles back onto it.
-    static let liftFollowThrough: CGFloat = 2
-    /// The settle back from the follow-through.
-    static let liftSettle: TimeInterval = 0.17
-    /// The head comes up tilted, the way a watch is picked out of a tray by
-    /// one end — and stays so, because that is the frame that says "lifted".
-    static var liftTilt: Angle { .degrees(-7) }
 }
 
 public extension View {

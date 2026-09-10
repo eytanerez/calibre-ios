@@ -1,7 +1,7 @@
 @preconcurrency import AVFoundation
 import CalibreDesign
 import CalibreKit
-import PhotosUI
+@preconcurrency import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -16,7 +16,7 @@ struct CaptureTarget: Identifiable {
 
 /// The camera moment: AVCapture preview with a per-category framing overlay,
 /// tap-to-focus, flash and grid toggles, shutter → review → use/retake.
-/// Falls back to PhotosPicker automatically when no camera exists
+/// Falls back to the system photo library when no camera exists
 /// (simulator) or access is declined.
 struct CaptureScreen: View {
     let target: CaptureTarget
@@ -27,7 +27,8 @@ struct CaptureScreen: View {
     @State private var captured: UIImage?
     @State private var flashOn = false
     @State private var gridOn = false
-    @State private var pickerItem: PhotosPickerItem?
+    @State private var libraryFailed = false
+    @State private var showingLibrary = false
 
     var body: some View {
         ZStack {
@@ -42,21 +43,27 @@ struct CaptureScreen: View {
             }
         }
         .statusBarHidden()
-        .task {
-            await camera.start()
+        // Keep the native popup attached to this stable screen root, like
+        // Vault's picker, rather than a camera subview that can be replaced.
+        .modifier(ListingPhotoLibrary(isPresented: $showingLibrary) { image in
+            captured = image
+        } onFailure: {
+            libraryFailed = true
+        })
+        .alert("Couldn't open this photo", isPresented: $libraryFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Try another photo, or download it from iCloud in Photos and try again.")
+        }
+        .task(id: showingLibrary || captured != nil) {
+            if showingLibrary || captured != nil {
+                camera.stop()
+            } else {
+                await camera.start()
+            }
         }
         .onDisappear {
             camera.stop()
-        }
-        .onChange(of: pickerItem) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data) {
-                    captured = image
-                }
-                pickerItem = nil
-            }
         }
     }
 
@@ -184,7 +191,9 @@ struct CaptureScreen: View {
     /// Not every good shot happens live — let sellers reach their camera roll
     /// without backing out of the wizard.
     private var libraryButton: some View {
-        PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
+        Button {
+            showingLibrary = true
+        } label: {
             Image(systemName: "photo.on.rectangle")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(Color(white: 1))
@@ -307,8 +316,8 @@ struct CaptureScreen: View {
                     .foregroundStyle(Color(white: 0.72))
             }
 
-            PhotosPicker(selection: $pickerItem, matching: .images) {
-                Text("Choose from library")
+            Button("Choose from library") {
+                showingLibrary = true
             }
             .buttonStyle(.calibre(.primary, fullWidth: true))
             .padding(.horizontal, Space.margin)
@@ -321,7 +330,7 @@ struct CaptureScreen: View {
 // MARK: - Camera controller
 
 /// Owns the AVCaptureSession off the main thread; publishes availability so
-/// the view can fall back to PhotosPicker.
+/// the view can fall back to the system photo library.
 @MainActor
 @Observable
 final class CameraController {
@@ -362,20 +371,22 @@ final class CameraController {
             break
         }
 
+        guard !Task.isCancelled else { return }
         device = camera
         let session = session
         let output = output
         queue.async {
             session.beginConfiguration()
             session.sessionPreset = .photo
-            if let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input) {
+            if session.inputs.isEmpty,
+               let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input) {
                 session.addInput(input)
             }
             if session.canAddOutput(output) {
                 session.addOutput(output)
             }
             session.commitConfiguration()
-            session.startRunning()
+            if !session.isRunning { session.startRunning() }
         }
         #endif
     }
@@ -467,3 +478,121 @@ private struct CameraPreview: UIViewRepresentable {
         var videoPreviewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
     }
 }
+
+#if DEBUG
+/// Offline regression fixture retaining the wizard → capture modal stack.
+struct ListingPhotoPickerSmokeScreen: View {
+    @State private var wizard = false
+    var body: some View {
+        Button("Open listing wizard") { wizard = true }
+            .fullScreenCover(isPresented: $wizard) { ListingPhotoPickerSmokeWizard() }
+    }
+}
+private struct ListingPhotoPickerSmokeWizard: View {
+    @State private var target: CaptureTarget?
+    @State private var photo: UIImage?
+    @State private var replacement: PhotoReplaceTarget?
+    var body: some View {
+        VStack {
+            Button("Add front photo") { target = CaptureTarget(category: .front) }
+            if let photo {
+                Image(uiImage: photo).resizable().scaledToFit()
+                Text("Photo received")
+                Button("Replace front photo") { replacement = PhotoReplaceTarget(category: .front) }
+            }
+        }
+        .fullScreenCover(item: $target) { target in
+            CaptureScreen(target: target) { photo = $0 }
+        }
+        .fullScreenCover(item: $replacement) { target in
+            PhotoPreviewScreen(target: target, slot: nil) { photo = $0 }
+        }
+    }
+}
+#endif
+
+/// The same native Photos popup used by Vault. The modifier stays attached
+/// to the capture/preview root while the camera and selected image change.
+struct ListingPhotoLibrary: ViewModifier {
+    @Binding var isPresented: Bool
+    let onPick: (UIImage) -> Void
+    let onFailure: () -> Void
+
+    @State private var selection: [PhotosPickerItem] = []
+    @State private var loading = false
+
+    func body(content: Content) -> some View {
+        content
+            .photosPicker(
+                isPresented: $isPresented,
+                selection: $selection,
+                maxSelectionCount: 1,
+                matching: .images,
+                preferredItemEncoding: .current
+            )
+            .overlay {
+                if loading && !isPresented {
+                    ProgressView("Loading photo")
+                        .padding(Space.l)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.box))
+                }
+            }
+            .onChange(of: isPresented) { _, opened in
+                if opened { Observability.log(.info, "listing_photo_library_open") }
+            }
+            .task(id: selection) {
+                guard let item = selection.first else { return }
+                loading = true
+                defer {
+                    loading = false
+                    selection = []
+                }
+                Observability.log(.info, "listing_photo_library_selected")
+                do {
+                    guard let data = try await item.loadTransferable(type: Data.self) else {
+                        throw PhotoImport.Failure.unreadable
+                    }
+                    let image = await Task.detached(priority: .userInitiated) {
+                        PhotoImport.decode(data)
+                    }.value
+                    guard !Task.isCancelled else { return }
+                    guard let image else { throw PhotoImport.Failure.unreadable }
+                    Observability.log(.info, "listing_photo_library_ready")
+                    onPick(image)
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    Observability.log(.warning, "listing_photo_library_decode_failed")
+                    onFailure()
+                }
+            }
+    }
+}
+
+#if DEBUG
+struct ConsumerPageSwipeSmokeScreen: View {
+    @State private var page = 0
+    @State private var scrollY: CGFloat = 0
+    var body: some View {
+        VStack(spacing: 0) {
+            SegmentedTabs(selection: $page, items: [(0, "Listings"), (1, "Market"), (2, "Offers")])
+            Text("Page \(page), offset \(Int(scrollY))").accessibilityIdentifier("swipe-status")
+            ScrollView {
+                VStack(spacing: 20) {
+                    ScrollView(.horizontal) {
+                        HStack {
+                            ForEach(0..<12) { index in Text("Filter \(index)").frame(width: 100, height: 48) }
+                        }
+                    }
+                    .accessibilityIdentifier("swipe-rail")
+                    ForEach(0..<30) { index in
+                        Text("Page \(page) row \(index)")
+                            .frame(maxWidth: .infinity, minHeight: 60)
+                    }
+                }
+            }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, value in scrollY = value }
+        }
+        .calibrePageSwipe(selection: $page, values: [0, 1, 2])
+    }
+}
+#endif

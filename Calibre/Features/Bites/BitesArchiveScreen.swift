@@ -69,6 +69,7 @@ struct BitesArchiveList: View {
                 ForEach(bites) { bite in
                     NavigationLink {
                         BiteScreen(slug: bite.id, preloaded: bite)
+                            .routeStackNode()
                     } label: {
                         BiteArchiveRow(bite: bite)
                     }

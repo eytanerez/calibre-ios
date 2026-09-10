@@ -55,8 +55,7 @@ struct MessagesListScreen: View {
             EmptyState(
                 icon: "bubble.left.and.bubble.right",
                 title: "No conversations yet",
-                message: "Message a seller from any listing, or a buyer's question about yours shows up here.",
-                aside: "Questions about condition, papers and timing get the fastest replies."
+                message: "Message a seller from any listing, or a buyer's question about yours shows up here."
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {

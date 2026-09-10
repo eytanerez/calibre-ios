@@ -30,6 +30,7 @@ struct PassportScreen: View {
     let publicCode: String
 
     @Environment(AppServices.self) private var services
+    @Environment(\.routePush) private var routePush
     @Environment(\.dynamicTypeSize) private var typeSize
 
     @State private var passport: WatchPassport?
@@ -403,7 +404,9 @@ struct PassportScreen: View {
                     Text("This watch is on Calibre right now.")
                         .font(CalibreType.bodyMedium)
                         .foregroundStyle(Kraft.ink)
-                    NavigationLink(value: Route.listing(listing.listingId)) {
+                    Button {
+                        routePush(.listing(listing.listingId))
+                    } label: {
                         Text("View the listing")
                     }
                     .buttonStyle(.calibre(.primary))

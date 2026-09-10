@@ -17,7 +17,7 @@ public enum SupportConversationStatus: String, Codable, Sendable {
 /// The named person on the Calibre side of this conversation. Messages come
 /// personally from them, and writing to support@buycalibre.com lands in the
 /// same thread.
-public struct SupportContact: Codable, Sendable {
+public struct SupportContact: Codable, Sendable, Equatable {
     public let key: String?
     public let displayName: String?
 

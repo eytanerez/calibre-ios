@@ -17,29 +17,20 @@ struct DetailsStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             VStack(alignment: .leading, spacing: Space.l) {
-                CalibreTextField(
-                    "Brand",
-                    text: $model.brand,
-                    placeholder: "Rolex",
-                    error: model.brandError,
-                    kind: .sentence
-                )
-                .id(WizardField.brand)
-                .onChange(of: model.brand) { _, _ in model.fieldChanged() }
-                CalibreTextField(
-                    "Model",
-                    text: $model.model,
-                    placeholder: "Submariner Date",
-                    kind: .sentence
-                )
-                .onChange(of: model.model) { _, _ in model.fieldChanged() }
-                CalibreTextField(
-                    "Reference",
-                    text: $model.reference,
-                    placeholder: "116610LN",
-                    kind: .reference
-                )
-                .onChange(of: model.reference) { _, _ in model.referenceChanged() }
+                ListingCatalogField("Brand", text: $model.brand, level: .brands, error: model.brandError)
+                    .id(WizardField.brand)
+                    .onChange(of: model.brand) { _, _ in
+                        model.model = ""
+                        model.reference = ""
+                        model.fieldChanged()
+                    }
+                ListingCatalogField("Model", text: $model.model, level: .models, brand: model.brand)
+                    .onChange(of: model.model) { _, _ in
+                        model.reference = ""
+                        model.fieldChanged()
+                    }
+                ListingCatalogField("Reference", text: $model.reference, level: .references, brand: model.brand, model: model.model)
+                    .onChange(of: model.reference) { _, _ in model.referenceChanged() }
                 CalibreTextField(
                     "Seller SKU (optional)",
                     text: $model.sellerSku,
@@ -388,7 +379,7 @@ struct PhotosStep: View {
     @Bindable var model: WizardModel
     @State private var captureTarget: CaptureTarget?
     @State private var previewTarget: PhotoReplaceTarget?
-    @State private var annotationTarget: AnnotationTarget?
+    @State private var removingPhoto: ListingImageCategory?
     @State private var tutorial = TutorialController(
         id: "sell.wizard.photos",
         steps: [
@@ -443,8 +434,6 @@ struct PhotosStep: View {
 
             inclusions
 
-            markSection
-
             #if DEBUG
             Button("Use sample photos") {
                 Task {
@@ -468,30 +457,14 @@ struct PhotosStep: View {
         .fullScreenCover(item: $previewTarget) { target in
             PhotoPreviewScreen(
                 target: target,
-                slot: model.slots[target.category],
-                mark: model.annotation(of: target.category)
+                slot: model.slots[target.category]
             ) { image in
                 Task {
                     await model.attach(image: image, to: target.category)
-                    // Replacing the picture drops the mark that was on it —
-                    // the server discards it, so the wizard must not go on
-                    // showing one. The seller was told before they chose.
-                    if let index = model.photoIndex(of: target.category) {
-                        model.recordAnnotation(nil, atIndex: index)
-                    }
-                    await model.refreshPhotoBoard()
                 }
                 tutorial.fire("photo")
             }
         }
-        .sheet(item: $annotationTarget) { target in
-            if let listing = model.listing {
-                PhotoAnnotationScreen(listingID: listing.id, target: target) { stored in
-                    model.recordAnnotation(stored, atIndex: target.imageIndex)
-                }
-            }
-        }
-        .task { await model.refreshPhotoBoard() }
     }
 
     // MARK: What comes with the watch
@@ -510,7 +483,7 @@ struct PhotosStep: View {
                 Text("What comes with it")
                     .font(CalibreType.sectionTitle)
                     .foregroundStyle(Color.calibre.foreground)
-                Text("Our authentication centre checks each of these against what actually arrives.")
+                Text("Our authentication center checks each of these against what actually arrives.")
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -525,109 +498,49 @@ struct PhotosStep: View {
         .tint(Color.calibre.primary)
     }
 
-    // MARK: Marks
-
-    /// Marking a detail is the seller answering the question a buyer would
-    /// ask on the phone — "what's that on the bezel?" — before they ask it.
-    ///
-    /// Offered on the edit pass and not on the first run. A mark is filed
-    /// against a photo's *position*, and on a first listing the positions are
-    /// still moving: every slot filled, replaced or reshot while the seller
-    /// works through this step renumbers the set, and the server drops the
-    /// marks that were pointing into it. Asking someone to draw on a
-    /// photograph that is about to be renumbered is asking them to lose the
-    /// work. By the time a listing is being edited the photo set has settled,
-    /// which is when a mark is worth making.
-    @ViewBuilder
-    private var markSection: some View {
-        if model.isEdit, !model.orderedPhotos.isEmpty {
-            VStack(alignment: .leading, spacing: Space.m) {
-                Text("Mark a detail")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
-
-                Text("Draw on a photo and say what it is. A scratch you point at yourself reads better than one a buyer finds.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Space.m) {
-                        ForEach(Array(model.orderedPhotos.enumerated()), id: \.element.id) { index, photo in
-                            markThumbnail(index: index, photo: photo)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
-
-                if !model.canDrawAnotherMark {
-                    Text("That's as many marks as one listing takes. Remove one to draw somewhere else.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
-    private func markThumbnail(index: Int, photo: ListingImage) -> some View {
-        let mark = model.annotation(atIndex: index)
-        // A photo with no mark on it is only tappable while there is room for
-        // another one; the one already drawn is always reachable, so it can
-        // be edited or removed.
-        let reachable = mark != nil || model.canDrawAnotherMark
-        return Button {
-            annotationTarget = AnnotationTarget(imageIndex: index, url: photo.url.url, existing: mark)
-        } label: {
-            ListingImageWell(url: photo.url.url, targetWidth: 160)
-                .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                        .strokeBorder(
-                            mark == nil ? Color.calibre.border : Color.calibre.primary,
-                            lineWidth: mark == nil ? 1 : 2
-                        )
-                )
-                .overlay(alignment: .bottomTrailing) {
-                    if mark != nil {
-                        Image(systemName: "hand.draw.fill")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Color.calibre.primaryForeground)
-                            .padding(3)
-                            .background(Color.calibre.primary, in: Circle())
-                            .offset(x: 3, y: 3)
-                    }
-                }
-                .opacity(reachable ? 1 : 0.4)
-        }
-        .buttonStyle(PressableStyle())
-        .disabled(!reachable)
-        .accessibilityLabel(
-            mark == nil
-                ? "Mark photo \(index + 1)"
-                : "Edit the mark on photo \(index + 1)"
-        )
-    }
-
     private func slotCell(_ category: ListingImageCategory) -> some View {
         let phase = model.phase(for: category)
         return VStack(spacing: Space.s) {
-            Button {
-                // A filled slot opens its photo first; an empty one has
-                // nothing to show, so go straight to the camera.
-                if model.slots[category]?.hasImage == true {
-                    previewTarget = PhotoReplaceTarget(category: category)
-                } else {
-                    captureTarget = CaptureTarget(category: category)
+            ZStack(alignment: .topTrailing) {
+                Button {
+                    // A filled slot opens its photo first; an empty one has
+                    // nothing to show, so go straight to the camera.
+                    if model.slots[category]?.hasImage == true {
+                        previewTarget = PhotoReplaceTarget(category: category)
+                    } else {
+                        captureTarget = CaptureTarget(category: category)
+                    }
+                } label: {
+                    PhotoSlotRing(phase: phase, size: 76) {
+                        slotThumbnail(category)
+                    }
                 }
-            } label: {
-                PhotoSlotRing(phase: phase, size: 76) {
-                    slotThumbnail(category)
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("\(category.label) photo")
+
+                if canRemove(phase) {
+                    Button {
+                        removingPhoto = category
+                        Task {
+                            await model.removePhoto(category: category)
+                            removingPhoto = nil
+                        }
+                    } label: {
+                        Image(systemName: "minus")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color(white: 1))
+                            .frame(width: 20, height: 20)
+                            .background(Color.calibre.destructive, in: Circle())
+                            .overlay(Circle().strokeBorder(Color.calibre.card, lineWidth: 2))
+                            .frame(width: Space.touchTarget, height: Space.touchTarget)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(removingPhoto != nil)
+                    .accessibilityLabel("Remove \(category.label) photo")
+                    .offset(x: 10, y: -10)
                 }
             }
-            .buttonStyle(PressableStyle())
-            .accessibilityLabel("\(category.label) photo")
 
             Text(category.label)
                 .font(CalibreType.caption)
@@ -648,6 +561,13 @@ struct PhotosStep: View {
                 }
                 .buttonStyle(PressableStyle())
             }
+        }
+    }
+
+    private func canRemove(_ phase: PhotoSlotPhase) -> Bool {
+        switch phase {
+        case .done, .failed: true
+        case .empty, .uploading: false
         }
     }
 
@@ -1020,5 +940,92 @@ struct PriceStep: View {
                 model.returnsChanged()
             }
         )
+    }
+}
+
+/// Typed entries remain valid when no catalog row matches. A full query key
+/// and task cancellation prevent an old brand's response replacing a new one.
+private struct ListingCatalogField: View {
+    @Environment(AppServices.self) private var services
+    let label: String
+    @Binding var text: String
+    let level: CatalogCascadeQuery.Level
+    let brand: String
+    let model: String
+    let error: String?
+    @FocusState private var focused: Bool
+    @State private var response: CatalogCascadeResponse?
+    @State private var failed = false
+
+    init(_ label: String, text: Binding<String>, level: CatalogCascadeQuery.Level,
+         brand: String = "", model: String = "", error: String? = nil) {
+        self.label = label; self._text = text; self.level = level
+        self.brand = brand; self.model = model; self.error = error
+    }
+    private var query: CatalogCascadeQuery {
+        CatalogCascadeQuery(level: level, brand: brand, model: model, text: text)
+    }
+    private var requestKey: CatalogCascadeQuery? { focused ? query : nil }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            Text(label).font(CalibreType.label).foregroundStyle(Color.calibre.secondaryForeground)
+                .accessibilityHidden(true)
+            TextField(label, text: $text)
+                .font(CalibreType.body)
+                .textInputAutocapitalization(level == .references ? .characters : .words)
+                .autocorrectionDisabled()
+                .focused($focused)
+                .padding(.horizontal, Space.m)
+                .frame(minHeight: Space.touchTarget)
+                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control))
+                .overlay(RoundedRectangle(cornerRadius: Radius.control)
+                    .stroke(error != nil ? Color.calibre.destructive : focused ? Color.calibre.primary : Color.calibre.border))
+                .accessibilityIdentifier("listing.\(label.lowercased())")
+            if let error {
+                Text(error).font(CalibreType.caption).foregroundStyle(Color.calibre.destructive)
+            }
+            if focused {
+                if let response {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(response.values.prefix(6)) { suggestion in
+                            Button {
+                                text = suggestion.value
+                                focused = false
+                            } label: {
+                                Text(suggestion.value)
+                                    .font(CalibreType.body)
+                                    .frame(maxWidth: .infinity, minHeight: Space.touchTarget, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        if response.total > 6 || response.truncated {
+                            Text("\(response.total) matches — keep typing to narrow them.")
+                                .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                        } else if response.values.isEmpty {
+                            Text("No catalog match. You can keep your own entry.")
+                                .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                        }
+                    }
+                } else if failed {
+                    Text("Suggestions unavailable. You can still enter the watch details.")
+                        .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                }
+            }
+        }
+        .task(id: requestKey) {
+            response = nil; failed = false
+            guard let key = requestKey, key.canSearch else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+                let result = try await services.catalog.cascade(key)
+                guard !Task.isCancelled, requestKey == key else { return }
+                response = result
+            } catch {
+                guard !Task.isCancelled, requestKey == key else { return }
+                failed = true
+            }
+        }
     }
 }

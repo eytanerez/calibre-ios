@@ -23,22 +23,10 @@ import SwiftUI
 struct ListingGallery: View {
     let images: [URL?]
     let condition: String?
-    /// The seller's own marks, keyed by the photo they were drawn on.
-    ///
-    /// Nil where the payload that produced this gallery does not carry marks
-    /// at all, which is not the same as a seller having drawn none — see
-    /// `Listing.annotations`. Either way there is nothing to draw; the
-    /// distinction matters upstream, where reading one as the other would
-    /// quietly wipe the marks off a card-sourced gallery.
-    var annotations: [ListingAnnotation]?
     let onOpenLightbox: (Int) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var page = 0
-
-    private func annotation(at index: Int) -> ListingAnnotation? {
-        annotations?.first { $0.imageIndex == index }
-    }
 
     var body: some View {
         VStack(spacing: Space.m) {
@@ -54,17 +42,10 @@ struct ListingGallery: View {
                 }
                 .accessibilityHidden(true)
             }
-
-            // Under the photograph, and only for the one being looked at.
-            if let note = annotation(at: page)?.note, !note.isEmpty {
-                AnnotationCaption(note: note)
-                    .padding(.horizontal, Space.margin)
-                    .transition(.opacity)
-            }
         }
-        // The dot filling and the caption crossing over are the only motion
-        // here that is the interface's rather than the reader's finger; under
-        // Reduce Motion they change without one.
+        // The dot filling is the only motion here that is the interface's
+        // rather than the reader's finger; under Reduce Motion it changes
+        // without one.
         .animation(reduceMotion ? nil : Motion.easeFast, value: page)
     }
 
@@ -120,28 +101,13 @@ struct ListingGallery: View {
     private func photo(index: Int, url: URL?) -> some View {
         ListingImageWell(url: url, targetWidth: 900)
             .aspectRatio(1, contentMode: .fill)
-            // Inside the clip, so the mark is trimmed by exactly the crop the
-            // photograph is trimmed by.
-            .overlay {
-                if let mark = annotation(at: index) {
-                    AnnotationOverlay(annotation: mark, imageURL: url)
-                }
-            }
             .clipped()
             .contentShape(Rectangle())
             .onTapGesture {
                 onOpenLightbox(index)
             }
-            .accessibilityLabel(photoLabel(index))
+            .accessibilityLabel("Photo \(index + 1) of \(images.count)")
             .accessibilityAddTraits(.isButton)
-    }
-
-    /// A mark is a fact about the photo a blind reader cannot see, so it is
-    /// said in the label rather than left to the drawing.
-    private func photoLabel(_ index: Int) -> String {
-        let base = "Photo \(index + 1) of \(images.count)"
-        guard annotation(at: index) != nil else { return base }
-        return "\(base), marked by the seller"
     }
 }
 

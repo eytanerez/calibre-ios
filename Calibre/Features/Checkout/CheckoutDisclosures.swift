@@ -203,7 +203,7 @@ enum CheckoutCopy {
     /// before anything is committed. This wording is fixed and identical on
     /// web, iOS and Android \u{2014} it is what decides a dispute.
     static let wireHoldDisclosure =
-        "Choosing wire places a refundable $250 authorization on your card. It\u{2019}s released as soon as your transfer arrives. If the transfer isn\u{2019}t sent by the deadline, the $250 is charged and goes to the seller."
+        "Choosing wire places a refundable $250 authorization on your card. It\u{2019}s released as soon as your transfer arrives. If the transfer isn\u{2019}t sent by the deadline, the $250 is charged and split between the seller and Calibre."
 
     /// Said again on the instructions screen, where the buyer is looking at
     /// the authorization on their statement.

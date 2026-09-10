@@ -16,6 +16,14 @@ public final class CommerceStore {
     /// Watches that sold out from under this member, waiting to be shown to
     /// them. Pending until acknowledged — see `acknowledgeListingNotices`.
     public private(set) var listingNotices: [ListingGoneNotice] = []
+    /// Notices closed by hand on this device, held per notice.
+    ///
+    /// It lives on the store rather than on the banner because the banner is
+    /// torn down by an ordinary tab switch, and a notice whose acknowledgement
+    /// never reached the server is still pending here — a view-local flag lets
+    /// it come back on the next mount, and cannot tell a notice that was
+    /// answered from one that arrived afterwards.
+    public private(set) var dismissedNoticeIDs: Set<String> = []
 
     /// Bumped by `reset()`. Every method below that writes `cart`,
     /// `watchlist`, `watchedListingIDs`, or `addresses` captures this before
@@ -41,6 +49,7 @@ public final class CommerceStore {
         watchedListingIDs = []
         addresses = []
         listingNotices = []
+        dismissedNoticeIDs = []
     }
 
     // MARK: - Sold notices
@@ -82,6 +91,21 @@ public final class CommerceStore {
             listingNotices.removeAll { burned.contains($0.id) }
         }
         return response.acknowledged
+    }
+
+    /// What a banner may still put on screen: pending on the server, and not
+    /// already closed by hand. A notice that arrives after a dismissal is not
+    /// covered by it and shows normally.
+    public var showableListingNotices: [ListingGoneNotice] {
+        listingNotices.filter { !dismissedNoticeIDs.contains($0.id) }
+    }
+
+    /// The banner's close button. Says nothing to the server: the row is
+    /// either already acknowledged or still pending, and the next launch reads
+    /// whichever it is.
+    public func dismissListingNotices(ids: [String]) {
+        guard !ids.isEmpty else { return }
+        dismissedNoticeIDs.formUnion(ids)
     }
 
     // MARK: - Cart

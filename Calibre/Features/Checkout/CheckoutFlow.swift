@@ -96,6 +96,7 @@ private struct CheckoutStack: View {
                         case .wire:
                             WireInstructionsScreen(model: model) { orders in
                                 if let first = orders.first {
+                                    CalibreMoments.play(.orderPlaced)
                                     router.open(.order(first.id))
                                 }
                                 dismiss()
@@ -119,6 +120,10 @@ private struct CheckoutStack: View {
                     orders: model.completedOrders,
                     listings: model.completedOrders.map { model.listingsByID[$0.listingId] },
                     onViewOrder: {
+                        // The page you were on collapses into the box, so the
+                        // film is this order's own screen rather than a
+                        // drawing of one.
+                        CalibreMoments.play(.orderPlaced)
                         router.open(.order(order.id))
                         dismiss()
                     },

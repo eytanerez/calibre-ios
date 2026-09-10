@@ -17,6 +17,11 @@ struct SaleDetailScreen: View {
     private enum FlowStep: Hashable {
         case shippingDetails
         case labelReady
+        /// Support, opened from a rejected payout. A step and not a plain
+        /// `NavigationLink`: this screen also assigns `path` outright, and a
+        /// link that pushed outside the path would be discarded the moment it
+        /// did — the reader would be thrown out of the conversation.
+        case support
     }
 
     @State private var order: Order?
@@ -82,6 +87,9 @@ struct SaleDetailScreen: View {
                     if let order {
                         LabelReadyScreen(order: order)
                     }
+                case .support:
+                    SupportChatScreen(seed: payoutRejectedSupportMessage)
+                        .routeStackNode()
                 }
             }
         }
@@ -173,7 +181,7 @@ struct SaleDetailScreen: View {
                             path.append(.shippingDetails)
                         }
                         .buttonStyle(.calibre(.primary, fullWidth: true))
-                        Text("Tell us the box you are sending and Calibre buys the label \u{2014} prepaid, insured for the full sale price, to our authentication centre. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
+                        Text("Tell us the box you are sending and Calibre buys the label \u{2014} prepaid, insured for the full sale price, to our authentication center. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
                             .font(CalibreType.caption)
                             .foregroundStyle(Color.calibre.mutedForeground)
                             .multilineTextAlignment(.center)
@@ -432,8 +440,9 @@ struct SaleDetailScreen: View {
                         .foregroundStyle(Color.calibre.foreground)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    NavigationLink {
-                        SupportChatScreen(seed: payoutRejectedSupportMessage)
+                    Button {
+                        Haptics.shared.play(.press)
+                        path.append(.support)
                     } label: {
                         Text("Talk to us about this").frame(maxWidth: .infinity)
                     }

@@ -132,3 +132,21 @@ public extension View {
         .padding(.bottom, Space.s)
     }
 }
+
+/// A transparent multiline input for the shared glass conversation tray.
+/// The tray supplies the surface; an opaque form-field card would cover it.
+public struct CalibreMessageField: View {
+    @Binding private var text: String
+    public init(text: Binding<String>) { _text = text }
+    public var body: some View {
+        TextField("Write a message", text: $text, axis: .vertical)
+            .lineLimit(1...5)
+            .font(CalibreType.body)
+            .foregroundStyle(Color.calibre.foreground)
+            .tint(Color.calibre.primary)
+            .textInputAutocapitalization(.sentences)
+            .padding(.horizontal, Space.s)
+            .frame(minHeight: Space.touchTarget)
+            .accessibilityLabel("Write a message")
+    }
+}

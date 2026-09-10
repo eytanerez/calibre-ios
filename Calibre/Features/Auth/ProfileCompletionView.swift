@@ -101,7 +101,12 @@ struct ProfileCompletionView: View {
         .interactiveDismissDisabled()
         .alert("Sign out of Calibre?", isPresented: $confirmSignOut) {
             Button("Sign Out", role: .destructive) {
-                Task { await session.logout() }
+                Task {
+                    let signingOutUserID = session.user?.id
+                    await services.push.unregisterOnSignOut()
+                    guard session.user?.id == signingOutUserID else { return }
+                    await session.logout()
+                }
             }
             Button("Cancel", role: .cancel) {}
         } message: {

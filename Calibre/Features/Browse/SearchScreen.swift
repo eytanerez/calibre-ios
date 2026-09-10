@@ -282,10 +282,9 @@ private struct NoMatchesYet: View {
         EmptyState(
             icon: "magnifyingglass",
             title: "Nothing matches yet",
-            message: "No watches answer to \u{201C}\(query)\u{201D} right now.",
-            aside: watching
-                ? "I'll keep an eye out. You'll hear from me."
-                : "Want me to watch for one?",
+            message: watching
+                ? "We'll let you know when a watch matches \u{201C}\(query)\u{201D}."
+                : "No watches answer to \u{201C}\(query)\u{201D} right now.",
             actionTitle: watching ? nil : (saving ? "Saving\u{2026}" : "Watch for one"),
             action: watching ? nil : { watchForOne() }
         )

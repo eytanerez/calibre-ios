@@ -90,6 +90,7 @@ struct MakeOfferSheet: View {
             // An open offer already exists — show its negotiation instead.
             NavigationStack {
                 OfferDetailScreen(offerID: offer.id)
+                    .routeStackNode()
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button("Done") { dismiss() }

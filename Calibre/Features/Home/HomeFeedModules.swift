@@ -1,5 +1,6 @@
 import CalibreDesign
 import CalibreKit
+import NukeUI
 import SwiftUI
 
 // MARK: - Where a module's action goes
@@ -468,11 +469,7 @@ struct FeedBiteModule: View {
                 }
                 .padding(.top, Space.s)
 
-                Text(bite.title)
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                biteHeadline
 
                 HStack(spacing: Space.xs) {
                     Text(module.action?.label ?? "Read it")
@@ -493,6 +490,54 @@ struct FeedBiteModule: View {
         .padding(.horizontal, Space.margin)
     }
 
+    @ViewBuilder
+    private var biteHeadline: some View {
+        if let imageURL = bite.image?.url {
+            LazyImage(url: imageURL) { state in
+                if let image = state.image {
+                    ZStack(alignment: .bottomLeading) {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                        LinearGradient(
+                            colors: [.clear, Color.black.opacity(0.82)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        headline(color: Color(white: 1))
+                            .padding(Space.l)
+                    }
+                } else {
+                    ZStack(alignment: .bottomLeading) {
+                        Color.calibre.accent
+                        if state.error == nil {
+                            Rectangle().fill(Color.calibre.secondary).shimmer()
+                        }
+                        headline(color: Color.calibre.foreground)
+                            .padding(Space.l)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 176, maxHeight: 220)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+            )
+        } else {
+            headline(color: Color.calibre.foreground)
+        }
+    }
+
+    private func headline(color: Color) -> some View {
+        Text(bite.title)
+            .font(CalibreType.sectionTitle)
+            .foregroundStyle(color)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     /// What is on screen and nothing more: the slot, the archive note when
     /// there is one, the topic, the headline. The paragraph is on the page
     /// this opens, for a VoiceOver reader as for anyone else.
@@ -502,6 +547,7 @@ struct FeedBiteModule: View {
             fromArchive ? "From the archive" : nil,
             bite.topic.isEmpty ? nil : bite.topic,
             bite.title,
+            bite.imageAlt,
         ]
         .compactMap { $0 }
         .joined(separator: ". ")
@@ -835,6 +881,7 @@ enum CollectionSummaryCopy {
 struct FeedEndModule: View {
     let module: HomeFeedModule
     let state: String
+    let contactName: String?
     let onAction: (FeedActionTarget) -> Void
     let onRetry: () -> Void
 
@@ -844,10 +891,17 @@ struct FeedEndModule: View {
                 .fill(Color.calibre.border)
                 .frame(height: 1)
 
-            Text(module.title)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.secondaryForeground)
-                .fixedSize(horizontal: false, vertical: true)
+            if state == "degraded" {
+                Text(module.title)
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Need help buying, selling, or comparing watches?")
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             // A degraded feed carries no CTA of its own — the retry is the
             // action, and it belongs to this side.
@@ -857,15 +911,22 @@ struct FeedEndModule: View {
                     onRetry()
                 }
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
-            } else if let action = module.action, let target = feedActionTarget(action.route) {
-                Button(action.label) {
+            } else {
+                Button(contactButtonTitle) {
                     Haptics.shared.play(.press)
-                    onAction(target)
+                    onAction(.route(.supportChat))
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
             }
         }
         .padding(.horizontal, Space.margin)
+    }
+
+    private var contactButtonTitle: String {
+        guard let contactName else {
+            return "Message Calibre"
+        }
+        return "Message \(contactName)"
     }
 }
 

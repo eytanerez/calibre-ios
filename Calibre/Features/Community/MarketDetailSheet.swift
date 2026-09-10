@@ -13,6 +13,7 @@ struct MarketDetailSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppRouter.self) private var router
+    @Environment(\.routePush) private var routePush
 
     init(price: MarketReferencePrice) {
         self.price = price
@@ -207,7 +208,10 @@ struct MarketDetailSheet: View {
             Button {
                 let brand = price.brand
                 dismiss()
-                router.open(.brand(brand))
+                // The board this sheet came off is worth coming back to, so
+                // the brand opens on the stack the reader is standing on
+                // rather than on the Home tab the brand route calls home.
+                routePush(.brand(brand))
             } label: {
                 HStack(spacing: Space.s) {
                     Text("Find on the marketplace")

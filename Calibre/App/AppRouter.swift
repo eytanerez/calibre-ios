@@ -6,6 +6,19 @@ import SwiftUI
 /// The five root tabs.
 enum AppTab: Hashable {
     case home, community, sell, collection, you
+
+    /// The tab's own name, as the tab bar prints it. Used by the back button
+    /// a cross-tab jump leaves behind, so it names the place the reader
+    /// actually came from.
+    var title: String {
+        switch self {
+        case .home: "Home"
+        case .community: "Community"
+        case .sell: "Sell"
+        case .collection: "Vault"
+        case .you: "Me"
+        }
+    }
 }
 
 /// Everything the app can navigate to from anywhere — pushes, push
@@ -37,6 +50,10 @@ enum Route: Hashable {
     /// A watch's public Passport, by its printed code. Anonymized and
     /// readable without a session — it is the page an owner sends to a buyer.
     case passport(String)
+    /// The authentication report for an order or a vault watch. A page, not a
+    /// sheet: the envelope sequence opens onto the document itself, and a
+    /// sheet is a surface above the one the film is playing on.
+    case authenticationReport(AuthenticationReportTarget)
 }
 
 /// A checkout the app is presenting as a full-screen cover. Checkout owns its
@@ -68,10 +85,61 @@ struct CheckoutRequest: Identifiable, Hashable {
 final class AppRouter {
     var selectedTab: AppTab = .home
 
+    /// Where a cross-tab jump came from, so Back can return across it.
+    ///
+    /// Some destinations are a tab and not a screen — the feed's "go to the
+    /// Vault" card, the Vault's "list this watch" — and those cannot be an
+    /// ordinary push: the Vault's whole stack sits under a biometric gate that
+    /// only the tab raises, and the listing wizard needs the Sell tab's own
+    /// session. Moving the reader's position into another tab's stack would
+    /// leave both behind. So the jump stays a jump and the origin is kept
+    /// here; the destination's root draws a way back while it is set, and
+    /// returning is the reverse selection with the origin's stack untouched.
+    private(set) var tabOrigin: AppTab?
+
+    /// The tab bar's own selection. Choosing a tab by hand ends any jump: the
+    /// reader has just said where they are, and a back button still pointing
+    /// at a card they left two taps ago would be a lie.
+    var tabSelection: Binding<AppTab> {
+        Binding(
+            get: { self.selectedTab },
+            set: { tab in
+                self.tabOrigin = nil
+                self.selectedTab = tab
+            }
+        )
+    }
+
+    /// Sends the reader to a whole tab, rememberable. Selecting the tab they
+    /// are already on is not a jump and leaves any earlier origin alone.
+    func jump(to tab: AppTab) {
+        guard tab != selectedTab else { return }
+        tabOrigin = selectedTab
+        selectedTab = tab
+    }
+
+    /// The destination root's back button.
+    func returnFromJump() {
+        guard let origin = tabOrigin else { return }
+        tabOrigin = nil
+        selectedTab = origin
+    }
+
     var homePath: [Route] = []
     var communityPath: [Route] = []
     var sellPath: [Route] = []
-    var collectionPath: [Route] = []
+    /// Type-erased, like the Me tab below and for the same kind of reason: the
+    /// Vault pushes `Route` (a Passport, a listing) and `VaultWatchLink` (one
+    /// watch, which carries the photograph's frame into the screen it opens),
+    /// and a homogeneous `[Route]` can hold only one of the two.
+    ///
+    /// It is also what keeps a watch open. A watch that Calibre authenticated
+    /// plays a film on arrival; the moment host used to re-parent the whole app
+    /// to do that, every `NavigationStack` in it was rebuilt, and a push that
+    /// was not IN the path is state a rebuild does not carry — the detail
+    /// screen appeared and was thrown straight back to the list. The host is
+    /// fixed; a path element would have survived it either way.
+    var collectionPath = NavigationPath()
     /// Type-erased: the Me tab pushes both `Route` (orders/offers/alerts and
     /// support, from deep links) and `ProfileDestination` (profile/addresses/…),
     /// so a homogeneous `[Route]` would silently drop the profile pushes and
@@ -100,9 +168,24 @@ final class AppRouter {
     /// means the seller gate still applies to people who can't list yet.
     var pendingListingPrefill: ListingPrefill?
 
+    /// A moderation notification can name a listing that is deliberately not
+    /// public (draft, rejected, or taken down). The Sell dashboard owns the
+    /// authenticated listing collection and editor, so the router parks the
+    /// id here while it switches tabs and the dashboard consumes it after its
+    /// listings load.
+    var pendingSellerListingID: String?
+
     /// Send the seller to a fresh listing prefilled from one of their watches.
     func startListing(prefill: ListingPrefill) {
         pendingListingPrefill = prefill
+        jump(to: .sell)
+    }
+
+    /// Opens one of the member's own listings in the seller editor.
+    func openSellerListing(id: String) {
+        deckPresented = false
+        tabOrigin = nil
+        pendingSellerListingID = id
         selectedTab = .sell
     }
 
@@ -130,13 +213,16 @@ final class AppRouter {
         // stack — dismiss the deck cover if it's up.
         deckPresented = false
         let tab = homeTab(for: route)
+        // A push notification or a link is not a place inside the app, so
+        // there is nothing behind it to offer a way back to.
+        tabOrigin = nil
         selectedTab = tab
         switch tab {
         case .home: homePath.append(route)
         case .community: communityPath.append(route)
         case .sell: sellPath.append(route)
         case .collection: collectionPath.append(route)
-        case .you: youPath.append(route)  // NavigationPath.append accepts any Hashable
+        case .you: youPath.append(route)
         }
     }
 
@@ -181,134 +267,156 @@ final class AppRouter {
             .home
         case .journal, .journalArticle, .poll:
             .community
-        case .order, .offer, .alerts, .supportChat, .supportThread, .messages, .messageThread:
+        case .order, .offer, .alerts, .supportChat, .supportThread, .messages, .messageThread,
+             .authenticationReport:
             .you
         case .vaultWatch:
             .collection
         }
     }
 
-    /// Handles calibre:// scheme links and https://buycalibre.com universal
-    /// links. Returns true when the URL was recognized.
-    @discardableResult
-    func handle(url: URL) -> Bool {
+    /// What a recognized link names. Decoding is separate from navigating so
+    /// that a caller who is already standing somewhere — a link tapped inside a
+    /// support conversation, say — can push the destination above itself
+    /// instead of jumping to the route's canonical tab and losing the page the
+    /// reader was on.
+    enum LinkTarget {
+        case route(Route)
+        case passwordReset(String)
+    }
+
+    /// Decodes calibre:// scheme links and https://buycalibre.com universal
+    /// links without navigating. Nil when the URL is not one of ours.
+    func target(for url: URL) -> LinkTarget? {
         if url.scheme?.lowercased() == "calibre" {
-            return handleCalibreScheme(url)
+            return calibreSchemeTarget(url)
         }
         if let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http",
            let host = url.host()?.lowercased(),
            host == "buycalibre.com" || host == "www.buycalibre.com" {
-            return handleUniversalLink(url)
+            return universalLinkTarget(url)
         }
-        return false
+        return nil
+    }
+
+    /// Handles calibre:// scheme links and https://buycalibre.com universal
+    /// links. Returns true when the URL was recognized.
+    @discardableResult
+    func handle(url: URL) -> Bool {
+        switch target(for: url) {
+        case .route(let route):
+            open(route)
+            return true
+        case .passwordReset(let token):
+            passwordResetToken = token
+            return true
+        case nil:
+            return false
+        }
     }
 
     /// calibre://listing/<id>, calibre://order/<id>, calibre://offer/<id>,
     /// calibre://support, calibre://alerts, calibre://auth/reset?token=…
     /// (Google's calibre://auth?code= callback is consumed by the web-auth
     /// session, never here.)
-    private func handleCalibreScheme(_ url: URL) -> Bool {
-        guard let host = url.host()?.lowercased() else { return false }
+    private func calibreSchemeTarget(_ url: URL) -> LinkTarget? {
+        guard let host = url.host()?.lowercased() else { return nil }
         let segments = url.pathComponents.filter { $0 != "/" }
 
         switch host {
         case "listing":
-            guard let id = segments.first else { return false }
-            open(.listing(id))
+            guard let id = segments.first else { return nil }
+            return .route(.listing(id))
         case "seller":
-            guard let id = segments.first else { return false }
-            open(.seller(id))
+            guard let id = segments.first else { return nil }
+            return .route(.seller(id))
         case "brand":
-            guard let id = segments.first else { return false }
-            open(.brand(id))
+            guard let id = segments.first else { return nil }
+            return .route(.brand(id))
         case "order":
-            guard let id = segments.first else { return false }
-            open(.order(id))
+            guard let id = segments.first else { return nil }
+            return .route(.order(id))
         case "offer":
-            guard let id = segments.first else { return false }
-            open(.offer(id))
+            guard let id = segments.first else { return nil }
+            return .route(.offer(id))
         case "journal":
             if let id = segments.first {
-                open(.journalArticle(id))
-            } else {
-                open(.journal)
+                return .route(.journalArticle(id))
             }
+            return .route(.journal)
         case "passport":
-            guard let code = segments.first else { return false }
-            open(.passport(code))
+            guard let code = segments.first else { return nil }
+            return .route(.passport(code))
         // `support` and `support/<thread id>` are both live: the customer
         // push now names its conversation, and a build that only understood
         // the bare word would have dropped the id in silence.
         case "support":
             if let id = segments.first, !id.isEmpty {
-                open(.supportThread(id))
-            } else if let thread = queryValue("thread", in: url), !thread.isEmpty {
-                open(.supportThread(thread))
-            } else {
-                open(.supportChat)
+                return .route(.supportThread(id))
             }
+            if let thread = queryValue("thread", in: url), !thread.isEmpty {
+                return .route(.supportThread(thread))
+            }
+            return .route(.supportChat)
         case "alerts":
-            open(.alerts)
+            return .route(.alerts)
         case "auth":
             guard segments.first == "reset",
-                  let token = queryValue("token", in: url), !token.isEmpty else { return false }
-            passwordResetToken = token
+                  let token = queryValue("token", in: url), !token.isEmpty else { return nil }
+            return .passwordReset(token)
         default:
-            return false
+            return nil
         }
-        return true
     }
 
     /// https://buycalibre.com/listing/:id and friends — the web app's paths.
-    private func handleUniversalLink(_ url: URL) -> Bool {
+    private func universalLinkTarget(_ url: URL) -> LinkTarget? {
         let segments = url.pathComponents.filter { $0 != "/" }
-        guard let first = segments.first?.lowercased() else { return false }
+        guard let first = segments.first?.lowercased() else { return nil }
 
         switch first {
         case "listing", "listings":
-            guard segments.count > 1 else { return false }
-            open(.listing(segments[1]))
+            guard segments.count > 1 else { return nil }
+            return .route(.listing(segments[1]))
         case "seller", "sellers":
-            guard segments.count > 1 else { return false }
-            open(.seller(segments[1]))
+            guard segments.count > 1 else { return nil }
+            return .route(.seller(segments[1]))
         case "brand", "brands":
-            guard segments.count > 1 else { return false }
-            open(.brand(segments[1]))
+            guard segments.count > 1 else { return nil }
+            return .route(.brand(segments[1]))
         case "order", "orders":
-            guard segments.count > 1 else { return false }
-            open(.order(segments[1]))
+            guard segments.count > 1 else { return nil }
+            return .route(.order(segments[1]))
         case "offer", "offers":
-            guard segments.count > 1 else { return false }
-            open(.offer(segments[1]))
+            guard segments.count > 1 else { return nil }
+            return .route(.offer(segments[1]))
         case "journal":
             if segments.count > 1 {
-                open(.journalArticle(segments[1]))
-            } else {
-                open(.journal)
+                return .route(.journalArticle(segments[1]))
             }
+            return .route(.journal)
         // The link an owner sends a buyer. It now opens the booklet in the
         // app rather than bouncing the reader out to Safari.
         case "passport", "passports":
-            guard segments.count > 1 else { return false }
-            open(.passport(segments[1]))
+            guard segments.count > 1 else { return nil }
+            return .route(.passport(segments[1]))
         // The reply email's CTA for a signed-in customer is
         // `/support?thread=<id>`; the bare path is still the list.
         case "support":
             if segments.count > 1, !segments[1].isEmpty {
-                open(.supportThread(segments[1]))
-            } else if let thread = queryValue("thread", in: url), !thread.isEmpty {
-                open(.supportThread(thread))
-            } else {
-                open(.supportChat)
+                return .route(.supportThread(segments[1]))
             }
+            if let thread = queryValue("thread", in: url), !thread.isEmpty {
+                return .route(.supportThread(thread))
+            }
+            return .route(.supportChat)
         case "auth":
             guard segments.count > 1, segments[1].lowercased() == "reset-password",
-                  let token = queryValue("token", in: url), !token.isEmpty else { return false }
-            passwordResetToken = token
+                  let token = queryValue("token", in: url), !token.isEmpty else { return nil }
+            return .passwordReset(token)
         default:
-            return false
+            return nil
         }
-        return true
     }
 
     private func queryValue(_ name: String, in url: URL) -> String? {

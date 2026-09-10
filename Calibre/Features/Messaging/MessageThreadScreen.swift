@@ -32,10 +32,8 @@ struct MessageThreadScreen: View {
     @State private var sendErrorText: String?
 
     var body: some View {
-        VStack(spacing: 0) {
-            messagesList
-            composer
-        }
+        messagesList
+        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .calibrePageBackground()
         .navigationTitle("Message")
         .navigationBarTitleDisplayMode(.inline)
@@ -108,7 +106,7 @@ struct MessageThreadScreen: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             HStack(alignment: .bottom, spacing: Space.s) {
-                CalibreTextField("Write a message", text: $draft, kind: .sentence)
+                CalibreMessageField(text: $draft)
                 Button {
                     Task { await send() }
                 } label: {
@@ -132,7 +130,7 @@ struct MessageThreadScreen: View {
         // already lifts this bar, and a container inset on top of it counts
         // the keyboard twice — a documented trap, and the hole it leaves is a
         // whole keyboard tall.
-        .padding(Space.margin)
+        .padding(Space.m)
         .calibreComposerSurface()
     }
 

@@ -19,6 +19,7 @@ struct SellerDashboardScreen: View {
     @Environment(AuthSession.self) private var session
     @Environment(SellSession.self) private var sell
     @Environment(AppRouter.self) private var router
+    @Environment(\.routePush) private var routePush
     @Environment(ToastCenter.self) private var toasts
 
     /// The tab survives a reload and a back-navigation: a seller who opens an
@@ -131,6 +132,7 @@ struct SellerDashboardScreen: View {
                 }
             }
         }
+        .calibrePageSwipe(selection: $tab, values: SellerTab.allCases)
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .calibrePageBackground()
@@ -153,10 +155,20 @@ struct SellerDashboardScreen: View {
             tutorial.adopt(steps: isVerifiedDealer ? [Self.bulkImportStep, Self.shopStep] : [Self.shopStep])
             tutorial.startIfNeeded()
             consumePendingPrefill()
+            consumePendingSellerListing()
         }
         // The Vault parks a prefill on the router and switches to this tab.
         .onChange(of: router.pendingListingPrefill) { _, _ in
             consumePendingPrefill()
+        }
+        .onChange(of: router.pendingSellerListingID) { _, _ in
+            Task {
+                // A moderation push changes the server copy before it reaches
+                // the phone. Refresh the owner's list so the editor opens the
+                // decision and status that triggered the notification.
+                await loadListings()
+                consumePendingSellerListing()
+            }
         }
         .fullScreenCover(item: $wizardContext) { context in
             ListingWizardScreen(context: context) {
@@ -278,8 +290,8 @@ struct SellerDashboardScreen: View {
     /// anywhere in a long inventory.
     private var tabBar: some View {
         SellerTabBar(selection: $tab, badges: tabBadges)
-            .padding(.horizontal, Space.margin)
-            .padding(.top, Space.s)
+            .padding(.horizontal, Space.xs)
+            .padding(.vertical, Space.s)
             .background(Color.calibre.background)
             .listRowInsets(EdgeInsets())
     }
@@ -367,13 +379,13 @@ struct SellerDashboardScreen: View {
             confirmSubmit: { confirmSubmit = $0 },
             confirmDelete: { confirmDelete = $0 },
             openSale: { saleDetailOrderID = $0 },
-            openOffer: { router.push(.offer($0)) },
+            openOffer: { routePush(.offer($0)) },
             openCardOnFile: { showSellerCard = true },
             continueImport: { continueImportJob = $0 },
             openBuyerRequests: { showOpenRequests = true },
             openStorefrontPage: {
                 if let username = session.user?.username, !username.isEmpty {
-                    router.push(.seller(username))
+                    routePush(.seller(username))
                 }
             },
             openDealerApplication: { showDealerApplication = true },
@@ -507,10 +519,21 @@ struct SellerDashboardScreen: View {
     /// screen every time the seller opened it. Listing a watch is Listings'
     /// verb, so it lives at the top of that tab — one entry point instead of
     /// two, in the room that is about inventory.
+    private var dashboardTitle: String {
+        let fullName = [session.user?.firstName, session.user?.lastName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let name = fullName.isEmpty
+            ? (session.user?.username ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            : fullName
+        return name.isEmpty ? "Your dashboard" : "\(name)'s dashboard"
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             HStack(alignment: .firstTextBaseline) {
-                Text("\(session.user?.username ?? "Your")'s storefront")
+                Text(dashboardTitle)
                     .font(CalibreType.title)
                     .foregroundStyle(Color.calibre.foreground)
                 Spacer()
@@ -738,7 +761,7 @@ struct SellerDashboardScreen: View {
         switch action.kind {
         case "offer":
             if let offerID = action.offerId {
-                router.push(.offer(offerID))
+                routePush(.offer(offerID))
             }
         case "fulfillment":
             if let orderID = action.orderId {
@@ -769,10 +792,10 @@ struct SellerDashboardScreen: View {
             if let order = orderByListing[listing.id] {
                 saleDetailOrderID = order.id
             } else {
-                router.push(.listing(listing.id))
+                routePush(.listing(listing.id))
             }
         default:
-            router.push(.listing(listing.id))
+            routePush(.listing(listing.id))
         }
     }
 
@@ -821,6 +844,22 @@ struct SellerDashboardScreen: View {
         guard let prefill = router.pendingListingPrefill else { return }
         router.pendingListingPrefill = nil
         openWizard(.new(prefill: prefill))
+    }
+
+    private func consumePendingSellerListing() {
+        guard let id = router.pendingSellerListingID,
+              let listing = listing(for: id) else { return }
+        router.pendingSellerListingID = nil
+        tab = .listings
+        listingFilter = .all
+        switch listing.status {
+        case .draft:
+            openWizard(.finishDraft(listing))
+        default:
+            // Rejected and taken-down listings must stay in the authenticated
+            // seller flow; their public detail route intentionally 404s.
+            openWizard(.edit(listing))
+        }
     }
 
     private func openWizard(_ kind: WizardContext.Kind) {

@@ -96,6 +96,7 @@ struct BrowseDestinationView: View {
             }
         }
         .browseStackNode()
+        .routeStackNode()
     }
 }
 

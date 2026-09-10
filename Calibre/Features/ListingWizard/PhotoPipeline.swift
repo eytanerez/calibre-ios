@@ -6,7 +6,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 /// Capture → upload-ready file: normalize orientation, downscale the longest
-/// side to 2048px, encode efficiently (JPEG fallback), write into the
+/// side to 2048px, encode as an upload-ready JPEG, write into the
 /// listing's photo folder.
 enum PhotoPipeline {
     // 2048 px preserves useful detail for the full-screen gallery while
@@ -17,14 +17,9 @@ enum PhotoPipeline {
     static func store(_ image: UIImage, listingID: String, label: String) -> URL? {
         let scaled = downscale(image)
         let directory = DraftStore.photosDirectory(listingID: listingID)
-        let stamp = Int(Date.now.timeIntervalSince1970)
-
-        let heicURL = directory.appending(path: "\(label)-\(stamp).heic")
-        if write(scaled, to: heicURL, type: UTType.heic, quality: 0.72) {
-            return heicURL
-        }
-        // Simulators (and some devices) have no HEIC encoder — fall back.
-        let jpegURL = directory.appending(path: "\(label)-\(stamp).jpg")
+        // Unique files keep rapid replacements from overwriting a photo
+        // that the background uploader is still reading.
+        let jpegURL = directory.appending(path: "\(label)-\(UUID().uuidString).jpg")
         if write(scaled, to: jpegURL, type: UTType.jpeg, quality: 0.76) {
             return jpegURL
         }
@@ -50,7 +45,10 @@ enum PhotoPipeline {
 
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        return UIGraphicsImageRenderer(size: target, format: format).image { _ in
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: target, format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: target))
             image.draw(in: CGRect(origin: .zero, size: target))
         }
     }

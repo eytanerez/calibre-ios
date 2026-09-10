@@ -12,6 +12,7 @@ struct OfferDetailScreen: View {
     @Environment(AuthSession.self) private var session
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
+    @Environment(\.routePush) private var routePush
 
     @State private var model: OfferDetailModel?
 
@@ -58,6 +59,7 @@ struct OfferDetailScreen: View {
 
 private struct OfferDetailContent: View {
     @Bindable var model: OfferDetailModel
+    @Environment(\.routePush) private var routePush
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var tutorial = TutorialController(
         id: "offers.detail",
@@ -309,7 +311,7 @@ private struct OfferDetailContent: View {
             case .paid:
                 if let orderID = offer.orderId {
                     Button {
-                        model.openOrder(orderID)
+                        routePush(.order(orderID))
                     } label: {
                         Text("View the order")
                             .frame(maxWidth: .infinity)
@@ -611,7 +613,7 @@ final class OfferDetailModel {
         guard let offer, let hold = offer.hold else { return nil }
         let noun = offerHoldNoun(offerHoldText(offer, config: config))
         if offerSettledForfeit(offer) != nil || hold.capturedAt != nil {
-            return "\(noun) forfeited to the seller"
+            return "\(noun) forfeited and split between the seller and Calibre"
         }
         if hold.releasedAt != nil { return "\(noun) released" }
         if hold.authorizedAt != nil || hold.status == "requires_capture" {
@@ -643,7 +645,7 @@ final class OfferDetailModel {
     /// the exact amount at stake.
     var backOutMessage: String {
         let noun = offerHoldNoun(offerHoldText(offer, config: config))
-        return "You agreed to buy this watch. If you back out now, your \(noun) is forfeited to the seller, less the cost of processing it."
+        return "You agreed to buy this watch. If you back out now, your \(noun) is forfeited and split between the seller and Calibre."
     }
 
     var acceptDialogTitle: String {
@@ -735,11 +737,8 @@ final class OfferDetailModel {
 
     func payNow() {
         guard let offer else { return }
+        CalibreMoments.play(.offerAccepted)
         router.open(.checkout(offer.listingId, offerID: offer.id))
-    }
-
-    func openOrder(_ orderID: String) {
-        router.push(.order(orderID))
     }
 
     private func friendlyMessage(_ error: Error) -> String {

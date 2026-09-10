@@ -16,7 +16,9 @@ final class LastPassClientTests: XCTestCase {
 
     /// The badge counts what is left in the inbox, not what is unread. This
     /// payload is a member who has read everything and cleared nothing: every
-    /// row carries a `read_at`, and the badge is still three.
+    /// row carries a `read_at`, so `unread_count` is zero while the inbox is
+    /// not — the one shape in which the two keys disagree, and therefore the
+    /// only one in which reading the wrong key is visible.
     @MainActor
     func testTheBadgeCountsWhatIsLeftRatherThanWhatIsUnread() async throws {
         let body = envelope("""
@@ -32,7 +34,7 @@ final class LastPassClientTests: XCTestCase {
             "created_at": "2026-09-08T09:00:00Z"}
          ],
          "page": 1, "page_size": 50, "total": 3,
-         "remaining_count": 3, "unread_count": 3}
+         "remaining_count": 3, "unread_count": 0}
         """)
         MockURLProtocol.setHandler { _ in (200, body) }
 
@@ -40,6 +42,10 @@ final class LastPassClientTests: XCTestCase {
         _ = try await store.load()
 
         XCTAssertEqual(store.remainingCount, 3)
+        // Asserted before the `allSatisfy` below, which is vacuously true over
+        // an empty inbox: `remainingCount` is decoded off the payload rather
+        // than counted from the rows, so it cannot stand in for having any.
+        XCTAssertEqual(store.notifications.count, 3)
         XCTAssertTrue(store.notifications.allSatisfy { $0.readAt != nil })
     }
 
@@ -109,6 +115,91 @@ final class LastPassClientTests: XCTestCase {
         XCTAssertEqual(seen.method, "DELETE")
         XCTAssertEqual(seen.path, "/account/notifications")
         XCTAssertEqual(swept, 1)
+        XCTAssertTrue(store.notifications.isEmpty)
+        XCTAssertEqual(store.remainingCount, 0)
+    }
+
+    /// A clear made on another device, announced by a payload that says
+    /// nothing about how many rows are left.
+    ///
+    /// Silence is not zero. The named row goes and the badge follows the rows
+    /// this device actually took out — an inbox of three minus one is two, not
+    /// an empty bell on a phone that is still holding two live notifications.
+    @MainActor
+    func testAClearElsewhereWithNoCountLeavesTheRestOfTheInboxStanding() async throws {
+        let body = envelope("""
+        {"results": [
+           {"id": "n1", "category": "order_updates", "title": "Shipped", "body": "On its way",
+            "route": "order/o1", "read_at": null, "cleared_at": null,
+            "created_at": "2026-09-08T09:00:00Z"},
+           {"id": "n2", "category": "offer_updates", "title": "Countered", "body": "They replied",
+            "route": "offer/of1", "read_at": null, "cleared_at": null,
+            "created_at": "2026-09-08T09:00:00Z"},
+           {"id": "n3", "category": "watchlist_alerts", "title": "Price drop", "body": "Lower now",
+            "route": "listing/l1", "read_at": null, "cleared_at": null,
+            "created_at": "2026-09-08T09:00:00Z"}
+         ],
+         "page": 1, "page_size": 50, "total": 3,
+         "remaining_count": 3, "unread_count": 3}
+        """)
+        MockURLProtocol.setHandler { _ in (200, body) }
+
+        let store = ServerAlertsStore(client: APIClient(configuration: mockConfiguration(), auth: nil))
+        _ = try await store.load()
+        store.applyCleared(ids: ["n1"], clearedAll: false, remaining: nil)
+
+        XCTAssertEqual(store.notifications.map(\.id), ["n2", "n3"])
+        XCTAssertEqual(store.remainingCount, 2)
+    }
+
+    /// The same payload where the server did say. Its count wins outright —
+    /// this device may never have loaded every row the member holds, so the
+    /// number cannot be counted off the rows in front of it.
+    @MainActor
+    func testTheServersOwnCountWinsWhenTheClearCarriesOne() async throws {
+        let body = envelope("""
+        {"results": [
+           {"id": "n1", "category": "order_updates", "title": "Shipped", "body": "On its way",
+            "route": "order/o1", "read_at": null, "cleared_at": null,
+            "created_at": "2026-09-08T09:00:00Z"},
+           {"id": "n2", "category": "offer_updates", "title": "Countered", "body": "They replied",
+            "route": "offer/of1", "read_at": null, "cleared_at": null,
+            "created_at": "2026-09-08T09:00:00Z"}
+         ],
+         "page": 1, "page_size": 50, "total": 2,
+         "remaining_count": 9, "unread_count": 2}
+        """)
+        MockURLProtocol.setHandler { _ in (200, body) }
+
+        let store = ServerAlertsStore(client: APIClient(configuration: mockConfiguration(), auth: nil))
+        _ = try await store.load()
+        XCTAssertEqual(store.remainingCount, 9)
+        store.applyCleared(ids: ["n1"], clearedAll: false, remaining: 8)
+
+        XCTAssertEqual(store.notifications.map(\.id), ["n2"])
+        XCTAssertEqual(store.remainingCount, 8)
+    }
+
+    /// Everything went, and the payload still named no count. This is the one
+    /// case that reaches zero on its own arithmetic rather than on a number
+    /// the server sent.
+    @MainActor
+    func testAClearAllElsewhereWithNoCountStillEmptiesTheBadge() async throws {
+        let body = envelope("""
+        {"results": [
+           {"id": "n1", "category": "order_updates", "title": "Shipped", "body": "On its way",
+            "route": "order/o1", "read_at": null, "cleared_at": null,
+            "created_at": "2026-09-08T09:00:00Z"}
+         ],
+         "page": 1, "page_size": 50, "total": 1,
+         "remaining_count": 6, "unread_count": 1}
+        """)
+        MockURLProtocol.setHandler { _ in (200, body) }
+
+        let store = ServerAlertsStore(client: APIClient(configuration: mockConfiguration(), auth: nil))
+        _ = try await store.load()
+        store.applyCleared(ids: [], clearedAll: true, remaining: nil)
+
         XCTAssertTrue(store.notifications.isEmpty)
         XCTAssertEqual(store.remainingCount, 0)
     }
@@ -237,6 +328,105 @@ final class LastPassClientTests: XCTestCase {
         XCTAssertNil(seen.bodyValue(forKey: "new_thread"))
         XCTAssertTrue(thread.resolved)
         XCTAssertFalse(thread.resumable)
+    }
+
+    /// A guest token proves one conversation, so a reply carries the token of
+    /// the conversation it is written in — not the newest one the device
+    /// holds. Sending the newest is how a guest who used New chat lost the
+    /// ability to answer any of their earlier threads: the server cannot see
+    /// that the named thread is theirs and refuses it as somebody else's.
+    ///
+    /// The device here has two tokens and has never opened the list, which is
+    /// what a link straight to an older conversation looks like.
+    @MainActor
+    func testAReplyCarriesTheTokenOfTheConversationItIsWrittenIn() async throws {
+        let seen = SeenCall()
+        MockURLProtocol.setHandler { request in
+            seen.record(request)
+            guard request.httpMethod == "POST" else {
+                return (200, envelope("""
+                {"results": [
+                   {"id": "c2", "status": "open", "title": "September 8, 2026",
+                    "resolved": false, "resumable": true, "origin": "customer",
+                    "created_at": "2026-09-08T09:00:00Z", "last_message_at": "2026-09-08T10:00:00Z",
+                    "snippet": "Is the bracelet original?", "assigned_contact": null,
+                    "guest_token": "token-two"},
+                   {"id": "c1", "status": "open", "title": "March 2, 2026",
+                    "resolved": false, "resumable": true, "origin": "customer",
+                    "created_at": "2026-03-02T09:00:00Z", "last_message_at": "2026-03-02T10:00:00Z",
+                    "snippet": "Where is my order?", "assigned_contact": null,
+                    "guest_token": "token-one"}
+                 ]}
+                """))
+            }
+            let named = (seen.bodyValue(forKey: "thread_id") as? String) ?? "c2"
+            return (201, envelope("""
+            {"thread": {"id": "\(named)", "status": "open", "title": "March 2, 2026",
+                        "resolved": false, "resumable": true,
+                        "created_at": "2026-03-02T09:00:00Z", "last_message_at": "2026-03-02T10:00:00Z",
+                        "messages": [], "assigned_contact": null},
+             "guest_token": null}
+            """))
+        }
+
+        let defaults = scratchDefaults()
+        defaults.set(["token-one", "token-two"], forKey: "calibre.support.guestTokens")
+        let store = SupportStore(client: APIClient(configuration: mockConfiguration(), auth: nil), defaults: defaults)
+
+        _ = try await store.send("one more thing", authenticated: false, threadID: "c1")
+        XCTAssertEqual(seen.bodyValue(forKey: "thread_id") as? String, "c1")
+        XCTAssertEqual(seen.bodyValue(forKey: "token") as? String, "token-one")
+
+        // Nothing named is a new conversation, which is what the newest token
+        // belongs to — so the lookup must not simply prefer the oldest.
+        _ = try await store.send("and another", authenticated: false)
+        XCTAssertNil(seen.bodyValue(forKey: "thread_id"))
+        XCTAssertEqual(seen.bodyValue(forKey: "token") as? String, "token-two")
+    }
+
+    /// An attachment is staged against whichever conversation the presented
+    /// token proves, so it travels with the same token the message will.
+    @MainActor
+    func testAnAttachmentIsStagedAgainstTheConversationItIsFor() async throws {
+        let seen = SeenCall()
+        MockURLProtocol.setHandler { request in
+            seen.record(request)
+            guard request.httpMethod == "POST" else {
+                return (200, envelope("""
+                {"results": [
+                   {"id": "c2", "status": "open", "title": "September 8, 2026",
+                    "resolved": false, "resumable": true, "origin": "customer",
+                    "created_at": "2026-09-08T09:00:00Z", "last_message_at": "2026-09-08T10:00:00Z",
+                    "snippet": "Is the bracelet original?", "assigned_contact": null,
+                    "guest_token": "token-two"},
+                   {"id": "c1", "status": "open", "title": "March 2, 2026",
+                    "resolved": false, "resumable": true, "origin": "customer",
+                    "created_at": "2026-03-02T09:00:00Z", "last_message_at": "2026-03-02T10:00:00Z",
+                    "snippet": "Where is my order?", "assigned_contact": null,
+                    "guest_token": "token-one"}
+                 ]}
+                """))
+            }
+            return (201, envelope("""
+            {"id": "a1", "filename": "receipt.pdf", "content_type": "application/pdf",
+             "size_bytes": 12, "url": null}
+            """))
+        }
+
+        let defaults = scratchDefaults()
+        defaults.set(["token-one", "token-two"], forKey: "calibre.support.guestTokens")
+        let store = SupportStore(client: APIClient(configuration: mockConfiguration(), auth: nil), defaults: defaults)
+
+        let attachment = try await store.uploadAttachment(
+            filename: "receipt.pdf",
+            contentType: "application/pdf",
+            data: Data("a receipt".utf8),
+            authenticated: false,
+            threadID: "c1"
+        )
+
+        XCTAssertEqual(attachment.id, "a1")
+        XCTAssertEqual(seen.multipartField(named: "token"), "token-one")
     }
 
     /// The 24-hour resume window is the server's, in one place. The client
@@ -450,6 +640,7 @@ private final class SeenCall: @unchecked Sendable {
     private var _method: String?
     private var _url: URL?
     private var _body: [String: Any] = [:]
+    private var _rawBody: Data?
     private var _count = 0
 
     var method: String? { lock.withLock { _method } }
@@ -463,12 +654,27 @@ private final class SeenCall: @unchecked Sendable {
             _method = request.httpMethod
             _url = request.url
             _count += 1
+            if let body { _rawBody = body }
             if let parsed { _body = parsed }
         }
     }
 
     func bodyValue(forKey key: String) -> Any? {
         lock.withLock { _body[key] }
+    }
+
+    /// One plain field out of a multipart body, which is not JSON and so is
+    /// invisible to `bodyValue`. Read out of the raw bytes rather than by
+    /// re-encoding a form, because what is being checked is what actually went
+    /// on the wire.
+    func multipartField(named name: String) -> String? {
+        guard let raw = lock.withLock({ _rawBody }),
+              let text = String(data: raw, encoding: .utf8) else { return nil }
+        let marker = "name=\"\(name)\"\r\n\r\n"
+        guard let start = text.range(of: marker) else { return nil }
+        let rest = text[start.upperBound...]
+        guard let end = rest.range(of: "\r\n--") else { return nil }
+        return String(rest[..<end.lowerBound])
     }
 
     /// Every value of one repeated query parameter, in the order it was sent.

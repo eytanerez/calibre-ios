@@ -16,7 +16,14 @@ struct CalibreApp: App {
         // that makes no network call. `Observability.start()` is what starts
         // `Analytics` (it owns the PostHog seam) — see Observability.swift.
         // Must precede any screen that could emit.
+        #if DEBUG
+        if !ProcessInfo.processInfo.arguments.contains("-photoPickerSmokeTest"),
+           !ProcessInfo.processInfo.arguments.contains("-pageSwipeSmokeTest") {
+            Observability.start()
+        }
+        #else
         Observability.start()
+        #endif
 
         // Keep original image bytes in an app-owned disk cache so the same
         // watch is not downloaded again for card, row, and gallery sizes.
@@ -50,7 +57,17 @@ struct CalibreApp: App {
 
     var body: some Scene {
         WindowGroup {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-pageSwipeSmokeTest") {
+                ConsumerPageSwipeSmokeScreen()
+            } else if ProcessInfo.processInfo.arguments.contains("-photoPickerSmokeTest") {
+                ListingPhotoPickerSmokeScreen()
+            } else {
+                RootView()
+            }
+            #else
             RootView()
+            #endif
         }
     }
 }
@@ -160,6 +177,10 @@ struct RootView: View {
         // One window-level recogniser covers every screen and sheet: tapping
         // off a field closes the keyboard and drops focus.
         .dismissesKeyboardOnBackgroundTap()
+        // The five moments play over everything, from the root, because a film
+        // outlives the navigation it introduces and two of them move the app's
+        // own screen. See CalibreMoments.
+        .calibreMomentHost()
         // Applied once at the root — sheets and every tab inherit it via the
         // environment, same as the rest of SwiftUI's environment propagation.
         .preferredColorScheme(appearancePreference.colorScheme)
@@ -193,6 +214,7 @@ struct RootView: View {
         // which is what makes `initial: true` safe.
         .onChange(of: services.auth.user?.id, initial: true) { _, userID in
             Observability.identify(userID: userID)
+            services.push.accountDidChange(to: userID)
         }
         .onOpenURL { url in
             // Stripe gets first refusal. Redirect-based methods (Cash App Pay,
@@ -208,6 +230,9 @@ struct RootView: View {
         // locked screen claiming somebody is here.
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
+            if services.auth.isAuthenticated {
+                services.push.refreshRegistration()
+            }
             await services.presence.beatWhileForeground()
         }
         .onAppear {
@@ -236,8 +261,6 @@ struct RootView: View {
                 Observability.log(.warning, "session restore incomplete")
             }
             if services.auth.isAuthenticated {
-                services.push.refreshRegistration()
-                await services.push.requestAuthorizationIfNeeded()
                 // A restored session skips the intro (see `phase`), but until
                 // now it skipped it *without remembering*, so the flag stayed
                 // false underneath a member who was using the app. Signing out
@@ -281,16 +304,7 @@ struct RootView: View {
             }
             #endif
         }
-        // The launch task above only fires once, so a member who signs in
-        // during a session would not be asked until the next cold start.
-        // Signing in is the moment the prompt makes sense, which is what it
-        // was missing: the only caller of requestAuthorization was a toggle
-        // buried in Profile, so most members were never asked at all and the
-        // backend held no token to send to.
-        .onChange(of: services.auth.isAuthenticated) { _, isAuthenticated in
-            guard isAuthenticated else { return }
-            Task { await services.push.requestAuthorizationIfNeeded() }
-        }
+
     }
 
     /// Opacity plus a 0.98 scale breath; plain crossfade under Reduce Motion.
@@ -337,6 +351,11 @@ final class AppServices {
     let content: ContentStore
     let config: ConfigStore
     let vault: VaultStore
+    /// The bytes behind Calibre's own private objects — today, the owner's
+    /// photographs of the watches in their Vault. Those are served behind the
+    /// member's session rather than as public files, so a plain image loader
+    /// gets a 401 and draws nothing; this is what holds the credential.
+    let privateMedia: PrivateMediaLoader
     let serverAlerts: ServerAlertsStore
     let signals: LocalSignals
     let alerts = AlertsInbox()
@@ -368,9 +387,10 @@ final class AppServices {
         let config = ConfigStore(client: client)
         self.config = config
         self.vault = VaultStore(client: client)
+        self.privateMedia = PrivateMediaLoader(configuration: configuration, auth: auth)
         self.serverAlerts = ServerAlertsStore(client: client)
         self.signals = LocalSignals()
-        self.push = PushCoordinator(account: account)
+        self.push = PushCoordinator(account: account, auth: auth)
         self.presence = PresenceHeartbeat(client: client)
 
         // Rates, minimums and windows the app may quote before the object
@@ -392,11 +412,17 @@ final class AppServices {
         // account that just ended. Its guest token is deliberately *not*
         // dropped here — see `SupportStore.reset()`.
         let support = self.support
+        // The pictures go with them. A photograph of somebody's own watch,
+        // fetched with their credential, must not still be in memory to be
+        // drawn under whoever signs in on this device next.
+        let privateMedia = self.privateMedia
         auth.onSessionCleared = { [weak commerce, weak vault, weak serverAlerts, weak support] in
             commerce?.reset()
             vault?.reset()
             serverAlerts?.reset()
             support?.reset()
+            PrivateImageCache.shared.clear()
+            Task { await privateMedia.clear() }
         }
 
         // A session that ends without the member asking has to say so.

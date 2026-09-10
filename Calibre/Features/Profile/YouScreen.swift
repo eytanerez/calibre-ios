@@ -37,12 +37,12 @@ struct YouScreen: View {
                             rowLabel(icon: "arrow.left.arrow.right", label: "Offers")
                         }.buttonStyle(PressableStyle())
                         divider
-                        NavigationLink { OrdersListScreen() } label: {
+                        NavigationLink { OrdersListScreen().routeStackNode() } label: {
                             rowLabel(icon: "shippingbox", label: "Orders")
                         }.buttonStyle(PressableStyle())
                         divider
-                        NavigationLink { AlertsInboxScreen() } label: {
-                            rowLabel(icon: "bell", label: "Alerts")
+                        NavigationLink { AlertsInboxScreen().routeStackNode() } label: {
+                            rowLabel(icon: "bell", label: "Alerts", count: services.serverAlerts.remainingCount)
                         }.buttonStyle(PressableStyle())
                     }
 
@@ -53,7 +53,7 @@ struct YouScreen: View {
                             rowLabel(icon: "heart", label: "Saved")
                         }.buttonStyle(PressableStyle())
                         divider
-                        NavigationLink { RequestsScreen() } label: {
+                        NavigationLink { RequestsScreen().routeStackNode() } label: {
                             rowLabel(icon: "sparkle.magnifyingglass", label: "Requests")
                         }.buttonStyle(PressableStyle())
                         divider
@@ -236,7 +236,7 @@ struct YouScreen: View {
         .buttonStyle(PressableStyle())
     }
 
-    private func rowLabel(icon: String, label: String, tint: Color? = nil) -> some View {
+    private func rowLabel(icon: String, label: String, tint: Color? = nil, count: Int? = nil) -> some View {
         HStack(spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
@@ -245,6 +245,13 @@ struct YouScreen: View {
             Text(label)
                 .font(CalibreType.bodyMedium)
                 .foregroundStyle(tint ?? Color.calibre.foreground)
+            if let count {
+                Text(count.formatted())
+                    .font(CalibreType.label)
+                    .monospacedDigit()
+                    .foregroundStyle(Color.calibre.primary)
+                    .accessibilityLabel("\(count) notifications")
+            }
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .medium))
@@ -282,7 +289,9 @@ struct YouScreen: View {
 
     private func signOut() async {
         // Stop APNs delivery to this device before dropping the session.
-        services.push.unregisterOnSignOut()
+        let signingOutUserID = session.user?.id
+        await services.push.unregisterOnSignOut()
+        guard session.user?.id == signingOutUserID else { return }
         // The one moment a device genuinely changes hands, so the one place
         // the guest support token is dropped. Signing *in* keeps it now — the
         // server merges a guest thread into the account rather than the

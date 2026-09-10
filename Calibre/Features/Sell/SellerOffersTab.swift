@@ -125,8 +125,7 @@ struct SellerOffersTab: View {
         EmptyState(
             icon: "arrow.left.arrow.right",
             title: "No one has made an offer yet",
-            message: "When a buyer offers on one of your watches it lands here, with their deposit already held and the clock running.",
-            aside: "The first number is rarely the last one."
+            message: "When a buyer offers on one of your watches it lands here, with their deposit already held and the clock running."
         )
     }
 }

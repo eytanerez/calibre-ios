@@ -62,6 +62,7 @@ struct SupportThreadsScreen: View {
         }
         .navigationDestination(item: $openThread) { entry in
             SupportChatScreen(entry: entry)
+                .routeStackNode()
         }
         .task { await load() }
     }

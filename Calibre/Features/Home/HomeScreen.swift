@@ -22,6 +22,7 @@ import SwiftUI
 struct HomeScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(\.routePush) private var routePush
     @Environment(\.dynamicTypeSize) private var typeSize
 
     @State private var model: HomeModel?
@@ -53,6 +54,10 @@ struct HomeScreen: View {
             LazyVStack(alignment: .leading, spacing: Space.xxl) {
                 VStack(alignment: .leading, spacing: Space.l) {
                     headerRow
+                    Text("Less fees, more trust, better market.")
+                        .font(CalibreType.bodyMedium)
+                        .foregroundStyle(Color.calibre.secondaryForeground)
+                        .fixedSize(horizontal: false, vertical: true)
                     searchButton
                 }
                 .padding(.horizontal, Space.margin)
@@ -79,6 +84,7 @@ struct HomeScreen: View {
         }
         .navigationDestination(item: $openedBite) { route in
             BiteScreen(slug: route.slug, preloaded: route.preloaded)
+                .routeStackNode()
         }
         .environment(\.browsePush) { pushed = $0 }
         .onAppear { tutorial.startIfNeeded() }
@@ -235,7 +241,6 @@ struct HomeScreen: View {
         if model.savedSearches != nil { present.insert(.savedSearches) }
         if model.bite != nil { present.insert(.bite) }
         if model.poll != nil { present.insert(.poll) }
-        if model.collection != nil { present.insert(.collection) }
         if model.endOfFeed != nil { present.insert(.endOfFeed) }
         return present
     }
@@ -274,7 +279,7 @@ struct HomeScreen: View {
         case .savedSearches:
             if let module = model?.savedSearches { moduleView(module) }
         case .collection:
-            if let module = model?.collection { moduleView(module) }
+            EmptyView()
         case .endOfFeed:
             if let module = model?.endOfFeed { moduleView(module) }
 
@@ -349,7 +354,12 @@ struct HomeScreen: View {
         case .collection(let collection):
             FeedCollectionModule(module: module, collection: collection, onAction: open)
         case .endOfFeed(let state):
-            FeedEndModule(module: module, state: state, onAction: open) {
+            FeedEndModule(
+                module: module,
+                state: state,
+                contactName: homeContactName,
+                onAction: open
+            ) {
                 Task { await model?.load() }
             }
         case .unrecognized:
@@ -359,14 +369,22 @@ struct HomeScreen: View {
         }
     }
 
+    /// The account payload is authoritative even before a support thread has
+    /// been opened. The thread fallback keeps the name visible against an
+    /// older server that has already returned it through support.
+    private var homeContactName: String? {
+        session.user?.assignedContact?.name
+            ?? services.support.conversation?.assignedContact?.name
+    }
+
     private func open(_ target: FeedActionTarget) {
         switch target {
         case .browse(let destination):
             pushed = destination
         case .route(let route):
-            services.router.push(route)
+            routePush(route)
         case .tab(let tab):
-            services.router.selectedTab = tab
+            services.router.jump(to: tab)
         case .bite(let slug):
             openedBite = BiteRoute(slug: slug, preloaded: nil)
         }

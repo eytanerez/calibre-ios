@@ -470,6 +470,13 @@ final class CheckoutModel {
         switch method {
         case .card:
             path.append(.review)
+            // The review step has no pricing trigger of its own — it renders
+            // the total or, failing that, a retry it only draws once a
+            // `pricingProblem` exists. Arriving unpriced it would draw a
+            // skeleton and nothing else, so the price is asked for here. A
+            // no-op when the method step's own attempt already succeeded, and
+            // it moves no money either way.
+            await prepareCardIntent()
         case .wire:
             await startWire()
         }
@@ -680,7 +687,7 @@ final class CheckoutModel {
     func continueWithoutReservedWatch() async {
         guard let reservedWatch, canContinueWithoutReservedWatch else { return }
 
-        // Which payment the buyer had actually STARTED, read before
+        // Whether the buyer had actually OPENED a wire, read before
         // `invalidatePricing()` throws it away. This is not the same question
         // as `method`, and the difference became dangerous the day wire became
         // the default: `method` is merely what is selected, so a buyer who has
@@ -689,7 +696,6 @@ final class CheckoutModel {
         // authorization on a card for a step they never asked for. Recovering
         // from a watch going out of stock must not move money.
         let wasPayingByWire = wireCheckout != nil || wireHold != nil
-        let wasPayingByCard = cardIntent != nil
 
         listingIDs.removeAll { $0 == reservedWatch.listingID }
         droppedWatch = reservedWatch
@@ -698,13 +704,19 @@ final class CheckoutModel {
         pricingError = nil
         pricingProblem = nil
 
-        // Re-establish only what was already in flight. A buyer still on an
-        // earlier step keeps their place and prices again the ordinary way when
-        // they reach payment; a card intent costs nothing to remake, and a wire
-        // checkout is only re-opened for somebody who had already opened one.
+        // The button says the purchase will be priced again, so it always is.
+        // This is only reachable from a pricing failure, which means the buyer
+        // is already standing on the method step or past it and there is no
+        // "earlier step" to fall back to: leaving without a quote strands them
+        // on a skeleton with no total and no retry.
+        //
+        // Wire resumes wire — `startWire` re-shows a live authorization rather
+        // than minting a second one. Everybody else prices the card path,
+        // which is exactly what the method step does on its own and moves no
+        // money.
         if wasPayingByWire {
             await startWire()
-        } else if wasPayingByCard {
+        } else {
             await prepareCardIntent()
         }
     }

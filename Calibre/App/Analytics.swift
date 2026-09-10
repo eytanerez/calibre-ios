@@ -151,6 +151,10 @@ enum Analytics {
         configuration.captureApplicationLifecycleEvents = false
         configuration.captureElementInteractions = false
         configuration.sessionReplay = false
+        // Calibre owns APNs registration and push-open tracking. PostHog's
+        // automatic delegate swizzle can replace SwiftUI's forwarding path.
+        configuration.capturePushNotificationSubscriptions = false
+        configuration.capturePushNotificationOpened = false
 
         PostHogSDK.shared.setup(configuration)
 

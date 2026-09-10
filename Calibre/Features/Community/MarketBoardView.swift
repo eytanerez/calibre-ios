@@ -276,7 +276,7 @@ struct MarketBoardView: View {
                 .padding(.vertical, Space.xxl)
             }
 
-            Text("Reference-level pricing from Calibre's own listings and completed sales \u{2014} not offers to buy or sell. Individual listings set their own asking prices.")
+            Text("Reference-level estimates drawn from what watches actually sell for on Calibre.")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .padding(.top, Space.s)

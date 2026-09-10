@@ -295,11 +295,9 @@ final class WizardModel {
     // Photos
     var slots: [ListingImageCategory: WizardPhotoSlot] = [:]
     var extraPhotos: [WizardPhotoSlot] = []
-    /// The listing's photos in the order the server publishes them. A mark is
-    /// keyed on a photo's position in this array and on nothing else.
+    /// The listing's photos in the order the server publishes them. Kept so a
+    /// required slot can resolve its server image id before removal.
     var orderedPhotos: [ListingImage] = []
-    /// The marks currently on the listing, as the server last stated them.
-    var annotations: [ListingAnnotation] = []
 
     // Payout
     private(set) var estimate: ShippingEstimate?
@@ -634,8 +632,7 @@ final class WizardModel {
     func loadServerImages() async {
         guard let listing else { return }
         guard let images = try? await seller.images(listingID: listing.id) else { return }
-        // The same ordering the listing payload publishes, which is what
-        // makes a photo's position here the `image_index` a mark is keyed on.
+        // The same ordering the listing payload publishes.
         orderedPhotos = images
         for image in images {
             guard let raw = image.category, let category = ListingImageCategory(rawValue: raw) else { continue }
@@ -643,48 +640,6 @@ final class WizardModel {
             slot.serverImageID = image.id
             slot.remoteURL = image.url.url
             slots[category] = slot
-        }
-    }
-
-    // MARK: Marks on the photos
-
-    /// Where a photo sits in the listing, which is the only thing a mark is
-    /// keyed on. Nil while the slot's photo is still uploading — there is no
-    /// position for a picture the listing does not have yet.
-    func photoIndex(of category: ListingImageCategory) -> Int? {
-        orderedPhotos.firstIndex { $0.category == category.rawValue }
-    }
-
-    func annotation(atIndex index: Int) -> ListingAnnotation? {
-        annotations.first { $0.imageIndex == index }
-    }
-
-    /// The mark on this slot's photo, if the seller drew one.
-    func annotation(of category: ListingImageCategory) -> ListingAnnotation? {
-        photoIndex(of: category).flatMap { annotation(atIndex: $0) }
-    }
-
-    var canDrawAnotherMark: Bool {
-        annotations.count < ListingAnnotation.maxPerListing
-    }
-
-    /// Records what the server stored, so the wizard's copy is the listing's
-    /// copy rather than a hopeful local one.
-    func recordAnnotation(_ annotation: ListingAnnotation?, atIndex index: Int) {
-        annotations.removeAll { $0.imageIndex == index }
-        if let annotation { annotations.append(annotation) }
-        annotations.sort { $0.imageIndex < $1.imageIndex }
-    }
-
-    /// Re-reads the photo order and the marks currently on the listing.
-    ///
-    /// The marks come off the listing payload the wizard already holds — they
-    /// travel on it, so asking for them again would introduce a second source
-    /// that can disagree with the photos being drawn on.
-    func refreshPhotoBoard() async {
-        await loadServerImages()
-        if let published = listing?.annotations {
-            annotations = published
         }
     }
 
@@ -928,6 +883,37 @@ final class WizardModel {
             fileURL: url
         )
         slots[category]?.jobID = jobID
+    }
+
+    /// Removes a settled or failed photo from a required slot. A completed
+    /// upload is deleted from the listing first; a failed local attempt has no
+    /// server row and can be cleared immediately. Uploading photos keep their
+    /// slot until they settle so a late network response cannot recreate a
+    /// photo the seller just removed.
+    func removePhoto(category: ListingImageCategory) async {
+        guard let listing, let slot = slots[category] else { return }
+        submitError = nil
+
+        do {
+            var imageID = slot.serverImageID
+            if imageID == nil, phase(for: category) == .done {
+                let images = try await seller.images(listingID: listing.id)
+                imageID = images.last { $0.category == category.rawValue }?.id
+            }
+            if let imageID {
+                try await seller.deleteImage(listingID: listing.id, imageID: imageID)
+            }
+
+            if let localURL = slot.localURL {
+                try? FileManager.default.removeItem(at: localURL)
+            }
+            slots[category] = nil
+            orderedPhotos.removeAll { $0.id == imageID || $0.category == category.rawValue }
+            persistSnapshot()
+        } catch {
+            submitError = (error as? APIError)?.errorDescription
+                ?? "That photo couldn't be removed. Please try again."
+        }
     }
 
     func phase(for category: ListingImageCategory) -> PhotoSlotPhase {

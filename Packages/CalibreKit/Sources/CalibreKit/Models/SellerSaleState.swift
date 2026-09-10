@@ -145,7 +145,7 @@ public extension Order {
     private var sellerCalibreLine: String {
         switch status {
         case .purchased: "The sale is being prepared."
-        case .toAuth: "On its way to the authentication centre."
+        case .toAuth: "On its way to the authentication center."
         case .authPass: "Authenticated. It goes out to the buyer next."
         case .authFail: "It didn't pass authentication. Someone here is in touch."
         case .toBuyer: "On its way to the buyer."

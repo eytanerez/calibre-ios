@@ -28,6 +28,7 @@ struct SupportChatScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(AppRouter.self) private var router
+    @Environment(\.routePush) private var routePush
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var draft: String
@@ -92,8 +93,8 @@ struct SupportChatScreen: View {
         VStack(spacing: 0) {
             header
             messages
-            composer
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .calibrePageBackground()
         .navigationTitle(conversation?.title() ?? "New conversation")
         .navigationBarTitleDisplayMode(.inline)
@@ -182,7 +183,16 @@ struct SupportChatScreen: View {
                     LazyVStack(spacing: Space.m) {
                         ForEach(conversation.messages) { message in
                             SupportBubble(message: message, contactName: contactName) { url in
-                                router.handle(url: url)
+                                // A chip in a conversation is not a deep link
+                                // arriving from outside the app: the reader is
+                                // already standing here, so the record opens on
+                                // top of the thread rather than replacing the
+                                // Me tab's stack with it.
+                                if case .route(let route) = router.target(for: url) {
+                                    routePush(route)
+                                } else {
+                                    router.handle(url: url)
+                                }
                             }
                             .id(message.id)
                         }
@@ -247,7 +257,7 @@ struct SupportChatScreen: View {
             HStack(alignment: .bottom, spacing: Space.s) {
                 attachButton
                 if canLinkRecords { linkRecordButton }
-                CalibreTextField("Write a message", text: $draft, kind: .sentence)
+                CalibreMessageField(text: $draft)
                 Button {
                     Task { await send() }
                 } label: {
@@ -282,7 +292,7 @@ struct SupportChatScreen: View {
         // already lifts this bar, and a container inset on top of it counts
         // the keyboard twice — a documented trap, and the hole it leaves is a
         // whole keyboard tall.
-        .padding(Space.margin)
+        .padding(Space.m)
         .calibreComposerSurface()
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
@@ -488,7 +498,12 @@ struct SupportChatScreen: View {
                 filename: filename,
                 contentType: contentType,
                 data: data,
-                authenticated: session.isAuthenticated
+                authenticated: session.isAuthenticated,
+                // The same conversation the message will name. A guest's file
+                // is staged against whichever thread their token proves, so
+                // an upload that does not say which conversation it is for
+                // lands on the wrong one and the send cannot claim it.
+                threadID: conversation?.id
             )
             attachments.append(attachment)
             Haptics.shared.play(.selection)

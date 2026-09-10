@@ -7,6 +7,7 @@ import SwiftUI
 struct OrdersListScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(\.routePush) private var routePush
 
     @State private var orders: [Order] = []
     @State private var phase: LoadPhase = .idle
@@ -164,7 +165,7 @@ struct OrdersListScreen: View {
 
     private func orderButton(_ order: Order) -> some View {
         Button {
-            services.router.push(.order(order.id))
+            routePush(.order(order.id))
         } label: {
             OrderRow(order: order)
         }
@@ -365,7 +366,7 @@ extension Order {
         switch status {
         case .awaitingWire: "Complete your wire transfer to secure this watch."
         case .purchased: "Paid. The seller is preparing to ship it to authentication."
-        case .toAuth: "On its way to our authentication centre."
+        case .toAuth: "On its way to our authentication center."
         case .authPass: "Authenticated by our watchmakers. Shipping to you next."
         case .authFail: "We found an issue during authentication. Our team will follow up by email."
         case .toBuyer: "Shipped to you and on the way."

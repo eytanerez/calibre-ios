@@ -71,6 +71,40 @@ public final class ServerAlertsStore {
         remainingCount = max(remainingCount - 1, 0)
     }
 
+    /// Applies a clear that happened on one of the member's *other* devices,
+    /// announced by the silent `notifications_cleared` push.
+    ///
+    /// The server has already done the work; this is the local record catching
+    /// up so the inbox on this phone does not go on offering a row that is
+    /// gone.
+    ///
+    /// `remaining` is the server's own count and replaces ours where it is
+    /// there, rather than being derived from what this device happened to be
+    /// holding — it may not have been holding all of it.
+    ///
+    /// Nil is the payload saying nothing about the count, which is a different
+    /// sentence from saying zero. Zero would empty the bell on a phone that is
+    /// holding a full inbox because two rows were cleared elsewhere. So the
+    /// count moves by what was actually taken out here, the way a clear made
+    /// on this phone moves it; a clear-all is the one case that reaches zero
+    /// on its own arithmetic.
+    public func applyCleared(ids: [String], clearedAll: Bool, remaining: Int?) {
+        let held = notifications.count
+        if clearedAll {
+            notifications = []
+        } else {
+            let cleared = Set(ids)
+            notifications.removeAll { cleared.contains($0.id) }
+        }
+        if let remaining {
+            remainingCount = max(remaining, 0)
+        } else if clearedAll {
+            remainingCount = 0
+        } else {
+            remainingCount = max(remainingCount - (held - notifications.count), 0)
+        }
+    }
+
     /// Reports that the *push* for this notification was tapped.
     ///
     /// Deliberately not `markRead`: read means the row was seen in the inbox,

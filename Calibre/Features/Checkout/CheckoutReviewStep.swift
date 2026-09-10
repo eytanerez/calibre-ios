@@ -60,8 +60,8 @@ struct CheckoutReviewStep: View {
                 CalloutBand(
                     icon: "checkmark.shield",
                     message: model.isMultiItem
-                        ? "Every watch is inspected at the authentication centre before it ships."
-                        : "Your watch is inspected at the authentication centre before it ships."
+                        ? "Every watch is inspected at the authentication center before it ships."
+                        : "Your watch is inspected at the authentication center before it ships."
                 )
 
                 if let problem = model.paymentProblem {
@@ -467,9 +467,9 @@ struct CheckoutReviewStep: View {
     /// sentence loses its number rather than gaining a guess.
     private var offerForfeitureText: String {
         if let hold = model.offerHoldText {
-            return "This is payment on an accepted offer. If it isn't completed in time, the \(hold) hold is forfeited to the seller, less the cost of processing it."
+            return "This is payment on an accepted offer. If it isn't completed in time, the \(hold) hold is forfeited and split between the seller and Calibre."
         }
-        return "This is payment on an accepted offer. If it isn't completed in time, your hold is forfeited to the seller, less the cost of processing it."
+        return "This is payment on an accepted offer. If it isn't completed in time, your hold is forfeited and split between the seller and Calibre."
     }
 
     private var discountStatesText: String? {

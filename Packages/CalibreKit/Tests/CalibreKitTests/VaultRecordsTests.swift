@@ -8,7 +8,8 @@ import XCTest
 /// Both are places where a wrong answer is silent. An estimate state folded
 /// into a neighbouring one puts a sentence about evidence under somebody's
 /// watch that Calibre never said; a PATCH that writes an absent key where it
-/// meant a null leaves a photograph on a row the owner just removed.
+/// meant a null leaves a note on a row the owner just cleared, and one that
+/// names a key it means nothing by wipes a column nobody asked it to touch.
 final class VaultRecordsTests: XCTestCase {
 
     // MARK: - What Calibre will say about a figure
@@ -170,25 +171,6 @@ final class VaultRecordsTests: XCTestCase {
         XCTAssertNil(try watch(estimate: estimate("stale")).estimate?.value)
     }
 
-    // MARK: - The owner's photograph, as a link
-
-    func testOnlyAnHttpsLinkIsUsable() {
-        XCTAssertEqual(
-            VaultPhotoLink.usable("  https://photos.example/mine.jpg  ")?.absoluteString,
-            "https://photos.example/mine.jpg",
-            "the surrounding whitespace of a pasted link is not part of it"
-        )
-        // A page served over https will not load an http image at all, so
-        // accepting one would store a value that renders as nothing.
-        XCTAssertNil(VaultPhotoLink.usable("http://photos.example/mine.jpg"))
-        XCTAssertNil(VaultPhotoLink.usable("javascript:alert(1)"))
-        XCTAssertNil(VaultPhotoLink.usable("data:image/png;base64,AAAA"))
-        XCTAssertNil(VaultPhotoLink.usable("mine.jpg"))
-        XCTAssertNil(VaultPhotoLink.usable("https://"))
-        XCTAssertNil(VaultPhotoLink.usable(""))
-        XCTAssertNil(VaultPhotoLink.usable("   "))
-    }
-
     // MARK: - What an edit puts on the wire
 
     @MainActor
@@ -200,16 +182,39 @@ final class VaultRecordsTests: XCTestCase {
         }
         let vault = VaultStore(client: APIClient(configuration: mockConfiguration(), auth: nil))
 
-        _ = try await vault.update(id: "v1", photoUrl: .clear)
+        _ = try await vault.update(id: "v1", notes: .clear)
 
         XCTAssertEqual(seen.method, "PATCH")
         XCTAssertEqual(seen.path, "/vault/v1")
         // The server reads an absent key as "leave it alone", so a removal has
         // to arrive as a null that was actually written.
-        XCTAssertTrue(seen.body.contains("photo_url"))
-        XCTAssertTrue(seen.json["photo_url"] is NSNull)
-        XCTAssertFalse(seen.json.keys.contains("notes"), "a field nobody touched is not sent")
-        XCTAssertFalse(seen.json.keys.contains("nickname"))
+        XCTAssertTrue(seen.body.contains("notes"))
+        XCTAssertTrue(seen.json["notes"] is NSNull)
+        XCTAssertFalse(seen.json.keys.contains("nickname"), "a field nobody touched is not sent")
+    }
+
+    /// The one key an edit from this app must never carry.
+    ///
+    /// `photo_url` is a live column the server still accepts a write to, and a
+    /// watch that arrived from a Calibre order keeps the seller's photograph
+    /// in it. The link form is gone, so nothing here means anything by that
+    /// column — and a PATCH that named it while meaning nothing would wipe the
+    /// seller's picture, leaving the card with no cover at all the moment the
+    /// owner deletes their own uploads. It cannot be sent by accident because
+    /// there is no argument for it; this is what says so out loud.
+    @MainActor
+    func testAnEditNeverNamesThePhotoLinkColumn() async throws {
+        let seen = SeenVaultRequest()
+        MockURLProtocol.setHandler { request in
+            seen.record(request)
+            return (200, Self.updatedRow)
+        }
+        let vault = VaultStore(client: APIClient(configuration: mockConfiguration(), auth: nil))
+
+        _ = try await vault.update(id: "v1", notes: .clear, nickname: .clear)
+
+        XCTAssertFalse(seen.body.contains("photo_url"))
+        XCTAssertFalse(seen.json.keys.contains("photo_url"))
     }
 
     @MainActor
@@ -238,12 +243,12 @@ final class VaultRecordsTests: XCTestCase {
         MockURLProtocol.setHandler { _ in (200, Self.updatedRow) }
         let vault = VaultStore(client: APIClient(configuration: mockConfiguration(), auth: nil))
         try await vault.load()
-        XCTAssertNil(vault.watches.first?.photoUrl)
+        XCTAssertNil(vault.watches.first?.nickname)
 
-        _ = try await vault.update(id: "v1", photoUrl: .set("https://photos.example/mine.jpg"))
+        _ = try await vault.update(id: "v1", nickname: .set("The daily"))
 
         XCTAssertEqual(vault.watches.count, 1, "an edit is not an insert")
-        XCTAssertEqual(vault.watches.first?.photoUrl, "https://photos.example/mine.jpg")
+        XCTAssertEqual(vault.watches.first?.nickname, "The daily")
     }
 
     /// The list handler answers both calls in the test above: the first is a
@@ -262,7 +267,7 @@ final class VaultRecordsTests: XCTestCase {
       "id": "v1", "source": "manual", "authenticated": false,
       "order_id": null, "listing_id": null, "passport_code": null,
       "brand": "Tudor", "model": "Black Bay", "reference": "79030N",
-      "production_year": null, "nickname": null, "notes": null,
+      "production_year": null, "nickname": "The daily", "notes": null,
       "photo_url": "https://photos.example/mine.jpg",
       "acquired_price": null, "acquired_date": null,
       "estimated_value": null, "estimated_at": null, "created_at": null}}

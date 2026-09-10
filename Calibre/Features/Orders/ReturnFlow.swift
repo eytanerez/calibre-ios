@@ -678,7 +678,7 @@ private struct ReturnQuoteView: View {
                 )
                 ReturnFactRow(
                     icon: "checkmark.shield",
-                    text: "The watch goes back to our authentication centre and is re-authenticated — the same watch, in the same condition, still genuine — before anything is refunded."
+                    text: "The watch goes back to our authentication center and is re-authenticated — the same watch, in the same condition, still genuine — before anything is refunded."
                 )
             }
 

@@ -99,7 +99,7 @@ struct ShippingDetailsFlow: View {
                 .font(CalibreType.body)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("It ships to our authentication centre, insured for the full sale price, signature required.")
+            Text("It ships to our authentication center, insured for the full sale price, signature required.")
                 .font(CalibreType.caption)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)

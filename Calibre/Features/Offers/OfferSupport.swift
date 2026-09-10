@@ -42,7 +42,7 @@ func offerStatusPresentation(for offer: Offer, viewerIsSeller: Bool) -> OfferSta
         // seller. It was never a penalty deposit, and it was never a charge
         // the buyer chose to make.
         return viewerIsSeller
-            ? .init(text: "Hold forfeited to you", tone: .neutral)
+            ? .init(text: "Hold forfeited", tone: .neutral)
             : .init(text: "Hold forfeited", tone: .danger)
     case .unknown:
         return .init(text: "Updated", tone: .neutral)
@@ -474,7 +474,7 @@ func offerPlacementDisclosure(
     An accepted offer is a sale, with the same fees and the same return terms as any purchase, and payment \
     is due within \(offerPaymentDuePhrase(paymentDueHours)) of acceptance. If your payment fails you have \
     \(offerGracePhrase(graceHours)) to resolve it. If you do not, your \(offerHoldNoun(holdText)) is \
-    forfeited to the seller, less the cost of processing it.
+    forfeited and split between the seller and Calibre.
     """
 }
 
@@ -499,7 +499,7 @@ func offerAcceptanceDisclosure(
         purchase. The listing is reserved while \(buyerName) pays, and payment is due within \(due).
 
         If their payment fails they have \(grace) to resolve it. If they do not, their \(holdNoun) is \
-        forfeited to you, less the cost of processing it.
+        forfeited and split between you and Calibre.
         """
     }
 
@@ -507,8 +507,8 @@ func offerAcceptanceDisclosure(
     You are agreeing to buy this watch for \(amountText). An accepted offer is a sale, with the same fees \
     and the same return terms as any purchase, and payment is due within \(due).
 
-    If your payment fails you have \(grace) to resolve it. If you do not, your \(holdNoun) is forfeited to \
-    the seller, less the cost of processing it.
+    If your payment fails you have \(grace) to resolve it. If you do not, your \(holdNoun) is forfeited and \
+    split between the seller and Calibre.
     """
 }
 
@@ -552,20 +552,20 @@ func offerResolutionNotice(
     if let forfeit = offerSettledForfeit(offer) {
         var message: String
         if viewerIsSeller {
-            message = "The payment was not resolved in time, so the buyer's \(holdNoun) was forfeited to "
-                + "you, less the cost of processing it."
+            message = "The payment was not resolved in time, so the buyer's \(holdNoun) was forfeited and "
+                + "split between you and Calibre."
             if let sellerAmount = forfeit.sellerAmount {
                 let net = PriceFormatter.format(sellerAmount.value, currency: offerHoldCurrency(offer))
                 message += " You received \(net)."
             }
         } else {
-            message = "The payment was not resolved in time, so your \(holdNoun) was forfeited to the "
-                + "seller, less the cost of processing it."
+            message = "The payment was not resolved in time, so your \(holdNoun) was forfeited and split "
+                + "between the seller and Calibre."
         }
         return OfferResolutionNotice(
             emphasis: .settled,
             icon: "lock.shield",
-            title: viewerIsSeller ? "The hold was forfeited to you" : "Your hold was forfeited",
+            title: viewerIsSeller ? "The hold was forfeited" : "Your hold was forfeited",
             deadline: nil,
             amountText: holdText,
             amountCaption: "Forfeited",
@@ -583,15 +583,15 @@ func offerResolutionNotice(
     if viewerIsSeller {
         message = stillRunning
             ? "The buyer has \(grace) from the failed payment to resolve it. If they do not, their "
-                + "\(holdNoun) is forfeited to you, less the cost of processing it."
+                + "\(holdNoun) is forfeited and split between you and Calibre."
             : "The buyer had \(grace) to resolve it. If it stays unresolved, their \(holdNoun) is "
-                + "forfeited to you, less the cost of processing it."
+                + "forfeited and split between you and Calibre."
     } else {
         message = stillRunning
             ? "You have \(grace) from the failed payment to resolve it. If you do not, your \(holdNoun) "
-                + "is forfeited to the seller, less the cost of processing it."
-            : "You had \(grace) to resolve it. If it stays unresolved, your \(holdNoun) is forfeited to "
-                + "the seller, less the cost of processing it."
+                + "is forfeited and split between the seller and Calibre."
+            : "You had \(grace) to resolve it. If it stays unresolved, your \(holdNoun) is forfeited and "
+                + "split between the seller and Calibre."
     }
 
     return OfferResolutionNotice(

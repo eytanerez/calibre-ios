@@ -70,13 +70,13 @@ struct MarketplaceGuideScreen: View {
             guideRow(
                 icon: "checkmark.shield",
                 title: "Every sale is authenticated",
-                message: "The seller ships to the authentication centre first, where a third-party partner verifies the watch before it goes anywhere near the buyer."
+                message: "The seller ships to the authentication center first, where a third-party partner verifies the watch before it goes anywhere near the buyer."
             )
             divider
             guideRow(
                 icon: "shippingbox",
                 title: "It ships insured, on every leg",
-                message: "Every label requires a direct signature and is insured for the full sale price. Calibre buys the inbound label to the authentication centre once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
+                message: "Every label requires a direct signature and is insured for the full sale price. Calibre buys the inbound label to the authentication center once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
             )
         }
         .infoCard()
@@ -417,7 +417,7 @@ struct AuthenticationGuideScreen: View {
                 .font(CalibreType.title)
                 .foregroundStyle(Color.calibre.foreground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Every watch sold on Calibre travels to the authentication centre before it travels to the buyer. The inspection is carried out by a third-party partner, not by us.")
+            Text("Every watch sold on Calibre travels to the authentication center before it travels to the buyer. The inspection is carried out by a third-party partner, not by us.")
                 .font(CalibreType.body)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -436,6 +436,12 @@ struct AuthenticationGuideScreen: View {
                 icon: "clock.badge.checkmark",
                 title: "Condition",
                 message: "The listing's grading is verified part by part, and what arrived is compared with what the buyer ordered."
+            )
+            divider
+            checkRow(
+                icon: "wrench.and.screwdriver",
+                title: "1-year mechanical warranty",
+                message: "Every watch that passes authentication includes a one-year mechanical warranty in Calibre's name."
             )
             divider
             checkRow(
@@ -569,7 +575,7 @@ struct ReturnsPolicyScreen: View {
             PolicyDivider()
             PolicyRow(
                 "Calibre generates the label",
-                "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to the authentication centre and is re-authenticated before anything is refunded."
+                "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to the authentication center and is re-authenticated before anything is refunded."
             )
         }
     }

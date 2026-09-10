@@ -28,9 +28,8 @@ struct SellerStorefrontTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xxl) {
-            storefrontPreview
-
             if isVerifiedDealer {
+                storefrontPreview
                 lineSection
             }
 
@@ -82,10 +81,6 @@ struct SellerStorefrontTab: View {
             }
             .buttonStyle(.calibre(.secondary, fullWidth: true))
 
-            Text("The page a buyer lands on from search, exactly as they see it.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -107,11 +102,6 @@ struct SellerStorefrontTab: View {
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        } else if isVerifiedDealer, bio != nil {
-            Text("@\(username) hasn't written a storefront line yet.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
         } else if isVerifiedDealer, !bioFailed {
             Rectangle()
                 .frame(maxWidth: .infinity)
@@ -125,16 +115,6 @@ struct SellerStorefrontTab: View {
     @ViewBuilder
     private var lineSection: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            VStack(alignment: .leading, spacing: Space.s) {
-                Text("Say who you are, in one line")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
-                Text("It sits under your name on your storefront, beside your dealer badge. One line, no line breaks. Someone reads it before it goes up.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
             if let bio {
                 StorefrontLineEditor(state: bio) { saved in
                     self.bio = saved

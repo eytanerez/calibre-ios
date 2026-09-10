@@ -702,10 +702,9 @@ struct NotificationSettingsScreen: View {
                     toggle("Saved watches", "Price drops on watches you've saved", prefs.watchlistAlerts) {
                         NotificationPreferencesPatch(watchlistAlerts: $0)
                     }
-                    // No "Market" row: nothing sends `market_updates`, and a
-                    // switch that controls nothing is worse than no switch.
-                    // The field stays in the stored preferences so existing
-                    // rows remain valid (contracts §12.4).
+                    toggle("Listing updates", "Approval decisions and changes needed for your listings", prefs.marketUpdates) {
+                        NotificationPreferencesPatch(marketUpdates: $0)
+                    }
                     toggle("Security", "Sign-ins and account changes", prefs.securityAlerts) {
                         NotificationPreferencesPatch(securityAlerts: $0)
                     }

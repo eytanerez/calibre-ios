@@ -2,6 +2,31 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
+/// One watch, opened from the Vault list, carrying the photograph's frame.
+///
+/// It exists because the push has to be a *value* on the tab's own path.
+///
+/// The row used to be `NavigationLink { VaultWatchDetailScreen(…) }`, a
+/// destination view, which SwiftUI holds as navigation state rather than as an
+/// element of the path. That is fine until something re-parents the app: a
+/// watch Calibre authenticated plays the Vault film the moment it opens, the
+/// moment host swaps the whole app into its staging layer, every
+/// `NavigationStack` under it is built afresh — and a push the path never knew
+/// about is not restored. The screen appeared and was thrown back to the list
+/// inside the same second, which reads exactly as the tap having done nothing,
+/// and it took the "View Passport" button on that screen with it.
+///
+/// A path element survives that, because the path lives on the router, above
+/// any tree a film could rebuild.
+///
+/// `MomentPlayer` no longer re-parents the app, which is the root cause and is
+/// fixed there. This is the second lock on the same door: what a reader is
+/// standing on belongs on the stack's path, not in state that only the current
+/// view tree remembers.
+struct VaultWatchLink: Hashable {
+    let id: String
+}
+
 /// The Vault tab: every watch the member owns, led by their own photograph of
 /// it. Calibre purchases arrive automatically on delivery — authenticated,
 /// with their Passport — and manual adds cover the rest of the drawer.
@@ -12,6 +37,7 @@ import SwiftUI
 struct CollectionScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(\.routePush) private var routePush
     /// The tab's gate, owned above this screen so everything pushed on top of
     /// it is locked too. Read here only for the "Require Face ID" toggle.
     @Environment(VaultLock.self) private var lock
@@ -70,7 +96,6 @@ struct CollectionScreen: View {
                     icon: "latch.2.case",
                     title: "No watches yet",
                     message: "Buy on Calibre and your watch lands in your vault authenticated — or add what you already own to keep the whole drawer in one place.",
-                    aside: "Even the one you never take off.",
                     actionTitle: "Add a watch"
                 ) {
                     openAddSheet()
@@ -81,6 +106,14 @@ struct CollectionScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .calibrePageBackground()
+        // Declared here rather than on the tab shell because the zoom needs
+        // this screen's namespace: the frame the watch grows out of is the
+        // thumbnail in the row that was tapped.
+        .navigationDestination(for: VaultWatchLink.self) { link in
+            VaultWatchDetailScreen(vaultID: link.id)
+                .routeStackNode()
+                .navigationTransition(.zoom(sourceID: link.id, in: photoFrames))
+        }
         .navigationTitle("Vault")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -201,23 +234,9 @@ struct CollectionScreen: View {
         }
     }
 
-    /// The fact the vault mark announces: the drawer is open, past the
-    /// biometric gate, and there is something in it. Nil while either is not
-    /// so — an empty vault gets no mark, and neither does one still behind
-    /// Face ID — and nothing is drawn for nil. Once per session: `lock()` on
-    /// the way to the background clears `unlocked`, and unlocking again is
-    /// the same fact, not news.
-    private var vaultOpenedKey: String? {
-        lock.unlocked && !watches.isEmpty ? "vault-opened" : nil
-    }
-
-    /// The title row: the ninth mark, lifting a watch out of its slot beside
-    /// the one line that says what this screen is. The words carry the
-    /// meaning; the mark has no label of its own.
+    /// The title row: the one line that says what this screen is.
     private var vaultHeader: some View {
         HStack(alignment: .center, spacing: Space.m) {
-            CalibreMark.vault(size: 48, trigger: "vault-opened")
-                .markAnnounces(vaultOpenedKey)
             Text("Every watch you own, kept in its place.")
                 .font(CalibreType.body)
                 .foregroundStyle(Color.calibre.mutedForeground)
@@ -251,12 +270,13 @@ struct CollectionScreen: View {
                             services.router.startListing(prefill: ListingPrefill(vaultWatch: watch))
                         },
                         onPassport: { code in
-                            // `push`, not `open`: the passport's canonical tab
-                            // is Home so a public link never lands behind the
-                            // vault lock, and `open` would therefore throw a
-                            // member reading their OWN vault out to a different
-                            // tab. Push appends to the stack they are on.
-                            services.router.push(.passport(code))
+                            // A push, not an `open`: the passport's canonical
+                            // tab is Home so a public link never lands behind
+                            // the vault lock, and `open` would therefore throw
+                            // a member reading their OWN vault out to a
+                            // different tab. This lands on the stack they are
+                            // standing on.
+                            routePush(.passport(code))
                         }
                     )
                     .modifier(SettleIntoPlace(active: settlingID == watch.id))
@@ -339,15 +359,16 @@ private struct CollectionWatchRow: View {
                 // because a button nested inside a NavigationLink's label
                 // never gets the tap.
                 //
-                // A destination rather than a `Route` value, so the push can
-                // carry the photograph's own frame into the screen it opens.
-                // Reaching the same screen any other way — a passport link, a
-                // notification — has no frame to lift from and gets an
-                // ordinary push, which is right.
-                NavigationLink {
-                    VaultWatchDetailScreen(vaultID: watch.id)
-                        .navigationTransition(.zoom(sourceID: watch.id, in: photoFrames))
-                } label: {
+                // A value, and a type of its own rather than a `Route`: the
+                // destination it names lifts the photograph's frame into the
+                // screen it opens, and only the Vault list can hand it that
+                // frame. Reaching the same screen any other way — a passport
+                // link, a notification — has none to lift from and gets an
+                // ordinary push through `Route`, which is right.
+                //
+                // It has to be a value and not a destination view. See
+                // `VaultWatchLink` for what a view-destination push cost here.
+                NavigationLink(value: VaultWatchLink(id: watch.id)) {
                     HStack(alignment: .top, spacing: Space.m) {
                         VaultPhotoFrame(watch: watch, variant: .card, side: thumbnailSide)
                             .matchedTransitionSource(id: watch.id, in: photoFrames)

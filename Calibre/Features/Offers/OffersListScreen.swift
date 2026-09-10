@@ -58,6 +58,7 @@ struct OffersListScreen: View {
                 Color.calibre.background
             }
         }
+        .calibrePageSwipe(selection: $segment, values: [.sent, .received])
         .calibrePageBackground()
         .tutorialOverlay(tutorial)
         .navigationTitle("Offers")
@@ -243,7 +244,7 @@ private struct OfferRow: View {
 
     var body: some View {
         NavigationLink {
-            OfferDetailScreen(offerID: offer.id)
+            OfferDetailScreen(offerID: offer.id).routeStackNode()
         } label: {
             HStack(alignment: .top, spacing: Space.m) {
                 SquareThumb(url: thumbURL, side: 56)

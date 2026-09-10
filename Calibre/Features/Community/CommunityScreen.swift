@@ -52,6 +52,7 @@ struct CommunityScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .calibrePageSwipe(selection: $section, values: [.today, .market, .bites])
         .calibrePageBackground()
         .navigationTitle("Community")
         .navigationBarTitleDisplayMode(.inline)

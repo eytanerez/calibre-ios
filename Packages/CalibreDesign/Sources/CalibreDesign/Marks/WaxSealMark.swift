@@ -85,7 +85,7 @@ struct WaxSealMark: View {
     /// and whose seal it is was the whole point of pressing one. White here is
     /// light rather than a palette colour — it is what a raised edge catches,
     /// in either appearance.
-    private static var struck: Color {
+    static var struck: Color {
         Color.calibre.waxHighlight.mix(with: .white, by: 0.45, in: .device)
     }
 

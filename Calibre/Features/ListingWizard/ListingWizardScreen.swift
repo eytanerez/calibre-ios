@@ -284,6 +284,9 @@ struct ListingWizardScreen: View {
         Task {
             if await model.submit() {
                 Haptics.shared.play(.success)
+                // The form gathers up and the seal presses onto it. What
+                // collapses is the seller's own filled-in wizard.
+                CalibreMoments.play(.listingSubmitted)
                 withAnimation(Motion.easeSlow) {
                     showSuccess = true
                 }
@@ -294,7 +297,11 @@ struct ListingWizardScreen: View {
                 // hear: on the timer a screen-reader seller loses the only
                 // confirmation the submit ever gets. Nothing is waiting on
                 // this — the listing is already in.
-                try? await Task.sleep(for: .seconds(A11y.isNavigatingByFocus ? 8 : 2))
+                try? await Task.sleep(
+                    for: .seconds(
+                        A11y.isNavigatingByFocus ? 8 : CalibreMoment.listingSubmitted.duration + 0.2
+                    )
+                )
                 dismiss()
                 onFinished()
             }

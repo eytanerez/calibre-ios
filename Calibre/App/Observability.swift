@@ -118,11 +118,17 @@ enum Observability {
             options.dsn = dsn
             options.environment = environment
             options.releaseName = releaseName()
-            // Crash and error capture is the point; performance tracing is
-            // not, so sampling stays at zero rather than becoming a second
-            // product to tune.
+            #if DEBUG
+            // Debugger pauses and simulator load are not production hangs.
             options.tracesSampleRate = 0.0
             options.enableAppHangTracking = false
+            #else
+            // Sample loads while retaining native stack traces for UI hangs.
+            // Better Stack receives operational logs; Sentry owns diagnosis.
+            options.tracesSampleRate = 0.05
+            options.enableAppHangTracking = true
+            options.appHangTimeoutInterval = 2.0
+            #endif
         }
     }
 

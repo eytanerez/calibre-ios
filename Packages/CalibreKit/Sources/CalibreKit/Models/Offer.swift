@@ -55,7 +55,7 @@ public struct Offer: Codable, Sendable, Identifiable {
     /// `resolveBy` (12 hours) to fix it before the hold is forfeited.
     public let paymentFailedAt: Date?
     public let resolveBy: Date?
-    /// Present once the hold has actually been forfeited to the seller.
+    /// Present once the hold has actually been forfeited and split.
     public let forfeit: OfferForfeit?
     public let hold: OfferHold?
     public let buyer: OfferParticipant?
@@ -80,7 +80,7 @@ public struct NegotiationEntry: Codable, Sendable {
 }
 
 /// A forfeited hold. The seller receives the hold less the cost of
-/// processing it; `sellerAmount` is that figure, from the server.
+/// settlement; `sellerAmount` is that figure, from the server.
 public struct OfferForfeit: Codable, Sendable {
     public let forfeitedAt: Date?
     public let sellerAmount: APIDecimal?

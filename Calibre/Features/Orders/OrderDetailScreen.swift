@@ -14,6 +14,7 @@ struct OrderDetailScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(ToastCenter.self) private var toasts
+    @Environment(\.routePush) private var routePush
     let orderID: String
 
     @State private var order: Order?
@@ -307,7 +308,7 @@ struct OrderDetailScreen: View {
                 .fixedSize(horizontal: false, vertical: true)
             Button("Talk to your Calibre contact") {
                 Haptics.shared.play(.press)
-                services.router.push(.supportChat)
+                routePush(.supportChat)
             }
             .buttonStyle(.calibreGhost)
         }
@@ -351,14 +352,14 @@ struct OrderDetailScreen: View {
     /// The amount is the payload's own — never a remembered $250.
     private func wireHoldLine(_ hold: OrderWireHold) -> String {
         let amount = hold.amount.map { PriceFormatter.format($0.value) } ?? "The"
-        return "\(amount) authorization placed \u{2014} released when your transfer arrives. If the transfer isn\u{2019}t sent by the deadline it is charged and goes to the seller."
+        return "\(amount) authorization placed \u{2014} released when your transfer arrives. If the transfer isn\u{2019}t sent by the deadline it is charged and split between the seller and Calibre."
     }
 
     // MARK: - Cards
 
     private func listingCard(_ order: Order) -> some View {
         Button {
-            services.router.push(.listing(order.listingId))
+            routePush(.listing(order.listingId))
         } label: {
             HStack(spacing: Space.m) {
                 OrderThumb(url: order.listing?.image?.url)
@@ -402,7 +403,7 @@ struct OrderDetailScreen: View {
 
                     if siblings.count == 1, let other = siblings.first {
                         Button("View the other order") {
-                            services.router.push(.order(other))
+                            routePush(.order(other))
                         }
                         .buttonStyle(.calibreGhost)
                     }
@@ -446,7 +447,7 @@ struct OrderDetailScreen: View {
     @ViewBuilder private func passportRow(_ order: Order) -> some View {
         if let code = order.passportCode {
             Button {
-                services.router.push(.passport(code))
+                routePush(.passport(code))
             } label: {
                 HStack(spacing: Space.m) {
                     Image(systemName: "doc.text")
@@ -551,7 +552,7 @@ struct OrderDetailScreen: View {
     /// this payload does not carry is not a gap worth filling with a guess.
     private func contactSeller(_ order: Order) {
         guard let sellerID = order.listing?.seller?.id else { return }
-        let router = services.router
+        let routePush = routePush
         let toasts = toasts
         let messaging = services.messaging
         let listingID = order.listingId
@@ -564,7 +565,7 @@ struct OrderDetailScreen: View {
                     listingTitle: listingTitle,
                     listingReference: nil
                 )
-                router.push(.messageThread(thread.id))
+                routePush(.messageThread(thread.id))
             } catch {
                 Haptics.shared.play(.error)
                 toasts.show(

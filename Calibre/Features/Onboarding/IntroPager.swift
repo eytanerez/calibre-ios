@@ -28,7 +28,7 @@ struct IntroPager: View {
         ),
         Panel(
             icons: ["bell", "chart.line.uptrend.xyaxis", "heart"],
-            headline: "The market,\nin your pocket.",
+            headline: "Less fees, more trust,\nbetter market.",
             line: "Follow the pieces you care about and act the moment the price is right."
         ),
     ]

@@ -9,6 +9,8 @@ import SwiftUI
 struct AlertsInboxScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(\.routePush) private var routePush
+    @Environment(AppRouter.self) private var router
 
     @State private var isLoading = false
     @State private var confirmingClearAll = false
@@ -124,8 +126,15 @@ struct AlertsInboxScreen: View {
         // falls back to the inbox when the route means nothing here, but from
         // inside the inbox that fallback would push a second copy of this very
         // screen, so an unknown route stays put instead.
-        if let route = row.route, let destination = PushCoordinator.route(from: route), destination != .alerts {
-            services.push.open(route: route)
+        // Pushed, not opened. `PushCoordinator.open` is the path a tap on a
+        // system notification takes, and it jumps to the route's canonical tab
+        // because a tap from outside the app has no history to keep. A tap
+        // inside the inbox does: the reader walked here, and the record they
+        // asked for belongs above the list they asked for it from.
+        if row.opensSellerEditor, let listingID = row.listingID {
+            router.openSellerListing(id: listingID)
+        } else if let route = row.route, let destination = PushCoordinator.route(from: route), destination != .alerts {
+            routePush(destination)
         }
     }
 
@@ -161,6 +170,22 @@ struct AlertRowData: Identifiable {
     let body: String
     let dateText: String
     let route: String?
+    let kind: String?
+    let listingID: String?
+    let listingStatus: String?
+
+    var opensSellerEditor: Bool {
+        Self.isSellerModeration(kind: kind, status: listingStatus)
+    }
+
+    private static func isSellerModeration(kind: String?, status: String?) -> Bool {
+        switch kind?.lowercased() {
+        case "listing_needs_more_info", "listing_needs_changes", "listing_rejected", "listing_taken_down":
+            return true
+        default:
+            return status == "draft" || status == "rejected" || status == "archived"
+        }
+    }
 
     init(notification: ServerNotification) {
         id = notification.id
@@ -169,6 +194,9 @@ struct AlertRowData: Identifiable {
         body = notification.body
         dateText = Self.relative(iso: notification.createdAt)
         route = notification.route
+        kind = notification.payload?.kind
+        listingID = notification.payload?.listingId ?? Self.listingID(from: notification.route)
+        listingStatus = notification.payload?.listingStatus
     }
 
     init(item: AlertItem) {
@@ -178,6 +206,9 @@ struct AlertRowData: Identifiable {
         body = item.body
         dateText = item.receivedAt.formatted(.relative(presentation: .named))
         route = item.route
+        kind = item.kind
+        listingID = item.listingID ?? item.route.flatMap(Self.listingID(from:))
+        listingStatus = item.listingStatus
     }
 
     private static func relative(iso: String?) -> String {
@@ -188,6 +219,12 @@ struct AlertRowData: Identifiable {
             return ""
         }
         return date.formatted(.relative(presentation: .named))
+    }
+
+    private static func listingID(from route: String) -> String? {
+        let parts = route.split(separator: "/", maxSplits: 2).map(String.init)
+        guard parts.first == "listing", parts.count > 1 else { return nil }
+        return parts[1]
     }
 }
 

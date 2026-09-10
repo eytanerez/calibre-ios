@@ -19,7 +19,29 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     public let productionYear: Int?
     public let nickname: String?
     public let notes: String?
+    /// The raw link column, kept and served for the row's own sake — a watch
+    /// that arrived from a Calibre order carries the seller's photograph here.
+    ///
+    /// **Nothing draws this.** `coverUrl` is what a surface renders; a client
+    /// that keeps drawing the link shows the seller's picture after the owner
+    /// has uploaded their own. It is not writable from this app any more
+    /// either: the link form is gone (contracts §9d) and the picker replaced
+    /// it, so a PATCH from here never names the column and never wipes it.
     public let photoUrl: String?
+    /// What the card and the hero draw: the owner's first uploaded photograph
+    /// where they have one, and `photoUrl` until then. Resolved by the server
+    /// (`_cover_url`) so the rule is stated once for every surface rather than
+    /// three times slightly differently.
+    ///
+    /// Private-media covers are root-relative paths that need the member's own
+    /// credential; `VaultCoverSource` is what decides which kind of address
+    /// this is before anything fetches it.
+    public private(set) var coverUrl: MediaURL?
+    /// The owner's own gallery, in the order they arranged it — index zero is
+    /// the cover. Optional because a payload served by a deployment that
+    /// predates the gallery carries no key at all, and an absent gallery is
+    /// not the same claim as an empty one.
+    public private(set) var photos: [VaultPhoto]?
     public let acquiredPrice: String?
     public let acquiredDate: String?
     /// Narrowed by the server rather than renamed: it now carries a figure in
@@ -42,6 +64,24 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     /// catalog. The two read differently and are set differently: a nickname
     /// is written in the hand, a brand and model never are.
     public var isNicknamed: Bool { nickname != nil }
+
+    /// The gallery as a list to draw. An absent key and an empty gallery are
+    /// the same thing to a grid — both mean "nothing to lay out" — and only
+    /// `photos` itself keeps the two apart for anyone who has to know.
+    public var gallery: [VaultPhoto] { photos ?? [] }
+
+    /// This row redrawn against the answer a gallery verb just gave.
+    ///
+    /// All four photo routes answer with the gallery AND the cover, precisely
+    /// so the card behind the sheet does not have to re-fetch the watch to
+    /// find out that the picture on it has changed. Nothing else on the row
+    /// moved, so nothing else is touched.
+    public func applying(_ gallery: VaultGallery) -> VaultWatch {
+        var updated = self
+        updated.coverUrl = gallery.coverUrl
+        updated.photos = gallery.results
+        return updated
+    }
 
     /// The stamp's key on the vault detail, and the fact it stands for. Nil
     /// where Calibre does not vouch for this watch, and nil is the whole gate.
@@ -149,28 +189,149 @@ public extension VaultEstimate {
     }
 }
 
-/// The owner's photograph of their own watch, as a link.
+/// One photograph the owner took of their own watch.
 ///
-/// Calibre has no endpoint that stores a picture for a watch in somebody's
-/// vault — `vault_watches.photo_url` is a link and there is nothing behind it
-/// that would take an upload. So the app asks for a link and says that is what
-/// it is asking for; it does not offer a picker it could not honour.
-public enum VaultPhotoLink {
-    /// Only https, and only one that parses.
-    ///
-    /// Everything else a URL field can be handed — `http:` (which the app
-    /// will not load), `javascript:`, `data:`, a bare filename — is not a
-    /// photograph either, and saving one stores a value that renders as
-    /// nothing.
-    public static func usable(_ raw: String) -> URL? {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty,
-              let url = URL(string: trimmed),
-              url.scheme?.lowercased() == "https",
-              let host = url.host(), !host.isEmpty
-        else { return nil }
-        return url
+/// `url` is a path Calibre serves behind the member's session, never a signed
+/// address anyone can open — see `VaultCoverSource` for what that costs a
+/// client that wants to draw it. It is nil rather than a public fallback when
+/// the stored object cannot be addressed at all, and a nil there means the
+/// photograph is unreadable, not that it is public.
+public struct VaultPhoto: Decodable, Equatable, Sendable, Identifiable {
+    public let id: String
+    public let url: MediaURL?
+    public let contentType: String?
+    public let sizeBytes: Int?
+    /// Measured off the bytes that were stored, and both or neither.
+    public let width: Int?
+    public let height: Int?
+    /// Zero-based and dense. The server renumbers the whole gallery on every
+    /// insert, delete and move, so position zero is always occupied and is
+    /// always the cover.
+    public let position: Int
+    public let createdAt: String?
+
+    public init(
+        id: String,
+        url: MediaURL?,
+        contentType: String? = nil,
+        sizeBytes: Int? = nil,
+        width: Int? = nil,
+        height: Int? = nil,
+        position: Int,
+        createdAt: String? = nil
+    ) {
+        self.id = id
+        self.url = url
+        self.contentType = contentType
+        self.sizeBytes = sizeBytes
+        self.width = width
+        self.height = height
+        self.position = position
+        self.createdAt = createdAt
     }
+}
+
+/// What every one of the four photo routes answers with — the gallery in its
+/// arranged order, and the cover as it now stands.
+///
+/// One shape for list, add, delete and move, so there is one parser here and
+/// no branch on which verb was just called. The cover rides along because all
+/// four verbs can change it.
+public struct VaultGallery: Decodable, Equatable, Sendable {
+    /// How many photographs one watch may hold — `MAX_VAULT_PHOTOS` on the
+    /// server, which is the authority. This copy exists so the picker can stop
+    /// offering slots that would only be refused; a client that ever drifts
+    /// from it is corrected by the refusal itself, which arrives with the
+    /// server's own sentence and `details.code = "vault_photo_limit"`.
+    public static let maximum = 8
+
+    public let results: [VaultPhoto]
+    public let coverUrl: MediaURL?
+
+    public init(results: [VaultPhoto], coverUrl: MediaURL?) {
+        self.results = results
+        self.coverUrl = coverUrl
+    }
+}
+
+/// `POST`'s answer: the gallery, plus the photograph that was just created so
+/// a caller need not diff the list to find it.
+public struct VaultGalleryAddition: Decodable, Equatable, Sendable {
+    public let results: [VaultPhoto]
+    public let coverUrl: MediaURL?
+    public let photo: VaultPhoto
+
+    public var gallery: VaultGallery { VaultGallery(results: results, coverUrl: coverUrl) }
+}
+
+/// Where a vault picture actually lives, and therefore how it may be fetched.
+///
+/// A `cover_url` can be any of three things, and they are not interchangeable:
+///
+/// - The owner's own photograph, served at `/secure-media/vault_photos/…` by
+///   Calibre itself, behind the member's session. A plain image loader gets a
+///   401 and draws nothing, so these have to be fetched by the app's
+///   authenticated client and handed to the view as bytes.
+/// - Calibre's own **public** media — `/media/…` on the same host, which is
+///   what a seeded demo watch and a listing's own photographs are. Nothing
+///   guards those, so nothing needs to send a credential to them, and they go
+///   through the ordinary image pipeline like every other picture in the app.
+/// - `photo_url` pointing at somebody else's host. That one must be loaded
+///   WITHOUT the member's credential: attaching a bearer token to an
+///   off-origin request hands the session to whoever runs that host, and the
+///   picture is public anyway.
+///
+/// So the reserved prefix is the test, not merely the host — the second and
+/// third of those are the same kind of fetch, and treating every same-origin
+/// address as private would put the token on public files and hold them in a
+/// cache meant for somebody's private pictures.
+///
+/// Anything that is none of the three — `javascript:`, `data:`, a bare
+/// filename, an off-origin `http:` — resolves to nothing: none of them is a
+/// photograph, and the app will not load them.
+public enum VaultCoverSource: Equatable, Sendable {
+    /// Calibre's own object, readable only with the member's credential.
+    case privateMedia(URL)
+    /// A picture anyone may fetch. No credential.
+    case link(URL)
+
+    /// The prefix Calibre serves permission-checked objects under
+    /// (`register_private_media_resolver`). Everything behind it is somebody's
+    /// in particular; everything outside it is not.
+    static let privatePrefix = "/secure-media/"
+
+    public var url: URL {
+        switch self {
+        case .privateMedia(let url), .link(let url): url
+        }
+    }
+
+    /// Which kind of address this is, against the origin the app talks to.
+    ///
+    /// `MediaURL` has already rebased a root-relative path onto that origin by
+    /// the time this is asked, so both halves of the question — whose host,
+    /// and which prefix — can be read off the one URL.
+    public static func resolve(_ url: URL?, apiOrigin: URL) -> VaultCoverSource? {
+        guard let url, let scheme = url.scheme?.lowercased(), let host = url.host(), !host.isEmpty
+        else { return nil }
+        // `isSameOrigin` is the same predicate `PrivateMediaLoader` refuses
+        // on, asked once. If this said "fetch it with the credential" about an
+        // address the loader would then refuse to send one to, the picture
+        // would simply never appear.
+        if PrivateMediaLoader.isSameOrigin(url, as: apiOrigin) {
+            return url.path.hasPrefix(privatePrefix) ? .privateMedia(url) : .link(url)
+        }
+        // Off Calibre's own host, so no credential — and then only over https,
+        // because a page-level http link is one the app will not load and
+        // storing it renders as nothing.
+        return scheme == "https" ? .link(url) : nil
+    }
+
+    /// Convenience for the common call: a watch's cover.
+    public static func cover(_ watch: VaultWatch, apiOrigin: URL) -> VaultCoverSource? {
+        resolve(watch.coverUrl?.url, apiOrigin: apiOrigin)
+    }
+
 }
 
 /// One of the seller's own watches that a listing being written might be —
@@ -351,6 +512,7 @@ public struct ServerNotification: Decodable, Equatable, Sendable, Identifiable {
     public let readAt: String?
     public let clearedAt: String?
     public let createdAt: String?
+    public let payload: ServerNotificationPayload?
 
     public init(
         id: String,
@@ -360,7 +522,8 @@ public struct ServerNotification: Decodable, Equatable, Sendable, Identifiable {
         route: String,
         readAt: String? = nil,
         clearedAt: String? = nil,
-        createdAt: String? = nil
+        createdAt: String? = nil,
+        payload: ServerNotificationPayload? = nil
     ) {
         self.id = id
         self.category = category
@@ -370,6 +533,22 @@ public struct ServerNotification: Decodable, Equatable, Sendable, Identifiable {
         self.readAt = readAt
         self.clearedAt = clearedAt
         self.createdAt = createdAt
+        self.payload = payload
+    }
+}
+
+/// Extra navigation context persisted with a server notification. Most rows
+/// have no payload; listing moderation rows use these fields so an unavailable
+/// public listing can still open in its owner's editor.
+public struct ServerNotificationPayload: Decodable, Equatable, Sendable {
+    public let kind: String?
+    public let listingId: String?
+    public let listingStatus: String?
+
+    public init(kind: String? = nil, listingId: String? = nil, listingStatus: String? = nil) {
+        self.kind = kind
+        self.listingId = listingId
+        self.listingStatus = listingStatus
     }
 }
 

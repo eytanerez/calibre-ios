@@ -1,12 +1,16 @@
 import CalibreDesign
 import CalibreKit
 import SwiftUI
+import UIKit
 
 /// The five-tab shell. Every tab is a NavigationStack bound to its path in
 /// the shared router, so deep links and pushes work from anywhere.
 struct MainTabView: View {
     @Environment(AppRouter.self) private var router
     @Environment(AuthSession.self) private var session
+    @Environment(AppServices.self) private var services
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
 
     /// The vault's biometric gate lives here, above the Vault tab's whole
     /// navigation stack, so everything the tab can show is behind it — see
@@ -16,10 +20,11 @@ struct MainTabView: View {
     var body: some View {
         @Bindable var router = router
 
-        TabView(selection: $router.selectedTab) {
+        TabView(selection: router.tabSelection) {
             NavigationStack(path: $router.homePath) {
                 HomeScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
+                    .tabJumpBack()
             }
             .tabItem { Label("Home", systemImage: "house") }
             .tag(AppTab.home)
@@ -27,6 +32,7 @@ struct MainTabView: View {
             NavigationStack(path: $router.communityPath) {
                 CommunityScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
+                    .tabJumpBack()
             }
             .tabItem { Label("Community", systemImage: "bubble.left.and.bubble.right") }
             .tag(AppTab.community)
@@ -34,6 +40,7 @@ struct MainTabView: View {
             NavigationStack(path: $router.sellPath) {
                 SellScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
+                    .tabJumpBack()
             }
             .tabItem { Label("Sell", systemImage: "plus.circle.fill") }
             .tag(AppTab.sell)
@@ -41,6 +48,7 @@ struct MainTabView: View {
             NavigationStack(path: $router.collectionPath) {
                 CollectionScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
+                    .tabJumpBack()
             }
             .environment(vaultLock)
             .vaultGate(vaultLock, signedIn: session.isAuthenticated)
@@ -50,11 +58,28 @@ struct MainTabView: View {
             NavigationStack(path: $router.youPath) {
                 YouScreen()
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
+                    .tabJumpBack()
             }
-            .tabItem { Label("Me", systemImage: "person") }
+            .tabItem {
+                Label {
+                    Text("Me")
+                } icon: {
+                    Image(uiImage: meTabIcon).renderingMode(.original)
+                }
+                .accessibilityLabel(hasNotifications ? "Me, notifications waiting" : "Me")
+            }
             .tag(AppTab.you)
         }
         .tint(Color.calibre.primary)
+        .task(id: notificationRefresh) {
+            guard session.isAuthenticated, scenePhase == .active else { return }
+            try? await services.serverAlerts.load()
+        }
+        // The fallback push, for a caller standing on a tab's root screen with
+        // nothing above it: append to that tab's path. Every pushed screen
+        // overrides this with a node of its own, so this is the only place a
+        // push is still addressed to the tab rather than to the stack.
+        .environment(\.routePush) { router.push($0) }
         // Checkout owns its own navigation stack, so it rides above the tabs
         // as a cover rather than pushing into one.
         .fullScreenCover(item: $router.checkoutRequest) { request in
@@ -74,6 +99,45 @@ struct MainTabView: View {
             .authGate(for: .deck)
         }
     }
+
+    /// A 4pt brand-colored dot, drawn into the native tab icon so the system
+    /// does not replace it with its much larger red notification badge.
+    private var meTabIcon: UIImage {
+        let traits = UITraitCollection(userInterfaceStyle: colorScheme == .dark ? .dark : .light)
+        let tint = UIColor(router.selectedTab == .you ? Color.calibre.primary : Color.calibre.mutedForeground)
+            .resolvedColor(with: traits)
+        let person = UIImage(systemName: "person.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22))?
+            .withTintColor(tint, renderingMode: .alwaysOriginal)
+        return UIGraphicsImageRenderer(size: CGSize(width: 28, height: 28)).image { context in
+            person?.draw(in: CGRect(x: 2, y: 3, width: 22, height: 23))
+            if hasNotifications {
+                UIColor(Color.calibre.primary).resolvedColor(with: traits).setFill()
+                context.cgContext.fillEllipse(in: CGRect(x: 23, y: 1, width: 4, height: 4))
+            }
+        }
+    }
+
+    private var hasNotifications: Bool {
+        session.isAuthenticated
+            ? services.serverAlerts.remainingCount > 0
+            : services.alerts.remainingCount > 0
+    }
+
+    /// Refresh on sign-in, foregrounding, or an incoming push. Clearing the
+    /// inbox already updates the observable store and removes the dot.
+    private var notificationRefresh: NotificationRefresh {
+        NotificationRefresh(
+            userID: session.user?.id,
+            active: scenePhase == .active,
+            latestPushID: services.alerts.items.first?.id
+        )
+    }
+
+    private struct NotificationRefresh: Hashable {
+        let userID: String?
+        let active: Bool
+        let latestPushID: String?
+    }
 }
 
 /// Resolves a shared `Route` — cross-tab pushes, deep links, and push
@@ -87,6 +151,9 @@ struct RouteDestinationView: View {
         destination
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .calibrePageBackground()
+            // Anything reached this way is standing above something, so its own
+            // pushes have to land above it rather than rewrite the tab's path.
+            .routeStackNode()
     }
 
     @ViewBuilder
@@ -112,6 +179,8 @@ struct RouteDestinationView: View {
             VaultWatchDetailScreen(vaultID: id)
         case .passport(let code):
             PassportScreen(publicCode: code)
+        case .authenticationReport(let target):
+            AuthenticationReportScreen(target: target)
         case .order(let id):
             OrderDetailScreen(orderID: id)
         case .offer(let id):

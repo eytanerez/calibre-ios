@@ -17,6 +17,7 @@ struct BiteScreen: View {
 
     @Environment(AppServices.self) private var services
     @Environment(\.browsePush) private var browsePush
+    @Environment(\.routePush) private var routePush
     @Environment(\.openURL) private var openURL
 
     @State private var bite: Bite?
@@ -50,6 +51,7 @@ struct BiteScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $nextBite) { route in
             BiteScreen(slug: route.slug, preloaded: route.preloaded)
+                .routeStackNode()
         }
         .toolbar {
             if let bite {
@@ -202,7 +204,7 @@ struct BiteScreen: View {
             if let article = bite.article {
                 Button {
                     Haptics.shared.play(.press)
-                    services.router.push(.journalArticle(article.id))
+                    routePush(.journalArticle(article.id))
                 } label: {
                     BiteReadOnRow(label: "The long version", detail: article.title)
                 }
@@ -245,9 +247,9 @@ struct BiteScreen: View {
         case .browse(let destination):
             browsePush(destination)
         case .route(let route):
-            services.router.push(route)
+            routePush(route)
         case .tab(let tab):
-            services.router.selectedTab = tab
+            services.router.jump(to: tab)
         case .bite(let slug):
             nextBite = BiteRoute(slug: slug, preloaded: nil)
         }

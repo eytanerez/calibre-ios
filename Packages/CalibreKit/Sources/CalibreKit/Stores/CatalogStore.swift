@@ -29,6 +29,13 @@ public final class CatalogStore {
         self.homeCache = DiskCache(filename: "home-feed.json", directory: cacheDirectory)
     }
 
+    /// The admin-maintained watch catalog, scoped by the previously chosen
+    /// field. Browse metadata only includes active listings and cannot serve
+    /// as the catalog for creating a new listing.
+    public func cascade(_ query: CatalogCascadeQuery) async throws -> CatalogCascadeResponse {
+        try await client.send(Endpoint(path: "/catalog/cascade", query: query.queryItems))
+    }
+
     // MARK: - Browse
 
     /// One page of `/listings` for the given filters. Pages are cached
@@ -308,4 +315,39 @@ public struct RecommendationFeed: Decodable, Sendable {
         case recommended
         case recentlyViewed
     }
+}
+
+public struct CatalogCascadeQuery: Hashable, Sendable {
+    public enum Level: String, Sendable { case brands, models, references }
+    public let level: Level
+    public let brand: String
+    public let model: String
+    public let text: String
+    public init(level: Level, brand: String = "", model: String = "", text: String = "") {
+        self.level = level
+        self.brand = brand.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.model = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    public var canSearch: Bool { level == .brands || !brand.isEmpty }
+    public var queryItems: [URLQueryItem] {
+        var items = [URLQueryItem(name: "level", value: level.rawValue), URLQueryItem(name: "q", value: text)]
+        if level != .brands { items.append(URLQueryItem(name: "brand", value: brand)) }
+        if level == .references, !model.isEmpty { items.append(URLQueryItem(name: "model", value: model)) }
+        return items
+    }
+}
+
+public struct CatalogCascadeResponse: Decodable, Sendable {
+    public struct Value: Decodable, Sendable, Identifiable {
+        public let value: String
+        public let brand: String?
+        public let model: String?
+        public let reference: String?
+        public var id: String { [brand, model, reference, value].compactMap { $0 }.joined(separator: "|") }
+    }
+    public let values: [Value]
+    public let total: Int
+    public let truncated: Bool
+    public let omitted: Int
 }

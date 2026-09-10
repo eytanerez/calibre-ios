@@ -1,7 +1,6 @@
 import CalibreDesign
 import CalibreKit
 import SwiftUI
-import WebKit
 
 // MARK: - The hold
 
@@ -46,79 +45,57 @@ struct AuthenticationHoldCard: View {
 
 // MARK: - The report
 
-/// The stored document, displayed exactly as it was filed.
+/// Which document to open, and what to offer if there is not one.
 ///
-/// `loadHTMLString` with a nil base URL: the report is self-contained — fonts,
-/// photographs and both QR codes travel inside it — so it has nothing to fetch,
-/// and giving it no origin means it could not fetch anything if it tried.
-private struct ReportWebView: UIViewRepresentable {
-    let html: String
-
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func makeUIView(context: Context) -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.navigationDelegate = context.coordinator
-        webView.isOpaque = false
-        webView.backgroundColor = .white
-        return webView
-    }
-
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        webView.loadHTMLString(html, baseURL: nil)
-    }
-
-    final class Coordinator: NSObject, WKNavigationDelegate {
-        func webView(
-            _ webView: WKWebView,
-            decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-        ) {
-            // The initial load only. A document nobody can navigate out of is
-            // the whole point of an archive.
-            decisionHandler(navigationAction.navigationType == .other ? .allow : .cancel)
-        }
-    }
-}
-
-/// The row on an order or a vault watch, and the sheet it opens.
-struct AuthenticationReportRow: View {
-    enum Source {
+/// Carried by value on the navigation path, which is what lets the report be a
+/// page rather than a sheet.
+struct AuthenticationReportTarget: Hashable {
+    enum Subject: Hashable {
         case order(String)
-        case vault(String)
-
-        /// Stable enough to key a mark on: the document belongs to this order
-        /// or this watch, and opening the same one twice is the same document.
-        var key: String {
-            switch self {
-            case .order(let id): "order:\(id)"
-            case .vault(let id): "vault:\(id)"
-            }
-        }
+        case vaultWatch(String)
     }
 
-    @Environment(AppServices.self) private var services
-    let source: Source
-    /// What the order payload advertises about the document. Nil where the
-    /// caller has no advertisement to go on — `GET /vault/{id}` carries no
-    /// report key at all, and the route answers for itself.
-    var reference: AuthenticationReportRef?
+    let subject: Subject
     /// Offered when the document turns out not to be on file. The Passport is
     /// the record of what has happened to the watch, and it is a better answer
     /// than a dead end.
     var passportCode: String?
+    /// The PDF the order payload advertised, carried so the share control
+    /// survives the two cases where the fetched report cannot supply one: a
+    /// fetch that fails, and a filed document whose own row has no PDF while
+    /// the order's reference does. As a sheet this screen read both; as a page
+    /// it can only read what the target hands it.
+    var pdfUrl: MediaURL?
 
-    @State private var showing = false
-    @State private var report: AuthenticationReport?
-    @State private var failure: String?
-    /// The server has told us there is no document, which is a different
-    /// sentence from a request that did not get through.
-    @State private var notOnFile = false
+    /// Stable enough to key a mark on: the document belongs to this order or
+    /// this watch, and opening the same one twice is the same document.
+    var key: String {
+        switch subject {
+        case .order(let id): "order:\(id)"
+        case .vaultWatch(let id): "vault:\(id)"
+        }
+    }
+}
+
+/// The row on an order or a vault watch, and the page it opens.
+struct AuthenticationReportRow: View {
+    @Environment(\.routePush) private var routePush
+    let source: AuthenticationReportTarget.Subject
+    /// What the order payload advertises about the document. Nil where the
+    /// caller has no advertisement to go on — `GET /vault/{id}` carries no
+    /// report key at all, and the route answers for itself.
+    var reference: AuthenticationReportRef?
+    var passportCode: String?
 
     var body: some View {
         Button {
-            showing = true
+            routePush(.authenticationReport(
+                AuthenticationReportTarget(
+                    subject: source,
+                    passportCode: passportCode,
+                    pdfUrl: reference?.pdfUrl
+                )
+            ))
         } label: {
             HStack(spacing: Space.m) {
                 Image(systemName: "checkmark.seal")
@@ -144,64 +121,122 @@ struct AuthenticationReportRow: View {
         }
         .buttonStyle(PressableStyle())
         .accessibilityHint("Opens the authentication report for this watch")
-        .sheet(isPresented: $showing) {
-            NavigationStack {
-                Group {
-                    if let report {
-                        VStack(spacing: 0) {
-                            reportHeader(report)
-                            ReportWebView(html: report.html)
-                        }
-                    } else if notOnFile {
-                        noFiledReport
-                    } else if let failure {
-                        EmptyState(
-                            icon: "doc.text.magnifyingglass",
-                            title: "We couldn't open the report",
-                            message: failure,
-                            actionTitle: "Try again"
-                        ) { Task { await load() } }
-                    } else {
-                        CalibreLoadingView("Opening the report")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                }
-                .navigationTitle("Report")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Done") { showing = false }
-                    }
-                    if let pdf = (report?.pdfUrl ?? reference?.pdfUrl)?.url {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            // A custom label replaces ShareLink's own, and a
-                            // bare glyph carries none — VoiceOver reached this
-                            // button with nothing to announce.
-                            ShareLink(item: pdf) { Image(systemName: "square.and.arrow.up") }
-                                .accessibilityLabel("Share the authentication report")
-                        }
-                    }
-                }
-            }
-            // Fetched here rather than on the order screen: the stored document
-            // is a few megabytes, and nobody should pay for it by opening an
-            // order page.
-            .task { await load() }
-        }
     }
 
     private var subtitle: String {
-        var parts: [String] = ["What our authentication centre found"]
+        var parts: [String] = ["What our authentication center found"]
         if let version = reference?.version, version > 1 { parts.append("version \(version)") }
         return parts.joined(separator: " · ")
     }
+}
+
+/// The authentication report, as a page.
+///
+/// **A page and not a sheet, which is a change of kind.** The envelope
+/// sequence opens onto the document itself — the report grows out of the
+/// envelope and the verification stamp presses onto it as it settles — and a
+/// sheet is its own presentation above the root, so the film had to be hosted
+/// a second time inside it or it would have played behind the thing it was
+/// opening. Two hosts, two grounds, and a document that was a card on top of
+/// the order rather than the place the reader had arrived at. It is pushed on
+/// the stack now, the root's own host plays the film over it, and Back is the
+/// ordinary Back.
+///
+/// **The PDF stays**, as the share control in the toolbar: a buyer who wants a
+/// file to keep or forward gets exactly the document they got before. The PDF
+/// is for printing; this is for reading.
+struct AuthenticationReportScreen: View {
+    @Environment(AppServices.self) private var services
+    @Environment(\.routePush) private var routePush
+
+    let target: AuthenticationReportTarget
+
+    @State private var report: AuthenticationReport?
+    @State private var failure: String?
+    /// The server has told us there is no document, which is a different
+    /// sentence from a request that did not get through.
+    @State private var notOnFile = false
+
+    var body: some View {
+        Group {
+            if let report {
+                reportPage(report)
+            } else if notOnFile {
+                noFiledReport
+            } else if let failure {
+                EmptyState(
+                    icon: "doc.text.magnifyingglass",
+                    title: "We couldn't open the report",
+                    message: failure,
+                    actionTitle: "Try again"
+                ) { Task { await load() } }
+            } else {
+                CalibreLoadingView("Opening the report")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .navigationTitle("Report")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Both sources, the way the sheet read them: the fetched document
+            // first, then what the order advertised. Either alone loses the
+            // control on a case where it used to be there.
+            if let pdf = (report?.pdfUrl ?? target.pdfUrl)?.url {
+                ToolbarItem(placement: .topBarTrailing) {
+                    // A custom label replaces ShareLink's own, and a bare
+                    // glyph carries none — VoiceOver reached this button with
+                    // nothing to announce.
+                    ShareLink(item: pdf) { Image(systemName: "square.and.arrow.up") }
+                        .accessibilityLabel("Share the authentication report")
+                }
+            }
+        }
+        // Fetched here rather than on the order screen: the stored document is
+        // a few megabytes, and nobody should pay for it by opening an order
+        // page.
+        .task { await load() }
+    }
+
+    @ViewBuilder
+    private func reportPage(_ report: AuthenticationReport) -> some View {
+        if let content = report.content {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.xl) {
+                    reportHeader(report)
+                    NativeAuthenticationReport(content: content)
+                }
+                .padding(Space.l)
+            }
+            .calibrePageBackground()
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.xl) {
+                    reportHeader(report)
+                    EmptyState(
+                        icon: "doc.text",
+                        title: "This earlier report is archived as a PDF",
+                        message: "The native findings are not available for this version. You can refresh in case the archive has been updated, or open the filed PDF."
+                    )
+                    if let pdf = (report.pdfUrl ?? target.pdfUrl)?.url {
+                        Link("Open the filed PDF", destination: pdf)
+                            .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    }
+                    Button("Refresh report") { Task { await reload() } }
+                        .buttonStyle(.calibre(.ghost, fullWidth: true))
+                }
+                .padding(Space.l)
+            }
+            .calibrePageBackground()
+        }
+    }
 
     /// The lens comes to rest over the document that arrived — not over the
-    /// button that was pressed. This sheet has a real not-found branch, and a
+    /// button that was pressed. This page has a real not-found branch, and a
     /// magnifier that swooped in and found something in front of it would be
     /// inventing an inspection that never happened.
     ///
-    /// The sheet is its own surface, with the screen that opened it behind, so
+    /// The report is its own screen, with the order behind it in the stack, so
     /// the loupe here can never be an order screen's second mark
     /// (CALIBRE_BY_HAND_CONTRACTS.md §4 — one illustrated moment per step).
     private func reportHeader(_ report: AuthenticationReport) -> some View {
@@ -218,19 +253,20 @@ struct AuthenticationReportRow: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, Space.l)
-        .padding(.vertical, Space.m)
+        .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.calibre.card)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Color.calibre.border).frame(height: 1)
-        }
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(Color.calibre.border, lineWidth: 1)
+        )
     }
 
     /// A re-issued report is a new document and deserves a new look; the same
     /// one opened twice in a session does not.
     private func markKey(_ report: AuthenticationReport) -> String {
-        "report:\(source.key):\(report.version)"
+        "report:\(target.key):\(report.version)"
     }
 
     private func issuedLine(_ report: AuthenticationReport) -> String {
@@ -239,7 +275,7 @@ struct AuthenticationReportRow: View {
             parts.append("Issued \(issued.formatted(date: .abbreviated, time: .omitted))")
         }
         if report.version > 1 { parts.append("version \(report.version)") }
-        return parts.isEmpty ? "Filed by our authentication centre" : parts.joined(separator: " · ")
+        return parts.isEmpty ? "Filed by our authentication center" : parts.joined(separator: " · ")
     }
 
     /// Calibre stands behind the watch and has no filed document to open for
@@ -253,21 +289,17 @@ struct AuthenticationReportRow: View {
                 message: "Calibre inspected this watch before it shipped, and there's no report document on file to open. Its Passport is the record of what has happened to it, and our team can tell you what the bench found."
             )
             VStack(spacing: Space.m) {
-                // Dismiss first, then push: this sheet carries its own
-                // NavigationStack and it has no route table, so a link inside
-                // it would look like a way out and be one.
-                if let passportCode {
-                    Button("Open its Passport") {
-                        showing = false
-                        services.router.push(.passport(passportCode))
-                    }
-                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                // Ordinary pushes now. This is a page on the reader's own
+                // stack, so what it offers goes above it and Back still walks
+                // the way they came — the sheet had to dismiss itself first,
+                // because a link inside it looked like a way out without being
+                // one.
+                if let code = target.passportCode {
+                    Button("Open its Passport") { routePush(.passport(code)) }
+                        .buttonStyle(.calibre(.secondary, fullWidth: true))
                 }
-                Button("Ask us about this watch") {
-                    showing = false
-                    services.router.push(.supportChat)
-                }
-                .buttonStyle(.calibre(.ghost, fullWidth: true))
+                Button("Ask us about this watch") { routePush(.supportChat) }
+                    .buttonStyle(.calibre(.ghost, fullWidth: true))
             }
             .padding(.horizontal, Space.l)
         }
@@ -279,10 +311,10 @@ struct AuthenticationReportRow: View {
         failure = nil
         notOnFile = false
         do {
-            switch source {
+            switch target.subject {
             case .order(let id):
                 report = try await services.client.authenticationReport(orderID: id)
-            case .vault(let id):
+            case .vaultWatch(let id):
                 report = try await services.client.vaultAuthenticationReport(vaultID: id)
             }
         } catch {
@@ -294,6 +326,386 @@ struct AuthenticationReportRow: View {
                 failure = (error as? APIError)?.errorDescription ?? "Try again in a moment."
             }
         }
+    }
+
+    private func reload() async {
+        report = nil
+        await load()
+    }
+}
+
+// MARK: - Native report content
+
+/// The immutable bench findings, rendered with native text, rows and images.
+/// The PDF remains a shareable archive; it is not the reading surface.
+private struct NativeAuthenticationReport: View {
+    let content: AuthenticationReportContent
+
+    private var photographs: [AuthenticationReportPhotograph] {
+        content.gallery.isEmpty ? content.photographs : content.gallery
+    }
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: Space.xl) {
+            result
+            serviceRecommendation
+            timepiece
+            condition
+            inclusions
+            performance
+            visualFindings
+            technicalFindings
+            notes
+            photographGallery
+
+            if let footer = content.findingsFooter, !footer.isEmpty {
+                Text(footer)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private var result: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Eyebrow(content.headLabel, color: Color.calibre.primary)
+            Text(content.title)
+                .font(CalibreType.title)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            if let lede = content.lede, !lede.isEmpty {
+                Text(lede)
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: Space.s) {
+                StatusBadge(content.result.label, tone: resultTone)
+                if let qualifier = content.result.qualifier, !qualifier.isEmpty {
+                    Text(qualifier)
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                }
+                Spacer(minLength: 0)
+                if let date = content.result.date, !date.isEmpty {
+                    Text(date)
+                        .font(CalibreType.caption)
+                        .foregroundStyle(Color.calibre.mutedForeground)
+                }
+            }
+        }
+        .padding(Space.l)
+        .authReportSurface()
+    }
+
+    private var resultTone: StatusBadge.Tone {
+        switch content.result.verdict?.lowercased() {
+        case "authenticated": .success
+        case "misrepresented", "counterfeit", "failed": .danger
+        default: .neutral
+        }
+    }
+
+    @ViewBuilder
+    private var serviceRecommendation: some View {
+        if content.record.serviceRecommended == true {
+            CalloutBand(
+                icon: "wrench.and.screwdriver",
+                title: "Service recommended",
+                message: "The authentication record recommends mechanical service. See the findings below for the recorded measurements and notes."
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var timepiece: some View {
+        if !content.timepiece.isEmpty {
+            reportSection("Timepiece") {
+                VStack(spacing: 0) {
+                    ForEach(Array(content.timepiece.enumerated()), id: \.element.id) { index, row in
+                        HStack(alignment: .firstTextBaseline, spacing: Space.l) {
+                            Text(row.label)
+                                .font(CalibreType.caption)
+                                .foregroundStyle(Color.calibre.mutedForeground)
+                            Spacer(minLength: Space.m)
+                            let valueFont = row.strong == true ? CalibreType.bodySemiBold : CalibreType.body
+                            Text(row.value)
+                                .font(row.tabular == true ? valueFont.monospacedDigit() : valueFont)
+                                .foregroundStyle(Color.calibre.foreground)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        .padding(.vertical, Space.m)
+                        if index < content.timepiece.count - 1 { reportDivider }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var condition: some View {
+        if !content.condition.rows.isEmpty || !(content.condition.overall ?? "").isEmpty {
+            reportSection("Condition") {
+                VStack(alignment: .leading, spacing: Space.l) {
+                    if let overall = content.condition.overall, !overall.isEmpty {
+                        LabeledContent("Overall") {
+                            Text(overall)
+                                .font(CalibreType.bodySemiBold)
+                                .foregroundStyle(Color.calibre.foreground)
+                        }
+                    }
+                    if let lede = content.condition.lede, !lede.isEmpty {
+                        Text(lede)
+                            .font(CalibreType.body)
+                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if !content.condition.scale.isEmpty {
+                        Text("Scale: \(content.condition.scale.joined(separator: " · "))")
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    VStack(spacing: 0) {
+                        ForEach(Array(content.condition.rows.enumerated()), id: \.element.id) { index, row in
+                            VStack(alignment: .leading, spacing: Space.s) {
+                                HStack {
+                                    Text(row.label).font(CalibreType.bodyMedium)
+                                    Spacer()
+                                    Label(
+                                        row.agrees ? "Matches" : "Different",
+                                        systemImage: row.agrees ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
+                                    )
+                                    .font(CalibreType.caption)
+                                    .foregroundStyle(row.agrees ? Color.calibre.success : Color.calibre.warning)
+                                }
+                                comparisonLine("Seller", row.seller)
+                                comparisonLine("Calibre", row.calibre)
+                            }
+                            .padding(.vertical, Space.m)
+                            if index < content.condition.rows.count - 1 { reportDivider }
+                        }
+                    }
+                    if let footnote = content.condition.footnote, !footnote.isEmpty {
+                        Text(footnote)
+                            .font(CalibreType.caption)
+                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    private func comparisonLine(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.m) {
+            Text(label)
+                .font(CalibreType.caption)
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .frame(width: 52, alignment: .leading)
+            Text(value)
+                .font(CalibreType.body)
+                .foregroundStyle(Color.calibre.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+    }
+
+    @ViewBuilder
+    private var inclusions: some View {
+        if !content.inclusions.isEmpty {
+            reportSection("Included") {
+                VStack(spacing: 0) {
+                    ForEach(Array(content.inclusions.enumerated()), id: \.element.id) { index, item in
+                        HStack(alignment: .top, spacing: Space.m) {
+                            Image(systemName: item.present ? "checkmark.circle.fill" : "minus.circle")
+                                .foregroundStyle(item.present ? Color.calibre.success : Color.calibre.mutedForeground)
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.label).font(CalibreType.bodyMedium)
+                                if let detail = item.detail, !detail.isEmpty {
+                                    Text(detail)
+                                        .font(CalibreType.caption)
+                                        .foregroundStyle(Color.calibre.mutedForeground)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, Space.m)
+                        .accessibilityElement(children: .combine)
+                        if index < content.inclusions.count - 1 { reportDivider }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var performance: some View {
+        if !content.performance.isEmpty {
+            reportSection("Performance") {
+                VStack(spacing: 0) {
+                    ForEach(Array(content.performance.enumerated()), id: \.element.id) { index, item in
+                        findingRow(title: item.label, value: item.verdict, detail: item.detail)
+                            .padding(.vertical, Space.m)
+                        if index < content.performance.count - 1 { reportDivider }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var visualFindings: some View {
+        if !content.visual.isEmpty {
+            reportSection("Visual findings") {
+                VStack(spacing: 0) {
+                    ForEach(Array(content.visual.enumerated()), id: \.element.id) { index, item in
+                        findingRow(title: item.label, value: nil, detail: item.note)
+                            .padding(.vertical, Space.m)
+                        if index < content.visual.count - 1 { reportDivider }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var technicalFindings: some View {
+        if !content.technical.isEmpty {
+            reportSection("Technical findings") {
+                VStack(spacing: 0) {
+                    ForEach(Array(content.technical.enumerated()), id: \.element.id) { index, item in
+                        findingRow(title: item.label, value: item.value, detail: item.explanation)
+                            .padding(.vertical, Space.m)
+                        if index < content.technical.count - 1 { reportDivider }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var notes: some View {
+        if !content.notes.isEmpty {
+            reportSection("Notes") {
+                VStack(spacing: 0) {
+                    ForEach(Array(content.notes.enumerated()), id: \.element.id) { index, note in
+                        findingRow(title: note.title, value: nil, detail: note.body)
+                            .padding(.vertical, Space.m)
+                        if index < content.notes.count - 1 { reportDivider }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var photographGallery: some View {
+        if !photographs.isEmpty {
+            VStack(alignment: .leading, spacing: Space.m) {
+                Text("Photographs")
+                    .font(CalibreType.sectionTitle)
+                    .foregroundStyle(Color.calibre.foreground)
+                ForEach(photographs) { photograph in
+                    AuthenticationReportPhoto(photograph: photograph)
+                }
+            }
+        }
+    }
+
+    private func findingRow(title: String, value: String?, detail: String?) -> some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+                Spacer(minLength: Space.m)
+                if let value, !value.isEmpty {
+                    Text(value)
+                        .font(CalibreType.label)
+                        .foregroundStyle(Color.calibre.primary)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+            if let detail, !detail.isEmpty {
+                Text(detail)
+                    .font(CalibreType.body)
+                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func reportSection<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text(title)
+                .font(CalibreType.sectionTitle)
+                .foregroundStyle(Color.calibre.foreground)
+            content()
+                .padding(.horizontal, Space.l)
+                .authReportSurface()
+        }
+    }
+
+    private var reportDivider: some View {
+        Rectangle().fill(Color.calibre.border).frame(height: 1)
+    }
+}
+
+private struct AuthenticationReportPhoto: View {
+    let photograph: AuthenticationReportPhotograph
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            GeometryReader { proxy in
+                if let url = photograph.url.url {
+                    PrivateImage(url: url, side: proxy.size.width) { phase in
+                        switch phase {
+                        case .loaded(let image):
+                            image.resizable().scaledToFit()
+                        case .failed:
+                            ContentUnavailableView("Photograph unavailable", systemImage: "photo")
+                        case .loading:
+                            Rectangle().fill(Color.calibre.secondary).shimmer()
+                        }
+                    }
+                } else {
+                    ContentUnavailableView("Photograph unavailable", systemImage: "photo")
+                }
+            }
+            .aspectRatio(4 / 3, contentMode: .fit)
+            .background(Color.calibre.secondary)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+
+            if let title = photograph.title, !title.isEmpty {
+                Text(title)
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.foreground)
+            }
+            if let caption = photograph.caption, !caption.isEmpty {
+                Text(caption)
+                    .font(CalibreType.caption)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private extension View {
+    func authReportSurface() -> some View {
+        background(Color.calibre.card)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+            )
     }
 }
 
@@ -338,7 +750,7 @@ struct AuthCaseCard: View {
 
             Text(
                 payload.summary
-                    ?? "Our authentication centre found something that does not match how this watch was described. "
+                    ?? "Our authentication center found something that does not match how this watch was described. "
                     + "A person at Calibre is working out what should happen."
             )
             .font(CalibreType.body)
@@ -378,13 +790,23 @@ struct AuthCaseCard: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: Space.s) {
                             ForEach(photos) { photo in
-                                AsyncImage(url: photo.url?.url) { image in
-                                    image.resizable().scaledToFill()
-                                } placeholder: {
-                                    Color.calibre.border
+                                if let url = photo.url?.url {
+                                    PrivateImage(url: url, side: 140) { phase in
+                                        switch phase {
+                                        case .loaded(let image):
+                                            image.resizable().scaledToFill()
+                                        case .loading:
+                                            Color.calibre.border.shimmer()
+                                        case .failed:
+                                            Image(systemName: "photo")
+                                                .foregroundStyle(Color.calibre.mutedForeground)
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                .background(Color.calibre.secondary)
+                                        }
+                                    }
+                                    .frame(width: 140, height: 140)
+                                    .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                                 }
-                                .frame(width: 140, height: 140)
-                                .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                             }
                         }
                     }
