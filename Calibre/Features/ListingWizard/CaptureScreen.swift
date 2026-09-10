@@ -540,31 +540,38 @@ struct ListingPhotoLibrary: ViewModifier {
             .onChange(of: isPresented) { _, opened in
                 if opened { Observability.log(.info, "listing_photo_library_open") }
             }
-            .task(id: selection) {
-                guard let item = selection.first else { return }
-                loading = true
-                defer {
-                    loading = false
-                    selection = []
-                }
-                Observability.log(.info, "listing_photo_library_selected")
-                do {
-                    guard let data = try await item.loadTransferable(type: Data.self) else {
-                        throw PhotoImport.Failure.unreadable
-                    }
-                    let image = await Task.detached(priority: .userInitiated) {
-                        PhotoImport.decode(data)
-                    }.value
-                    guard !Task.isCancelled else { return }
-                    guard let image else { throw PhotoImport.Failure.unreadable }
-                    Observability.log(.info, "listing_photo_library_ready")
-                    onPick(image)
-                } catch {
-                    guard !Task.isCancelled else { return }
-                    Observability.log(.warning, "listing_photo_library_decode_failed")
-                    onFailure()
-                }
+            .onChange(of: selection) { _, items in
+                guard let item = items.first else { return }
+                Task { await importSelection(item) }
             }
+    }
+
+    /// Keep the picker lifecycle separate from the async import. Clearing the
+    /// binding from a `.task(id:)` cancels that task on some iOS releases,
+    /// which made the listing picker dismiss before the image reached the
+    /// wizard. Vault uses this on-change pattern successfully as well.
+    @MainActor
+    private func importSelection(_ item: PhotosPickerItem) async {
+        loading = true
+        defer {
+            loading = false
+            selection = []
+        }
+        Observability.log(.info, "listing_photo_library_selected")
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                throw PhotoImport.Failure.unreadable
+            }
+            let image = await Task.detached(priority: .userInitiated) {
+                PhotoImport.decode(data)
+            }.value
+            guard let image else { throw PhotoImport.Failure.unreadable }
+            Observability.log(.info, "listing_photo_library_ready")
+            onPick(image)
+        } catch {
+            Observability.log(.warning, "listing_photo_library_decode_failed")
+            onFailure()
+        }
     }
 }
 

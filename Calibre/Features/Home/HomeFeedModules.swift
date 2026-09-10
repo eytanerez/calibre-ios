@@ -881,8 +881,7 @@ enum CollectionSummaryCopy {
 struct FeedEndModule: View {
     let module: HomeFeedModule
     let state: String
-    let contactName: String?
-    let onAction: (FeedActionTarget) -> Void
+    let onBrowse: () -> Void
     let onRetry: () -> Void
 
     var body: some View {
@@ -912,9 +911,9 @@ struct FeedEndModule: View {
                 }
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
             } else {
-                Button(contactButtonTitle) {
+                Button("Browse all watches") {
                     Haptics.shared.play(.press)
-                    onAction(.route(.supportChat))
+                    onBrowse()
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
             }
@@ -922,12 +921,6 @@ struct FeedEndModule: View {
         .padding(.horizontal, Space.margin)
     }
 
-    private var contactButtonTitle: String {
-        guard let contactName else {
-            return "Message Calibre"
-        }
-        return "Message \(contactName)"
-    }
 }
 
 // MARK: - Shared header

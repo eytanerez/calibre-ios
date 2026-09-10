@@ -54,10 +54,6 @@ struct HomeScreen: View {
             LazyVStack(alignment: .leading, spacing: Space.xxl) {
                 VStack(alignment: .leading, spacing: Space.l) {
                     headerRow
-                    Text("Less fees, more trust, better market.")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.secondaryForeground)
-                        .fixedSize(horizontal: false, vertical: true)
                     searchButton
                 }
                 .padding(.horizontal, Space.margin)
@@ -357,8 +353,7 @@ struct HomeScreen: View {
             FeedEndModule(
                 module: module,
                 state: state,
-                contactName: homeContactName,
-                onAction: open
+                onBrowse: { pushed = .results(BrowseFilters(), title: "All Watches") }
             ) {
                 Task { await model?.load() }
             }
@@ -367,14 +362,6 @@ struct HomeScreen: View {
             // case here is a compile error rather than a silent omission.
             EmptyView()
         }
-    }
-
-    /// The account payload is authoritative even before a support thread has
-    /// been opened. The thread fallback keeps the name visible against an
-    /// older server that has already returned it through support.
-    private var homeContactName: String? {
-        session.user?.assignedContact?.name
-            ?? services.support.conversation?.assignedContact?.name
     }
 
     private func open(_ target: FeedActionTarget) {

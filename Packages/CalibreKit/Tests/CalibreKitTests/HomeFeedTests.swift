@@ -442,11 +442,11 @@ final class HomeFeedTests: XCTestCase {
         // The guest opens with the newest shelf where the member's ranked one
         // sits, and gets none of what only a member has — even when the server
         // sent it. The guest feed carries a poll and a terminator; the guest
-        // page draws neither, and the ranked module is not drawn for a guest
-        // under a greeting that has nobody to greet.
+        // page draws the terminator so it can browse all watches, while the
+        // poll and ranked module stay member-only.
         XCTAssertEqual(
             HomeRunningOrder.sections(audience: .guest, feed: .loaded, present: Self.everySection),
-            [.freshArrivals, .bite, .brands, .popular]
+            [.freshArrivals, .bite, .brands, .popular, .endOfFeed]
         )
     }
 

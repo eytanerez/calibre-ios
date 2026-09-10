@@ -28,8 +28,8 @@ struct IntroPager: View {
         ),
         Panel(
             icons: ["bell", "chart.line.uptrend.xyaxis", "heart"],
-            headline: "Less fees, more trust,\nbetter market.",
-            line: "Follow the pieces you care about and act the moment the price is right."
+            headline: "Stay close to\nthe market.",
+            line: "Follow the pieces you care about and act when the right watch appears."
         ),
     ]
 

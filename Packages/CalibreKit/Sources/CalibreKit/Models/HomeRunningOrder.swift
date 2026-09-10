@@ -61,12 +61,13 @@ public enum HomeFeedLoadState: Sendable {
 /// their greeting. The day's Bite sits directly under that first row of
 /// watches on both pages — above Recently viewed for a member, above the
 /// brands for a guest — so the day's reading is met before the page settles
-/// into shelves. Both go on to brands and what is popular, and what only a
-/// member has — the day's question, their own watches, the feed's terminator
-/// — follows. A section with nothing to show is absent, never an empty frame,
+/// into shelves. Both go on to brands and what is popular, and the member's
+/// personal modules follow before the feed terminator closes the page. A
+/// section with nothing to show is absent, never an empty frame,
 /// and a member-only section is not drawn for a guest even when the server
 /// happened to send it: the guest feed carries a poll and a terminator, and
-/// the guest page shows neither.
+/// the guest page shows the Bite and browse-all-watches terminator while
+/// keeping the poll private.
 public enum HomeRunningOrder {
     /// `present` is the set of sections that have something to show. The two
     /// state-derived entries, the skeleton and the retry, are decided by `feed`
@@ -114,6 +115,7 @@ public enum HomeRunningOrder {
                 .bite,
                 .brands,
                 .popular,
+                .endOfFeed,
             ]
         }
 
