@@ -74,6 +74,13 @@ struct MainTabView: View {
         .task(id: notificationRefresh) {
             guard session.isAuthenticated, scenePhase == .active else { return }
             try? await services.serverAlerts.load()
+            services.push.updateApplicationBadge()
+        }
+        .onChange(of: services.serverAlerts.remainingCount) { _, _ in
+            services.push.updateApplicationBadge()
+        }
+        .onChange(of: services.alerts.remainingCount) { _, _ in
+            services.push.updateApplicationBadge()
         }
         // The fallback push, for a caller standing on a tab's root screen with
         // nothing above it: append to that tab's path. Every pushed screen

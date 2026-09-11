@@ -193,7 +193,10 @@ final class PushCoordinator: NSObject {
     func accountDidChange(to userID: String?) {
         registration.setUser(nil)
         if signingOutUserID != userID { signingOutUserID = nil }
-        guard userID != nil else { return }
+        guard userID != nil else {
+            Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
+            return
+        }
         Task { await requestAuthorizationIfNeeded() }
     }
 
@@ -350,6 +353,9 @@ final class PushCoordinator: NSObject {
             listingStatus: push.listingStatus,
             at: receivedAt
         )
+        // APNs normally applies its `aps.badge` value. Keep the local inbox
+        // path correct too for injected/debug pushes and older server payloads.
+        updateApplicationBadge()
         // A foreground push surfaces as a banner (via the delegate) and is not
         // an open — seeing a banner is not reading the message.
         guard !foreground else { return }
@@ -451,6 +457,17 @@ final class PushCoordinator: NSObject {
         } else if sync.clearedAll {
             try? await UNUserNotificationCenter.current().setBadgeCount(0)
         }
+    }
+
+    /// Synchronises the native app-icon badge with the durable inbox count.
+    /// The server's APNs payload supplies this while the app is backgrounded;
+    /// this method covers foreground loads, local guest history, and builds
+    /// that predate the payload field.
+    func updateApplicationBadge() {
+        let count = auth.isAuthenticated
+            ? (serverAlerts?.remainingCount ?? 0)
+            : (alerts?.remainingCount ?? 0)
+        Task { try? await UNUserNotificationCenter.current().setBadgeCount(max(count, 0)) }
     }
 
     /// Pulls the delivered notifications out of the tray.
