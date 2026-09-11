@@ -29,6 +29,7 @@ struct CaptureScreen: View {
     @State private var gridOn = false
     @State private var libraryFailed = false
     @State private var showingLibrary = false
+    @State private var librarySelectionPending = false
 
     var body: some View {
         ZStack {
@@ -46,7 +47,16 @@ struct CaptureScreen: View {
         // Keep the native popup attached to this stable screen root, like
         // Vault's picker, rather than a camera subview that can be replaced.
         .modifier(ListingPhotoLibrary(isPresented: $showingLibrary) { image in
-            captured = image
+            // PhotosUI dismisses before its asynchronous import finishes. Keep
+            // the preview mounted until AVFoundation has stopped before
+            // replacing it (CALIBRE-IOS-3).
+            librarySelectionPending = true
+            Task { @MainActor in
+                await camera.stopAndWait()
+                guard librarySelectionPending else { return }
+                captured = image
+                librarySelectionPending = false
+            }
         } onFailure: {
             libraryFailed = true
         })
@@ -55,15 +65,22 @@ struct CaptureScreen: View {
         } message: {
             Text("Try another photo, or download it from iCloud in Photos and try again.")
         }
-        .task(id: showingLibrary || captured != nil) {
-            if showingLibrary || captured != nil {
-                camera.stop()
+        .task(id: showingLibrary || captured != nil || librarySelectionPending) {
+            if showingLibrary || captured != nil || librarySelectionPending {
+                await camera.stopAndWait()
             } else {
                 await camera.start()
             }
         }
         .onDisappear {
             camera.stop()
+        }
+    }
+
+    private func closeCapture() {
+        Task { @MainActor in
+            await camera.stopAndWait()
+            dismiss()
         }
     }
 
@@ -108,7 +125,7 @@ struct CaptureScreen: View {
     private var topBar: some View {
         HStack {
             Button {
-                dismiss()
+                closeCapture()
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .medium))
@@ -265,8 +282,11 @@ struct CaptureScreen: View {
                 .buttonStyle(.calibre(.secondary, fullWidth: true))
 
                 Button("Use photo") {
-                    onUse(image)
-                    dismiss()
+                    Task { @MainActor in
+                        await camera.stopAndWait()
+                        onUse(image)
+                        dismiss()
+                    }
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
             }
@@ -283,7 +303,7 @@ struct CaptureScreen: View {
         VStack(spacing: Space.xl) {
             HStack {
                 Button {
-                    dismiss()
+                    closeCapture()
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 16, weight: .medium))
@@ -375,27 +395,41 @@ final class CameraController {
         device = camera
         let session = session
         let output = output
-        queue.async {
-            session.beginConfiguration()
-            session.sessionPreset = .photo
-            if session.inputs.isEmpty,
-               let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input) {
-                session.addInput(input)
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            queue.async {
+                session.beginConfiguration()
+                session.sessionPreset = .photo
+                if session.inputs.isEmpty,
+                   let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input) {
+                    session.addInput(input)
+                }
+                if session.canAddOutput(output) {
+                    session.addOutput(output)
+                }
+                session.commitConfiguration()
+                if !session.isRunning { session.startRunning() }
+                continuation.resume()
             }
-            if session.canAddOutput(output) {
-                session.addOutput(output)
-            }
-            session.commitConfiguration()
-            if !session.isRunning { session.startRunning() }
         }
         #endif
     }
 
     func stop() {
+        Task { @MainActor in
+            await stopAndWait()
+        }
+    }
+
+    /// Stop after queued configuration work and resume once the preview can
+    /// safely be removed from the view hierarchy.
+    func stopAndWait() async {
         let session = session
-        queue.async {
-            if session.isRunning {
-                session.stopRunning()
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            queue.async {
+                if session.isRunning {
+                    session.stopRunning()
+                }
+                continuation.resume()
             }
         }
     }

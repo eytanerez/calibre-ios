@@ -98,7 +98,7 @@ struct SavedScreen: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .calibrePageSwipe(selection: $tab, values: [.watches, .searches])
         .calibrePageBackground()
         .navigationTitle("Saved")
