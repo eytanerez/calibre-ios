@@ -876,13 +876,25 @@ enum CollectionSummaryCopy {
 
 // MARK: - end_of_feed
 
-/// The feed's own ending, in the server's words. Everything below it on this
-/// screen is the app's furniture and is not part of the feed.
+/// The feed stops here: a rule, and the way onwards. Everything below it on
+/// this screen is the app's furniture and is not part of the feed.
+///
+/// The server still sends "That's everything for you today." and no surface
+/// renders it — Eytan had the farewell removed everywhere. What stays is the
+/// button, which he asked for back after it briefly became Contact support;
+/// the question that introduced it ("Need help buying, selling, or comparing
+/// watches?") went with the support link it belonged to and is not a caption
+/// for browsing.
+///
+/// A **degraded** feed keeps its title, because there it is not a farewell but
+/// "we could not finish loading this", and it comes with the retry.
 struct FeedEndModule: View {
     let module: HomeFeedModule
     let state: String
     let onBrowse: () -> Void
     let onRetry: () -> Void
+
+    private var degraded: Bool { state == "degraded" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
@@ -890,21 +902,14 @@ struct FeedEndModule: View {
                 .fill(Color.calibre.border)
                 .frame(height: 1)
 
-            if state == "degraded" {
+            if degraded {
                 Text(module.title)
                     .font(CalibreType.body)
                     .foregroundStyle(Color.calibre.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text("Need help buying, selling, or comparing watches?")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
 
-            // A degraded feed carries no CTA of its own — the retry is the
-            // action, and it belongs to this side.
-            if state == "degraded" {
+                // A degraded feed carries no CTA of its own — the retry is the
+                // action, and it belongs to this side.
                 Button("Try again") {
                     Haptics.shared.play(.press)
                     onRetry()

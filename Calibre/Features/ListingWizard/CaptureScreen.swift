@@ -53,11 +53,17 @@ struct CaptureScreen: View {
             librarySelectionPending = true
             Task { @MainActor in
                 await camera.stopAndWait()
+                // The screen can go while the import is still in flight — the
+                // seller taps the X, or the wizard moves on. `abandonImport()`
+                // is what clears this, and without something clearing it the
+                // guard was decoration: nothing but the success path below
+                // ever wrote to it, so it could not be false when read.
                 guard librarySelectionPending else { return }
                 captured = image
                 librarySelectionPending = false
             }
         } onFailure: {
+            librarySelectionPending = false
             libraryFailed = true
         })
         .alert("Couldn't open this photo", isPresented: $libraryFailed) {
@@ -73,15 +79,29 @@ struct CaptureScreen: View {
             }
         }
         .onDisappear {
+            abandonImport()
             camera.stop()
         }
     }
 
     private func closeCapture() {
+        abandonImport()
         Task { @MainActor in
             await camera.stopAndWait()
             dismiss()
         }
+    }
+
+    /// Drop a library import whose screen is already going.
+    ///
+    /// The import outlives the tap that started it: PhotosUI hands the bytes
+    /// back on its own schedule, and the decode runs off the main thread after
+    /// that. A seller who selects a photo and immediately closes the camera
+    /// would otherwise have it arrive into a screen they left, restart the
+    /// camera behind them through `.task(id:)`, and land a photo in the slot
+    /// they had just decided against.
+    private func abandonImport() {
+        librarySelectionPending = false
     }
 
     // MARK: - Live camera

@@ -431,9 +431,16 @@ final class PushCoordinator: NSObject {
                     .filter { !$0.isEmpty }
             )
             clearedAll = (userInfo["cleared_all"] as? String) == "true"
+            // No `?? 0` on the end of this chain. It was there, and it made
+            // the property above a lie: `remaining` could not be nil, so the
+            // "payload named no count" branch in `apply(_:)` was unreachable
+            // and a clear that mentioned no count set the badge to zero —
+            // the exact wipe the doc comment describes. The two fields are
+            // alternatives to each other, not to zero.
             let count = (userInfo["remaining_count"] as? String).flatMap(Int.init)
-            remaining = count ?? (userInfo["aps"] as? [AnyHashable: Any])
-                .flatMap { $0["badge"] as? Int } ?? 0
+            let badge = (userInfo["aps"] as? [AnyHashable: Any])
+                .flatMap { $0["badge"] as? Int }
+            remaining = count ?? badge
         }
     }
 
