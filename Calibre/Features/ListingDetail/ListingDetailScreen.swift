@@ -351,8 +351,28 @@ struct ListingDetailScreen: View {
         if let model = listing.model { rows.append(("Model", model)) }
         if let reference = listing.referenceNumber { rows.append(("Reference", reference)) }
         if let year = listing.productionYear { rows.append(("Year", String(year))) }
-        if let boxPapers = listing.boxPapers {
-            rows.append(("Box & papers", boxPapers ? "Full set" : "Watch only"))
+        // What came with the watch, as three answers where the seller gave
+        // three. These used to reach a buyer only as `Key: Value` lines parsed
+        // out of the description; they are columns now and are read as columns.
+        // Nil is "nobody was asked" and prints nothing — an unasked question
+        // must never read as a seller's "no".
+        let inclusions: [(String, Bool?)] = [
+            ("Box", listing.boxIncluded),
+            ("Papers", listing.papersIncluded),
+            ("Booklets", listing.bookletsIncluded),
+        ]
+        let answered = inclusions.compactMap { label, value -> (String, String)? in
+            guard let value else { return nil }
+            return (label, value ? "Included" : "Not included")
+        }
+        if answered.isEmpty {
+            // The single bit a listing made before the question was split
+            // carries, and all it can say.
+            if let boxPapers = listing.boxPapers {
+                rows.append(("Box & papers", boxPapers ? "Full set" : "Watch only"))
+            }
+        } else {
+            rows.append(contentsOf: answered)
         }
         // The catalog's own specs, merged with whatever this one watch
         // overrides, straight off the payload.
