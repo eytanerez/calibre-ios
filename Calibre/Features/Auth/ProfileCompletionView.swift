@@ -25,22 +25,54 @@ import SwiftUI
 ///   session, and a box that arrived full is a box the member can leave alone.
 ///   The submit sends only what actually changed — the endpoint writes exactly
 ///   what it is given.
+///
+/// Registering by email is two steps — who you are, then where watches ship
+/// (`RegisterScreen`). A social sign-in never passes through it, so those
+/// accounts arrived with nowhere to ship to and were asked for an address for
+/// the first time at checkout. This screen carries the same second step for an
+/// account that has none.
+///
+/// **The address is not part of `profile_complete`.** That flag raises this
+/// gate on three clients, and an address is not an identity field: an account
+/// may hold several or none, and adding it to the contract would hold every
+/// existing member here before they could open their own orders. Checkout stays
+/// where an address is required — it already demands one and offers the saved
+/// default — so this step can be skipped.
+///
+/// **The address is written before the profile patch, not after.** Completing
+/// the profile is what makes `needsProfileCompletion` false, which is what
+/// takes this whole view off the screen. Saving the address second would mean
+/// racing the teardown of the view holding the fields.
 struct ProfileCompletionView: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
 
+    @State private var step: Step = .details
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var phone = ""
     @State private var username = ""
+    @State private var addressFullName = ""
+    @State private var street = ""
+    @State private var apartment = ""
+    @State private var city = ""
+    @State private var state = ""
+    @State private var zip = ""
     @State private var usernameError: String?
     @State private var errorMessage: String?
     @State private var busy = false
     @State private var confirmSignOut = false
     @State private var prefilled = false
+    /// How many addresses this account holds, or nil while nobody knows. A
+    /// lookup that has not landed — or that failed — is not an account with no
+    /// address, and treating it as one would make a member retype one they
+    /// already have.
+    @State private var savedAddressCount: Int?
     @FocusState private var focusedField: Field?
 
-    private enum Field { case firstName, lastName, phone, username }
+    private enum Step { case details, address }
+
+    private enum Field { case firstName, lastName, phone, username, addressName, street, apartment, city, state, zip }
 
     /// What the account already had. A field that arrived filled is not
     /// required to change; an empty one is what the gate is here for.
@@ -48,12 +80,27 @@ struct ProfileCompletionView: View {
 
     private var email: String { startingUser?.email ?? "" }
 
-    private var canSubmit: Bool {
-        !busy
-            && InputValidation.isNonBlank(firstName)
+    private var detailsComplete: Bool {
+        InputValidation.isNonBlank(firstName)
             && InputValidation.isNonBlank(lastName)
             && InputValidation.isValidPhone(phone)
             && Self.usernameProblem(username) == nil
+    }
+
+    /// Only a lookup that came back empty asks for an address.
+    private var asksForAddress: Bool { savedAddressCount == 0 }
+
+    private var addressComplete: Bool {
+        InputValidation.isNonBlank(addressFullName)
+            && InputValidation.isNonBlank(street)
+            && InputValidation.isNonBlank(city)
+            && InputValidation.isNonBlank(state)
+            && InputValidation.isNonBlank(zip)
+    }
+
+    private var canSubmit: Bool {
+        guard !busy, detailsComplete else { return false }
+        return step == .details || addressComplete
     }
 
     var body: some View {
@@ -62,29 +109,55 @@ struct ProfileCompletionView: View {
                 header
 
                 BetaFillButton { person in
-                    firstName = person.account.firstName
-                    lastName = person.account.lastName
-                    phone = person.account.phone
-                    username = person.account.username
+                    if step == .address {
+                        addressFullName = [person.address.firstName, person.address.lastName]
+                            .filter { !$0.isEmpty }
+                            .joined(separator: " ")
+                        street = person.address.line1
+                        apartment = person.address.line2
+                        city = person.address.city
+                        state = person.address.region
+                        zip = person.address.postalCode
+                    } else {
+                        firstName = person.account.firstName
+                        lastName = person.account.lastName
+                        phone = person.account.phone
+                        username = person.account.username
+                    }
                 }
 
                 if let errorMessage {
                     AuthErrorLine(message: errorMessage)
                 }
 
-                fields
-
-                emailRow
+                if step == .address {
+                    addressFields
+                } else {
+                    fields
+                    emailRow
+                }
 
                 VStack(spacing: Space.m) {
                     Button {
                         Haptics.shared.play(.press)
-                        Task { await submit() }
+                        advance()
                     } label: {
-                        CalibreBusyLabel("Save and continue", busy: busy)
+                        CalibreBusyLabel(primaryActionTitle, busy: busy)
                     }
                     .buttonStyle(.calibre(.primary, fullWidth: true))
                     .disabled(!canSubmit)
+
+                    if step == .address {
+                        // Checkout asks for an address anyway, so holding a
+                        // member here over one they have not decided on would
+                        // be a second gate over something already gated.
+                        Button("I'll add this at checkout") {
+                            Haptics.shared.play(.press)
+                            Task { await submit(withAddress: false) }
+                        }
+                        .buttonStyle(.calibreGhost)
+                        .disabled(busy)
+                    }
 
                     Button("Sign out") {
                         Haptics.shared.play(.press)
@@ -130,22 +203,81 @@ struct ProfileCompletionView: View {
             phone = PhoneFormatter.format(startingUser?.phone ?? "")
             username = startingUser?.username ?? ""
             focusedField = firstFocus
+            // Deliberately not `try` — a lookup that fails leaves the count
+            // unknown, which is what keeps the address step from being offered
+            // to somebody who already has one.
+            if let rows = try? await services.commerce.loadAddresses() {
+                savedAddressCount = rows.count
+            }
         }
     }
 
     // MARK: - Pieces
 
+    private var primaryActionTitle: String {
+        if step == .address { return "Save address" }
+        return asksForAddress ? "Continue" : "Save and continue"
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             CalibreWordmark(size: 28)
-            Text("One more thing")
+            Text(step == .address ? "Where should watches ship?" : "One more thing")
                 .font(CalibreType.title)
                 .foregroundStyle(Color.calibre.foreground)
                 .accessibilityAddTraits(.isHeader)
-            Text("We're missing a few details we need before you can buy or sell. Your username is the name other members see; your number is only ever used for an order.")
+            Text(
+                step == .address
+                    ? "We use your address for shipping estimates, checkout totals, and delivery details. Calibre ships within the United States."
+                    : "We're missing a few details we need before you can buy or sell. Your username is the name other members see; your number is only ever used for an order."
+            )
                 .font(CalibreType.body)
                 .foregroundStyle(Color.calibre.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The same boxes, in the same order and with the same content types, as
+    /// step two of registration — so iOS AutoFill offers the saved address here
+    /// exactly as it does there.
+    private var addressFields: some View {
+        VStack(spacing: Space.l) {
+            CalibreTextField("Full name", text: $addressFullName, kind: .fullName)
+                .focused($focusedField, equals: .addressName)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .street }
+
+            CalibreTextField(
+                "Street address",
+                text: $street,
+                placeholder: "123 Meridian Ave",
+                kind: .addressLine1
+            )
+            .focused($focusedField, equals: .street)
+            .submitLabel(.next)
+            .onSubmit { focusedField = .apartment }
+
+            CalibreTextField("Apartment, suite (optional)", text: $apartment, kind: .addressLine2)
+                .focused($focusedField, equals: .apartment)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .city }
+
+            CalibreTextField("City", text: $city, kind: .city)
+                .focused($focusedField, equals: .city)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .zip }
+
+            HStack(alignment: .top, spacing: Space.m) {
+                CalibreTextField("ZIP", text: $zip, kind: .postalCode)
+                    .focused($focusedField, equals: .zip)
+                    .submitLabel(.next)
+                    .onSubmit { focusedField = .state }
+
+                CalibreTextField("State", text: $state, placeholder: "NY", kind: .state)
+                    .focused($focusedField, equals: .state)
+                    .submitLabel(.done)
+                    .onSubmit { if canSubmit { advance() } }
+            }
         }
     }
 
@@ -269,13 +401,42 @@ struct ProfileCompletionView: View {
 
     // MARK: - Submit
 
-    private func submit() async {
+    /// The one thing both the button and the keyboard's Done key call.
+    ///
+    /// On the details step for an account with no address it moves to the
+    /// address step rather than saving, because saving is what dismisses this
+    /// whole screen.
+    private func advance() {
+        if step == .details, asksForAddress {
+            if let problem = Self.usernameProblem(username) {
+                usernameError = problem
+                focusedField = .username
+                Haptics.shared.play(.error)
+                return
+            }
+            usernameError = nil
+            errorMessage = nil
+            if InputValidation.trimmed(addressFullName).isEmpty {
+                addressFullName = [firstName, lastName]
+                    .map { InputValidation.trimmed($0) }
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " ")
+            }
+            step = .address
+            focusedField = .street
+            return
+        }
+        Task { await submit() }
+    }
+
+    private func submit(withAddress: Bool = true) async {
         guard !busy else { return }
         errorMessage = nil
 
         if let problem = Self.usernameProblem(username) {
             usernameError = problem
             focusedField = .username
+            step = .details
             Haptics.shared.play(.error)
             return
         }
@@ -295,6 +456,26 @@ struct ProfileCompletionView: View {
 
         busy = true
         defer { busy = false }
+
+        // First, because the profile patch below is what takes this screen off
+        // the display: an address written after it would be typed into a view
+        // that is already being torn down. A refusal here stops the sequence
+        // with the boxes still on screen and the server's sentence beside them.
+        if withAddress, step == .address {
+            do {
+                _ = try await services.commerce.createAddress(addressPayload())
+            } catch let error as APIError {
+                Haptics.shared.play(.error)
+                errorMessage = error.authMessage
+                Observability.log(.warning, "profile_completion_address_failed")
+                return
+            } catch {
+                Haptics.shared.play(.error)
+                errorMessage = "We could not save that address. Please try again."
+                Observability.log(.warning, "profile_completion_address_failed")
+                return
+            }
+        }
 
         do {
             let updated = try await services.account.completeProfile(fields)
@@ -318,6 +499,9 @@ struct ProfileCompletionView: View {
             Haptics.shared.play(.error)
             if error.httpStatus == ProfileCompletionStatus.usernameTaken {
                 usernameError = "That username is taken."
+                // Back to the boxes the refusal is about, or the member is
+                // looking at an address form with an error about a username.
+                step = .details
                 focusedField = .username
             } else {
                 // 400 and everything else: the backend names the field it
@@ -358,5 +542,30 @@ struct ProfileCompletionView: View {
         if !handle.isEmpty, handle != (user?.username ?? "").lowercased() { fields.username = handle }
 
         return fields
+    }
+
+    /// The first address on the account, so it is the default both to ship to
+    /// and to bill — the same thing registration's second step writes.
+    private func addressPayload() -> AddressPayload {
+        let apartmentTrimmed = InputValidation.trimmed(apartment)
+        let full = InputValidation.trimmed(addressFullName)
+        let parts = full.split(separator: " ", maxSplits: 1).map(String.init)
+        return AddressPayload(
+            label: "Primary",
+            firstName: parts.first ?? full,
+            lastName: parts.count > 1 ? parts[1] : "",
+            fullName: full,
+            // The number the courier calls, which is the one just confirmed
+            // above rather than a second question.
+            phone: PhoneFormatter.nationalDigits(phone) ?? InputValidation.trimmed(phone),
+            line1: InputValidation.trimmed(street),
+            line2: apartmentTrimmed.isEmpty ? nil : apartmentTrimmed,
+            city: InputValidation.trimmed(city),
+            region: InputValidation.trimmed(state).uppercased(),
+            postalCode: InputValidation.trimmed(zip),
+            country: "US",
+            isDefaultShipping: true,
+            isDefaultBilling: true
+        )
     }
 }
