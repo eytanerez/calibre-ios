@@ -40,6 +40,51 @@ enum CalibreStripe {
         return ["YES", "true", "1"].contains(text.trimmingCharacters(in: .whitespaces))
     }()
 
+    // MARK: - Keying the SDK
+
+    /// Points the SDK at the Stripe account an intent was minted in, and says
+    /// whether it could.
+    ///
+    /// No publishable key is compiled into this app. Every payment payload
+    /// carries its own — the checkout intent, the billing setup intent, the
+    /// offer hold, the wire deposit — so the SDK is always in whatever mode
+    /// the server that priced the money is in. That is the design, and it is
+    /// why "is the app in test mode?" is a question about the backend.
+    ///
+    /// The refusal is the part worth having. The backend reads its key as
+    /// `os.getenv("STRIPE_PUBLISHABLE_KEY", "")`, so a deployment where that
+    /// variable was never set answers with an empty string rather than an
+    /// error. Written straight into `STPAPIClient`, an empty key leaves the
+    /// SDK *configured with nothing*: it is not nil, so nothing downstream
+    /// notices, every tokenize comes back 401 with Stripe's own opaque
+    /// wording, and an Apple Pay sheet can be authorized and then fail to
+    /// complete. The website never meets this, because its loader falls back
+    /// to a build-time key when the server names none. The app has no
+    /// build-time key to fall back to, so a blank key has to stop the buyer
+    /// here, where the reason can still be put into words.
+    @discardableResult
+    static func useKey(_ key: String?) -> Bool {
+        let trimmed = (key ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        STPAPIClient.shared.publishableKey = trimmed
+        return true
+    }
+
+    /// Whether any payload has keyed the SDK yet. A path that can be reached
+    /// without pricing a card asks this before deciding a blank key is fatal.
+    static var isKeyed: Bool {
+        !(STPAPIClient.shared.publishableKey ?? "").isEmpty
+    }
+
+    /// What a buyer is told when the server named no Stripe account.
+    ///
+    /// Not phrased as a retry: the next request answers identically until the
+    /// deployment is fixed, and pointing at wire is real advice rather than
+    /// politeness — the wire route needs no publishable key at all.
+    static let unkeyedFailure = CheckoutMessageError(
+        message: "Card payments aren\u{2019}t switched on for this server yet. You can still pay by wire, and we\u{2019}re on it."
+    )
+
     /// Builds the shared PaymentSheet configuration. Apple Pay is attached only
     /// when this build can actually complete one; otherwise the sheet is cards
     /// only.
@@ -197,9 +242,12 @@ enum CalibreStripe {
     /// recogniser on the *window*, and the sheet is presented into that same
     /// window, so tapping anywhere off a field still closes the keypad.
     ///
-    /// The inline `CardEntryField` is the same control with the same toolbar
-    /// and the same window recogniser under it, so the buyer card step brackets
-    /// its own appearance with these two calls.
+    /// Only PaymentSheet needs this. The toolbar belongs to StripeUICore's
+    /// element text fields, which is the sheet's form; the inline
+    /// `CardEntryField` is `STPPaymentCardTextField`, a different control that
+    /// installs no accessory of its own. The buyer card step therefore calls
+    /// neither of these, and giving it them would strip the accessory from
+    /// every field in the app for as long as that step was on screen.
     @MainActor
     static func beginHidingDoneAccessory() {
         doneAccessoryStripper.start()

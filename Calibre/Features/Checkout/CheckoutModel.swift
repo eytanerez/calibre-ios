@@ -448,8 +448,17 @@ final class CheckoutModel {
                 shippingAddressID: addressID,
                 offerID: offerID
             )
+            // Before the intent is kept, not after. Everything the card path
+            // draws hangs off `cardIntent` — the card field, the Apple Pay
+            // button, the breakdown — and every one of them would be a
+            // promise the SDK cannot keep if the server named no account.
+            // Failing here puts the reason on screen; keeping the intent
+            // would put a card form on screen that silently 401s at the tap.
+            guard CalibreStripe.useKey(intent.publishableKey) else {
+                recordPricingFailure(CalibreStripe.unkeyedFailure)
+                return
+            }
             cardIntent = intent
-            STPAPIClient.shared.publishableKey = intent.publishableKey
             trackCheckoutStarted(.card, group: intent.breakdownGroup, breakdown: intent.breakdown)
         } catch {
             recordPricingFailure(error)
@@ -606,9 +615,14 @@ final class CheckoutModel {
         wireHoldError = nil
         // The wire path can reach a challenge without a card ever having been
         // priced, so the SDK is keyed from the hold's own payload rather than
-        // from whatever a card intent happened to leave behind.
-        if let key = wireHold?.publishableKey {
-            STPAPIClient.shared.publishableKey = key
+        // from whatever a card intent happened to leave behind. A payload that
+        // names no account is only fatal when nothing else has keyed the SDK
+        // either — and it is fatal, because `handleNextAction` against an
+        // unkeyed client fails with Stripe's own wording, which reads to a
+        // buyer as their bank refusing them.
+        if !CalibreStripe.useKey(wireHold?.publishableKey), !CalibreStripe.isKeyed {
+            wireHoldError = CalibreStripe.unkeyedFailure.message
+            return
         }
         do {
             try await handleNextAction(clientSecret: secret)

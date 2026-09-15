@@ -244,7 +244,14 @@ struct CheckoutMethodStep: View {
     private func addCardForWire() async {
         await model.addCardForWire { intent in
             await withCheckedContinuation { continuation in
-                STPAPIClient.shared.publishableKey = intent.publishableKey
+                // A sheet built on an unkeyed client opens and then fails at
+                // the tap with Stripe's own wording. Refusing here hands the
+                // buyer back to the refusal block they came from, where "Pay
+                // by card instead" is still on screen.
+                guard CalibreStripe.useKey(intent.publishableKey) else {
+                    continuation.resume(returning: false)
+                    return
+                }
                 let sheet = PaymentSheet(
                     setupIntentClientSecret: intent.setupIntent.clientSecret,
                     configuration: CalibreStripe.configuration(
