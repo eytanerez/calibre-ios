@@ -93,8 +93,13 @@ extension HomeFeedCard {
     /// The same card for a lane that draws the signal chip itself.
     ///
     /// The chip and the watcher count want the same corner of the photograph,
-    /// so a card carrying a signal gives the corner to the chip. Nothing else
-    /// about the card changes.
+    /// so a card carrying a signal gives the corner to the chip. The
+    /// condition pill moves out too, not because it competes with the chip
+    /// for a corner, but because the two are drawn together by
+    /// `FeedCardLane`'s own overlay (`LaneCardBadges`) so their combined
+    /// width can be measured — a card that also drew `ConditionPill`
+    /// internally, top-leading, would put two condition pills on screen.
+    /// Nothing else about the card changes.
     func laneCardModel(reservesReason: Bool, inCart: Bool = false) -> ListingCardModel {
         let base = cardModel(reservesReason: reservesReason, inCart: inCart)
         guard signal != nil else { return base }
@@ -105,7 +110,7 @@ extension HomeFeedCard {
             title: base.title,
             reference: base.reference,
             priceText: base.priceText,
-            condition: base.condition,
+            condition: nil,
             watcherCount: nil,
             imageURL: base.imageURL,
             isVerifiedDealer: base.isVerifiedDealer,
@@ -135,6 +140,37 @@ struct FeedSignalChip: View {
             .padding(.horizontal, Space.s)
             .padding(.vertical, 4)
             .background(Color.calibre.background.opacity(0.95), in: Capsule())
+    }
+}
+
+/// The condition pill and the signal chip, sharing one photograph when both
+/// are present.
+///
+/// Both used to be pinned to their own corner with no idea the other one
+/// existed — fine while every condition was one word ("New") and every
+/// signal was short, but "Like New" beside "Just listed" is wider than a
+/// lane card, and two absolutely-positioned pills with no shared layout
+/// don't notice until they're drawn on top of each other.
+///
+/// `ViewThatFits` tries the row first, which is pixel-for-pixel what this
+/// used to look like whenever it fit. When the row would overrun the
+/// photograph it falls back to a column instead of letting the two
+/// collide — a long condition or a long signal wraps to its own line
+/// rather than either one truncating.
+private struct LaneCardBadges: View {
+    let condition: String
+    let signal: HomeFeedSignal
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: Space.s) { pills }
+            VStack(alignment: .leading, spacing: Space.s) { pills }
+        }
+    }
+
+    @ViewBuilder private var pills: some View {
+        ConditionPill(condition)
+        FeedSignalChip(signal: signal)
     }
 }
 
@@ -387,9 +423,21 @@ private struct FeedCardLane: View {
                         // `laneCardModel` takes the count off any card that has
                         // one. Two badges stacked in one corner is not a
                         // composition, and a price cut is the sharper claim.
+                        //
+                        // When this card also has a condition, `laneCardModel`
+                        // leaves ConditionPill undrawn too, and it comes back
+                        // here paired with the chip in `LaneCardBadges`, which
+                        // measures the two together instead of pinning each to
+                        // its own corner and hoping they never meet.
                         .overlay(alignment: .topTrailing) {
-                            if let signal = card.signal {
+                            if let signal = card.signal, card.cardModel.condition == nil {
                                 FeedSignalChip(signal: signal)
+                                    .padding(Space.s)
+                            }
+                        }
+                        .overlay(alignment: .topLeading) {
+                            if let signal = card.signal, let condition = card.cardModel.condition {
+                                LaneCardBadges(condition: condition, signal: signal)
                                     .padding(Space.s)
                             }
                         }
