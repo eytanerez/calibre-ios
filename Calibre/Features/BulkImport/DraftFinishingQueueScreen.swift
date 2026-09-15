@@ -20,6 +20,7 @@ struct DraftFinishingQueueScreen: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var queue: [ImportCompletionItem]?
+    @State private var importJob: ListingImportJob?
     @State private var loadError: String?
     @State private var index = 0
     @State private var saving = false
@@ -52,10 +53,11 @@ struct DraftFinishingQueueScreen: View {
         Group {
             if let queue {
                 if queue.isEmpty {
+                    let empty = emptyQueueCopy
                     EmptyState(
-                        icon: "checkmark.circle",
-                        title: "Every draft is complete",
-                        message: "Nothing from this import needs attention — submit them from your storefront whenever you're ready."
+                        icon: (importJob?.errorCount ?? 0) > 0 ? "exclamationmark.document" : "checkmark.circle",
+                        title: empty.title,
+                        message: empty.message
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if index < queue.count {
@@ -128,6 +130,7 @@ struct DraftFinishingQueueScreen: View {
     private func load() async {
         loadError = nil
         do {
+            importJob = try? await services.seller.importJob(id: jobID)
             let loaded = try await services.seller.importCompletionQueue(jobID: jobID)
             // These drafts are provably bulk-imported. Nothing on the wire says
             // so later, and they are submitted from the shop, so record them
@@ -140,6 +143,25 @@ struct DraftFinishingQueueScreen: View {
         } catch {
             loadError = sellErrorMessage(error)
         }
+    }
+
+    /// An empty completion queue can mean success, failure, or no created rows.
+    /// None of those states is inferred as "complete" without the job counters.
+    private var emptyQueueCopy: (title: String, message: String) {
+        let produced = (importJob?.createdCount ?? 0) + (importJob?.updatedCount ?? 0)
+        if (importJob?.errorCount ?? 0) > 0, produced == 0 {
+            return (
+                "Nothing was imported",
+                "Return to Bulk import status to review the row errors, then fix and upload again."
+            )
+        }
+        if produced > 0 {
+            return (
+                "No drafts to finish",
+                "This import has no unfinished drafts. Any listings it created are already out of draft."
+            )
+        }
+        return ("No drafts to finish", "This import did not create a draft.")
     }
 
     private var current: ImportCompletionItem? {

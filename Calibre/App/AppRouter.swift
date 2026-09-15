@@ -39,6 +39,7 @@ enum Route: Hashable {
     case messages
     /// One buyer↔seller conversation, by its calibre-messaging thread id.
     case messageThread(String)
+    case accountSettings
     case alerts
     case checkout(String, offerID: String?)
     /// A past poll's own page, carried by value — there's no fetch-by-id yet.
@@ -205,6 +206,13 @@ final class AppRouter {
     /// Selects the tab that owns `route` and pushes it there. `.checkout` is
     /// special — it presents as a cover rather than a stack push.
     func open(_ route: Route) {
+        if route == .accountSettings {
+            deckPresented = false
+            tabOrigin = nil
+            youPath = NavigationPath()
+            selectedTab = .you
+            return
+        }
         if case let .checkout(listingID, offerID) = route {
             presentCheckout(listingID: listingID, offerID: offerID)
             return
@@ -231,6 +239,10 @@ final class AppRouter {
     /// the Sell tab stays in Sell. Deep links and notifications use `open(_:)`
     /// instead, which jumps to the route's canonical tab.
     func push(_ route: Route) {
+        if route == .accountSettings {
+            jump(to: .you)
+            return
+        }
         if case let .checkout(listingID, offerID) = route {
             presentCheckout(listingID: listingID, offerID: offerID)
             return
@@ -269,6 +281,8 @@ final class AppRouter {
             .community
         case .order, .offer, .alerts, .supportChat, .supportThread, .messages, .messageThread,
              .authenticationReport:
+            .you
+        case .accountSettings:
             .you
         case .vaultWatch:
             .collection

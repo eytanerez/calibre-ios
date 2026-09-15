@@ -121,7 +121,6 @@ struct AlertsInboxScreen: View {
     /// about, and it clears the notification. Nothing is left behind to tidy
     /// up afterwards, which is the whole of the ruling.
     private func open(_ row: AlertRowData) {
-        clear(row, haptic: false)
         // Only a route this build can actually resolve navigates. A push tap
         // falls back to the inbox when the route means nothing here, but from
         // inside the inbox that fallback would push a second copy of this very
@@ -132,8 +131,10 @@ struct AlertsInboxScreen: View {
         // inside the inbox does: the reader walked here, and the record they
         // asked for belongs above the list they asked for it from.
         if row.opensSellerEditor, let listingID = row.listingID {
+            clear(row, haptic: false)
             router.openSellerListing(id: listingID)
         } else if let route = row.route, let destination = PushCoordinator.route(from: route), destination != .alerts {
+            clear(row, haptic: false)
             routePush(destination)
         }
     }
@@ -246,7 +247,7 @@ private struct AlertRow: View {
                         Text(row.body)
                             .font(CalibreType.caption)
                             .foregroundStyle(Color.calibre.mutedForeground)
-                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                             .multilineTextAlignment(.leading)
                     }
                     if !row.dateText.isEmpty {

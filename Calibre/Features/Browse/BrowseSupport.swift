@@ -227,7 +227,7 @@ extension Listing {
             year: productionYear.map(String.init),
             title: model ?? title,
             reference: referenceNumber,
-            priceText: PriceFormatter.format(price.value, currency: currency),
+            priceText: PriceFormatter.listing(price.value, currency: currency),
             condition: condition?.overall,
             watcherCount: metrics?.watchers,
             imageURL: images.first?.url,
@@ -279,7 +279,7 @@ extension ListingSummary {
             year: productionYear.map(String.init),
             title: parts.model,
             reference: parts.reference,
-            priceText: PriceFormatter.format(price.value, currency: currency),
+            priceText: PriceFormatter.listing(price.value, currency: currency),
             imageURL: image?.url,
             isVerifiedDealer: seller?.isVerifiedDealer ?? false,
             isInCart: inCart

@@ -256,7 +256,7 @@ struct RootView: View {
             // Before the session, and never allowed to block it: a beta config
             // that cannot be fetched means "no beta", and a tester on a flaky
             // connection gets the app rather than a stalled launch.
-            await services.beta.load()
+            Task { await services.beta.load() }
             await services.auth.bootstrap()
             bootstrapped = true
             // Tokens survived but /auth/me never answered — the session is
@@ -379,7 +379,7 @@ final class AppServices {
         self.catalog = CatalogStore(client: client)
         self.commerce = CommerceStore(client: client)
         self.seller = SellerStore(client: client)
-        let account = AccountStore(client: client)
+        let account = AccountStore(client: client, auth: auth)
         self.account = account
         self.support = SupportStore(client: client)
         // calibre-messaging is a separate service (own base URL, own wire

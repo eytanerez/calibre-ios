@@ -295,6 +295,9 @@ public struct ListingImportJob: Codable, Sendable, Identifiable {
     public let updatedCount: Int?
     public let errorCount: Int?
     public let errorMessage: String?
+    /// Row-level failures returned by the importer. These stay attached to the
+    /// job so a seller can fix the source file instead of seeing only a count.
+    public let errors: [ListingImportRowError]?
     /// How far the seller is through finishing what this import created,
     /// counted server-side: "finished" means the row's listing has left
     /// `draft`. Absent on a payload that predates the counters — in which
@@ -311,6 +314,14 @@ public struct ListingImportJob: Codable, Sendable, Identifiable {
         guard let draftsTotal, let draftsRemaining else { return nil }
         return max(0, draftsTotal - draftsRemaining)
     }
+}
+
+/// One source row the importer could not turn into a listing.
+public struct ListingImportRowError: Codable, Sendable, Identifiable {
+    public let rowNumber: Int
+    public let errorMessage: String
+
+    public var id: String { "\(rowNumber):\(errorMessage)" }
 }
 
 /// One imported listing still missing required data/photos

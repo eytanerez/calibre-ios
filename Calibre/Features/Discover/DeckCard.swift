@@ -131,7 +131,7 @@ struct DeckCard: View {
 
             Spacer(minLength: Space.s)
 
-            Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+            Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
                 .font(CalibreType.price)
                 .foregroundStyle(Color.calibre.foreground)
                 .fixedSize(horizontal: false, vertical: true)

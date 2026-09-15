@@ -8,11 +8,13 @@ import Observation
 @Observable
 public final class AccountStore {
     @ObservationIgnored private let client: APIClient
+    @ObservationIgnored private let auth: AuthSession
 
     public private(set) var preferences: NotificationPreferences?
 
-    public init(client: APIClient) {
+    public init(client: APIClient, auth: AuthSession) {
         self.client = client
+        self.auth = auth
     }
 
     // MARK: - Push devices
@@ -37,8 +39,23 @@ public final class AccountStore {
     /// Unregisters a device token (called on sign-out).
     public func unregisterDevice(token: String) async throws {
         struct Payload: Encodable { let token: String }
-        let _: EmptyResponse = try await client.send(
+        struct Response: Decodable {
+            struct Tokens: Decodable {
+                let accessToken: String
+                let refreshToken: String?
+            }
+            let user: CurrentUser
+            let tokens: Tokens
+        }
+        let response: Response = try await client.send(
             try Endpoint.json(method: .delete, path: "/account/devices", payload: Payload(token: token))
+        )
+        auth.replaceSession(
+            with: response.user,
+            tokens: TokenPair(
+                accessToken: response.tokens.accessToken,
+                refreshToken: response.tokens.refreshToken
+            )
         )
     }
 
@@ -116,8 +133,12 @@ public final class AccountStore {
     /// to show the customer the actual list — the error envelope only
     /// carries flat string details, not the obligations array.
     @discardableResult
-    public func requestDeletion() async throws -> AccountDeletionState {
-        try await client.send(Endpoint(method: .post, path: "/account/delete-request"))
+    public func requestDeletion(currentPassword: String? = nil) async throws -> AccountDeletionState {
+        try await client.send(Endpoint<AccountDeletionState>.json(
+            method: .post,
+            path: "/account/delete-request",
+            payload: ["current_password": currentPassword?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""]
+        ))
     }
 
     /// Cancels a pending deletion.

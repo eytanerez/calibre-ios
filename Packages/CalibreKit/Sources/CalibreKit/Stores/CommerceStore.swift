@@ -483,6 +483,29 @@ public final class CommerceStore {
         )
     }
 
+    /// Rewrites the buyer's review and returns it to moderation.
+    @discardableResult
+    public func updateReview(orderID: String, rating: Int, comment: String?) async throws -> SellerReview {
+        struct Payload: Encodable {
+            let rating: Int
+            let comment: String?
+        }
+        return try await client.send(
+            try Endpoint.json(
+                method: .patch,
+                path: "/orders/\(orderID)/review",
+                payload: Payload(rating: rating, comment: comment)
+            )
+        )
+    }
+
+    /// Withdraws the buyer's review. The order can be reviewed again later.
+    public func withdrawReview(orderID: String) async throws {
+        let _: EmptyResponse = try await client.send(
+            Endpoint(method: .delete, path: "/orders/\(orderID)/review")
+        )
+    }
+
     // MARK: - Addresses
 
     @discardableResult

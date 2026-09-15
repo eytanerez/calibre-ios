@@ -160,6 +160,8 @@ struct WizardSnapshot: Codable {
     /// Category rawValue → local photo file name (inside the listing's
     /// photo folder).
     var slotFiles: [String: String]
+    /// Upload ids reconnect restored slots to jobs resumed by UploadQueue.
+    var slotJobIDs: [String: UUID]? = nil
     var extraFiles: [String]
     var fulfillRequestID: String?
     /// Absent on snapshots written before the SKU field existed.
@@ -272,6 +274,8 @@ final class WizardModel {
     var yearText = ""
     var yearUnknown = false
     var conditions: [ConditionPart: String] = [:]
+    private var suppressBrandCascade = false
+    private var suppressModelCascade = false
 
     // Price
     var priceText = ""
@@ -626,7 +630,10 @@ final class WizardModel {
             guard let category = ListingImageCategory(rawValue: raw) else { continue }
             let url = photoDir.appending(path: fileName)
             if FileManager.default.fileExists(atPath: url.path) {
-                slots[category, default: WizardPhotoSlot()].localURL = url
+                var slot = slots[category] ?? WizardPhotoSlot()
+                slot.localURL = url
+                slot.jobID = snapshot.slotJobIDs?[raw]
+                slots[category] = slot
             }
         }
         for fileName in snapshot.extraFiles {
@@ -659,6 +666,35 @@ final class WizardModel {
     func fieldChanged() {
         persistSnapshot()
         schedulePatch()
+    }
+
+    func applyPrefill(brand: String, model: String, reference: String) {
+        suppressBrandCascade = true
+        suppressModelCascade = true
+        self.brand = brand
+        self.model = model
+        self.reference = reference
+        fieldChanged()
+        scheduleVaultMatchLookup()
+    }
+
+    func brandChanged() {
+        if suppressBrandCascade {
+            suppressBrandCascade = false
+        } else {
+            model = ""
+            reference = ""
+        }
+        fieldChanged()
+    }
+
+    func modelChanged() {
+        if suppressModelCascade {
+            suppressModelCascade = false
+        } else {
+            reference = ""
+        }
+        fieldChanged()
     }
 
     private func schedulePatch() {
@@ -730,9 +766,13 @@ final class WizardModel {
     func persistSnapshot() {
         guard let listing else { return }
         var slotFiles: [String: String] = [:]
+        var slotJobIDs: [String: UUID] = [:]
         for (category, slot) in slots {
             if let url = slot.localURL {
                 slotFiles[category.rawValue] = url.lastPathComponent
+            }
+            if let jobID = slot.jobID {
+                slotJobIDs[category.rawValue] = jobID
             }
         }
         DraftStore.save(WizardSnapshot(
@@ -748,6 +788,7 @@ final class WizardModel {
             priceText: priceText,
             notes: notes,
             slotFiles: slotFiles,
+            slotJobIDs: slotJobIDs,
             extraFiles: extraPhotos.compactMap { $0.localURL?.lastPathComponent },
             fulfillRequestID: fulfillRequestID,
             sellerSku: sellerSku,
@@ -874,6 +915,24 @@ final class WizardModel {
             submitError = "That photo couldn't be processed. Please try another shot."
             return
         }
+        // A named angle is one slot. Delete the server row being replaced so
+        // an old front photo cannot remain the listing's public hero.
+        if let category {
+            let previous = slots[category]?.serverImageID
+                ?? orderedPhotos.last(where: { $0.category == category.rawValue })?.id
+            if let previous {
+                do {
+                    try await seller.deleteImage(listingID: listing.id, imageID: previous)
+                    orderedPhotos.removeAll { $0.id == previous }
+                } catch {
+                    try? FileManager.default.removeItem(at: url)
+                    submitError = (error as? APIError)?.errorDescription
+                        ?? "That photo couldn't be replaced. Please try again."
+                    return
+                }
+            }
+        }
+
         let jobID = await sell.uploads.enqueue(
             draftID: listing.id,
             listingID: listing.id,

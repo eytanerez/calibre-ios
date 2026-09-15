@@ -81,6 +81,16 @@ final class APIDecimalTests: XCTestCase {
 }
 
 final class PriceFormatterTests: XCTestCase {
+    func testListingPricesMatchWholeDollarMarketplacePresentation() {
+        XCTAssertEqual(PriceFormatter.listing(Decimal(15950)), "$15,950")
+        XCTAssertEqual(PriceFormatter.listing(Decimal(string: "39068.34")!), "$39,068")
+    }
+
+    func testTransactionAmountsKeepAlignedCents() {
+        XCTAssertEqual(PriceFormatter.amount(Decimal(15950)), "$15,950.00")
+        XCTAssertEqual(PriceFormatter.amount(Decimal(string: "80.05")!), "$80.05")
+    }
+
     func testWholeDollarsDropCents() {
         XCTAssertEqual(PriceFormatter.format(Decimal(12400)), "$12,400")
     }

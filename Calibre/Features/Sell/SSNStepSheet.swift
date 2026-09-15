@@ -125,7 +125,10 @@ struct SSNStepSheet: View {
         Task {
             defer { busy = false }
             do {
-                let session = try await sell.ops.connectAccountSession(ssn: ssn)
+                let session = try await sell.ops.connectAccountSession(
+                    ssn: ssn,
+                    createAccount: true
+                )
                 Haptics.shared.play(.success)
                 dismiss()
                 onSession(session)

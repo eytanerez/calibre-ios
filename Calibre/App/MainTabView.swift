@@ -240,6 +240,8 @@ struct RouteDestinationView: View {
             MessagesListScreen()
         case .messageThread(let id):
             MessageThreadScreen(threadID: id)
+        case .accountSettings:
+            YouScreen()
         case .alerts:
             AlertsInboxScreen()
         case .checkout(let listingID, let offerID):

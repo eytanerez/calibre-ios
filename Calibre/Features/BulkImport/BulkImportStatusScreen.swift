@@ -15,6 +15,7 @@ struct BulkImportStatusScreen: View {
 
     @State private var jobs: [ListingImportJob]?
     @State private var loadError: String?
+    @State private var consecutivePollFailures = 0
     @State private var dealerRequired = false
     @State private var dealerApplication: DealerApplication?
     @State private var showDealerApplication = false
@@ -77,19 +78,22 @@ struct BulkImportStatusScreen: View {
         }
     }
 
-    private func load() async {
+    @discardableResult
+    private func load() async -> Bool {
         loadError = nil
         do {
             jobs = try await services.seller.importJobs()
             dealerRequired = false
+            return true
         } catch {
             if sellErrorCode(error, is: "dealer_required") {
                 dealerRequired = true
                 jobs = nil
                 dealerApplication = try? await services.seller.dealerApplication()
-            } else if jobs == nil {
+            } else {
                 loadError = sellErrorMessage(error)
             }
+            return false
         }
     }
 
@@ -110,7 +114,12 @@ struct BulkImportStatusScreen: View {
             guard let jobs, jobs.contains(where: { $0.status == .processing }) else { return }
             try? await Task.sleep(for: .milliseconds(1500))
             guard !Task.isCancelled else { return }
-            await load()
+            if await load() {
+                consecutivePollFailures = 0
+            } else {
+                consecutivePollFailures += 1
+                if consecutivePollFailures >= 3 { return }
+            }
         }
     }
 
@@ -146,6 +155,13 @@ struct BulkImportStatusScreen: View {
     private func jobList(_ jobs: [ListingImportJob]) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
+                if let loadError {
+                    CalloutBand(
+                        icon: "wifi.exclamationmark",
+                        message: "These results may be out of date. \(loadError)"
+                    )
+                    .accessibilityIdentifier("bulk-import-refresh-error")
+                }
                 CalloutBand(
                     icon: "desktopcomputer",
                     message: "Upload and column-map your CSV on the web — then finish drafts here."
@@ -190,6 +206,24 @@ struct BulkImportStatusScreen: View {
                             .font(CalibreType.caption)
                             .foregroundStyle(Color.calibre.destructive)
                             .lineLimit(3)
+                    }
+
+                    if let errors = job.errors, !errors.isEmpty {
+                        let shownErrorCount = min(errors.count, 3)
+                        VStack(alignment: .leading, spacing: Space.xs) {
+                            ForEach(errors.prefix(3)) { error in
+                                Text("Row \(error.rowNumber): \(error.errorMessage)")
+                                    .font(CalibreType.caption)
+                                    .foregroundStyle(Color.calibre.destructive)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            if let count = job.errorCount, count > shownErrorCount {
+                                Text("And \(count - shownErrorCount) more row\(count - shownErrorCount == 1 ? "" : "s") to fix.")
+                                    .font(CalibreType.caption)
+                                    .foregroundStyle(Color.calibre.mutedForeground)
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
                     }
 
                     if let created = job.createdAt {
@@ -268,7 +302,7 @@ struct BulkImportStatusScreen: View {
         case .completed: StatusBadge("Completed", tone: .success)
         case .completedWithErrors: StatusBadge("Needs attention", tone: .warning)
         case .failed: StatusBadge("Failed", tone: .danger)
-        case .unknown: StatusBadge("Processing", tone: .neutral)
+        case .unknown: StatusBadge("Status unavailable", tone: .neutral)
         }
     }
 
@@ -332,4 +366,3 @@ struct BulkImportStatusScreen: View {
 struct ImportJobRef: Hashable, Identifiable {
     let id: String
 }
-

@@ -48,6 +48,12 @@ public final class MessagingStore {
         try await client.send(Endpoint(path: "/threads"))
     }
 
+    public func listThreadsPage(cursor: String? = nil) async throws -> MessageThreadPage {
+        var query = [URLQueryItem(name: "paginated", value: "true")]
+        if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
+        return try await client.send(Endpoint(path: "/threads", query: query))
+    }
+
     /// Opens a thread on a listing, or returns the existing one — idempotent
     /// per (listing, buyer) on the server, so tapping "Contact seller" twice —
     /// from the PDP, or from the order screen, which reaches the same thread
@@ -81,6 +87,24 @@ public final class MessagingStore {
 
     public func listMessages(threadID: String) async throws -> [ThreadMessage] {
         try await client.send(Endpoint(path: "/threads/\(threadID)/messages"))
+    }
+
+    public func listMessagesPage(threadID: String, cursor: String? = nil) async throws -> ThreadMessagePage {
+        var query = [URLQueryItem(name: "paginated", value: "true")]
+        if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
+        return try await client.send(Endpoint(path: "/threads/\(threadID)/messages", query: query))
+    }
+
+    public func archive(threadID: String) async throws {
+        let _: EmptyResponse = try await client.send(
+            Endpoint(method: .post, path: "/threads/\(threadID)/archive")
+        )
+    }
+
+    public func block(threadID: String) async throws {
+        let _: EmptyResponse = try await client.send(
+            Endpoint(method: .post, path: "/threads/\(threadID)/block")
+        )
     }
 
     /// Sends one message. The server alone decides delivered vs held —
@@ -169,6 +193,7 @@ public final class MessagingStore {
             body: fanout.body,
             guardAction: .allow,
             deliveredAt: fanout.createdAt,
+            reviewOutcome: nil,
             createdAt: fanout.createdAt
         )
     }

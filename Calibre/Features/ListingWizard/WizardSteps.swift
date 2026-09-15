@@ -22,9 +22,11 @@ struct DetailsStep: View {
             // broken. Renders nothing outside a beta.
             BetaFillButton(label: "Fill this in with a sample watch") { person in
                 let listing = person.listing
-                model.brand = listing["brand"] ?? ""
-                model.model = listing["model"] ?? ""
-                model.reference = listing["reference_number"] ?? ""
+                model.applyPrefill(
+                    brand: listing["brand"] ?? "",
+                    model: listing["model"] ?? "",
+                    reference: listing["reference_number"] ?? ""
+                )
                 model.yearText = listing["manufacture_year"] ?? ""
                 model.yearUnknown = false
                 model.priceText = listing["price"] ?? ""
@@ -50,16 +52,9 @@ struct DetailsStep: View {
             VStack(alignment: .leading, spacing: Space.l) {
                 ListingCatalogField("Brand", text: $model.brand, level: .brands, error: model.brandError)
                     .id(WizardField.brand)
-                    .onChange(of: model.brand) { _, _ in
-                        model.model = ""
-                        model.reference = ""
-                        model.fieldChanged()
-                    }
+                    .onChange(of: model.brand) { _, _ in model.brandChanged() }
                 ListingCatalogField("Model", text: $model.model, level: .models, brand: model.brand)
-                    .onChange(of: model.model) { _, _ in
-                        model.reference = ""
-                        model.fieldChanged()
-                    }
+                    .onChange(of: model.model) { _, _ in model.modelChanged() }
                 ListingCatalogField("Reference", text: $model.reference, level: .references, brand: model.brand, model: model.model)
                     .onChange(of: model.reference) { _, _ in model.referenceChanged() }
                 CalibreTextField(
@@ -527,6 +522,9 @@ struct PhotosStep: View {
         .font(CalibreType.bodyMedium)
         .foregroundStyle(Color.calibre.foreground)
         .tint(Color.calibre.primary)
+        .onChange(of: model.boxIncluded) { _, _ in model.fieldChanged() }
+        .onChange(of: model.papersIncluded) { _, _ in model.fieldChanged() }
+        .onChange(of: model.bookletsIncluded) { _, _ in model.fieldChanged() }
     }
 
     private func slotCell(_ category: ListingImageCategory) -> some View {
@@ -548,6 +546,7 @@ struct PhotosStep: View {
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("\(category.label) photo")
+                .accessibilityIdentifier("listing-photo-\(category.rawValue)")
 
                 if canRemove(phase) {
                     Button {
@@ -569,6 +568,7 @@ struct PhotosStep: View {
                     .buttonStyle(.plain)
                     .disabled(removingPhoto != nil)
                     .accessibilityLabel("Remove \(category.label) photo")
+                    .accessibilityIdentifier("listing-photo-remove-\(category.rawValue)")
                     .offset(x: 10, y: -10)
                 }
             }
@@ -664,7 +664,7 @@ struct PriceStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             VStack(alignment: .leading, spacing: Space.s) {
-                Text(model.price.map { PriceFormatter.format($0) } ?? "$—")
+                Text(model.price.map { PriceFormatter.listing($0) } ?? "$—")
                     .font(CalibreType.serif(.semiBold, 40, relativeTo: .largeTitle))
                     .foregroundStyle(
                         model.price == nil ? Color.calibre.placeholder : Color.calibre.foreground
@@ -734,7 +734,7 @@ struct PriceStep: View {
                 rowDivider
                 payoutRow(commissionLabel, value: commissionText, busy: model.previewing)
                 rowDivider
-                payoutRow("Estimated shipping", value: shippingText, busy: shippingBusy)
+                payoutRow("Estimated shipping after sale", value: shippingText, busy: shippingBusy)
                 rowDivider
                 netRow
                 rowDivider
@@ -825,7 +825,7 @@ struct PriceStep: View {
 
     private var shippingText: String {
         if let shipping = model.shipping {
-            return "− \(PriceFormatter.format(shipping.amount.value, currency: shipping.currency))"
+            return PriceFormatter.format(shipping.amount.value, currency: shipping.currency)
         }
         return model.price == nil ? "—" : "included after quote"
     }

@@ -291,7 +291,7 @@ struct DeckView: View {
         var parts: [String] = []
         if let brand = listing.brand { parts.append(brand) }
         parts.append(listing.title)
-        parts.append(PriceFormatter.format(listing.price.value, currency: listing.currency))
+        parts.append(PriceFormatter.listing(listing.price.value, currency: listing.currency))
         if let condition = listing.condition?.overall { parts.append(condition) }
         return parts.joined(separator: ", ")
     }

@@ -303,13 +303,6 @@ struct SellerDashboardScreen: View {
     /// uses, so tapping the badge lands on exactly that many rows.
     private var tabBadges: [SellerTab: SellerTabBadge] {
         var badges: [SellerTab: SellerTabBadge] = [:]
-        let needsAction = listings.filter(SellerStatusDisplay.needsAction).count
-        if let badge = SellerTabBadge(
-            count: needsAction,
-            spoken: { $0 == 1 ? "1 needs your attention" : "\($0) need your attention" }
-        ) {
-            badges[.listings] = badge
-        }
         if let dashboard, let badge = SellerTabBadge(
             count: dashboard.metrics.offersWaiting,
             spoken: { $0 == 1 ? "1 waiting on you" : "\($0) waiting on you" }

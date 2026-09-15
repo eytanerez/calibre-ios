@@ -23,6 +23,7 @@ struct SellGateScreen: View {
     @Environment(AuthSession.self) private var session
     @Environment(SellSession.self) private var sell
     @Environment(ToastCenter.self) private var toasts
+    @Environment(\.openURL) private var openURL
 
     @State private var showSSNStep = false
     @State private var accountSession: ConnectAccountSession?
@@ -50,7 +51,8 @@ struct SellGateScreen: View {
                 if showWebFallback {
                     CalloutBand(
                         icon: "safari",
-                        message: "Finish setting up payouts on the web — your progress is saved."
+                        message: "Open Stripe's secure website to finish setup — your progress is saved.",
+                        action: { Task { await openHostedOnboarding() } }
                     )
                 }
             }
@@ -542,6 +544,18 @@ struct SellGateScreen: View {
         showWebFallback = false
         Analytics.sellerStarted()
         showSSNStep = true
+    }
+
+    private func openHostedOnboarding() async {
+        do {
+            openURL(try await sell.ops.connectAccountLink())
+        } catch {
+            toasts.show(
+                title: "We couldn't open Stripe",
+                message: sellErrorMessage(error),
+                tone: .error
+            )
+        }
     }
 
     /// With an existing Connect account the backend ignores the SSN field,

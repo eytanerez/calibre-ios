@@ -317,7 +317,9 @@ struct ResultsContent: View {
             EmptyState(
                 icon: "magnifyingglass",
                 title: "No watches match",
-                message: "Nothing in the market fits these filters right now. Loosen one or two and look again.",
+                message: badgeCount > 0
+                    ? "Nothing in the market fits these filters right now. Loosen one or two and look again."
+                    : "Nothing in the market matches this search right now. Try another brand, model, or reference.",
                 actionTitle: badgeCount > 0 ? "Clear filters" : nil
             ) {
                 Task { await model.apply(model.filters.cleared(keepBrand: lockedBrand != nil)) }

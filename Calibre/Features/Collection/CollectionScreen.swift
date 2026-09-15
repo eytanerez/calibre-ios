@@ -165,8 +165,11 @@ struct CollectionScreen: View {
         } message: { watch in
             Text("\"\(watch.displayTitle)\" leaves your vault. You can add it again later.")
         }
-        .task {
-            guard session.isAuthenticated else { return }
+        .task(id: session.isAuthenticated) {
+            guard session.isAuthenticated else {
+                isLoading = false
+                return
+            }
             await load()
         }
         .refreshable {

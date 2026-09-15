@@ -467,16 +467,18 @@ struct FeedBiteModule: View {
                     .fill(Color.calibre.border)
                     .frame(height: 1)
 
-                eyebrowRow {
+                HStack(spacing: Space.s) {
                     Eyebrow(module.title, color: Color.calibre.primary)
-                    if !bite.topic.isEmpty {
-                        Eyebrow(bite.topic)
-                    }
+                    Spacer(minLength: Space.s)
                     if fromArchive {
                         FeedBiteArchiveChip()
                     }
                 }
                 .padding(.top, Space.s)
+
+                if !bite.topic.isEmpty {
+                    Eyebrow(bite.topic)
+                }
 
                 biteHeadline
 

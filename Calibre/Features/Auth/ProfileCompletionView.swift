@@ -351,7 +351,7 @@ struct ProfileCompletionView: View {
         let typedDigits = phone.filter(\.isNumber)
         let heldDigits = (user?.phone ?? "").filter(\.isNumber)
         if !typedDigits.isEmpty, typedDigits != heldDigits {
-            fields.phone = InputValidation.trimmed(phone)
+            fields.phone = PhoneFormatter.nationalDigits(phone) ?? InputValidation.trimmed(phone)
         }
 
         let handle = InputValidation.trimmed(username).lowercased()

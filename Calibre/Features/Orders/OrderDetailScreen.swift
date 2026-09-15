@@ -23,6 +23,8 @@ struct OrderDetailScreen: View {
     @State private var reviewRating = 0
     @State private var reviewComment = ""
     @State private var submittingReview = false
+    @State private var editingReview = false
+    @State private var confirmingReviewWithdrawal = false
     /// Owns the return: the quote, the start call, and the controls that
     /// follow. Created once the order is known, kept in step with it.
     @State private var returnFlow: ReturnFlowModel?
@@ -882,16 +884,57 @@ struct OrderDetailScreen: View {
             Text("Rate the seller").font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
             if let review {
                 VStack(alignment: .leading, spacing: Space.s) {
-                    StarRating(rating: Double(review.rating))
-                    if let comment = review.comment, !comment.isEmpty {
-                        Text(comment).font(CalibreType.body).foregroundStyle(Color.calibre.foreground)
+                    if editingReview {
+                        StarRating(selection: $reviewRating)
+                        CalibreTextField(
+                            "Anything you'd like to add? (optional)",
+                            text: $reviewComment,
+                            kind: .sentence
+                        )
+                        .onChange(of: reviewComment) { _, value in
+                            if value.count > 2_000 { reviewComment = String(value.prefix(2_000)) }
+                        }
+                        Button(submittingReview ? "Saving…" : "Save review") {
+                            Task { await updateReview(order) }
+                        }
+                        .buttonStyle(.calibre(.primary, fullWidth: true))
+                        .disabled(reviewRating == 0 || submittingReview)
+                        Button("Cancel") { editingReview = false }
+                            .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    } else {
+                        StarRating(rating: Double(review.rating))
+                        if let comment = review.comment, !comment.isEmpty {
+                            Text(comment).font(CalibreType.body).foregroundStyle(Color.calibre.foreground)
+                        }
+                        Text("Thanks for sharing how it went.")
+                            .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                        HStack(spacing: Space.s) {
+                            Button("Edit review") {
+                                reviewRating = review.rating
+                                reviewComment = review.comment ?? ""
+                                editingReview = true
+                            }
+                            .buttonStyle(.calibre(.secondary))
+                            Button("Withdraw") { confirmingReviewWithdrawal = true }
+                                .buttonStyle(.calibre(.destructive))
+                        }
                     }
-                    Text("Thanks for sharing how it went.")
-                        .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Space.l)
                 .cardSurface()
+                .confirmationDialog(
+                    "Withdraw this review?",
+                    isPresented: $confirmingReviewWithdrawal,
+                    titleVisibility: .visible
+                ) {
+                    Button("Withdraw review", role: .destructive) {
+                        Task { await withdrawReview(order) }
+                    }
+                    Button("Keep it", role: .cancel) {}
+                } message: {
+                    Text("It will no longer appear on the seller's profile. You can write a new review later.")
+                }
             } else {
                 VStack(alignment: .leading, spacing: Space.m) {
                     StarRating(selection: $reviewRating)
@@ -940,6 +983,45 @@ struct OrderDetailScreen: View {
         } catch {
             Haptics.shared.play(.error)
             toasts.show(title: "Couldn't submit", message: error.orderMessage, tone: .error)
+        }
+    }
+
+    private func updateReview(_ order: Order) async {
+        guard (1...5).contains(reviewRating), !submittingReview else { return }
+        submittingReview = true
+        defer { submittingReview = false }
+        do {
+            review = try await services.commerce.updateReview(
+                orderID: order.id,
+                rating: reviewRating,
+                comment: InputValidation.isNonBlank(reviewComment)
+                    ? InputValidation.trimmed(reviewComment)
+                    : nil
+            )
+            editingReview = false
+            Haptics.shared.play(.success)
+            toasts.show(title: "Review updated", message: "Your changes are back in review.", tone: .success)
+        } catch {
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't update review", message: error.orderMessage, tone: .error)
+        }
+    }
+
+    private func withdrawReview(_ order: Order) async {
+        guard !submittingReview else { return }
+        submittingReview = true
+        defer { submittingReview = false }
+        do {
+            try await services.commerce.withdrawReview(orderID: order.id)
+            review = nil
+            editingReview = false
+            reviewRating = 0
+            reviewComment = ""
+            Haptics.shared.play(.success)
+            toasts.show(title: "Review withdrawn", message: "You can write another review later.", tone: .success)
+        } catch {
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't withdraw review", message: error.orderMessage, tone: .error)
         }
     }
 

@@ -329,7 +329,7 @@ struct CartSheet: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
             if let listing = item.listing {
-                Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
                     .font(CalibreType.priceSmall)
                     .foregroundStyle(Color.calibre.foreground)
                 if let badge = listing.unavailableBadge {
@@ -448,7 +448,7 @@ struct CartSheet: View {
             }
         }
         .buttonStyle(PressableStyle())
-        .accessibilityLabel(item.listing.map { "\($0.title), \(PriceFormatter.format($0.price.value, currency: $0.currency))" } ?? "Listing")
+        .accessibilityLabel(item.listing.map { "\($0.title), \(PriceFormatter.listing($0.price.value, currency: $0.currency))" } ?? "Listing")
         .accessibilityHint("Opens this listing")
     }
 
@@ -469,7 +469,7 @@ struct CartSheet: View {
                 .lineLimit(stacked ? 2 : 1)
             HStack(spacing: Space.s) {
                 if let listing = item.listing {
-                    Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                    Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
                         .font(CalibreType.priceSmall)
                         .foregroundStyle(Color.calibre.foreground)
                     if let badge = listing.unavailableBadge {

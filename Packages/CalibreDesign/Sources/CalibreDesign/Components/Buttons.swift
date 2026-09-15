@@ -14,6 +14,7 @@ public enum CalibreButtonVariant {
 }
 
 public struct CalibreButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     let variant: CalibreButtonVariant
     let fullWidth: Bool
 
@@ -34,13 +35,14 @@ public struct CalibreButtonStyle: ButtonStyle {
                     .strokeBorder(borderColor(pressed: configuration.isPressed), lineWidth: variant == .secondary ? 1 : 0)
             )
             .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-            .calibreShadow(variant == .primary ? .resting : .resting)
-            .scaleEffect(configuration.isPressed ? Motion.pressScale : 1)
+            .calibreShadow(.resting)
+            .scaleEffect(isEnabled && configuration.isPressed ? Motion.pressScale : 1)
             .animation(Motion.easeFast, value: configuration.isPressed)
     }
 
     private func background(pressed: Bool) -> Color {
-        switch variant {
+        guard isEnabled else { return Color.calibre.secondary }
+        return switch variant {
         case .primary: pressed ? Color.calibre.primaryDeep : Color.calibre.primary
         case .secondary: pressed ? Color.calibre.accent : Color.calibre.card
         case .ghost: pressed ? Color.calibre.accent : .clear
@@ -49,7 +51,8 @@ public struct CalibreButtonStyle: ButtonStyle {
     }
 
     private var foreground: Color {
-        switch variant {
+        guard isEnabled else { return Color.calibre.mutedForeground }
+        return switch variant {
         case .primary: Color.calibre.primaryForeground
         case .secondary, .ghost: Color.calibre.foreground
         case .destructive: Color(white: 1)
@@ -57,7 +60,8 @@ public struct CalibreButtonStyle: ButtonStyle {
     }
 
     private func borderColor(pressed: Bool) -> Color {
-        pressed ? Color.calibre.primary.opacity(0.4) : Color.calibre.borderBright
+        guard isEnabled else { return Color.calibre.border }
+        return pressed ? Color.calibre.primary.opacity(0.4) : Color.calibre.borderBright
     }
 }
 

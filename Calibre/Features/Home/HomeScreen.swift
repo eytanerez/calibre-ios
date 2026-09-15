@@ -235,6 +235,7 @@ struct HomeScreen: View {
         if !model.popular.isEmpty { present.insert(.popular) }
         if !model.fresh.isEmpty { present.insert(.freshArrivals) }
         if model.savedSearches != nil { present.insert(.savedSearches) }
+        if model.collection != nil { present.insert(.collection) }
         if model.bite != nil { present.insert(.bite) }
         if model.poll != nil { present.insert(.poll) }
         if model.endOfFeed != nil { present.insert(.endOfFeed) }
@@ -275,7 +276,7 @@ struct HomeScreen: View {
         case .savedSearches:
             if let module = model?.savedSearches { moduleView(module) }
         case .collection:
-            EmptyView()
+            if let module = model?.collection { moduleView(module) }
         case .endOfFeed:
             if let module = model?.endOfFeed { moduleView(module) }
 

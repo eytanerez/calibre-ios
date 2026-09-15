@@ -167,11 +167,23 @@ public struct ThreadMessage: Codable, Sendable, Identifiable {
     /// authoritative signal rather than `guardAction` alone: "held" is an
     /// explicit state rather than an absent row.
     public let deliveredAt: Date?
+    public let reviewOutcome: String?
     public let createdAt: Date
 
     public var deliveryState: MessageDeliveryState {
-        deliveredAt != nil ? .delivered : .held
+        if deliveredAt != nil { return .delivered }
+        return reviewOutcome == "denied" ? .denied : .held
     }
+}
+
+public struct MessageThreadPage: Decodable, Sendable {
+    public let items: [MessageThread]
+    public let nextCursor: String?
+}
+
+public struct ThreadMessagePage: Decodable, Sendable {
+    public let items: [ThreadMessage]
+    public let nextCursor: String?
 }
 
 /// The three ways a sent message can end up, exactly as the product spec
@@ -182,17 +194,6 @@ public enum MessageDeliveryState: Sendable, Equatable {
     /// Guard-flagged, not yet reviewed by a human.
     case held
     /// An admin reviewed a held message and rejected it.
-    ///
-    /// Structurally supported end to end — `MessagingCopy.deniedNotice` and
-    /// every bubble built on this enum already know how to render it — but
-    /// nothing this store fetches can currently produce it: a denial leaves
-    /// `guard_action` at `hold` forever (`app/api/views/reviews.py` in
-    /// calibre-messaging never rewrites it on denial) and is never
-    /// republished over the stream, so a denied message reads identically to
-    /// a still-pending one through `GET /threads/{id}/messages`. The web
-    /// reference has the same gap: `MessageThread.tsx` never computes
-    /// `denied` either. Closing it needs a wire signal from the service that
-    /// doesn't exist yet — not a client-side guess.
     case denied
 }
 

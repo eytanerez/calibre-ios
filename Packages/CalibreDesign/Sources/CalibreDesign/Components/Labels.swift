@@ -3,6 +3,7 @@ import SwiftUI
 /// The single sanctioned uppercase element — a quiet tracked-out label.
 /// Use sparingly: card brand lines, section kickers.
 public struct Eyebrow: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let text: String
     let color: Color
 
@@ -24,7 +25,8 @@ public struct Eyebrow: View {
         // in, and the drawn label is identical either way.
         Text(text)
             .font(CalibreType.eyebrow)
-            .tracking(tracking)
+            .tracking(typeSize.isAccessibilitySize ? 0 : tracking)
+            .fixedSize(horizontal: false, vertical: true)
             .foregroundStyle(color)
             .textCase(.uppercase)
     }

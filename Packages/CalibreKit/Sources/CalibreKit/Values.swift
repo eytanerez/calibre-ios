@@ -178,17 +178,35 @@ public struct APIDecimal: Decodable, Sendable, Hashable {
     }
 }
 
-/// Brand price formatting: whole dollars ("$12,400"), cents only when present
-/// ("$12,400.50"). Currency defaults to USD — the marketplace's currency.
+/// Money formatting has two deliberately named presentations. Marketplace
+/// listing prices match the web and are rounded to whole dollars. Transaction
+/// amounts keep two decimal places so receipt and breakdown columns align.
 public enum PriceFormatter {
+    public static func listing(_ amount: Decimal, currency: String = "USD") -> String {
+        formatted(amount, currency: currency, fractionDigits: 0)
+    }
+
+    public static func amount(_ amount: Decimal, currency: String = "USD") -> String {
+        formatted(amount, currency: currency, fractionDigits: 2)
+    }
+
+    /// Legacy compact presentation for prose and isolated figures.
     public static func format(_ amount: Decimal, currency: String = "USD") -> String {
+        let isWhole = amount == amount.rounded(0)
+        return formatted(amount, currency: currency, fractionDigits: isWhole ? 0 : 2)
+    }
+
+    private static func formatted(
+        _ amount: Decimal,
+        currency: String,
+        fractionDigits: Int
+    ) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = currency
         formatter.locale = Locale(identifier: "en_US")
-        let isWhole = amount == amount.rounded(0)
-        formatter.minimumFractionDigits = isWhole ? 0 : 2
-        formatter.maximumFractionDigits = isWhole ? 0 : 2
+        formatter.minimumFractionDigits = fractionDigits
+        formatter.maximumFractionDigits = fractionDigits
         return formatter.string(from: amount as NSDecimalNumber) ?? "$\(amount)"
     }
 }

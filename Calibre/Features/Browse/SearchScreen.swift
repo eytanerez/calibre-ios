@@ -175,7 +175,7 @@ struct SearchScreen: View {
 
                         Spacer()
 
-                        Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                        Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
                             .font(CalibreType.priceSmall)
                             .foregroundStyle(Color.calibre.foreground)
                     }
@@ -286,6 +286,7 @@ private struct NoMatchesYet: View {
                 ? "We'll let you know when a watch matches \u{201C}\(query)\u{201D}."
                 : "No watches answer to \u{201C}\(query)\u{201D} right now.",
             actionTitle: watching ? nil : (saving ? "Saving\u{2026}" : "Watch for one"),
+            aside: watching ? nil : "Want me to watch for one?",
             action: watching ? nil : { watchForOne() }
         )
         // The query changing makes this a different question, so the answer

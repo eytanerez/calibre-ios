@@ -103,6 +103,12 @@ public final class AuthSession {
         self.user = user
     }
 
+    /// Installs the replacement token family returned by a credential change.
+    public func replaceSession(with user: CurrentUser, tokens: TokenPair) {
+        guard isAuthenticated else { return }
+        applySession(user: user, tokens: tokens)
+    }
+
     /// Fired every time `clearSession()` runs — manual sign-out, a definitive
     /// refresh-token rejection, or a bootstrap validation failure alike.
     /// `AppServices` wires this to reset per-account stores (e.g.
@@ -440,6 +446,7 @@ extension AuthSession: AuthProviding {
     private func performRefresh(refreshToken: String, ownerGeneration: UInt64) async -> Bool {
         struct RefreshResponse: Decodable, Sendable {
             let accessToken: String
+            let refreshToken: String?
         }
         do {
             let endpoint = try Endpoint<RefreshResponse>.json(
@@ -453,7 +460,10 @@ extension AuthSession: AuthProviding {
                   tokens?.refreshToken == refreshToken else {
                 return false
             }
-            let updated = TokenPair(accessToken: response.accessToken, refreshToken: refreshToken)
+            let updated = TokenPair(
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken ?? refreshToken
+            )
             tokens = updated
             tokenStore.save(updated)
             return true

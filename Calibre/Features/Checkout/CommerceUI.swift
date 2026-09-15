@@ -74,7 +74,7 @@ struct ListingMiniCard: View {
             eyebrow: [listing.brand, listing.productionYear.map(String.init)]
                 .compactMap(\.self)
                 .joined(separator: " · "),
-            priceText: PriceFormatter.format(listing.price.value, currency: listing.currency),
+            priceText: PriceFormatter.listing(listing.price.value, currency: listing.currency),
             imageURL: listing.images.first?.url
         )
     }

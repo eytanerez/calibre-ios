@@ -14,6 +14,7 @@ struct CheckoutFlow: View {
 
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
 
     @State private var model: CheckoutModel?
@@ -63,10 +64,18 @@ struct CheckoutFlow: View {
                     : "Your watch is one sign-in away. We'll bring you right back here.",
                 actionTitle: "Sign in",
                 action: {
+                    let ids = listingIDs
+                    let acceptedOfferID = offerID
                     dismiss()
                     session.require(
                         listingIDs.count > 1 ? "Sign in to buy these watches" : "Sign in to buy this watch"
-                    ) {}
+                    ) {
+                        if ids.count == 1, let listingID = ids.first {
+                            router.presentCheckout(listingID: listingID, offerID: acceptedOfferID)
+                        } else {
+                            router.presentCheckout(listingIDs: ids)
+                        }
+                    }
                 }
             )
         }

@@ -61,6 +61,8 @@ enum GoogleAuthError {
             "This account isn't active. Contact support if that seems wrong."
         case "phone_required":
             "Create your account with email and phone first, then Google sign-in will work."
+        case "account_link_required":
+            "Reset your password using the email link, then try Google again to link this account."
         default:
             "Google sign-in didn't go through. Please try again."
         }

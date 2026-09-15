@@ -176,7 +176,7 @@ struct ListingDetailScreen: View {
                 // Logged-out visitors only ever see the seller's listed
                 // price; the model keeps it that way until there is a quote.
                 Text(pricing?.headlinePrice(for: listing)
-                    ?? PriceFormatter.format(listing.price.value, currency: listing.currency))
+                    ?? PriceFormatter.listing(listing.price.value, currency: listing.currency))
                     .font(CalibreType.priceLarge)
                     .foregroundStyle(Color.calibre.foreground)
                 if let badge = availabilityBadge(listing) {

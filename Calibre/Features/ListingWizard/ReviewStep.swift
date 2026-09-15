@@ -62,6 +62,7 @@ struct ReviewStep: View {
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
                 .disabled(!canSubmit || model.submitting)
+                .accessibilityIdentifier("listing-wizard-submit")
 
                 // Net proceeds and the buyer-facing price are ours to put on
                 // screen before a seller publishes, so their absence is worth
@@ -175,7 +176,7 @@ struct ReviewStep: View {
                 .foregroundStyle(Color.calibre.foreground)
             SellCard {
                 VStack(alignment: .leading, spacing: Space.m) {
-                    Text(model.price.map { PriceFormatter.format($0) } ?? "No price yet")
+                    Text(model.price.map { PriceFormatter.listing($0) } ?? "No price yet")
                         .font(CalibreType.priceLarge)
                         .foregroundStyle(
                             model.price == nil ? Color.calibre.placeholder : Color.calibre.foreground

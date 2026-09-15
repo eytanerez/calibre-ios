@@ -1,6 +1,8 @@
 import AuthenticationServices
 import CalibreDesign
 import CalibreKit
+import CryptoKit
+import Security
 import SwiftUI
 
 /// Sign in with Apple, mapped to the theme per the HIG — black button on the
@@ -23,10 +25,14 @@ struct AppleSignInButton: View {
     var onSuccess: () -> Void = {}
 
     @State private var busy = false
+    @State private var currentNonce: String?
 
     var body: some View {
         SignInWithAppleButton(.signIn) { request in
             request.requestedScopes = [.fullName, .email]
+            let nonce = Self.makeNonce()
+            currentNonce = nonce
+            request.nonce = Self.sha256(nonce)
         } onCompletion: { result in
             handle(result)
         }
@@ -43,12 +49,17 @@ struct AppleSignInButton: View {
         case .success(let authorization):
             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
                   let tokenData = credential.identityToken,
-                  let token = String(data: tokenData, encoding: .utf8) else {
+                  let token = String(data: tokenData, encoding: .utf8),
+                  let nonce = currentNonce else {
                 onMessage("Apple didn't return a usable credential. Please try again.")
                 return
             }
 
-            var payload: [String: AuthJSON] = ["identity_token": .string(token)]
+            currentNonce = nil
+            var payload: [String: AuthJSON] = [
+                "identity_token": .string(token),
+                "raw_nonce": .string(nonce),
+            ]
             // Apple supplies the name only on the very first authorization —
             // pass it along then to seed the buyer profile.
             var name: [String: AuthJSON] = [:]
@@ -84,6 +95,7 @@ struct AppleSignInButton: View {
             }
 
         case .failure(let error):
+            currentNonce = nil
             guard let authError = error as? ASAuthorizationError else {
                 onMessage("Sign in with Apple didn't go through. Please try again.")
                 return
@@ -98,5 +110,19 @@ struct AppleSignInButton: View {
                 onMessage("Sign in with Apple didn't go through. Please try again.")
             }
         }
+    }
+
+    private static func makeNonce(byteCount: Int = 32) -> String {
+        var bytes = [UInt8](repeating: 0, count: byteCount)
+        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        precondition(status == errSecSuccess, "Unable to create Sign in with Apple nonce")
+        return Data(bytes).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private static func sha256(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 }

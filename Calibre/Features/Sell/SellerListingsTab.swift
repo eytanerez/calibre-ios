@@ -332,7 +332,7 @@ struct SellerListingRow: View {
                             .lineLimit(1)
                         StatusBadge(badge.text, tone: badge.tone)
                         HStack(spacing: Space.s) {
-                            Text("#\(listing.listingNumber) · \(PriceFormatter.format(listing.price.value))")
+                            Text("#\(listing.listingNumber) · \(PriceFormatter.listing(listing.price.value))")
                                 .font(CalibreType.caption)
                                 .foregroundStyle(Color.calibre.mutedForeground)
                             if let metrics = listing.metrics, metrics.views + metrics.watchers > 0 {

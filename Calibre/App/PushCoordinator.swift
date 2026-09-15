@@ -614,6 +614,9 @@ final class PushCoordinator: NSObject {
         // build that only knew one of the two either drops the id or drops
         // the tap.
         case "support": return id.map { .supportThread($0) } ?? .supportChat
+        case "thread": return id.map { .messageThread($0) }
+        case "messages": return .messages
+        case "account": return id == "settings" ? .accountSettings : nil
         case "alerts": return .alerts
         default: return nil
         }

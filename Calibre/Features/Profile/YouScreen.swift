@@ -274,7 +274,7 @@ struct YouScreen: View {
                     .font(CalibreType.bodyMedium)
                 Spacer()
             }
-            .foregroundStyle(Color.calibre.destructive)
+            .foregroundStyle(Color.calibre.foreground)
             .padding(.horizontal, Space.l)
             .frame(minHeight: Space.touchTarget + 8)
             .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))

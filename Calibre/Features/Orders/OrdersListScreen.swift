@@ -59,7 +59,8 @@ struct OrdersListScreen: View {
                 EmptyState(
                     icon: "shippingbox",
                     title: "No orders yet",
-                    message: "When you buy a watch, you'll follow every step of its journey here."
+                    message: "When you buy a watch, you'll follow every step of its journey here.",
+                    aside: "Nothing on its way to you at the moment."
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

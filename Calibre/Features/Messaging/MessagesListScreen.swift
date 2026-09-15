@@ -12,6 +12,8 @@ struct MessagesListScreen: View {
     @State private var threads: [MessageThread] = []
     @State private var loading = true
     @State private var errorText: String?
+    @State private var nextCursor: String?
+    @State private var loadingMore = false
 
     var body: some View {
         Group {
@@ -63,7 +65,7 @@ struct MessagesListScreen: View {
                 LazyVStack(spacing: Space.m) {
                     ForEach(threads) { thread in
                         NavigationLink {
-                            MessageThreadScreen(threadID: thread.id)
+                            MessageThreadScreen(threadID: thread.id, initialThread: thread)
                         } label: {
                             ThreadRow(thread: thread)
                         }
@@ -75,6 +77,9 @@ struct MessagesListScreen: View {
                         .simultaneousGesture(TapGesture().onEnded {
                             markRead(thread)
                         })
+                        .task {
+                            if thread.id == threads.last?.id { await loadMore() }
+                        }
                     }
                 }
                 .padding(Space.margin)
@@ -94,16 +99,28 @@ struct MessagesListScreen: View {
 
     private func load() async {
         do {
-            let fetched = try await services.messaging.listThreads()
+            let page = try await services.messaging.listThreadsPage()
             // Most-recently-active conversation first; a thread with no
             // messages yet (just opened, nothing sent) sorts by when it was
             // opened instead.
-            threads = fetched.sorted { ($0.lastMessageAt ?? $0.createdAt) > ($1.lastMessageAt ?? $1.createdAt) }
+            threads = page.items.sorted { ($0.lastMessageAt ?? $0.createdAt) > ($1.lastMessageAt ?? $1.createdAt) }
+            nextCursor = page.nextCursor
             errorText = nil
         } catch {
             errorText = (error as? APIError)?.errorDescription ?? "Something went wrong. Please try again."
         }
         loading = false
+    }
+
+    private func loadMore() async {
+        guard let cursor = nextCursor, !loadingMore else { return }
+        loadingMore = true
+        defer { loadingMore = false }
+        guard let page = try? await services.messaging.listThreadsPage(cursor: cursor) else { return }
+        var byID = Dictionary(uniqueKeysWithValues: threads.map { ($0.id, $0) })
+        for thread in page.items { byID[thread.id] = thread }
+        threads = byID.values.sorted { ($0.lastMessageAt ?? $0.createdAt) > ($1.lastMessageAt ?? $1.createdAt) }
+        nextCursor = page.nextCursor
     }
 }
 

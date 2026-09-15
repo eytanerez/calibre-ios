@@ -27,7 +27,9 @@ struct SellerNotes {
     /// `Movement: Automatic` is not on this list and is kept, because their
     /// description is theirs.
     private static let generatedKeys: Set<String> = [
-        "brand", "model", "reference number",
+        "brand", "model", "reference", "reference number",
+        "case material", "dial", "case size", "movement", "caliber", "calibre",
+        "bracelet", "thickness", "lug width", "water resistance",
         "condition", "case condition", "dial condition", "crystal condition",
         "bezel condition", "bracelet condition", "clasp condition",
         "caseback condition", "overall condition",
@@ -98,7 +100,15 @@ struct QuickSpecRow: View {
     }
 
     private var boxPapersText: String {
-        switch listing.boxPapers {
+        if listing.boxIncluded != nil || listing.papersIncluded != nil || listing.bookletsIncluded != nil {
+            switch (listing.boxIncluded == true, listing.papersIncluded == true) {
+            case (true, true): return "Full set"
+            case (true, false): return "Box only"
+            case (false, true): return "Papers only"
+            case (false, false): return "Watch only"
+            }
+        }
+        return switch listing.boxPapers {
         case true: "Full set"
         case false: "Watch only"
         default: "—"

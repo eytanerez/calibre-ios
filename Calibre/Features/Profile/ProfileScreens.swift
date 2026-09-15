@@ -325,7 +325,9 @@ private struct AddressForm: View {
         defer { saving = false }
         let payload = AddressPayload(
             fullName: InputValidation.trimmed(fullName),
-            phone: InputValidation.isNonBlank(phone) ? InputValidation.trimmed(phone) : nil,
+            phone: InputValidation.isNonBlank(phone)
+                ? (PhoneFormatter.nationalDigits(phone) ?? InputValidation.trimmed(phone))
+                : nil,
             line1: InputValidation.trimmed(line1),
             line2: InputValidation.isNonBlank(line2) ? InputValidation.trimmed(line2) : nil,
             city: InputValidation.trimmed(city),
@@ -876,6 +878,7 @@ struct DeleteAccountScreen: View {
     @State private var confirming = false
     @State private var working = false
     @State private var state: AccountDeletionState?
+    @State private var currentPassword = ""
 
     var body: some View {
         ScrollView {
@@ -919,6 +922,16 @@ struct DeleteAccountScreen: View {
                 message: "Anything still in flight — a live order, a payout on its way, an active return, an accepted offer — has to finish before your account can be removed."
             )
         }
+
+        CalibreTextField(
+            "Current password",
+            text: $currentPassword,
+            kind: .password
+        )
+        Text("Password accounts must confirm before deletion. Apple and Google accounts can leave this blank after a recent sign-in.")
+            .font(CalibreType.caption)
+            .foregroundStyle(Color.calibre.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
 
         Button(role: .destructive) { confirming = true } label: {
             Text(working ? "Working…" : "Request account deletion").frame(maxWidth: .infinity)
@@ -1031,7 +1044,7 @@ struct DeleteAccountScreen: View {
         working = true
         defer { working = false }
         do {
-            state = try await services.account.requestDeletion()
+            state = try await services.account.requestDeletion(currentPassword: currentPassword)
             toasts.show(title: "Deletion scheduled", message: "Sign in within 30 days to cancel.", tone: .success)
         } catch {
             // A blocked deletion isn't a failure — it's a list. The 409's

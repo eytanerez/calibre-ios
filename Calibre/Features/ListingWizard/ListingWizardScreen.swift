@@ -192,6 +192,7 @@ struct ListingWizardScreen: View {
                 }
                 .buttonStyle(.calibre(.primary, fullWidth: true))
                 .disabled(creatingDraft)
+                .accessibilityIdentifier("listing-wizard-continue")
             }
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.m)

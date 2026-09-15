@@ -24,7 +24,7 @@ struct DebugConsoleView: View {
                             Text(listing.title)
                                 .font(.subheadline.weight(.semibold))
                                 .lineLimit(1)
-                            Text(PriceFormatter.format(listing.price.value, currency: listing.currency))
+                            Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
                                 .font(.footnote)
                             Text(listing.id)
                                 .font(.caption2.monospaced())

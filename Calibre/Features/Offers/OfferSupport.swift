@@ -407,11 +407,14 @@ struct SellerNetProceeds {
     let takeHome: Decimal
 
     init?(offerAmount: Decimal, feePercent: Decimal?, feeMinimum: Decimal?, shippingEstimate: Decimal?) {
-        guard offerAmount > 0, let feePercent else { return nil }
+        guard offerAmount > 0,
+              let feePercent,
+              let feeMinimum,
+              let shippingEstimate else { return nil }
         let percentageFee = offerAmount * feePercent / 100
-        let minimum = feeMinimum ?? 0
+        let minimum = feeMinimum
         let commission = max(percentageFee, minimum)
-        let shipping = shippingEstimate ?? 0
+        let shipping = shippingEstimate
         self.offerAmount = offerAmount
         self.commission = commission
         // A floor that beat the percentage is the only honest explanation for

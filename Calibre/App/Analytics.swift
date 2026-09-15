@@ -358,12 +358,15 @@ enum Analytics {
     /// everything "manual". A CSV cannot carry photos, so every imported
     /// draft passes through the queue and gets recorded here.
     static func noteBulkImportedDrafts(_ listingIDs: some Sequence<String>) {
-        var known = Set(UserDefaults.standard.stringArray(forKey: bulkImportedKey) ?? [])
-        known.formUnion(listingIDs)
+        var known = UserDefaults.standard.stringArray(forKey: bulkImportedKey) ?? []
+        for listingID in listingIDs {
+            known.removeAll { $0 == listingID }
+            known.append(listingID)
+        }
         // Bounded so the ledger can't grow without limit on a heavy importer.
         let trimmed = known.count > bulkImportedLimit
             ? Array(known.suffix(bulkImportedLimit))
-            : Array(known)
+            : known
         UserDefaults.standard.set(trimmed, forKey: bulkImportedKey)
     }
 

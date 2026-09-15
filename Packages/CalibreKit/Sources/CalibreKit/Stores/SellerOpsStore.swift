@@ -29,13 +29,36 @@ public final class SellerOpsStore {
     /// forwarded to Stripe for identity verification; the backend keeps only
     /// a one-way fingerprint. Error codes: `ssn_required`,
     /// `seller_onboarding_blocked`.
-    public func connectAccountSession(ssn: String) async throws -> ConnectAccountSession {
+    public func connectAccountSession(
+        ssn: String,
+        createAccount: Bool = false
+    ) async throws -> ConnectAccountSession {
         struct Payload: Encodable {
             let ssn: String
+            let createAccount: Bool
+
+            enum CodingKeys: String, CodingKey {
+                case ssn
+                case createAccount = "create_account"
+            }
         }
         return try await client.send(
-            try Endpoint.json(method: .post, path: "/stripe/connect/account-session", payload: Payload(ssn: ssn))
+            try Endpoint.json(
+                method: .post,
+                path: "/stripe/connect/account-session",
+                payload: Payload(ssn: ssn, createAccount: createAccount)
+            )
         )
+    }
+
+    /// A single-use Stripe-hosted onboarding URL for an existing Connect
+    /// account. This is the fallback when the embedded component cannot load.
+    public func connectAccountLink() async throws -> URL {
+        struct Link: Decodable, Sendable { let url: URL }
+        let link: Link = try await client.send(
+            Endpoint(method: .post, path: "/stripe/connect/account-link")
+        )
+        return link.url
     }
 
     /// Stripe publishable key for SDK initialization. The backend only hands

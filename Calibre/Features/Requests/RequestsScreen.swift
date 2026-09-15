@@ -12,6 +12,7 @@ struct RequestsScreen: View {
 
     @State private var requests: [WatchRequest] = []
     @State private var loaded = false
+    @State private var loadFailed = false
     @State private var showNew = false
     @State private var confirmDelete: WatchRequest?
 
@@ -24,6 +25,14 @@ struct RequestsScreen: View {
                     message: "Sign in to tell us what you're hunting. Sellers see open requests and list against them.",
                     actionTitle: "Sign in"
                 ) { session.require("Sign in to request a watch") {} }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if requests.isEmpty && loadFailed {
+                EmptyState(
+                    icon: "wifi.slash",
+                    title: "Requests are out of reach",
+                    message: "We couldn't load your requests. Check your connection and try again.",
+                    actionTitle: "Try again"
+                ) { Task { await load() } }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if requests.isEmpty && loaded {
                 EmptyState(
@@ -101,7 +110,12 @@ struct RequestsScreen: View {
     }
 
     private func load() async {
-        requests = (try? await services.seller.myWatchRequests()) ?? []
+        do {
+            requests = try await services.seller.myWatchRequests()
+            loadFailed = false
+        } catch {
+            loadFailed = true
+        }
         loaded = true
     }
 

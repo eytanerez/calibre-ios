@@ -9,12 +9,14 @@ public struct EmptyState: View {
     let message: String
     let actionTitle: String?
     let action: (() -> Void)?
+    let aside: String?
 
     public init(
         icon: String,
         title: String,
         message: String,
         actionTitle: String? = nil,
+        aside: String? = nil,
         action: (() -> Void)? = nil
     ) {
         self.icon = icon
@@ -22,6 +24,7 @@ public struct EmptyState: View {
         self.message = message
         self.actionTitle = actionTitle
         self.action = action
+        self.aside = aside
     }
 
     public var body: some View {
@@ -37,6 +40,13 @@ public struct EmptyState: View {
                     .foregroundStyle(Color.calibre.mutedForeground)
             }
             .multilineTextAlignment(.center)
+
+            if let aside, !aside.isEmpty {
+                Text(aside)
+                    .font(CalibreType.hand)
+                    .foregroundStyle(Color.calibre.foreground.opacity(0.85))
+                    .multilineTextAlignment(.center)
+            }
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)

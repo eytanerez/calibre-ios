@@ -214,6 +214,11 @@ struct RegisterScreen: View {
                 .font(.system(size: 15))
                 .foregroundStyle(Color.calibre.destructive)
                 .accessibilityLabel("Username is not available")
+        case .unverified:
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.calibre.mutedForeground)
+                .accessibilityLabel("Username availability not checked")
         }
     }
 
@@ -482,9 +487,7 @@ struct RegisterScreen: View {
                     : .unavailable(result.message)
             } catch {
                 guard !Task.isCancelled else { return }
-                // Can't verify right now — stay quiet and let the backend
-                // be the final word at submit time.
-                usernameState = .idle
+                usernameState = .unverified("We couldn't check that username right now — you can carry on.")
             }
         }
     }
@@ -526,7 +529,7 @@ struct RegisterScreen: View {
             "last_name": .string(lastName.trimmingCharacters(in: .whitespaces)),
             "email": .string(email.trimmingCharacters(in: .whitespaces).lowercased()),
             "password": .string(password),
-            "phone": .string(phone.trimmingCharacters(in: .whitespaces)),
+            "phone": .string(PhoneFormatter.nationalDigits(phone) ?? phone.trimmingCharacters(in: .whitespaces)),
             "address": .object(address),
             // The state of the box, not a literal `true`: the guard above
             // already refuses to submit without it, and encoding the flag
@@ -580,10 +583,13 @@ enum UsernameCheckState: Equatable {
     case invalid(String)
     case unavailable(String)
     case available(String)
+    case unverified(String)
 
     var isAvailable: Bool {
-        if case .available = self { return true }
-        return false
+        switch self {
+        case .available, .unverified: true
+        default: false
+        }
     }
 
     var caption: (text: String, positive: Bool)? {
@@ -593,6 +599,8 @@ enum UsernameCheckState: Equatable {
         case .invalid(let message), .unavailable(let message):
             (message, false)
         case .available(let message):
+            (message, true)
+        case .unverified(let message):
             (message, true)
         }
     }

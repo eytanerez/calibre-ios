@@ -361,7 +361,7 @@ private struct AddressForm: View {
         guard isValid, !model.savingAddress else { return }
         let payload = AddressPayload(
             fullName: trimmed(fullName),
-            phone: trimmed(phone).isEmpty ? nil : trimmed(phone),
+            phone: trimmed(phone).isEmpty ? nil : (PhoneFormatter.nationalDigits(phone) ?? trimmed(phone)),
             line1: trimmed(street),
             line2: trimmed(apartment).isEmpty ? nil : trimmed(apartment),
             city: trimmed(city),

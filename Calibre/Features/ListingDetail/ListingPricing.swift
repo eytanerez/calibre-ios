@@ -157,7 +157,7 @@ final class ListingPricingModel {
         if let breakdown, breakdown.isDiscountPresentation, let display = breakdown.display {
             return PriceFormatter.format(display.price.value, currency: breakdown.currency)
         }
-        return PriceFormatter.format(listing.price.value, currency: listing.currency)
+        return PriceFormatter.listing(listing.price.value, currency: listing.currency)
     }
 
     /// True when the server priced everything except sales tax. The quote
@@ -205,7 +205,7 @@ final class ListingPricingModel {
         guard let breakdown else { return [] }
         let currency = breakdown.currency
         var rows: [(label: String, value: String)] = [
-            ("Watch price by wire", PriceFormatter.format(breakdown.subtotal.value, currency: currency))
+            ("Watch price by wire", PriceFormatter.amount(breakdown.subtotal.value, currency: currency))
         ]
         if isTaxUnavailable {
             // The server sends 0.00 here during an outage, and a tax row that
@@ -214,12 +214,12 @@ final class ListingPricingModel {
             // out", so the row stays and says which one it is.
             rows.append(("Sales tax", "Not available right now"))
         } else if let tax = breakdown.tax {
-            rows.append(("Sales tax", PriceFormatter.format(tax.value, currency: currency)))
+            rows.append(("Sales tax", PriceFormatter.amount(tax.value, currency: currency)))
         }
-        rows.append(("Shipping", PriceFormatter.format(breakdown.shipping.value, currency: currency)))
+        rows.append(("Shipping", PriceFormatter.amount(breakdown.shipping.value, currency: currency)))
         rows.append((
             isTaxUnavailable ? "Full cost delivered, before tax" : "Full cost delivered",
-            PriceFormatter.format(
+            PriceFormatter.amount(
                 breakdown.totals?.wire?.value ?? breakdown.grandTotal.value,
                 currency: currency
             )

@@ -23,6 +23,7 @@ struct MessageThreadScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let threadID: String
+    var initialThread: MessageThread? = nil
 
     @State private var messages: [ThreadMessage] = []
     @State private var draft = ""
@@ -30,14 +31,48 @@ struct MessageThreadScreen: View {
     @State private var loading = true
     @State private var loadErrorText: String?
     @State private var sendErrorText: String?
+    @State private var threadState: ThreadState = .open
+    @State private var nextCursor: String?
+    @State private var loadingOlder = false
+    @State private var confirmingBlock = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         messagesList
-        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if threadState == .blocked {
+                Text("This conversation is closed")
+                    .font(CalibreType.bodyMedium)
+                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .frame(maxWidth: .infinity)
+                    .padding(Space.m)
+                    .calibreComposerSurface()
+            } else {
+                composer
+            }
+        }
         .calibrePageBackground()
         .navigationTitle("Message")
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: threadID) { await run() }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("Archive conversation", systemImage: "archivebox") { Task { await archive() } }
+                    Button("Block participant", systemImage: "hand.raised", role: .destructive) { confirmingBlock = true }
+                } label: { Image(systemName: "ellipsis.circle") }
+                .accessibilityLabel("Conversation actions")
+            }
+        }
+        .confirmationDialog("Block this participant?", isPresented: $confirmingBlock) {
+            Button("Block participant", role: .destructive) { Task { await block() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("They won't be able to send more messages in this conversation.")
+        }
+        .task(id: threadID) {
+            threadState = initialThread?.state ?? .open
+            await run()
+        }
     }
 
     // MARK: - Messages
@@ -65,6 +100,13 @@ struct MessageThreadScreen: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: Space.m) {
+                        if nextCursor != nil {
+                            Button(loadingOlder ? "Loading…" : "Load older messages") {
+                                Task { await loadOlder() }
+                            }
+                            .buttonStyle(.calibre(.ghost))
+                            .disabled(loadingOlder)
+                        }
                         ForEach(messages) { message in
                             MessageBubbleRow(message: message, isMine: message.senderId == session.user?.id)
                                 .id(message.id)
@@ -107,6 +149,7 @@ struct MessageThreadScreen: View {
             }
             HStack(alignment: .bottom, spacing: Space.s) {
                 CalibreMessageField(text: $draft)
+                    .accessibilityIdentifier("message-composer")
                 Button {
                     Task { await send() }
                 } label: {
@@ -120,6 +163,7 @@ struct MessageThreadScreen: View {
                 .disabled(!canSend || sending)
                 .accessibilityLabel("Send message")
                 .accessibilityHint(canSend ? "" : "Write a message first")
+                .accessibilityIdentifier("message-send")
             }
         }
         // Liquid glass, from the one helper both composers share. The bar is
@@ -169,8 +213,9 @@ struct MessageThreadScreen: View {
     private func loadMessages(silent: Bool = false) async {
         if !silent { loading = messages.isEmpty }
         do {
-            let fetched = try await services.messaging.listMessages(threadID: threadID)
-            merge(fetched)
+            let page = try await services.messaging.listMessagesPage(threadID: threadID)
+            merge(page.items)
+            nextCursor = page.nextCursor
             loadErrorText = nil
             try? await services.messaging.markRead(threadID: threadID)
         } catch {
@@ -179,6 +224,33 @@ struct MessageThreadScreen: View {
             }
         }
         loading = false
+    }
+
+    private func loadOlder() async {
+        guard let cursor = nextCursor, !loadingOlder else { return }
+        loadingOlder = true
+        defer { loadingOlder = false }
+        guard let page = try? await services.messaging.listMessagesPage(threadID: threadID, cursor: cursor) else { return }
+        merge(page.items)
+        nextCursor = page.nextCursor
+    }
+
+    private func archive() async {
+        do {
+            try await services.messaging.archive(threadID: threadID)
+            dismiss()
+        } catch {
+            sendErrorText = (error as? APIError)?.errorDescription ?? "Couldn't archive this conversation."
+        }
+    }
+
+    private func block() async {
+        do {
+            try await services.messaging.block(threadID: threadID)
+            threadState = .blocked
+        } catch {
+            sendErrorText = (error as? APIError)?.errorDescription ?? "Couldn't block this participant."
+        }
     }
 
     /// A live-streamed message and a polled refresh can each learn about the
