@@ -16,6 +16,37 @@ struct DetailsStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
+            // Everything except the photographs, which a tester has to take or
+            // choose themselves — there is no invented file to hand them, and a
+            // listing with no pictures is one they would rightly report as
+            // broken. Renders nothing outside a beta.
+            BetaFillButton(label: "Fill this in with a sample watch") { person in
+                let listing = person.listing
+                model.brand = listing["brand"] ?? ""
+                model.model = listing["model"] ?? ""
+                model.reference = listing["reference_number"] ?? ""
+                model.yearText = listing["manufacture_year"] ?? ""
+                model.yearUnknown = false
+                model.priceText = listing["price"] ?? ""
+                model.notes = listing["notes"] ?? ""
+                // Keyed off the wire names the server sends, so a part renamed
+                // in one place cannot silently stop being filled in the other.
+                let byPart: [ConditionPart: String] = [
+                    .watchCase: "condition_case",
+                    .dial: "condition_dial",
+                    .bezel: "condition_bezel",
+                    .crystal: "condition_crystal",
+                    .bracelet: "condition_bracelet",
+                    .clasp: "condition_clasp",
+                    .caseback: "condition_caseback",
+                    .overall: "condition",
+                ]
+                for (part, key) in byPart {
+                    if let grade = listing[key] { model.conditions[part] = grade }
+                }
+                model.fieldChanged()
+            }
+
             VStack(alignment: .leading, spacing: Space.l) {
                 ListingCatalogField("Brand", text: $model.brand, level: .brands, error: model.brandError)
                     .id(WizardField.brand)
@@ -671,7 +702,11 @@ struct PriceStep: View {
             CalibreTextEditor(
                 "Notes for buyers (optional)",
                 text: $model.notes,
-                placeholder: "Service history, how it wears, what's included…",
+                // The deviation prompt. A watch that differs from its catalog
+                // row — a replacement bracelet, a refinished dial — is a fact
+                // only the seller can state, and an admin turns what they write
+                // here into a per-listing spec override at review.
+                placeholder: "Service history, how it wears, and anything not as the catalogue describes…",
                 characterLimit: 2000
             )
             .onChange(of: model.notes) { _, newValue in

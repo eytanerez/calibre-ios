@@ -220,6 +220,26 @@ public extension Order {
         // return on the payload since returns shipped, and `isCancelled` is
         // the predicate the return panel on this screen already gates on.
         if let activeReturn = returnSummary, !activeReturn.isCancelled, !activeReturn.isRefunded {
+            // A refused return, and the only state on an order where the buyer
+            // has been told no and is owed a reason for it. It reads first
+            // because it is not a live return — the money and the watch have
+            // both stopped moving — and because this screen said nothing at
+            // all about it before: `failureReasons` was stored and serialised
+            // to nobody, so the letter was the only copy of the explanation.
+            if activeReturn.isRefused {
+                let written = (activeReturn.failureReasons ?? "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return OrderNextStep(
+                    actor: .calibre,
+                    headline: "We could not accept this return",
+                    body: "The watch we received back did not pass verification, so no refund has been "
+                        + "issued. It is being held securely at our authentication center while we look "
+                        + "into it.",
+                    next: written.isEmpty
+                        ? "Someone from Calibre will contact you directly about what happens next."
+                        : written
+                )
+            }
             // The parcel has landed. Before this, a return the bench already
             // had still read "on its way to us" — the carrier's scan is set
             // for good, so the in-transit clause below never stopped matching.
@@ -346,7 +366,12 @@ public extension Order {
                 headline: "This watch did not pass",
                 body: "Our authentication center could not authenticate it, so the sale is off. You are being "
                     + "refunded in full, including the card processing fee, and you owe nothing.",
-                next: "Your Calibre contact will write to you with what we found."
+                // What we found, here, rather than a promise to send it. This
+                // read "Your Calibre contact will write to you with what we
+                // found" — the screen pointing at the letter while the letter
+                // carried the finding. Eytan turned that round, so the order
+                // is where the finding has to be.
+                next: authenticationFinding
             )
 
         case .cancelled:

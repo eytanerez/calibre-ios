@@ -198,6 +198,97 @@ final class ListingCardAlignmentTests: XCTestCase {
         }
     }
 
+    /// The In-cart pill rides on the photograph, so it must cost no height.
+    ///
+    /// Eytan asked that a watch already in the buyer's cart say so on the card.
+    /// The obvious place to put "In cart" is the text block, and that is the
+    /// exact shape of the bug the two tests above exist to stop: a row that
+    /// renders for some cards and not others moves every price beneath it. This
+    /// measures the same card with and without the pill and holds them to the
+    /// same height, to the half point.
+    @MainActor
+    func testTheInCartPillDoesNotMoveAnything() {
+        CalibreFonts.register()
+
+        func height(_ model: ListingCardModel) -> CGFloat {
+            let host = UIHostingController(rootView: ListingCard(model: model) { _ in
+                Rectangle().fill(Color.calibre.secondary)
+            })
+            return host.sizeThatFits(
+                in: CGSize(width: Self.cardWidth, height: .greatestFiniteMagnitude)
+            ).height
+        }
+
+        for variant in Variant.allCases {
+            let plain = variant.model
+            let inCart = ListingCardModel(
+                id: plain.id, brand: plain.brand, year: plain.year, title: plain.title,
+                reference: plain.reference, priceText: plain.priceText,
+                condition: plain.condition, watcherCount: plain.watcherCount,
+                imageURL: plain.imageURL, isVerifiedDealer: plain.isVerifiedDealer,
+                isInCart: true, reason: plain.reason,
+                reservesReasonLine: plain.reservesReasonLine
+            )
+            XCTAssertTrue(inCart.isInCart, "the variant under test did not actually get the pill")
+            XCTAssertEqual(
+                height(inCart), height(plain), accuracy: 0.5,
+                "\(variant) grew by \(height(inCart) - height(plain))pt when it went into the cart"
+            )
+        }
+    }
+
+    /// And it is genuinely drawn — otherwise the height test above passes for
+    /// the wrong reason.
+    ///
+    /// Reads ink out of the photograph's bottom-left corner, which is empty on
+    /// a card that is not in the cart and carries the pill on one that is. The
+    /// image well is filled with a flat `secondary` fill by these tests, so any
+    /// row that changes between the two renders is the pill.
+    @MainActor
+    func testTheInCartPillIsActuallyPainted() {
+        CalibreFonts.register()
+        let scale = Int(Self.pixelScale)
+
+        func image(_ inCart: Bool) -> UIImage? {
+            let base = Variant.plain.model
+            let model = ListingCardModel(
+                id: base.id, brand: base.brand, year: base.year, title: base.title,
+                reference: base.reference, priceText: base.priceText,
+                condition: base.condition, watcherCount: base.watcherCount,
+                imageURL: base.imageURL, isVerifiedDealer: base.isVerifiedDealer,
+                isInCart: inCart, reason: base.reason,
+                reservesReasonLine: base.reservesReasonLine
+            )
+            let card = ListingCard(model: model) { _ in
+                Rectangle().fill(Color.calibre.background)
+            }
+            .frame(width: Self.cardWidth)
+            .frame(width: Self.cardWidth, height: 320, alignment: .top)
+            .background(Color.calibre.background)
+            .environment(\.colorScheme, .light)
+            let renderer = ImageRenderer(content: card)
+            renderer.scale = Self.pixelScale
+            return renderer.uiImage
+        }
+
+        guard let without = image(false), let with = image(true) else {
+            return XCTFail("the card did not render")
+        }
+        // The lower third of the square photo, leading half — where the pill
+        // sits and where nothing else on the card ever does.
+        let photoBottom = Int(Self.cardWidth) * scale
+        let band = (from: photoBottom - Int(Self.cardWidth * 0.3) * scale, to: photoBottom)
+        let column = (0, Int(Self.cardWidth * 0.6) * scale)
+
+        let bare = inkRows(without, xFrom: column.0, xTo: column.1, yFrom: band.from)
+            .filter { $0 < band.to }
+        let marked = inkRows(with, xFrom: column.0, xTo: column.1, yFrom: band.from)
+            .filter { $0 < band.to }
+
+        XCTAssertTrue(bare.isEmpty, "something already occupies the photo's bottom-left corner: \(bare.count) inked rows")
+        XCTAssertFalse(marked.isEmpty, "the In-cart pill drew nothing — the height test above proves only that nothing changed")
+    }
+
     /// §0.6: a brand name may not be clipped. The brand is now held to one
     /// line, so `.minimumScaleFactor(0.65)` is the only thing standing between
     /// "Jaeger-LeCoultre" and an ellipsis. This measures the two worst real

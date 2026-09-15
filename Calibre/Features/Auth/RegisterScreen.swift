@@ -50,6 +50,30 @@ struct RegisterScreen: View {
             VStack(alignment: .leading, spacing: Space.xl) {
                 stepIndicator
 
+                // Fills whichever step is on screen, including the password, so
+                // a tester never has to invent one and then remember it.
+                // Renders nothing outside a beta.
+                BetaFillButton { person in
+                    if step == 1 {
+                        firstName = person.account.firstName
+                        lastName = person.account.lastName
+                        email = person.account.email
+                        phone = person.account.phone
+                        username = person.account.username
+                        password = person.account.password
+                        confirmPassword = person.account.password
+                        acceptedTerms = true
+                    } else {
+                        addressFullName = "\(person.address.firstName) \(person.address.lastName)"
+                        street = person.address.line1
+                        apartment = person.address.line2
+                        city = person.address.city
+                        zip = person.address.postalCode
+                        state = person.address.region
+                        country = person.address.country
+                    }
+                }
+
                 Group {
                     if step == 1 {
                         stepOne

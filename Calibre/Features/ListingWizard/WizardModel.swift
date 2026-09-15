@@ -553,18 +553,28 @@ final class WizardModel {
         if listing.price.value > 0 {
             priceText = "\(listing.price.value)"
         }
-        notes = listing.description ?? ""
+        // A listing made on the web before the description became prose still
+        // carries the generated block; `SellerNotes` takes it off so a seller
+        // re-editing does not find a wall of `Key: Value` lines in their own
+        // notes box. After the migration this is the description unchanged.
+        notes = SellerNotes(listing.description).text
         if let terms = listing.returns {
             returnsAccepted = terms.accepted
             returnWindowHours = terms.windowHours
         }
+        // The columns first, because that is where these answers live now.
+        //
         // A listing made before the question was split carries one bit for all
         // three, and that bit meant box AND papers. Booklets were never asked
-        // about, so they start unticked rather than inheriting an answer.
+        // about, so they start unticked rather than inheriting an answer — nil
+        // is "nobody was asked", which must not be drawn as a seller's no.
         if listing.boxPapers == true {
             boxIncluded = true
             papersIncluded = true
         }
+        if let box = listing.boxIncluded { boxIncluded = box }
+        if let papers = listing.papersIncluded { papersIncluded = papers }
+        if let booklets = listing.bookletsIncluded { bookletsIncluded = booklets }
         if let condition = listing.condition {
             conditions[.watchCase] = condition.caseCondition
             conditions[.dial] = condition.dial
@@ -687,10 +697,15 @@ final class WizardModel {
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
             conditionCaseback: conditions[.caseback],
-            // What this column has always meant: both, not either. The
-            // booklets answer has no column of its own on the server yet, so
-            // it is collected here and does not travel — see the build report.
+            // What this column has always meant: both, not either. Kept as the
+            // derived summary the cards and the search facets read.
             boxPapers: boxIncluded && papersIncluded,
+            // ...and the three answers as the seller actually gave them. All
+            // three have columns and the server has always accepted them; the
+            // wizard collected them and then threw two away.
+            boxIncluded: boxIncluded,
+            papersIncluded: papersIncluded,
+            bookletsIncluded: bookletsIncluded,
             productionYear: yearUnknown ? nil : InputValidation.productionYear(yearText),
             returnsAccepted: returnsAccepted,
             // The server requires a window when returns are accepted, and

@@ -247,10 +247,40 @@ public struct OrderAuthResult: Codable, Sendable, Identifiable {
     public let id: String
     public let intakeId: String?
     public let outcome: String?
-    public let notes: String?
+    /// The one sentence about this verdict written for the people on the order.
+    ///
+    /// It replaces `notes` and `reasons`, which were the watchmaker's own
+    /// record — WPB write for WPB — and were in this payload for as long as it
+    /// has existed. No client ever drew them, which is the only reason it never
+    /// showed up as a leak, but a payload is a publication whether or not
+    /// anything draws it, and the server has stopped sending them.
+    ///
+    /// Nil on a failure recorded before the failure letters stopped carrying
+    /// the finding themselves, and on every passing result. Read it through
+    /// `Order.authenticationFinding`, which holds the copy for the nil case.
+    public let buyerSummary: String?
     public let aftermarketFlag: Bool?
     public let createdAt: Date?
     public let updatedAt: Date?
+}
+
+extension Order {
+    /// What the bench found, as the buyer and the seller may read it.
+    ///
+    /// Until this build the only place this was ever said was an email, whose
+    /// sentence an admin rewrote by hand in the admin's send popup. The letter
+    /// now says the watch did not pass and to open the order; this is what the
+    /// order answers with.
+    ///
+    /// Nil-safe rather than nil-blind: a failure with no written sentence gets
+    /// a line pointing at a person, because inventing one from the verdict
+    /// would be a claim Calibre did not make.
+    public var authenticationFinding: String? {
+        guard let result = authResult, result.outcome != "pass" else { return nil }
+        let written = (result.buyerSummary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !written.isEmpty { return written }
+        return "Your Calibre contact has the detail of what we found and will go through it with you."
+    }
 }
 
 /// Immutable snapshot of where the order ships (`_serialize_order_shipping`).

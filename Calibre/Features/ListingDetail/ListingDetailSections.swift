@@ -2,48 +2,68 @@ import CalibreDesign
 import CalibreKit
 import SwiftUI
 
-// MARK: - Description parsing
+// MARK: - The seller's own words
 
-/// Sellers write descriptions as "Label: Value" lines with occasional free
-/// text. The labeled lines feed the spec list; the rest become seller notes.
-struct ParsedDescription {
-    let specs: [(label: String, value: String)]
-    let notes: String
+/// What a listing's description says, once the block the sell form used to
+/// generate has been taken off it.
+///
+/// The description is the seller's notes and nothing else now: brand, model,
+/// reference, the eight grades, the year and the three inclusion answers are
+/// columns, and the spec sheet comes off `listing.specs`. A one-off migration
+/// strips the generated block from rows that already carry it; this does the
+/// same for a row that migration has not reached, so the app never shows a wall
+/// of `Key: Value` lines where a sentence belongs.
+///
+/// **Only the keys the form generated are dropped, and nothing else.** The
+/// version of this that shipped before split every line on its first colon and
+/// treated anything with a plausible label as a spec — which silently deleted a
+/// seller's own sentence the moment it contained a colon. "Serviced 2025: full
+/// service" was a spec row called "Serviced 2025" and was gone from the notes.
+/// A closed list cannot do that.
+struct SellerNotes {
+    let text: String
 
-    /// Labels already shown elsewhere on the PDP (buy box, spec list header,
-    /// condition card) — parsed lines with these labels are dropped.
-    private static let excludedLabels: Set<String> = [
-        "brand", "model", "reference", "reference number",
-        "year", "year of manufacture", "production year",
-        "marketplace status", "box & papers", "box and papers",
-        "condition", "overall condition", "crystal condition", "bezel condition",
-        "bracelet condition", "clasp condition", "caseback condition",
-        "case condition", "dial condition",
+    /// The keys `listingDescription()` wrote, lowercased. A dealer's own
+    /// `Movement: Automatic` is not on this list and is kept, because their
+    /// description is theirs.
+    private static let generatedKeys: Set<String> = [
+        "brand", "model", "reference number",
+        "condition", "case condition", "dial condition", "crystal condition",
+        "bezel condition", "bracelet condition", "clasp condition",
+        "caseback condition", "overall condition",
+        "year of manufacture", "box", "papers", "booklets",
+        "marketplace status",
     ]
 
-    init(_ text: String?) {
-        var specs: [(label: String, value: String)] = []
-        var noteLines: [String] = []
+    private static let notesKey = "seller notes"
 
-        for rawLine in (text ?? "").components(separatedBy: .newlines) {
+    init(_ description: String?) {
+        var kept: [String] = []
+        for rawLine in (description ?? "").components(separatedBy: .newlines) {
             let line = rawLine.trimmingCharacters(in: .whitespaces)
-            guard !line.isEmpty else { continue }
+            if line.isEmpty {
+                // A blank line inside kept prose is the author's paragraph
+                // break; leading ones would just indent the notes down the page.
+                if !kept.isEmpty { kept.append("") }
+                continue
+            }
             if let colon = line.firstIndex(of: ":") {
-                let label = String(line[..<colon]).trimmingCharacters(in: .whitespaces)
-                let value = String(line[line.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
-                let plausibleLabel = !label.isEmpty && label.count <= 32 && !value.isEmpty
-                if plausibleLabel {
-                    if !Self.excludedLabels.contains(label.lowercased()) {
-                        specs.append((label, value))
-                    }
+                let key = String(line[..<colon])
+                    .trimmingCharacters(in: .whitespaces)
+                    .lowercased()
+                if Self.generatedKeys.contains(key) {
+                    continue
+                }
+                if key == Self.notesKey {
+                    let value = String(line[line.index(after: colon)...])
+                        .trimmingCharacters(in: .whitespaces)
+                    if !value.isEmpty { kept.append(value) }
                     continue
                 }
             }
-            noteLines.append(line)
+            kept.append(line)
         }
-
-        self.specs = specs
-        self.notes = noteLines.joined(separator: "\n\n")
+        self.text = kept.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 

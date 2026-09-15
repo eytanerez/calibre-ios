@@ -125,14 +125,26 @@ struct BitesArchiveList: View {
     }
 }
 
-/// One row in the archive: topic, claim, and the date it was actually
-/// published. A Bite the desk has retired says so, rather than sitting in the
-/// record as though it still stood.
+/// One row in the archive: the desk's picture when there is one, then topic,
+/// claim, and the date it was actually published. A Bite the desk has retired
+/// says so, rather than sitting in the record as though it still stood.
+///
+/// The picture is the row's own, not a stand-in: a Bite without one draws no
+/// well at all rather than a grey rectangle, so a short record of text-only
+/// Bites stays a list of claims instead of a column of empty frames.
 private struct BiteArchiveRow: View {
     let bite: Bite
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
+            if let imageURL = bite.image?.url {
+                ListingImageWell(url: imageURL, targetWidth: 900)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 132)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .padding(.bottom, Space.xs)
+            }
+
             HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                 Eyebrow(bite.topic, color: Color.calibre.primary)
                 Spacer(minLength: 0)
@@ -169,8 +181,11 @@ private struct BiteArchiveRow: View {
         .accessibilityHint("Opens this bite")
     }
 
+    /// The picture is described where there is one, for the same reason the
+    /// row draws it: a reader who cannot see it is still owed what it shows.
     private var accessibilityLabel: String {
         let base = "\(bite.title). \(bite.author), \(bite.date)"
-        return bite.archived ? base + ". Retired from rotation." : base
+        let described = [base, bite.imageAlt].compactMap { $0 }.joined(separator: ". ")
+        return bite.archived ? described + ". Retired from rotation." : described
     }
 }

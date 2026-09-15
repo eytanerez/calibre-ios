@@ -371,6 +371,15 @@ public struct ListingDraftPayload: Encodable, Sendable {
     public var conditionClasp: String?
     public var conditionCaseback: String?
     public var boxPapers: Bool?
+    /// The seller's three answers, each in its own column.
+    ///
+    /// The wizard has asked all three since it shipped and sent none of them:
+    /// they were collapsed into `boxPapers` above and otherwise went nowhere.
+    /// The bench compares its own findings against these three, so a seller who
+    /// honestly said "no booklets" could not be credited with it.
+    public var boxIncluded: Bool?
+    public var papersIncluded: Bool?
+    public var bookletsIncluded: Bool?
     public var productionYear: Int?
     /// Whether this listing accepts returns. Changing either return field on
     /// an active listing sends it back through review.
@@ -399,6 +408,9 @@ public struct ListingDraftPayload: Encodable, Sendable {
         conditionClasp: String? = nil,
         conditionCaseback: String? = nil,
         boxPapers: Bool? = nil,
+        boxIncluded: Bool? = nil,
+        papersIncluded: Bool? = nil,
+        bookletsIncluded: Bool? = nil,
         productionYear: Int? = nil,
         returnsAccepted: Bool? = nil,
         returnWindowHours: Int? = nil,
@@ -422,6 +434,9 @@ public struct ListingDraftPayload: Encodable, Sendable {
         self.conditionClasp = conditionClasp
         self.conditionCaseback = conditionCaseback
         self.boxPapers = boxPapers
+        self.boxIncluded = boxIncluded
+        self.papersIncluded = papersIncluded
+        self.bookletsIncluded = bookletsIncluded
         self.productionYear = productionYear
         self.returnsAccepted = returnsAccepted
         self.returnWindowHours = returnWindowHours

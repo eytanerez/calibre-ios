@@ -287,9 +287,17 @@ struct ListingDetailScreen: View {
                 Button {
                     addToBag()
                 } label: {
-                    Label("Add to Cart", systemImage: "bag")
+                    Label(
+                        isInCart ? "In Cart" : "Add to Cart",
+                        systemImage: isInCart ? "bag.fill" : "bag"
+                    )
                 }
                 .buttonStyle(.calibre(.ghost, fullWidth: true))
+                // Deliberately NOT greyed when it is already in the cart. Save
+                // does the same thing one button to the left: "Saved" is a
+                // state the buyer put the watch in, not a rule stopping them
+                // acting, and `unavailable` desaturates — which would make a
+                // finished action look like a refused one.
                 .unavailable(!canTransact(listing))
             }
         }
@@ -338,7 +346,6 @@ struct ListingDetailScreen: View {
     }
 
     private func specSection(_ listing: Listing) -> some View {
-        let parsed = ParsedDescription(listing.description)
         var rows: [(label: String, value: String)] = []
         if let brand = listing.brand { rows.append(("Brand", brand)) }
         if let model = listing.model { rows.append(("Model", model)) }
@@ -347,7 +354,16 @@ struct ListingDetailScreen: View {
         if let boxPapers = listing.boxPapers {
             rows.append(("Box & papers", boxPapers ? "Full set" : "Watch only"))
         }
-        rows.append(contentsOf: parsed.specs)
+        // The catalog's own specs, merged with whatever this one watch
+        // overrides, straight off the payload.
+        //
+        // This used to read `ParsedDescription(listing.description).specs` —
+        // the seller's description, split on its colons — because the payload
+        // carried no specs at all and prose was the only thing there was to
+        // read. Which meant the app showed whichever facts a seller happened to
+        // type, in whatever words they used, and never the ten (now sixteen)
+        // fields Calibre actually keeps.
+        rows.append(contentsOf: listing.specs?.rows ?? [])
 
         return VStack(alignment: .leading, spacing: Space.m) {
             Text("The details")
@@ -394,7 +410,7 @@ struct ListingDetailScreen: View {
 
     @ViewBuilder
     private func notesSection(_ listing: Listing) -> some View {
-        let notes = ParsedDescription(listing.description).notes
+        let notes = SellerNotes(listing.description).text
         if !notes.isEmpty {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("From the seller")
@@ -515,6 +531,13 @@ struct ListingDetailScreen: View {
         services.commerce.isWatching(listingID: listingID)
     }
 
+    /// Already in the bag. Read straight off `CommerceStore.cart`, so the
+    /// button flips the moment `addToBag` lands rather than on the next
+    /// appearance of this screen.
+    private var isInCart: Bool {
+        services.commerce.isInCart(listingID: listingID)
+    }
+
     private var shareImageURL: URL {
         services.client.baseURL.appending(path: "/listings/\(listingID)/share-image.jpg")
     }
@@ -534,7 +557,14 @@ struct ListingDetailScreen: View {
 
             async let similarLoad: [Listing] = (try? catalog.similarListings(to: loaded, limit: 8)) ?? []
             async let offerLoad: Offer? = session.isAuthenticated ? loadOpenOffer() : nil
-            let (resolvedSimilar, resolvedOffer) = await (similarLoad, offerLoad)
+            // Whether this watch is already in the bag, so the button arrives
+            // reading "In Cart" instead of learning it on the first tap. Only
+            // for a signed-in reader — there is no cart to ask about otherwise
+            // — and silent on failure: the button then says "Add to Cart", and
+            // `addToBag` re-reads the cart before it writes anything, so the
+            // worst case is the toast the screen already had.
+            async let cartLoad: Void = loadCartForButtonState()
+            let (resolvedSimilar, resolvedOffer, _) = await (similarLoad, offerLoad, cartLoad)
 
             guard generation == loadGeneration else { return }
             gone = nil
@@ -667,6 +697,17 @@ struct ListingDetailScreen: View {
         }
     }
 
+    /// Reads the cart so `isInCart` can be right on arrival.
+    ///
+    /// Signed-in only — a guest has no cart to ask about — and silent on
+    /// failure: the button then reads "Add to Cart", and `addToBag` re-reads
+    /// the cart before it writes anything, so the worst case is the
+    /// "Already in your cart" toast this screen already had.
+    private func loadCartForButtonState() async {
+        guard session.isAuthenticated else { return }
+        _ = try? await services.commerce.loadCart()
+    }
+
     /// The two refusals every buyer action can come back with, said in words
     /// rather than as the server's code.
     ///
@@ -699,7 +740,12 @@ struct ListingDetailScreen: View {
             do {
                 let cart = try await commerce.loadCart()
                 if cart.contains(where: { $0.listingId == listingID }) {
-                    toasts.show(title: "Already in your cart")
+                    // Not an error and not a second add. The button beside this
+                    // toast already reads "In Cart"; this says where to go next.
+                    toasts.show(
+                        title: "Already in your cart",
+                        message: "Open the cart from Home when you're ready to check out."
+                    )
                     return
                 }
                 try await commerce.addToCart(listingID: listingID)

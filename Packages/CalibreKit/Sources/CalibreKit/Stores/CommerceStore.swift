@@ -143,6 +143,28 @@ public final class CommerceStore {
         return item
     }
 
+    /// Is this watch already in the bag?
+    ///
+    /// Derived from `cart` rather than mirrored into a second `Set`, which is
+    /// the difference between this and `watchedListingIDs` above. The heart
+    /// needs a stored set because it flips *before* the network answers and has
+    /// to be revertible; nothing adds to the cart optimistically, so a parallel
+    /// set here would buy nothing and could only ever drift out of agreement
+    /// with the rows the cart screen itself renders.
+    ///
+    /// `@Observable` reads through the computed property, so a view that calls
+    /// this re-renders when `cart` changes — including the moment `addToCart`
+    /// appends the new row.
+    public func isInCart(listingID: String) -> Bool {
+        cart.contains { $0.listingId == listingID }
+    }
+
+    /// Every listing currently in the bag. For surfaces that ask about a whole
+    /// shelf of cards at once rather than one watch.
+    public var cartListingIDs: Set<String> {
+        Set(cart.map(\.listingId))
+    }
+
     public func removeCartItem(id: String) async throws {
         let generation = sessionGeneration
         let _: EmptyResponse = try await client.send(Endpoint(method: .delete, path: "/cart/\(id)"))

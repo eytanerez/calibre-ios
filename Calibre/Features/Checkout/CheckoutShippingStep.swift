@@ -232,6 +232,20 @@ private struct AddressForm: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.l) {
+            // A tester who has to invent a street address before they can see
+            // checkout will either invent a bad one and report the validator as
+            // a bug, or stop. Neither is the feedback the beta is for.
+            BetaFillButton { person in
+                fullName = "\(person.address.firstName) \(person.address.lastName)"
+                street = person.address.line1
+                apartment = person.address.line2
+                city = person.address.city
+                state = person.address.region
+                zip = person.address.postalCode
+                country = person.address.country
+                phone = person.address.phone
+            }
+
             if !model.addresses.isEmpty {
                 quickFillMenu
             }

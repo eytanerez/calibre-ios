@@ -251,7 +251,12 @@ struct RootView: View {
         .environment(services.auth)
         .environment(services.router)
         .environment(services.toasts)
+        .environment(services.beta)
         .task {
+            // Before the session, and never allowed to block it: a beta config
+            // that cannot be fetched means "no beta", and a tester on a flaky
+            // connection gets the app rather than a stalled launch.
+            await services.beta.load()
             await services.auth.bootstrap()
             bootstrapped = true
             // Tokens survived but /auth/me never answered — the session is
@@ -357,6 +362,7 @@ final class AppServices {
     /// gets a 401 and draws nothing; this is what holds the credential.
     let privateMedia: PrivateMediaLoader
     let serverAlerts: ServerAlertsStore
+    let beta: BetaStore
     let signals: LocalSignals
     let alerts = AlertsInbox()
     let router = AppRouter()
@@ -389,6 +395,7 @@ final class AppServices {
         self.vault = VaultStore(client: client)
         self.privateMedia = PrivateMediaLoader(configuration: configuration, auth: auth)
         self.serverAlerts = ServerAlertsStore(client: client)
+        self.beta = BetaStore(client: client)
         self.signals = LocalSignals()
         self.push = PushCoordinator(account: account, auth: auth)
         self.presence = PresenceHeartbeat(client: client)

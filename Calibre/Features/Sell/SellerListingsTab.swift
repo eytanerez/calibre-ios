@@ -366,16 +366,16 @@ struct SellerListingRow: View {
         .buttonStyle(PressableStyle())
     }
 
-    /// The moderator's words, shown on rejected rows — and, on a paused one,
-    /// the reason Calibre took it down and what brings it back.
+    /// Our review of this listing, in the reviewer's own words.
+    ///
+    /// Every outcome now, not only `rejected`. This read one status and one
+    /// status only, which left the COMMON outcome — sent back for more, which
+    /// lands the listing in drafts — with nothing on screen at all; the seller's
+    /// only account of it was an email. The three listing letters stopped
+    /// carrying the reason in this build and say to open the listing instead,
+    /// so `Listing.review` is that explanation and this row is where it lands.
     private var attentionNote: String? {
-        if listing.status == .pausedCard {
-            return "We took this off the market because your card on file lapsed. Add a valid credit card and it goes back up automatically — no re-review, nothing to resubmit."
-        }
-        guard listing.status == .rejected else { return nil }
-        let note = listing.reviewEvents?
-            .first { $0.toStatus == "rejected" && !($0.notes ?? "").isEmpty }?
-            .notes
-        return note ?? "Our review team asked for changes. Edit and resubmit when ready."
+        guard let review = listing.review else { return nil }
+        return [review.notes, review.next].compactMap { $0 }.joined(separator: " ")
     }
 }

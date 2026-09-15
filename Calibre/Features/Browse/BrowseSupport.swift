@@ -216,7 +216,11 @@ extension BrowseFilters {
 extension Listing {
     /// The grid/lane card projection. The model line carries the title slot —
     /// brand and year already live in the eyebrow.
-    var cardModel: ListingCardModel {
+    ///
+    /// `inCart` is asked of `CommerceStore` by the view, not read here: this is
+    /// a pure projection of one listing and has no session to consult. A
+    /// surface with no signed-in buyer simply leaves it at `false`.
+    func cardModel(inCart: Bool = false) -> ListingCardModel {
         ListingCardModel(
             id: id,
             brand: brand ?? "Watch",
@@ -227,9 +231,12 @@ extension Listing {
             condition: condition?.overall,
             watcherCount: metrics?.watchers,
             imageURL: images.first?.url,
-            isVerifiedDealer: seller?.isVerifiedDealer ?? false
+            isVerifiedDealer: seller?.isVerifiedDealer ?? false,
+            isInCart: inCart
         )
     }
+
+    var cardModel: ListingCardModel { cardModel(inCart: false) }
 
     /// The listing's page on the web marketplace — used for sharing.
     var webURL: URL {
@@ -264,7 +271,7 @@ extension ListingSummary {
     /// (multi-word brands like "A. Lange & Sohne" only split correctly
     /// against a list); without it the first word is used, which is right for
     /// every single-word brand and no worse than today for the rest.
-    func cardModel(knownBrands: [String] = []) -> ListingCardModel {
+    func cardModel(knownBrands: [String] = [], inCart: Bool = false) -> ListingCardModel {
         let parts = Self.split(title: title, knownBrands: knownBrands)
         return ListingCardModel(
             id: id,
@@ -274,7 +281,8 @@ extension ListingSummary {
             reference: parts.reference,
             priceText: PriceFormatter.format(price.value, currency: currency),
             imageURL: image?.url,
-            isVerifiedDealer: seller?.isVerifiedDealer ?? false
+            isVerifiedDealer: seller?.isVerifiedDealer ?? false,
+            isInCart: inCart
         )
     }
 
@@ -422,7 +430,7 @@ struct ListingGridCard: View {
         Button {
             push(.listing(listing.id, zoom: ListingZoomSource(id: sourceID, namespace: zoomNamespace)))
         } label: {
-            ListingCard(model: listing.cardModel) { url in
+            ListingCard(model: listing.cardModel(inCart: services.commerce.isInCart(listingID: listing.id))) { url in
                 ListingImageWell(url: url)
             }
         }

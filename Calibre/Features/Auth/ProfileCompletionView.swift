@@ -61,6 +61,13 @@ struct ProfileCompletionView: View {
             VStack(alignment: .leading, spacing: Space.xl) {
                 header
 
+                BetaFillButton { person in
+                    firstName = person.account.firstName
+                    lastName = person.account.lastName
+                    phone = person.account.phone
+                    username = person.account.username
+                }
+
                 if let errorMessage {
                     AuthErrorLine(message: errorMessage)
                 }

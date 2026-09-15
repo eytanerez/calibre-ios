@@ -283,6 +283,11 @@ struct CheckoutReviewStep: View {
     @ViewBuilder
     private var newCardEntry: some View {
         VStack(alignment: .leading, spacing: Space.m) {
+            // The demo card, printed directly above the field it is for. It
+            // cannot fill that field — Stripe's entry is Stripe's — so one tap
+            // puts the number on the clipboard instead. Draws nothing when the
+            // beta is off.
+            BetaCardCallout()
             // The funding check runs the moment the card is complete, so a
             // refusal arrives here — with wire one tap away — rather than
             // after a payment the buyer thought had gone through.

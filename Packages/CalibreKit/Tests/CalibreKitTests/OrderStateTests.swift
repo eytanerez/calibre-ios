@@ -340,7 +340,7 @@ final class OrderStateTests: XCTestCase {
                 let arrived = try withReturn(state, scanned: scanned)
                 let reading = arrived.nextStep()
                 XCTAssertEqual(reading.actor, .calibre, state)
-                XCTAssertEqual(reading.headline, "Your return is with our authentication centre", state)
+                XCTAssertEqual(reading.headline, "Your return is with our authentication center", state)
                 XCTAssertEqual(reading.next, "We authenticate it again, then your refund is issued.", state)
             }
         }

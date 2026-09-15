@@ -74,6 +74,33 @@ public struct WatcherPill: View {
     }
 }
 
+/// "In cart", as it rides on a listing photograph.
+///
+/// Bottom-left, on the same frosted plate the condition and watcher pills use,
+/// because the card's text block below the photo is measured to the point
+/// (`ListingCardAlignmentTests`) and a row that renders for some cards and not
+/// others is exactly what used to put two prices on two different lines. An
+/// overlay on the photo costs no height at all.
+///
+/// The bag glyph carries the meaning for anyone reading it at a glance and the
+/// word carries it for everyone else — Eytan's ask was that the card *say* it,
+/// not only mark it.
+public struct InCartPill: View {
+    public init() {}
+
+    public var body: some View {
+        Label("In cart", systemImage: "bag.fill")
+            .labelStyle(.titleAndIcon)
+            .font(CalibreType.caption)
+            .foregroundStyle(Color.calibre.primary)
+            .padding(.horizontal, Space.s)
+            .padding(.vertical, 4)
+            .background(Color.calibre.background.opacity(0.95), in: Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("In your cart")
+    }
+}
+
 /// Status badge tinted by semantic tone. Plain human words, no system codes.
 public struct StatusBadge: View {
     public enum Tone {

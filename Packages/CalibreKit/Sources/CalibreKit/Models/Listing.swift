@@ -46,6 +46,25 @@ public struct Listing: Codable, Sendable, Identifiable {
     public let currency: String
     public let condition: ListingCondition?
     public let boxPapers: Bool?
+    /// The seller's three answers, separately.
+    ///
+    /// `boxPapers` above is the derived summary the cards and the search facets
+    /// read; these are what was actually asked. `nil` is "nobody was asked",
+    /// which is every listing made before the clients started sending them, and
+    /// it is not the same as `false` — it must never be drawn as an unticked
+    /// box.
+    public let boxIncluded: Bool?
+    public let papersIncluded: Bool?
+    public let bookletsIncluded: Bool?
+    /// What the watch IS, as opposed to what condition it is in.
+    ///
+    /// The reference's own specs, overridden where this one watch differs. The
+    /// server merges the two and sends the answer; which side won is not a
+    /// buyer's business.
+    ///
+    /// Nil on a server old enough not to send the key, which renders exactly as
+    /// it did before the key existed: the columns alone.
+    public let specs: ListingSpecs?
     public let productionYear: Int?
     public let status: ListingStatus
     public let reviewStatus: ListingStatus?
@@ -79,10 +98,84 @@ public struct Listing: Codable, Sendable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id, listingNumber, sellerId, seller, variantId, title, brand, model
         case referenceNumber, sellerSku, vaultWatchId, description, price, currency, condition, boxPapers
+        case boxIncluded, papersIncluded, bookletsIncluded, specs
         case productionYear, status, reviewStatus, sellerStatus, reviewEvents
         case estimatedShipping, metrics, returns, countryOfOrigin, htsCode
         case annotations, createdAt, updatedAt
         case imageList = "images"
+    }
+}
+
+/// The watch's specifications, as the catalog holds them.
+///
+/// Sixteen fields, in the order a spec sheet is read. Four are numbers and the
+/// rest are phrases, which is why each is decoded leniently: a value arriving as
+/// the other kind renders rather than failing the whole listing.
+///
+/// Every field is optional and `nil` means nobody has filled it in — the detail
+/// screen drops the row rather than printing a dash, because a spec sheet of
+/// em-dashes reads as a broken page rather than as a catalog still being
+/// written.
+public struct ListingSpecs: Codable, Sendable {
+    public let material: String?
+    public let bezel: String?
+    public let glass: String?
+    public let back: String?
+    public let shape: String?
+    public let diameterMm: Int?
+    public let finish: String?
+    public let dial: String?
+    public let indexes: String?
+    public let hands: String?
+    public let movement: String?
+    public let calibre: String?
+    public let bracelet: String?
+    public let thicknessMm: Double?
+    public let lugWidthMm: Int?
+    /// Zero is a real answer — a dress watch that holds no pressure — and reads
+    /// "Not water resistant". Nil is "nobody has said".
+    public let waterResistanceM: Int?
+
+    /// Label and value for every filled field, in spec-sheet order.
+    ///
+    /// The rows a screen prints, built here rather than in the view so the
+    /// storefront, this app and Android cannot come to disagree about what the
+    /// word for a field is or where the unit goes.
+    public var rows: [(label: String, value: String)] {
+        var out: [(String, String)] = []
+        func add(_ label: String, _ value: String?) {
+            guard let value, !value.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+            out.append((label, value))
+        }
+        func add(_ label: String, _ value: Int?, unit: String) {
+            guard let value else { return }
+            out.append((label, "\(value)\(unit)"))
+        }
+        add("Case material", material)
+        add("Bezel", bezel)
+        add("Glass", glass)
+        add("Case back", back)
+        add("Shape", shape)
+        add("Diameter", diameterMm, unit: "mm")
+        add("Finish", finish)
+        add("Dial", dial)
+        add("Indexes", indexes)
+        add("Hands", hands)
+        add("Movement", movement)
+        add("Calibre", calibre)
+        add("Bracelet", bracelet)
+        if let thicknessMm {
+            // Trailing ".0" is noise on a measurement quoted to one place.
+            let text = thicknessMm == thicknessMm.rounded()
+                ? String(Int(thicknessMm))
+                : String(format: "%.1f", thicknessMm)
+            out.append(("Thickness", "\(text)mm"))
+        }
+        add("Lug width", lugWidthMm, unit: "mm")
+        if let waterResistanceM {
+            out.append(("Water resistance", waterResistanceM == 0 ? "Not water resistant" : "\(waterResistanceM)m"))
+        }
+        return out
     }
 }
 

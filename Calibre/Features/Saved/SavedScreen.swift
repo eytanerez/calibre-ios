@@ -290,7 +290,17 @@ struct SavedScreen: View {
         // The catalog's brand list, when it is warm, is what lets a
         // multi-word brand ("A. Lange & Sohne") come off a composed title in
         // one piece rather than as "A.".
-        item.listing?.cardModel(knownBrands: services.catalog.metadata?.options.brands ?? []) ?? ListingCardModel(
+        //
+        // The In-cart pill and the "No longer listed" badge want the same
+        // bottom-left corner of the photograph, so a watch wearing the badge
+        // does not also get the pill. A sale evicts the row from every cart, so
+        // the two should never both be true — but "should never" is not a
+        // layout guarantee, and the badge is the more urgent of the two.
+        let unavailable = item.listing?.unavailableBadge != nil
+        return item.listing?.cardModel(
+            knownBrands: services.catalog.metadata?.options.brands ?? [],
+            inCart: !unavailable && services.commerce.isInCart(listingID: item.listingId)
+        ) ?? ListingCardModel(
             id: item.listingId,
             brand: " ",
             title: "Listing",
@@ -459,7 +469,11 @@ struct SavedScreen: View {
         // screen — this tab refetches every time it appears, and a read that
         // acknowledged would spend somebody's one notice in their pocket.
         async let notices: Void = { _ = try? await services.commerce.loadListingNotices() }()
-        _ = await (watchlist, alerts, metadata, notices)
+        // A saved watch may also be in the bag, and the card says so. Nothing
+        // else on this screen needs the cart, so a failure is silent — the
+        // pill simply does not appear, which is what it did before it existed.
+        async let cart: Void = { _ = try? await services.commerce.loadCart() }()
+        _ = await (watchlist, alerts, metadata, notices, cart)
         guard generation == loadGeneration, !Task.isCancelled else { return }
         isLoading = false
     }

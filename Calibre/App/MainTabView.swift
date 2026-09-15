@@ -17,6 +17,15 @@ struct MainTabView: View {
     /// `vaultGate`.
     @State private var vaultLock = VaultLock()
 
+    @Environment(BetaStore.self) private var beta
+    /// Shown once per install, like the intro carousel beside it. Per install
+    /// rather than per account, because the letter has to arrive before there
+    /// is an account — that is the moment a first impression exists, and a
+    /// welcome behind a sign-in would only ever reach people who got past one.
+    @AppStorage("hasSeenBetaWelcome") private var hasSeenBetaWelcome = false
+    @State private var showsBetaWelcome = false
+    @State private var showsBetaFeedback = false
+
     var body: some View {
         @Bindable var router = router
 
@@ -104,6 +113,37 @@ struct MainTabView: View {
             // and every gated action on a listing opened inside it. The root's
             // sheet cannot reach over this cover, so the cover carries one.
             .authGate(for: .deck)
+        }
+        // The beta bar sits above every tab: a tester notices a problem on
+        // whichever screen they are on, so the way to report it cannot belong
+        // to a single tab.
+        //
+        // `safeAreaInset` rather than a VStack around the TabView. Wrapping it
+        // changed the accessibility hierarchy enough that `app.tabBars` began
+        // matching two "Me" buttons, and CalibreUITests could no longer tap the
+        // tab at all — a real regression for anybody driving the app by
+        // VoiceOver, not just for the test that caught it. An inset leaves
+        // TabView as the root and simply reserves space at its top edge, and
+        // reserves none at all when the bar draws nothing.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            BetaBar(
+                onTapFeedback: { showsBetaFeedback = true },
+                onTapWelcome: { showsBetaWelcome = true }
+            )
+        }
+        .sheet(isPresented: $showsBetaWelcome) {
+            BetaWelcomeSheet()
+        }
+        .sheet(isPresented: $showsBetaFeedback) {
+            BetaFeedbackSheet()
+        }
+        .task(id: beta.hasLoaded) {
+            // Raised once the config has actually arrived, not on appear: the
+            // fetch is in flight while this shell mounts, so asking earlier
+            // would decide "no beta" for every tester on every launch.
+            guard beta.isEnabled, !hasSeenBetaWelcome else { return }
+            hasSeenBetaWelcome = true
+            showsBetaWelcome = true
         }
     }
 

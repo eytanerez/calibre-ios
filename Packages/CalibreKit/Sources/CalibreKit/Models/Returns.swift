@@ -451,6 +451,14 @@ public struct OrderReturnSummary: Codable, Sendable {
     public let returnLabelDeduction: APIDecimal?
     /// Null until the seller decides.
     public let relistDecision: String?
+    /// Why a return was refused, written by the admin who refused it. Nil on
+    /// every return that is not in that state, which is almost all of them.
+    ///
+    /// Stored server-side since returns shipped and serialised to nobody until
+    /// this build, so `return_verification_failed_buyer` was the only copy of
+    /// the explanation that existed anywhere. That letter no longer carries
+    /// one and sends the buyer here instead.
+    public let failureReasons: String?
     public let label: Label?
 
     public struct Label: Codable, Sendable {
@@ -460,7 +468,7 @@ public struct OrderReturnSummary: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case state, reason, reasonNote, initiatedAt, shipDeadlineAt, carrierFirstScanAt
-        case refundTotal, returnLabelDeduction, relistDecision, label
+        case refundTotal, returnLabelDeduction, relistDecision, failureReasons, label
     }
 
     public init(from decoder: Decoder) throws {
@@ -474,8 +482,12 @@ public struct OrderReturnSummary: Codable, Sendable {
         refundTotal = try? container.decodeIfPresent(APIDecimal.self, forKey: .refundTotal)
         returnLabelDeduction = try? container.decodeIfPresent(APIDecimal.self, forKey: .returnLabelDeduction)
         relistDecision = try? container.decodeIfPresent(String.self, forKey: .relistDecision)
+        failureReasons = try? container.decodeIfPresent(String.self, forKey: .failureReasons)
         label = try? container.decodeIfPresent(Label.self, forKey: .label)
     }
+
+    /// Verification refused this return: no refund, and the watch is held.
+    public var isRefused: Bool { state == "rejected_failed_verification" }
 
     /// The watch is on its way back; cancelling is no longer available.
     public var isInTransit: Bool {

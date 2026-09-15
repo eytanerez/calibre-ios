@@ -22,6 +22,13 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
     /// last, where nothing followed it. Above the price it is load-bearing
     /// again, and `reservesReasonLine` is what keeps the shelf level instead.
     public let reason: String?
+    /// This watch is already in the buyer's cart.
+    ///
+    /// Drawn over the photograph, never in the text block below it — see
+    /// `InCartPill`. Defaults to `false` so every surface that does not know
+    /// about the cart (a seller's own listings, a storefront seen signed-out)
+    /// keeps rendering exactly as it did.
+    public let isInCart: Bool
     /// Hold the reason's height on this card whether or not it has a reason.
     ///
     /// A shelf where some cards were justified and some were not put its
@@ -42,6 +49,7 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         watcherCount: Int? = nil,
         imageURL: URL? = nil,
         isVerifiedDealer: Bool = false,
+        isInCart: Bool = false,
         reason: String? = nil,
         reservesReasonLine: Bool = false
     ) {
@@ -55,6 +63,7 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         self.watcherCount = watcherCount
         self.imageURL = imageURL
         self.isVerifiedDealer = isVerifiedDealer
+        self.isInCart = isInCart
         self.reason = reason
         self.reservesReasonLine = reservesReasonLine
     }
@@ -233,6 +242,15 @@ public struct ListingCard<ImageContent: View>: View {
                         WatcherPill(count: watchers)
                             .padding(Space.s)
                             .frame(maxWidth: .infinity, alignment: .topTrailing)
+                    }
+
+                    // Bottom-left, under the condition pill and clear of the
+                    // watcher count. Inside the square, so it adds nothing to
+                    // the card's height and the shelf stays level.
+                    if model.isInCart {
+                        InCartPill()
+                            .padding(Space.s)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     }
                 }
             }

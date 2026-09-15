@@ -282,8 +282,8 @@ final class FixtureDecodingTests: XCTestCase {
           "to_buyer_shipment": null,
           "latest_shipment": null,
           "auth_result": {
-            "id": "ar1", "intake_id": "in1", "outcome": "pass", "reasons": [],
-            "notes": null, "aftermarket_flag": false,
+            "id": "ar1", "intake_id": "in1", "outcome": "pass",
+            "buyer_summary": null, "aftermarket_flag": false,
             "created_at": "2026-07-08T00:00:00+00:00", "updated_at": "2026-07-08T00:00:00+00:00"
           },
           "shipping_address": {

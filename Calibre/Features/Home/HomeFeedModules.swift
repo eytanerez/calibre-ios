@@ -67,8 +67,8 @@ extension HomeFeedCard {
     /// sits above the price, so a card with nothing to say has to hold the
     /// space anyway or its price climbs above its neighbours'. Only the lane
     /// can see all of its cards, so only the lane can decide.
-    func cardModel(reservesReason: Bool = false) -> ListingCardModel {
-        let base = listing.cardModel
+    func cardModel(reservesReason: Bool = false, inCart: Bool = false) -> ListingCardModel {
+        let base = listing.cardModel(inCart: inCart)
         return ListingCardModel(
             id: base.id,
             brand: base.brand,
@@ -80,6 +80,7 @@ extension HomeFeedCard {
             watcherCount: base.watcherCount,
             imageURL: base.imageURL,
             isVerifiedDealer: base.isVerifiedDealer,
+            isInCart: base.isInCart,
             reason: reasonLine,
             reservesReasonLine: reservesReason
         )
@@ -94,8 +95,8 @@ extension HomeFeedCard {
     /// The chip and the watcher count want the same corner of the photograph,
     /// so a card carrying a signal gives the corner to the chip. Nothing else
     /// about the card changes.
-    func laneCardModel(reservesReason: Bool) -> ListingCardModel {
-        let base = cardModel(reservesReason: reservesReason)
+    func laneCardModel(reservesReason: Bool, inCart: Bool = false) -> ListingCardModel {
+        let base = cardModel(reservesReason: reservesReason, inCart: inCart)
         guard signal != nil else { return base }
         return ListingCardModel(
             id: base.id,
@@ -108,6 +109,7 @@ extension HomeFeedCard {
             watcherCount: nil,
             imageURL: base.imageURL,
             isVerifiedDealer: base.isVerifiedDealer,
+            isInCart: base.isInCart,
             reason: base.reason,
             reservesReasonLine: base.reservesReasonLine
         )
@@ -342,6 +344,8 @@ struct FeedShopWindowModule: View {
 /// and nothing else about it says which it is.
 private struct FeedCardLane: View {
     @Environment(\.browsePush) private var push
+    /// Read for one thing: whether each card's watch is already in the bag.
+    @Environment(AppServices.self) private var services
 
     let cards: [HomeFeedCard]
     let laneKey: String
@@ -370,7 +374,12 @@ private struct FeedCardLane: View {
                             zoom: ListingZoomSource(id: sourceID, namespace: zoomNamespace)
                         ))
                     } label: {
-                        ListingCard(model: card.laneCardModel(reservesReason: reservesReason)) { url in
+                        ListingCard(
+                            model: card.laneCardModel(
+                                reservesReason: reservesReason,
+                                inCart: services.commerce.isInCart(listingID: card.listing.id)
+                            )
+                        ) { url in
                             ListingImageWell(url: url)
                         }
                         // The chip lands in the photograph's top-right corner,
