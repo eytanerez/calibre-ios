@@ -1,47 +1,47 @@
-name: Calibre
+name: Rewound
 options:
-  bundleIdPrefix: com.buycalibre
+  bundleIdPrefix: com.shoprewound
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
 
 packages:
-  CalibreKit:
-    path: Packages/CalibreKit
-  CalibreDesign:
-    path: Packages/CalibreDesign
+  RewoundKit:
+    path: Packages/RewoundKit
+  RewoundDesign:
+    path: Packages/RewoundDesign
   StripeiOS:
     url: https://github.com/stripe/stripe-ios
     exactVersion: 26.2.0
   Nuke:
     url: https://github.com/kean/Nuke
     from: 13.0.6
-  # Product analytics. App target only — CalibreKit stays dependency-free, so
-  # the seam that wraps this lives in Calibre/App/Analytics.swift.
+  # Product analytics. App target only — RewoundKit stays dependency-free, so
+  # the seam that wraps this lives in Rewound/App/Analytics.swift.
   PostHog:
     url: https://github.com/PostHog/posthog-ios
     exactVersion: 3.69.6
   # Crash/error reporting. App target only, like PostHog, and wired from
-  # Calibre/App/Observability.swift. Pinned to the same sentry-cocoa version
+  # Rewound/App/Observability.swift. Pinned to the same sentry-cocoa version
   # the admin app pins (admin-ios/project.yml) so one Sentry project sees one
-  # SDK version across every Calibre client.
+  # SDK version across every Rewound client.
   Sentry:
     url: https://github.com/getsentry/sentry-cocoa
     exactVersion: 8.58.4
 
 configFiles:
-  Debug: Calibre/Config/Debug.xcconfig
-  Release: Calibre/Config/Release.xcconfig
+  Debug: Rewound/Config/Debug.xcconfig
+  Release: Rewound/Config/Release.xcconfig
 
 targets:
-  Calibre:
+  Rewound:
     type: application
     platform: iOS
     sources:
-      - path: Calibre
+      - path: Rewound
     dependencies:
-      - package: CalibreKit
-      - package: CalibreDesign
+      - package: RewoundKit
+      - package: RewoundDesign
       - package: StripeiOS
         products:
           # PaymentSheet still drives offer holds and label purchases.
@@ -60,19 +60,19 @@ targets:
       - package: Sentry
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.buycalibre.calibre
+        PRODUCT_BUNDLE_IDENTIFIER: com.shoprewound.rewound
         MARKETING_VERSION: 1.0.23
         CURRENT_PROJECT_VERSION: 39
         TARGETED_DEVICE_FAMILY: 1
         SWIFT_VERSION: 6.0
-        CODE_SIGN_ENTITLEMENTS: Calibre/Config/Calibre.entitlements
+        CODE_SIGN_ENTITLEMENTS: Rewound/Config/Rewound.entitlements
         ENABLE_USER_SCRIPT_SANDBOXING: YES
     info:
-      path: Calibre/Config/Info.plist
+      path: Rewound/Config/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        CFBundleDisplayName: Calibre
+        CFBundleDisplayName: Rewound
         # Portrait only. This used to be an `INFOPLIST_KEY_…` build setting,
         # which Xcode merges into a *generated* Info.plist and ignores
         # entirely when the target names its own `INFOPLIST_FILE` — as this
@@ -93,63 +93,63 @@ targets:
         UILaunchScreen:
           UIColorName: LaunchBackground
         ITSAppUsesNonExemptEncryption: false
-        NSCameraUsageDescription: Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
-        NSPhotoLibraryUsageDescription: Calibre lets you choose existing photos of your watch when creating a listing.
-        NSFaceIDUsageDescription: Calibre uses Face ID to keep your vault private, so only you can see the watches you own.
+        NSCameraUsageDescription: Rewound uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
+        NSPhotoLibraryUsageDescription: Rewound lets you choose existing photos of your watch when creating a listing.
+        NSFaceIDUsageDescription: Rewound uses Face ID to keep your vault private, so only you can see the watches you own.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         CFBundleURLTypes:
           - CFBundleURLSchemes:
-              - calibre
-        CalibreAPIBaseURL: $(API_BASE_URL)
-        CalibreMessagingBaseURL: $(MESSAGING_API_BASE_URL)
-        CalibreApplePayEnabled: $(APPLE_PAY_ENABLED)
-        CalibrePostHogKey: $(CALIBRE_POSTHOG_KEY)
-        CalibrePostHogHost: $(CALIBRE_POSTHOG_HOST)
+              - rewound
+        RewoundAPIBaseURL: $(API_BASE_URL)
+        RewoundMessagingBaseURL: $(MESSAGING_API_BASE_URL)
+        RewoundApplePayEnabled: $(APPLE_PAY_ENABLED)
+        RewoundPostHogKey: $(REWOUND_POSTHOG_KEY)
+        RewoundPostHogHost: $(REWOUND_POSTHOG_HOST)
         # Empty in both tracked xcconfigs. Observability.swift reads these and
         # starts nothing when the value is blank — see Config/Release.xcconfig.
-        CalibreSentryDSN: $(CALIBRE_SENTRY_DSN)
-        CalibreBetterStackToken: $(CALIBRE_BETTERSTACK_TOKEN)
-        CalibreBetterStackHost: $(CALIBRE_BETTERSTACK_HOST)
-  CalibreUITests:
+        RewoundSentryDSN: $(REWOUND_SENTRY_DSN)
+        RewoundBetterStackToken: $(REWOUND_BETTERSTACK_TOKEN)
+        RewoundBetterStackHost: $(REWOUND_BETTERSTACK_HOST)
+  RewoundUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - path: CalibreUITests
+      - path: RewoundUITests
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - target: Calibre
+      - target: Rewound
 
   # Unit tests for the app target's own models — the router and the checkout
-  # machine live here rather than in CalibreKit, and until this target existed
+  # machine live here rather than in RewoundKit, and until this target existed
   # neither could be tested at all: a UI test can only reach them through a
-  # screen, and CalibreKit's tests cannot see them.
-  CalibreTests:
+  # screen, and RewoundKit's tests cannot see them.
+  RewoundTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: CalibreTests
+      - path: RewoundTests
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - target: Calibre
+      - target: Rewound
 
 schemes:
-  Calibre:
+  Rewound:
     build:
       targets:
-        Calibre: all
+        Rewound: all
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - CalibreTests
-        - CalibreUITests
-        - package: CalibreKit/CalibreKitTests
-        - package: CalibreDesign/CalibreDesignTests
+        - RewoundTests
+        - RewoundUITests
+        - package: RewoundKit/RewoundKitTests
+        - package: RewoundDesign/RewoundDesignTests
     archive:
       config: Release

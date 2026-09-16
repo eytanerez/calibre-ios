@@ -1,5 +1,5 @@
 # Xcode project is generated — `xcodegen generate` after checkout.
-Calibre.xcodeproj/
+Rewound.xcodeproj/
 DerivedData/
 .DS_Store
 *.xcuserstate
@@ -12,4 +12,4 @@ xcuserdata/
 # limit and rejects the push outright. Rebuilt by Xcode on demand.
 .spm-cache/
 # Observability keys, never committed (see Config/Secrets.xcconfig.example)
-Calibre/Config/Secrets.xcconfig
+Rewound/Config/Secrets.xcconfig

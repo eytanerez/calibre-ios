@@ -2,14 +2,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "CalibreDesign",
+    name: "RewoundDesign",
     platforms: [.iOS(.v18)],
     products: [
-        .library(name: "CalibreDesign", targets: ["CalibreDesign"])
+        .library(name: "RewoundDesign", targets: ["RewoundDesign"])
     ],
     targets: [
         .target(
-            name: "CalibreDesign",
+            name: "RewoundDesign",
             resources: [
                 // `.copy` rather than `.process` so the font bytes stay the
                 // bytes. This list held one more entry until 2026-08-30 —
@@ -18,8 +18,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "CalibreDesignTests",
-            dependencies: ["CalibreDesign"]
+            name: "RewoundDesignTests",
+            dependencies: ["RewoundDesign"]
         ),
     ]
 )

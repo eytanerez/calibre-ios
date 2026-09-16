@@ -2,16 +2,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "CalibreKit",
+    name: "RewoundKit",
     platforms: [.iOS(.v18)],
     products: [
-        .library(name: "CalibreKit", targets: ["CalibreKit"])
+        .library(name: "RewoundKit", targets: ["RewoundKit"])
     ],
     targets: [
-        .target(name: "CalibreKit"),
+        .target(name: "RewoundKit"),
         .testTarget(
-            name: "CalibreKitTests",
-            dependencies: ["CalibreKit"],
+            name: "RewoundKitTests",
+            dependencies: ["RewoundKit"],
             resources: [.copy("Fixtures")]
         ),
     ]
