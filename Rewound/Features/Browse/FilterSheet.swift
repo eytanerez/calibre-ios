@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The full facet editor: cascading brand → model → reference, condition,
@@ -194,15 +194,15 @@ struct FilterSheet: View {
             }
             .padding(.horizontal, -Space.l)
             Text("How long after delivery the seller will take the watch back.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var yearAndPapersSection: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            CalibreTextField(
+            RewoundTextField(
                 "Year",
                 text: $yearText,
                 placeholder: "Any year",
@@ -223,14 +223,14 @@ struct FilterSheet: View {
             Toggle(isOn: boxPapersBinding) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Box & papers")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                     Text("Only full sets with original box and papers.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
-            .tint(Color.calibre.primary)
+            .tint(Color.rewound.primary)
             .frame(minHeight: Space.touchTarget)
         }
     }
@@ -276,7 +276,7 @@ struct FilterSheet: View {
                     .contentTransition(.numericText())
                     .animation(Motion.easeMedium, value: liveCount)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(yearError != nil)
             .tutorialAnchor("filters.apply")
 
@@ -286,7 +286,7 @@ struct FilterSheet: View {
                 } label: {
                     Text(savedSearch ? "Search saved — we'll alert you" : "Save this search")
                 }
-                .buttonStyle(.calibre(.ghost, fullWidth: true))
+                .buttonStyle(.rewound(.ghost, fullWidth: true))
                 .disabled(savingSearch || savedSearch)
             }
 
@@ -296,11 +296,11 @@ struct FilterSheet: View {
                 priceLower = priceBounds.lowerBound
                 priceUpper = priceBounds.upperBound
             }
-            .buttonStyle(.calibre(.ghost, fullWidth: true))
+            .buttonStyle(.rewound(.ghost, fullWidth: true))
         }
         .padding(.top, Space.m)
         .padding(.bottom, Space.s)
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
     }
 
     /// Persists the draft as a saved search: the backend replays it against
@@ -462,32 +462,32 @@ private struct FacetSelect: View {
         } label: {
             VStack(alignment: .leading, spacing: 3) {
                 Text(label)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 HStack(spacing: Space.s) {
                     Text(selection ?? "Any")
-                        .font(CalibreType.bodyMedium)
+                        .font(RewoundType.bodyMedium)
                         .foregroundStyle(
-                            selection == nil ? Color.calibre.mutedForeground : Color.calibre.foreground
+                            selection == nil ? Color.rewound.mutedForeground : Color.rewound.foreground
                         )
                         .lineLimit(valueLineLimit)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
             .padding(.horizontal, Space.m)
             .padding(.vertical, Space.s)
             .frame(minHeight: Space.touchTarget)
             .background(
-                Color.calibre.card,
+                Color.rewound.card,
                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                     .strokeBorder(
-                        selection == nil ? Color.calibre.border : Color.calibre.borderBright,
+                        selection == nil ? Color.rewound.border : Color.rewound.borderBright,
                         lineWidth: 1
                     )
             )

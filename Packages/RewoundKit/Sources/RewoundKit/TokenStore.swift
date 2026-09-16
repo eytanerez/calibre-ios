@@ -21,7 +21,7 @@ public protocol TokenStoring: Sendable {
 }
 
 public struct KeychainTokenStore: TokenStoring {
-    private let service = "com.buycalibre.calibre.tokens"
+    private let service = "com.shoprewound.rewound.tokens"
     private let account = "session"
 
     public init() {}

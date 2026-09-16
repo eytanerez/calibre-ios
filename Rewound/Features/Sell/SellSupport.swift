@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import Foundation
 import Nuke
 import NukeUI
@@ -55,10 +55,10 @@ enum SellerStatusDisplay {
         case "in_transit": ("In transit", .info)
         case "delivered": ("Delivered", .success)
         case "refunded": ("Refunded", .danger)
-        case "cancelled": ("Cancelled", .neutral)
+        case "cancelled": ("Canceled", .neutral)
         case "disputed": ("Disputed", .danger)
         case "rejected": ("Needs changes", .danger)
-        // Calibre took this one down, not the seller. Never folded into
+        // Rewound took this one down, not the seller. Never folded into
         // "archived": archiving is a deliberate seller action, and this one
         // returns to the market by itself once a valid credit card is on file.
         case "paused_card": ("Paused \u{2014} card lapsed", .warning)
@@ -85,7 +85,7 @@ enum SellerStatusDisplay {
         case .authFail: ("Authentication issue", .danger)
         case .toBuyer: ("On its way to the buyer", .info)
         case .delivered: ("Delivered", .success)
-        case .cancelled: ("Cancelled", .neutral)
+        case .cancelled: ("Canceled", .neutral)
         case .refunded: ("Refunded", .danger)
         case .unknown: ("Processing", .neutral)
         }
@@ -102,7 +102,7 @@ struct SellThumb: View {
 
     var body: some View {
         ZStack {
-            Color.calibre.secondary.opacity(0.5)
+            Color.rewound.secondary.opacity(0.5)
             if let request {
                 LazyImage(request: request) { state in
                     if let image = state.image {
@@ -133,7 +133,7 @@ struct SellThumb: View {
     private var fallbackGlyph: some View {
         Image(systemName: "clock")
             .font(.system(size: size * 0.32, weight: .light))
-            .foregroundStyle(Color.calibre.placeholder)
+            .foregroundStyle(Color.rewound.placeholder)
             .accessibilityHidden(true)
     }
 }
@@ -152,8 +152,8 @@ struct SellSectionHeader<Trailing: View>: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             Spacer()
             trailing
         }
@@ -166,11 +166,11 @@ struct SellCard<Content: View>: View {
 
     var body: some View {
         content
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
     }
 }
@@ -194,7 +194,7 @@ struct SellRowSkeleton: View {
 
 /// The four lines a payout is made of, exactly as the server states them:
 /// sale price, commission (with its rate, and a plain note when the
-/// marketplace minimum applied instead), the label Calibre bought, and what
+/// marketplace minimum applied instead), the label Rewound bought, and what
 /// is left. Nothing here is arithmetic — a figure the payload omits is simply
 /// not a row, because a payout figure we can't stand behind is worse than
 /// none at all.
@@ -211,29 +211,29 @@ struct PayoutLedger: View {
         VStack(alignment: .leading, spacing: Space.m) {
             if let title {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
             }
 
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                     ledgerRow(row.label, row.value, emphasized: row.emphasized)
                     if index < rows.count - 1 {
-                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                        Rectangle().fill(Color.rewound.border).frame(height: 1)
                     }
                 }
             }
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
 
             if breakdown.commission?.minimumApplied == true {
                 Text("Minimum applied \u{2014} the marketplace minimum commission was charged on this sale rather than the percentage.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -251,8 +251,8 @@ struct PayoutLedger: View {
             rows.append(Row(label: "Sale price", value: money(sale), emphasized: false))
         }
         if let commission = breakdown.commission, let amount = commission.amount?.value {
-            let label = commission.percent.map { "Calibre\u{2019}s commission (\(feePercentText($0.value))%)" }
-                ?? "Calibre\u{2019}s commission"
+            let label = commission.percent.map { "Rewound\u{2019}s commission (\(feePercentText($0.value))%)" }
+                ?? "Rewound\u{2019}s commission"
             rows.append(Row(label: label, value: "\u{2212} " + money(amount), emphasized: false))
         }
         if let label = breakdown.shippingLabel?.value {
@@ -280,23 +280,23 @@ struct PayoutLedger: View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .firstTextBaseline, spacing: Space.l) {
                 Text(label)
-                    .font(emphasized ? CalibreType.bodyMedium : CalibreType.body)
-                    .foregroundStyle(emphasized ? Color.calibre.foreground : Color.calibre.mutedForeground)
+                    .font(emphasized ? RewoundType.bodyMedium : RewoundType.body)
+                    .foregroundStyle(emphasized ? Color.rewound.foreground : Color.rewound.mutedForeground)
                 Spacer(minLength: Space.m)
                 Text(value)
-                    .font(emphasized ? CalibreType.price : CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(emphasized ? RewoundType.price : RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .lineLimit(1)
                     .fixedSize()
             }
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text(label)
-                    .font(emphasized ? CalibreType.bodyMedium : CalibreType.body)
-                    .foregroundStyle(emphasized ? Color.calibre.foreground : Color.calibre.mutedForeground)
+                    .font(emphasized ? RewoundType.bodyMedium : RewoundType.body)
+                    .foregroundStyle(emphasized ? Color.rewound.foreground : Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(value)
-                    .font(emphasized ? CalibreType.price : CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(emphasized ? RewoundType.price : RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize()
             }
             .frame(maxWidth: .infinity, alignment: .leading)

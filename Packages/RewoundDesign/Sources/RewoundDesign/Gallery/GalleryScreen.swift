@@ -64,7 +64,7 @@ public struct GalleryScreen: View {
                 }
                 .padding(Space.margin)
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle("Gallery")
             .toastHost(toastCenter)
             .sheet(isPresented: $offerSheetShown) { offerSheet }
@@ -76,13 +76,13 @@ public struct GalleryScreen: View {
     private var typographySection: some View {
         section("Typography") {
             VStack(alignment: .leading, spacing: Space.m) {
-                Text("Calibre").font(CalibreType.display)
-                Text("Submariner Date").font(CalibreType.title)
-                Text("Recent sales").font(CalibreType.sectionTitle)
-                Text("$12,400").font(CalibreType.priceLarge).foregroundStyle(Color.calibre.foreground)
+                Text("Rewound").font(RewoundType.display)
+                Text("Submariner Date").font(RewoundType.title)
+                Text("Recent sales").font(RewoundType.sectionTitle)
+                Text("$12,400").font(RewoundType.priceLarge).foregroundStyle(Color.rewound.foreground)
                 Text("Body — warm, expert, unhurried. The confidence of a trusted dealer's shop.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.foreground)
                 Eyebrow("Rolex · 2019")
             }
         }
@@ -92,11 +92,11 @@ public struct GalleryScreen: View {
         section("The hand") {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("Wore it every day for six years — it has the scars to prove it.")
-                    .font(CalibreType.hand)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.hand)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text("hairline on the bezel edge, only catches the light at an angle")
-                    .font(CalibreType.handSmall)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.handSmall)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
     }
@@ -105,44 +105,44 @@ public struct GalleryScreen: View {
         section("Marks") {
             VStack(alignment: .leading, spacing: Space.xl) {
                 Text("The logo the vocabulary is measured from.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
-                CalibreLogoMark(size: 96)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
+                RewoundLogoMark(size: 96)
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: Space.l)], spacing: Space.xl) {
-                    mark("balanceWheel") { CalibreMark.balanceWheel(size: 88) }
-                    mark("stamp") { CalibreMark.stamp(size: 88, trigger: markPlay) }
-                    mark("waxSeal") { CalibreMark.waxSeal(size: 88, trigger: markPlay) }
-                    mark("loupe") { CalibreMark.loupe(size: 88, trigger: markPlay) }
-                    mark("dialArc") { CalibreMark.dialArc(0.62, size: 88, trigger: markPlay) }
-                    mark("powerReserve") { CalibreMark.powerReserve(0.78, size: 88, trigger: markPlay) }
-                    mark("crown") { CalibreMark.crown(size: 88, trigger: markPlay) }
-                    mark("box") { CalibreMark.box(size: 88, trigger: markPlay) }
+                    mark("balanceWheel") { RewoundMark.balanceWheel(size: 88) }
+                    mark("stamp") { RewoundMark.stamp(size: 88, trigger: markPlay) }
+                    mark("waxSeal") { RewoundMark.waxSeal(size: 88, trigger: markPlay) }
+                    mark("loupe") { RewoundMark.loupe(size: 88, trigger: markPlay) }
+                    mark("dialArc") { RewoundMark.dialArc(0.62, size: 88, trigger: markPlay) }
+                    mark("powerReserve") { RewoundMark.powerReserve(0.78, size: 88, trigger: markPlay) }
+                    mark("crown") { RewoundMark.crown(size: 88, trigger: markPlay) }
+                    mark("box") { RewoundMark.box(size: 88, trigger: markPlay) }
                 }
 
                 // What the surface does when a press mark lands on it. The
                 // mark stays rigid; the card takes the hit.
                 HStack(spacing: Space.l) {
-                    CalibreMark.stamp(size: 56, trigger: markPlay)
+                    RewoundMark.stamp(size: 56, trigger: markPlay)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Authenticated").font(CalibreType.bodyMedium)
+                        Text("Authenticated").font(RewoundType.bodyMedium)
                         Text("Ref. 116610LN · in-house")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                     Spacer(minLength: 0)
                 }
                 .padding(Space.l)
-                .background(Color.calibre.card)
+                .background(Color.rewound.card)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                        .strokeBorder(Color.calibre.border, lineWidth: 1)
+                        .strokeBorder(Color.rewound.border, lineWidth: 1)
                 )
                 .markImpact(trigger: markPlay)
 
                 Button("Fire the marks") { markPlay += 1 }
-                    .buttonStyle(.calibreSecondary)
+                    .buttonStyle(.rewoundSecondary)
             }
         }
     }
@@ -152,19 +152,19 @@ public struct GalleryScreen: View {
             content()
                 .frame(height: 88)
             Text(name)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
     }
 
     private var buttonsSection: some View {
         section("Buttons") {
             VStack(spacing: Space.m) {
-                Button("Buy Now") {}.buttonStyle(.calibre(.primary, fullWidth: true))
-                Button("Make Offer") {}.buttonStyle(.calibre(.secondary, fullWidth: true))
+                Button("Buy Now") {}.buttonStyle(.rewound(.primary, fullWidth: true))
+                Button("Make Offer") {}.buttonStyle(.rewound(.secondary, fullWidth: true))
                 HStack {
-                    Button("Save for Later") {}.buttonStyle(.calibreGhost)
-                    Button("Remove") {}.buttonStyle(.calibreDestructive)
+                    Button("Save for Later") {}.buttonStyle(.rewoundGhost)
+                    Button("Remove") {}.buttonStyle(.rewoundDestructive)
                 }
             }
         }
@@ -254,7 +254,7 @@ public struct GalleryScreen: View {
             VStack(alignment: .leading, spacing: Space.m) {
                 CalloutBand(
                     icon: "checkmark.shield",
-                    title: "Authenticated by Calibre",
+                    title: "Authenticated by Rewound",
                     message: "Every watch is inspected by our in-house watchmakers before it ships to you.",
                     action: {}
                 )
@@ -288,7 +288,7 @@ public struct GalleryScreen: View {
                 Button("Neutral") {
                     toastCenter.show(title: "Link copied")
                 }
-                .buttonStyle(.calibreSecondary)
+                .buttonStyle(.rewoundSecondary)
                 Button("Success") {
                     toastCenter.show(
                         title: "Offer sent",
@@ -296,7 +296,7 @@ public struct GalleryScreen: View {
                         tone: .success
                     )
                 }
-                .buttonStyle(.calibreSecondary)
+                .buttonStyle(.rewoundSecondary)
                 Button("Error") {
                     toastCenter.show(
                         title: "Payment failed",
@@ -305,7 +305,7 @@ public struct GalleryScreen: View {
                         action: .init(label: "Retry") {}
                     )
                 }
-                .buttonStyle(.calibreSecondary)
+                .buttonStyle(.rewoundSecondary)
             }
         }
     }
@@ -319,11 +319,11 @@ public struct GalleryScreen: View {
                 actionTitle: "Browse the market",
                 action: {}
             )
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
     }
@@ -331,7 +331,7 @@ public struct GalleryScreen: View {
     private var sheetSection: some View {
         section("Sheet scaffold") {
             Button("Preview offer sheet") { offerSheetShown = true }
-                .buttonStyle(.calibreSecondary)
+                .buttonStyle(.rewoundSecondary)
         }
     }
 
@@ -339,17 +339,17 @@ public struct GalleryScreen: View {
         SheetScaffold(title: "Make an offer") {
             VStack(alignment: .leading, spacing: Space.l) {
                 Text("Rolex Submariner Date · Ref. 116610LN")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 Text("$12,400")
-                    .font(CalibreType.priceLarge)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.priceLarge)
+                    .foregroundStyle(Color.rewound.foreground)
                 CalloutBand(
                     icon: "info.circle",
                     message: "Offers are binding for 48 hours. The seller can accept, counter, or decline."
                 )
                 Button("Send Offer") { offerSheetShown = false }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
             }
         }
     }
@@ -362,8 +362,8 @@ public struct GalleryScreen: View {
                     items: DealTab.allCases.map { ($0, $0.label) }
                 )
                 Text("Showing \(dealTab.label.lowercased())")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
     }
@@ -385,8 +385,8 @@ public struct GalleryScreen: View {
                 HStack(spacing: Space.s) {
                     StarRating(rating: 4.5)
                     Text("4.5 · 128 reviews")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 StarRating(selection: $reviewRating)
             }
@@ -455,8 +455,8 @@ public struct GalleryScreen: View {
                 GuaranteeCard(brand: .amex, last4: "0005", expiry: "06/26", status: .lapsed)
 
                 Text("Compact — the size that sits inside a setup step.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 HStack(alignment: .top, spacing: Space.m) {
                     GuaranteeCard(
                         brand: .discover,
@@ -484,8 +484,8 @@ public struct GalleryScreen: View {
         section("Wallet card") {
             VStack(alignment: .leading, spacing: Space.xl) {
                 Text("Checkout — the card is the choice.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 WalletCardFace(
                     brand: .visa,
                     last4: "4242",
@@ -510,8 +510,8 @@ public struct GalleryScreen: View {
                 )
 
                 Text("Settings — the card carries its own controls.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 WalletCardFace(
                     brand: .amex,
                     last4: "0005",
@@ -520,11 +520,11 @@ public struct GalleryScreen: View {
                 ) {
                     HStack(spacing: Space.l) {
                         Text("Make default")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.primary)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.primary)
                         Text("Remove")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.destructive)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.destructive)
                         Spacer(minLength: 0)
                     }
                 }
@@ -555,18 +555,18 @@ public struct GalleryScreen: View {
     private var formFieldsSection: some View {
         section("Form fields") {
             VStack(spacing: Space.xl) {
-                CalibreTextField(
+                RewoundTextField(
                     "Reference number",
                     text: $referenceField,
                     placeholder: "e.g. 116610LN"
                 )
-                CalibreTextField(
+                RewoundTextField(
                     "Email",
                     text: $emailField,
                     placeholder: "you@example.com",
                     error: "Enter a valid email address."
                 )
-                CalibreTextField(
+                RewoundTextField(
                     "Password",
                     text: $passwordField,
                     isSecure: true
@@ -598,21 +598,21 @@ public struct GalleryScreen: View {
             .resizable()
             .scaledToFit()
             .padding(40)
-            .foregroundStyle(Color.calibre.placeholder)
+            .foregroundStyle(Color.rewound.placeholder)
     }
 
     private var placeholderThumb: some View {
         Image(systemName: "clock")
             .font(.system(size: 20))
-            .foregroundStyle(Color.calibre.placeholder)
+            .foregroundStyle(Color.rewound.placeholder)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.calibre.secondary)
+            .background(Color.rewound.secondary)
     }
 
     @ViewBuilder
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            Text(title).font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+            Text(title).font(RewoundType.sectionTitle).foregroundStyle(Color.rewound.foreground)
             content()
         }
     }

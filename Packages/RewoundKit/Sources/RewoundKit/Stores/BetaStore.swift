@@ -1,9 +1,9 @@
 import Foundation
 import Observation
 
-/// The beta programme's state for one run of the app.
+/// The beta program's state for one run of the app.
 ///
-/// Loaded once at launch and held. The programme does not switch on or off
+/// Loaded once at launch and held. The program does not switch on or off
 /// during a session, and a config that could not be fetched means "no beta" —
 /// never a retry loop, and never a blocked launch. An app pointed at a backend
 /// that predates these routes gets a 404 here and behaves exactly as it did

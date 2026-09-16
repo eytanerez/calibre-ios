@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One imported draft at a time: its own title and the facts that identify
@@ -105,7 +105,7 @@ struct DraftFinishingQueueScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Finish drafts")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -214,25 +214,25 @@ struct DraftFinishingQueueScreen: View {
                 VStack(alignment: .leading, spacing: Space.s) {
                     Eyebrow("Draft \(position) of \(total)")
                     Text(item.title ?? "Imported listing")
-                        .font(CalibreType.sectionTitle)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.sectionTitle)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: Space.s) {
                         if let number = item.listingNumber {
                             Text("#\(number)")
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         if let price = item.price {
                             Text(PriceFormatter.format(price.value))
-                                .font(CalibreType.priceSmall)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.priceSmall)
+                                .foregroundStyle(Color.rewound.foreground)
                         }
                     }
                     if !identityLine(item).isEmpty {
                         Text(identityLine(item))
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     missingChips(item)
@@ -245,7 +245,7 @@ struct DraftFinishingQueueScreen: View {
                 conditionSection(ConditionPart.allCases)
 
                 if item.missing.contains("production_year") {
-                    CalibreTextField(
+                    RewoundTextField(
                         "Year",
                         text: $yearText,
                         placeholder: "2019",
@@ -257,7 +257,7 @@ struct DraftFinishingQueueScreen: View {
                 }
 
                 if item.missing.contains("description") {
-                    CalibreTextEditor(
+                    RewoundTextEditor(
                         "Description",
                         text: $descriptionText,
                         placeholder: "How it wears, what's included…",
@@ -273,8 +273,8 @@ struct DraftFinishingQueueScreen: View {
 
                 if let message = incompleteMessage {
                     Text(message)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
 
                 HStack(spacing: Space.m) {
@@ -282,7 +282,7 @@ struct DraftFinishingQueueScreen: View {
                         skipped.insert(item.id)
                         advance()
                     }
-                    .buttonStyle(.calibreGhost)
+                    .buttonStyle(.rewoundGhost)
 
                     Button {
                         Task { await saveAndNext(item) }
@@ -290,12 +290,12 @@ struct DraftFinishingQueueScreen: View {
                         // The words stay while it saves. This button used to
                         // swap its label for a spinner, which took away the
                         // one thing that said what was being saved.
-                        CalibreBusyLabel(
+                        RewoundBusyLabel(
                             willSubmit ? "Send to review" : "Save & next",
                             busy: saving
                         )
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(saving || !canSave)
                 }
             }
@@ -348,11 +348,11 @@ struct DraftFinishingQueueScreen: View {
     private var photoSection: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Photos")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.secondaryForeground)
-            Text("A spreadsheet can\u{2019}t carry pictures, so all six are taken here. Tap a slot and shoot it \u{2014} the same six angles every Calibre listing carries.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.secondaryForeground)
+            Text("A spreadsheet can\u{2019}t carry pictures, so all six are taken here. Tap a slot and shoot it \u{2014} the same six angles every Rewound listing carries.")
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.l) {
@@ -371,8 +371,8 @@ struct DraftFinishingQueueScreen: View {
                             // as the value. Same shape as ReturnFlow.
                             .accessibilityValue(photoPhaseValue(category))
                             Text(category.label)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                     }
                 }
@@ -563,15 +563,15 @@ struct DraftFinishingQueueScreen: View {
     private func conditionSection(_ parts: [ConditionPart]) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Condition")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.secondaryForeground)
             SellCard {
                 VStack(spacing: 0) {
                     ForEach(Array(parts.enumerated()), id: \.element) { partIndex, part in
                         HStack {
                             Text(part.label)
-                                .font(CalibreType.body)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.body)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                             Spacer()
                             Menu {
                                 ForEach(ConditionPart.grades, id: \.self) { grade in
@@ -583,15 +583,15 @@ struct DraftFinishingQueueScreen: View {
                             } label: {
                                 HStack(spacing: Space.s) {
                                     Text(conditions[part] ?? "Select")
-                                        .font(CalibreType.bodyMedium)
+                                        .font(RewoundType.bodyMedium)
                                         .foregroundStyle(
                                             conditions[part] == nil
-                                                ? Color.calibre.placeholder
-                                                : Color.calibre.foreground
+                                                ? Color.rewound.placeholder
+                                                : Color.rewound.foreground
                                         )
                                     Image(systemName: "chevron.up.chevron.down")
                                         .font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(Color.calibre.mutedForeground)
+                                        .foregroundStyle(Color.rewound.mutedForeground)
                                 }
                                 .frame(minHeight: Space.touchTarget)
                                 .contentShape(Rectangle())
@@ -600,7 +600,7 @@ struct DraftFinishingQueueScreen: View {
                         .padding(.horizontal, Space.l)
                         .frame(minHeight: Space.touchTarget)
                         if partIndex < parts.count - 1 {
-                            Rectangle().fill(Color.calibre.border).frame(height: 1)
+                            Rectangle().fill(Color.rewound.border).frame(height: 1)
                         }
                     }
                 }

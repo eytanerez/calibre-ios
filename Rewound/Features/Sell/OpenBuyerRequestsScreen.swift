@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The full list of open buyer sourcing requests — reached from the
@@ -48,7 +48,7 @@ struct OpenBuyerRequestsScreen: View {
                     EmptyState(
                         icon: "sparkle.magnifyingglass",
                         title: "No open requests",
-                        message: "When a buyer asks Calibre to source a watch, it shows up here for you to list against."
+                        message: "When a buyer asks Rewound to source a watch, it shows up here for you to list against."
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -59,8 +59,8 @@ struct OpenBuyerRequestsScreen: View {
                             }
                             if let total, total > rows.count {
                                 Text("Showing \(rows.count) of \(total)")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                                     .frame(maxWidth: .infinity)
                                     .padding(.top, Space.s)
                             }
@@ -70,7 +70,7 @@ struct OpenBuyerRequestsScreen: View {
                     .refreshable { await load() }
                 }
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle("Buyers are looking for")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -83,7 +83,7 @@ struct OpenBuyerRequestsScreen: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
-                        .font(CalibreType.bodyMedium)
+                        .font(RewoundType.bodyMedium)
                 }
             }
         }
@@ -141,7 +141,7 @@ struct OpenBuyerRequestsScreen: View {
         } label: {
             Image(systemName: "arrow.up.arrow.down")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.calibre.foreground)
+                .foregroundStyle(Color.rewound.foreground)
         }
         .accessibilityLabel("Sort requests")
         .onChange(of: sort) {
@@ -163,29 +163,29 @@ struct OpenBuyerRequestsScreen: View {
                 }
             }
             Text(request.model ?? "Any model")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
             if let reference = request.reference, !reference.isEmpty {
                 Text("Ref. \(reference)")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             HStack(spacing: Space.m) {
                 if let budget = request.maxBudget {
                     Text("Up to \(PriceFormatter.format(budget.value))")
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.priceSmall)
+                        .foregroundStyle(Color.rewound.foreground)
                 }
                 if let year = request.productionYear {
                     Text(String(year))
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
             if let notes = request.notes, !notes.isEmpty {
                 Text(notes)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             // Counted server-side against the same catalog row: inventory the
             // dealer already has live, not something to go and list.
@@ -194,21 +194,21 @@ struct OpenBuyerRequestsScreen: View {
                     "You have \(request.liveMatchCount) live match\(request.liveMatchCount == 1 ? "" : "es")",
                     systemImage: "checkmark.seal"
                 )
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.success)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.success)
             }
             Button("List this watch") {
                 dismiss()
                 onListWatch(request)
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
             .padding(.top, Space.xs)
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }

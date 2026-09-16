@@ -3,7 +3,7 @@ import SwiftUI
 /// What a field is *for* — drives the keyboard, autofill contentType,
 /// capitalisation and autocorrect in one place so no call site has to
 /// remember the four modifiers that make an input behave natively.
-public enum CalibreFieldKind: Sendable, Equatable {
+public enum RewoundFieldKind: Sendable, Equatable {
     case plain
     case sentence
     case email
@@ -114,12 +114,12 @@ public enum CalibreFieldKind: Sendable, Equatable {
 /// the border destructive. `kind` sets the keyboard, autofill and
 /// capitalisation; password kinds render a secure entry with a reveal toggle.
 /// Use `accessory` for trailing add-ons (units, "Ref." lookups).
-public struct CalibreTextField<Accessory: View>: View {
+public struct RewoundTextField<Accessory: View>: View {
     let label: String
     let placeholder: String
     @Binding var text: String
     let error: String?
-    let kind: CalibreFieldKind
+    let kind: RewoundFieldKind
     let isSecure: Bool
     let accessory: Accessory
 
@@ -131,7 +131,7 @@ public struct CalibreTextField<Accessory: View>: View {
         text: Binding<String>,
         placeholder: String = "",
         error: String? = nil,
-        kind: CalibreFieldKind = .plain,
+        kind: RewoundFieldKind = .plain,
         isSecure: Bool? = nil,
         @ViewBuilder accessory: () -> Accessory
     ) {
@@ -147,17 +147,17 @@ public struct CalibreTextField<Accessory: View>: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text(label)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 // The field below carries `label` as its own accessible name, so
                 // leaving this reachable would say it twice.
                 .accessibilityHidden(true)
 
             HStack(spacing: Space.s) {
                 field
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .tint(Color.calibre.primary)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.foreground)
+                    .tint(Color.rewound.primary)
                     .focused($focused)
                     // `TextField("", …)` has no title, so without this the field's
                     // name falls back to the prompt — and 43 call sites pass no
@@ -172,7 +172,7 @@ public struct CalibreTextField<Accessory: View>: View {
                     } label: {
                         Image(systemName: revealed ? "eye.slash" : "eye")
                             .font(.system(size: 15))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                     .buttonStyle(PressableStyle())
                     .accessibilityLabel(revealed ? "Hide password" : "Show password")
@@ -189,7 +189,7 @@ public struct CalibreTextField<Accessory: View>: View {
             .padding(.horizontal, Space.m)
             .frame(minHeight: Space.touchTarget)
             .background(
-                Color.calibre.card,
+                Color.rewound.card,
                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
             )
             .overlay(
@@ -208,8 +208,8 @@ public struct CalibreTextField<Accessory: View>: View {
 
             if let error {
                 Text(error)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
                     .transition(.opacity.combined(with: .offset(y: -3)))
             }
         }
@@ -224,13 +224,13 @@ public struct CalibreTextField<Accessory: View>: View {
                 SecureField(
                     "",
                     text: $text,
-                    prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
+                    prompt: Text(placeholder).foregroundStyle(Color.rewound.placeholder)
                 )
             } else {
                 TextField(
                     "",
                     text: $text,
-                    prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
+                    prompt: Text(placeholder).foregroundStyle(Color.rewound.placeholder)
                 )
             }
         }
@@ -250,23 +250,23 @@ public struct CalibreTextField<Accessory: View>: View {
     }
 
     private var borderColor: Color {
-        if error != nil { return Color.calibre.destructive }
-        return focused ? Color.calibre.borderBright : Color.calibre.border
+        if error != nil { return Color.rewound.destructive }
+        return focused ? Color.rewound.borderBright : Color.rewound.border
     }
 
     private var ringColor: Color {
-        error != nil ? Color.calibre.destructive : Color.calibre.primary
+        error != nil ? Color.rewound.destructive : Color.rewound.primary
     }
 }
 
-public extension CalibreTextField where Accessory == EmptyView {
+public extension RewoundTextField where Accessory == EmptyView {
     /// Field without a trailing accessory.
     init(
         _ label: String,
         text: Binding<String>,
         placeholder: String = "",
         error: String? = nil,
-        kind: CalibreFieldKind = .plain,
+        kind: RewoundFieldKind = .plain,
         isSecure: Bool? = nil
     ) {
         self.init(
@@ -280,44 +280,44 @@ public extension CalibreTextField where Accessory == EmptyView {
     }
 }
 
-private struct CalibreTextFieldPreviewHost: View {
+private struct RewoundTextFieldPreviewHost: View {
     @State private var reference = ""
     @State private var email = "not-an-email"
     @State private var password = "hunter2!"
 
     var body: some View {
         VStack(spacing: Space.xl) {
-            CalibreTextField(
+            RewoundTextField(
                 "Reference number",
                 text: $reference,
                 placeholder: "e.g. 116610LN"
             ) {
                 Image(systemName: "sparkle.magnifyingglass")
                     .font(.system(size: 15))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
             }
-            CalibreTextField(
+            RewoundTextField(
                 "Email",
                 text: $email,
                 placeholder: "you@example.com",
                 error: "Enter a valid email address."
             )
-            CalibreTextField(
+            RewoundTextField(
                 "Password",
                 text: $password,
                 isSecure: true
             )
         }
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
     }
 }
 
 #Preview("Text fields — light", traits: .sizeThatFitsLayout) {
-    CalibreTextFieldPreviewHost()
+    RewoundTextFieldPreviewHost()
 }
 
 #Preview("Text fields — dark", traits: .sizeThatFitsLayout) {
-    CalibreTextFieldPreviewHost()
+    RewoundTextFieldPreviewHost()
         .preferredColorScheme(.dark)
 }

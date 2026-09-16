@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The seller dashboard's figures have states a bare number gets wrong: a
 /// conversion rate nobody could measure, a rate too small for the two places

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import StripePaymentSheet
 import Foundation
 import Observation
@@ -150,7 +150,7 @@ let offerHoldRequiredFunding = "credit"
 /// The same refusal arrives from two places, and the difference between them
 /// is the whole point of this work, so it is carried in ``origin`` rather than
 /// flattened away: refused at creation, nothing was ever authorized; refused
-/// by `confirm-hold`, an authorization landed and was cancelled, and the
+/// by `confirm-hold`, an authorization landed and was canceled, and the
 /// buyer's bank has already seen it.
 struct OfferHoldCardRefusal: Error, LocalizedError, Equatable {
     /// Whether money stood on the card before the refusal.
@@ -159,7 +159,7 @@ struct OfferHoldCardRefusal: Error, LocalizedError, Equatable {
         /// offer row, no PaymentIntent, nothing on the statement.
         case beforeAuthorization
         /// `POST /offers/<id>/confirm-hold` read the card that actually
-        /// authorized, refused it and cancelled the authorization.
+        /// authorized, refused it and canceled the authorization.
         case afterAuthorization
     }
 
@@ -243,7 +243,7 @@ struct OfferHoldCardRefusal: Error, LocalizedError, Equatable {
 /// Advisory, and deliberately narrow: a funding type Stripe didn't state is
 /// **not** refused here, because the server is the one that decides an
 /// unreadable card. All this saves is the round trip — and, where it is used,
-/// an authorization that would otherwise be placed and cancelled.
+/// an authorization that would otherwise be placed and canceled.
 func offerHoldRefusedFunding(_ paymentMethod: STPPaymentMethod) -> String? {
     guard let funding = paymentMethod.card?.funding?
         .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -358,7 +358,7 @@ final class OfferHoldRenewer {
         }
         let sheet = PaymentSheet(
             paymentIntentClientSecret: clientSecret,
-            configuration: CalibreStripe.configuration(
+            configuration: RewoundStripe.configuration(
                 customerID: nil,
                 customerSessionClientSecret: nil
             )
@@ -366,7 +366,7 @@ final class OfferHoldRenewer {
         paymentSheet = sheet
 
         let outcome: PaymentSheetResult = await withCheckedContinuation { continuation in
-            CalibreStripe.present(sheet) { result in
+            RewoundStripe.present(sheet) { result in
                 continuation.resume(returning: result)
             }
         }
@@ -378,7 +378,7 @@ final class OfferHoldRenewer {
             error = "The new authorization wasn\u{2019}t completed, so this offer still needs one."
             return nil
         case .failed(let failure):
-            error = CalibreStripe.failureMessage(for: failure)
+            error = RewoundStripe.failureMessage(for: failure)
             return nil
         }
     }
@@ -393,7 +393,7 @@ final class OfferHoldRenewer {
 ///
 /// Nothing here invents a rate — an unknown rate produces no answer at all,
 /// because a made-up number next to "you'd take home" is worse than no
-/// number. It is an estimate and must be labelled as one wherever it is
+/// number. It is an estimate and must be labeled as one wherever it is
 /// shown: the shipping figure is priced from a standard box nobody has
 /// measured, and the real label is bought after the sale.
 struct SellerNetProceeds {
@@ -477,7 +477,7 @@ func offerPlacementDisclosure(
     An accepted offer is a sale, with the same fees and the same return terms as any purchase, and payment \
     is due within \(offerPaymentDuePhrase(paymentDueHours)) of acceptance. If your payment fails you have \
     \(offerGracePhrase(graceHours)) to resolve it. If you do not, your \(offerHoldNoun(holdText)) is \
-    forfeited and split between the seller and Calibre.
+    forfeited and split between the seller and Rewound.
     """
 }
 
@@ -502,7 +502,7 @@ func offerAcceptanceDisclosure(
         purchase. The listing is reserved while \(buyerName) pays, and payment is due within \(due).
 
         If their payment fails they have \(grace) to resolve it. If they do not, their \(holdNoun) is \
-        forfeited and split between you and Calibre.
+        forfeited and split between you and Rewound.
         """
     }
 
@@ -511,7 +511,7 @@ func offerAcceptanceDisclosure(
     and the same return terms as any purchase, and payment is due within \(due).
 
     If your payment fails you have \(grace) to resolve it. If you do not, your \(holdNoun) is forfeited and \
-    split between the seller and Calibre.
+    split between the seller and Rewound.
     """
 }
 
@@ -556,14 +556,14 @@ func offerResolutionNotice(
         var message: String
         if viewerIsSeller {
             message = "The payment was not resolved in time, so the buyer's \(holdNoun) was forfeited and "
-                + "split between you and Calibre."
+                + "split between you and Rewound."
             if let sellerAmount = forfeit.sellerAmount {
                 let net = PriceFormatter.format(sellerAmount.value, currency: offerHoldCurrency(offer))
                 message += " You received \(net)."
             }
         } else {
             message = "The payment was not resolved in time, so your \(holdNoun) was forfeited and split "
-                + "between the seller and Calibre."
+                + "between the seller and Rewound."
         }
         return OfferResolutionNotice(
             emphasis: .settled,
@@ -586,15 +586,15 @@ func offerResolutionNotice(
     if viewerIsSeller {
         message = stillRunning
             ? "The buyer has \(grace) from the failed payment to resolve it. If they do not, their "
-                + "\(holdNoun) is forfeited and split between you and Calibre."
+                + "\(holdNoun) is forfeited and split between you and Rewound."
             : "The buyer had \(grace) to resolve it. If it stays unresolved, their \(holdNoun) is "
-                + "forfeited and split between you and Calibre."
+                + "forfeited and split between you and Rewound."
     } else {
         message = stillRunning
             ? "You have \(grace) from the failed payment to resolve it. If you do not, your \(holdNoun) "
-                + "is forfeited and split between the seller and Calibre."
+                + "is forfeited and split between the seller and Rewound."
             : "You had \(grace) to resolve it. If it stays unresolved, your \(holdNoun) is forfeited and "
-                + "split between the seller and Calibre."
+                + "split between the seller and Rewound."
     }
 
     return OfferResolutionNotice(
@@ -622,14 +622,14 @@ struct OfferResolutionBand: View {
                 .foregroundStyle(iconTint)
                 .frame(width: 32, height: 32)
                 .background(
-                    Color.calibre.card,
+                    Color.rewound.card,
                     in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                 )
 
             VStack(alignment: .leading, spacing: Space.s) {
                 Text(notice.title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let deadline = notice.deadline {
@@ -640,15 +640,15 @@ struct OfferResolutionBand: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Eyebrow(notice.amountCaption)
                         Text(amountText)
-                            .font(CalibreType.price)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.price)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     .padding(.top, 2)
                 }
 
                 Text(notice.message)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -665,22 +665,22 @@ struct OfferResolutionBand: View {
 
     private var iconTint: Color {
         switch notice.emphasis {
-        case .urgent: Color.calibre.destructive
-        case .settled: Color.calibre.mutedForeground
+        case .urgent: Color.rewound.destructive
+        case .settled: Color.rewound.mutedForeground
         }
     }
 
     private var fill: Color {
         switch notice.emphasis {
-        case .urgent: Color.calibre.destructive.opacity(0.07)
-        case .settled: Color.calibre.accent.opacity(0.4)
+        case .urgent: Color.rewound.destructive.opacity(0.07)
+        case .settled: Color.rewound.accent.opacity(0.4)
         }
     }
 
     private var stroke: Color {
         switch notice.emphasis {
-        case .urgent: Color.calibre.destructive.opacity(0.28)
-        case .settled: Color.calibre.border
+        case .urgent: Color.rewound.destructive.opacity(0.28)
+        case .settled: Color.rewound.border
         }
     }
 }

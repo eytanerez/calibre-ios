@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import Nuke
 import NukeUI
 import SwiftUI
@@ -8,7 +8,7 @@ import SwiftUI
 /// condition pill. Tap or pinch opens the full-screen lightbox.
 ///
 /// The photograph tracks the finger and settles — it is a paging scroll view,
-/// not a control that swaps one image for another when a swipe is recognised.
+/// not a control that swaps one image for another when a swipe is recognized.
 /// A page follows the drag one-to-one, comes to rest on the brand's own
 /// deceleration, and stops dead at the first and last photograph rather than
 /// rubber-banding past them (`.scrollBounceBehavior(.basedOnSize)`), because
@@ -36,7 +36,7 @@ struct ListingGallery: View {
                 HStack(spacing: 6) {
                     ForEach(images.indices, id: \.self) { index in
                         Circle()
-                            .fill(index == page ? Color.calibre.primary : Color.calibre.borderBright)
+                            .fill(index == page ? Color.rewound.primary : Color.rewound.borderBright)
                             .frame(width: 6, height: 6)
                     }
                 }
@@ -81,7 +81,7 @@ struct ListingGallery: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        .background(Color.calibre.secondary.opacity(0.5))
+        .background(Color.rewound.secondary.opacity(0.5))
         .overlay(alignment: .topLeading) {
             if let condition {
                 ConditionPill(condition)
@@ -154,7 +154,7 @@ struct GalleryLightbox: View {
         .overlay(alignment: .top) {
             HStack {
                 Text("\(page + 1) of \(images.count)")
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                     .foregroundStyle(Color(white: 1).opacity(0.85))
                     .monospacedDigit()
 

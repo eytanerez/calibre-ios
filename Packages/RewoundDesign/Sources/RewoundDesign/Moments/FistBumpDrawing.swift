@@ -11,7 +11,7 @@ import SwiftUI
 /// One outline per fist on a 200 × 140 field: the wrist runs in from the
 /// field's own edge, three knuckle arcs scallop the leading edge, two short
 /// creases sit in the knuckle valleys and one curve is the thumb. The right
-/// fist is the same outline mirrored about the field's centre, which is why
+/// fist is the same outline mirrored about the field's center, which is why
 /// there is one path here and not two.
 enum FistBumpDrawing {
     /// The field the drawing is authored on.
@@ -39,7 +39,7 @@ enum FistBumpDrawing {
             // codebase's arc helper takes.
             for knuckle in 0..<3 {
                 path.addCircularArc(
-                    centre: CGPoint(x: 90, y: 59 + 14 * CGFloat(knuckle)),
+                    center: CGPoint(x: 90, y: 59 + 14 * CGFloat(knuckle)),
                     radius: 7,
                     start: .degrees(-90),
                     delta: .degrees(180)

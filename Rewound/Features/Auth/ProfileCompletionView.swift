@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The gate a signed-in member meets when the server says their account is
@@ -142,9 +142,9 @@ struct ProfileCompletionView: View {
                         Haptics.shared.play(.press)
                         advance()
                     } label: {
-                        CalibreBusyLabel(primaryActionTitle, busy: busy)
+                        RewoundBusyLabel(primaryActionTitle, busy: busy)
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(!canSubmit)
 
                     if step == .address {
@@ -155,7 +155,7 @@ struct ProfileCompletionView: View {
                             Haptics.shared.play(.press)
                             Task { await submit(withAddress: false) }
                         }
-                        .buttonStyle(.calibreGhost)
+                        .buttonStyle(.rewoundGhost)
                         .disabled(busy)
                     }
 
@@ -163,8 +163,8 @@ struct ProfileCompletionView: View {
                         Haptics.shared.play(.press)
                         confirmSignOut = true
                     }
-                    .buttonStyle(.calibreGhost)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .buttonStyle(.rewoundGhost)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
             .padding(.horizontal, Space.margin)
@@ -172,14 +172,14 @@ struct ProfileCompletionView: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .animation(Motion.easeFast, value: errorMessage)
         .animation(Motion.easeFast, value: usernameError)
         // A full-screen presentation has no interactive dismissal to begin
         // with; saying so out loud keeps a later change to a sheet from
         // quietly reopening the door.
         .interactiveDismissDisabled()
-        .alert("Sign out of Calibre?", isPresented: $confirmSignOut) {
+        .alert("Sign out of Rewound?", isPresented: $confirmSignOut) {
             Button("Sign Out", role: .destructive) {
                 Task {
                     let signingOutUserID = session.user?.id
@@ -221,18 +221,18 @@ struct ProfileCompletionView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            CalibreWordmark(size: 28)
+            RewoundWordmark(size: 28)
             Text(step == .address ? "Where should watches ship?" : "One more thing")
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
                 .accessibilityAddTraits(.isHeader)
             Text(
                 step == .address
-                    ? "We use your address for shipping estimates, checkout totals, and delivery details. Calibre ships within the United States."
+                    ? "We use your address for shipping estimates, checkout totals, and delivery details. Rewound ships within the United States."
                     : "We're missing a few details we need before you can buy or sell. Your username is the name other members see; your number is only ever used for an order."
             )
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -242,12 +242,12 @@ struct ProfileCompletionView: View {
     /// exactly as it does there.
     private var addressFields: some View {
         VStack(spacing: Space.l) {
-            CalibreTextField("Full name", text: $addressFullName, kind: .fullName)
+            RewoundTextField("Full name", text: $addressFullName, kind: .fullName)
                 .focused($focusedField, equals: .addressName)
                 .submitLabel(.next)
                 .onSubmit { focusedField = .street }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Street address",
                 text: $street,
                 placeholder: "123 Meridian Ave",
@@ -257,23 +257,23 @@ struct ProfileCompletionView: View {
             .submitLabel(.next)
             .onSubmit { focusedField = .apartment }
 
-            CalibreTextField("Apartment, suite (optional)", text: $apartment, kind: .addressLine2)
+            RewoundTextField("Apartment, suite (optional)", text: $apartment, kind: .addressLine2)
                 .focused($focusedField, equals: .apartment)
                 .submitLabel(.next)
                 .onSubmit { focusedField = .city }
 
-            CalibreTextField("City", text: $city, kind: .city)
+            RewoundTextField("City", text: $city, kind: .city)
                 .focused($focusedField, equals: .city)
                 .submitLabel(.next)
                 .onSubmit { focusedField = .zip }
 
             HStack(alignment: .top, spacing: Space.m) {
-                CalibreTextField("ZIP", text: $zip, kind: .postalCode)
+                RewoundTextField("ZIP", text: $zip, kind: .postalCode)
                     .focused($focusedField, equals: .zip)
                     .submitLabel(.next)
                     .onSubmit { focusedField = .state }
 
-                CalibreTextField("State", text: $state, placeholder: "NY", kind: .state)
+                RewoundTextField("State", text: $state, placeholder: "NY", kind: .state)
                     .focused($focusedField, equals: .state)
                     .submitLabel(.done)
                     .onSubmit { if canSubmit { advance() } }
@@ -283,7 +283,7 @@ struct ProfileCompletionView: View {
 
     private var fields: some View {
         VStack(spacing: Space.l) {
-            CalibreTextField(
+            RewoundTextField(
                 "First name",
                 text: $firstName,
                 placeholder: "Eytan",
@@ -293,7 +293,7 @@ struct ProfileCompletionView: View {
             .submitLabel(.next)
             .onSubmit { focusedField = .lastName }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Last name",
                 text: $lastName,
                 placeholder: "Erez",
@@ -303,7 +303,7 @@ struct ProfileCompletionView: View {
             .submitLabel(.next)
             .onSubmit { focusedField = .phone }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Phone",
                 text: $phone,
                 placeholder: "(415) 555-0134",
@@ -316,7 +316,7 @@ struct ProfileCompletionView: View {
             .submitLabel(.next)
             .onSubmit { focusedField = .username }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Username",
                 text: $username,
                 placeholder: "eytan",
@@ -344,32 +344,32 @@ struct ProfileCompletionView: View {
     private var emailRow: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text("Email")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .accessibilityHidden(true)
 
             Text(email)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(maxWidth: .infinity, minHeight: Space.touchTarget, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, Space.m)
                 .background(
                     // `secondary`, not `card`: the subtle fill is what says
-                    // "read-only" without a disabled-looking grey.
-                    Color.calibre.secondary,
+                    // "read-only" without a disabled-looking gray.
+                    Color.rewound.secondary,
                     in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                        .strokeBorder(Color.calibre.border, lineWidth: 1)
+                        .strokeBorder(Color.rewound.border, lineWidth: 1)
                 )
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Email, \(email)")
 
             Text("Your sign-in address. Contact us if it needs to change.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
     }
 

@@ -56,14 +56,14 @@ public struct TimelineRow: View {
     private var rail: some View {
         VStack(spacing: 0) {
             Rectangle()
-                .fill(Color.calibre.border)
+                .fill(Color.rewound.border)
                 .frame(width: 2, height: 10)
                 .opacity(isFirst ? 0 : 1)
             Circle()
                 .fill(dotColor)
                 .frame(width: 8, height: 8)
             Rectangle()
-                .fill(Color.calibre.border)
+                .fill(Color.rewound.border)
                 .frame(width: 2)
                 .frame(maxHeight: .infinity)
                 .opacity(isLast ? 0 : 1)
@@ -76,21 +76,21 @@ public struct TimelineRow: View {
         VStack(alignment: .leading, spacing: 3) {
             if let heading {
                 Text(heading)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             Text(amount)
-                .font(CalibreType.priceSmall)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.priceSmall)
+                .foregroundStyle(Color.rewound.foreground)
             if let message {
                 Text(message)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(date, format: .relative(presentation: .named))
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .padding(.top, 1)
         }
         .padding(Space.m)
@@ -110,22 +110,22 @@ public struct TimelineRow: View {
 
     private var dotColor: Color {
         switch side {
-        case .buyer: Color.calibre.primary
-        case .seller: Color.calibre.accentForeground
+        case .buyer: Color.rewound.primary
+        case .seller: Color.rewound.accentForeground
         }
     }
 
     private var fill: Color {
         switch side {
-        case .buyer: Color.calibre.primary.opacity(0.08)
-        case .seller: Color.calibre.accent.opacity(0.5)
+        case .buyer: Color.rewound.primary.opacity(0.08)
+        case .seller: Color.rewound.accent.opacity(0.5)
         }
     }
 
     private var stroke: Color {
         switch side {
-        case .buyer: Color.calibre.primary.opacity(0.2)
-        case .seller: Color.calibre.border
+        case .buyer: Color.rewound.primary.opacity(0.2)
+        case .seller: Color.rewound.border
         }
     }
 }
@@ -156,7 +156,7 @@ private var demoTimeline: some View {
         )
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }
 
 #Preview("Timeline — light", traits: .sizeThatFitsLayout) {

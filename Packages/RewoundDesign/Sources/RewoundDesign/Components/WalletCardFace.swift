@@ -108,7 +108,7 @@ public struct WalletCardFace<Footer: View>: View {
         .overlay {
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(
-                    isSelected ? Color.calibre.primary : Color.calibre.border,
+                    isSelected ? Color.rewound.primary : Color.rewound.border,
                     lineWidth: isSelected ? 2 : 1
                 )
         }
@@ -125,10 +125,10 @@ public struct WalletCardFace<Footer: View>: View {
                     .padding(.horizontal, Space.l)
                     .padding(.vertical, Space.s)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.calibre.card)
+                    .background(Color.rewound.card)
                     .overlay(alignment: .top) {
                         Rectangle()
-                            .fill(Color.calibre.border)
+                            .fill(Color.rewound.border)
                             .frame(height: 1)
                     }
             }
@@ -151,18 +151,18 @@ public struct WalletCardFace<Footer: View>: View {
                         // drawn wordmarks are decoration, and a brand nobody
                         // has drawn would otherwise arrive as a rectangle.
                         Text(brandLine)
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.foreground)
                             .fixedSize(horizontal: false, vertical: true)
                         if isDefault {
                             Text("DEFAULT")
-                                .font(CalibreType.eyebrow)
-                                .tracking(CalibreType.eyebrowTracking)
-                                .foregroundStyle(Color.calibre.primary)
+                                .font(RewoundType.eyebrow)
+                                .tracking(RewoundType.eyebrowTracking)
+                                .foregroundStyle(Color.rewound.primary)
                                 .padding(.horizontal, Space.s)
                                 .padding(.vertical, 2)
-                                .background(Color.calibre.primary.opacity(0.1), in: Capsule())
-                                .overlay(Capsule().strokeBorder(Color.calibre.primary.opacity(0.3), lineWidth: 1))
+                                .background(Color.rewound.primary.opacity(0.1), in: Capsule())
+                                .overlay(Capsule().strokeBorder(Color.rewound.primary.opacity(0.3), lineWidth: 1))
                         }
                     }
                     Spacer(minLength: Space.s)
@@ -178,11 +178,11 @@ public struct WalletCardFace<Footer: View>: View {
                 HStack(alignment: .bottom, spacing: Space.m) {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Expires")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                         Text(expiry ?? "—")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -191,15 +191,15 @@ public struct WalletCardFace<Footer: View>: View {
                     CardBrandMark(
                         brand: brand,
                         height: 20,
-                        ink: Color.calibre.foreground,
-                        dim: Color.calibre.mutedForeground
+                        ink: Color.rewound.foreground,
+                        dim: Color.rewound.mutedForeground
                     )
                 }
 
                 if let note {
                     Text(note)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(noteIsProblem ? Color.calibre.destructive : Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(noteIsProblem ? Color.rewound.destructive : Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -209,7 +209,7 @@ public struct WalletCardFace<Footer: View>: View {
         }
         .background(
             LinearGradient(
-                colors: [Color.calibre.card, Color.calibre.secondary, Color.calibre.accent],
+                colors: [Color.rewound.card, Color.rewound.secondary, Color.rewound.accent],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -233,9 +233,9 @@ public struct WalletCardFace<Footer: View>: View {
     /// client and the only ones this ever draws.
     private var number: some View {
         (
-            Text(verbatim: maskGroups).foregroundStyle(Color.calibre.mutedForeground)
+            Text(verbatim: maskGroups).foregroundStyle(Color.rewound.mutedForeground)
                 + Text(verbatim: " ")
-                + Text(verbatim: last4 ?? "••••").foregroundStyle(Color.calibre.foreground)
+                + Text(verbatim: last4 ?? "••••").foregroundStyle(Color.rewound.foreground)
         )
         .font(.system(size: 17, weight: .medium, design: .monospaced))
         .tracking(1.7)
@@ -245,7 +245,7 @@ public struct WalletCardFace<Footer: View>: View {
         .accessibilityHidden(true)
     }
 
-    /// Selection, said in more than colour: a filled disc with a tick in it,
+    /// Selection, said in more than color: a filled disc with a tick in it,
     /// the word beside it, and the `.isSelected` trait for anything not
     /// looking at pixels. A copper ring on a copper-accented page is not a
     /// strong enough signal on its own.
@@ -254,19 +254,19 @@ public struct WalletCardFace<Footer: View>: View {
         if isSelected {
             HStack(spacing: Space.xs) {
                 Text("SELECTED")
-                    .font(CalibreType.eyebrow)
-                    .tracking(CalibreType.eyebrowTracking)
-                    .foregroundStyle(Color.calibre.primary)
+                    .font(RewoundType.eyebrow)
+                    .tracking(RewoundType.eyebrowTracking)
+                    .foregroundStyle(Color.rewound.primary)
                 Image(systemName: "checkmark")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color.calibre.primaryForeground)
+                    .foregroundStyle(Color.rewound.primaryForeground)
                     .frame(width: 20, height: 20)
-                    .background(Color.calibre.primary, in: Circle())
+                    .background(Color.rewound.primary, in: Circle())
             }
             .accessibilityHidden(true)
         } else {
             Circle()
-                .strokeBorder(Color.calibre.borderBright, lineWidth: 1)
+                .strokeBorder(Color.rewound.borderBright, lineWidth: 1)
                 .frame(width: 20, height: 20)
                 .accessibilityHidden(true)
         }
@@ -341,8 +341,8 @@ private struct WalletCardPreviewRow: View {
                 context: .manage
             ) {
                 Text("Remove")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.destructive)
             }
         }
         .frame(maxWidth: 340)
@@ -352,12 +352,12 @@ private struct WalletCardPreviewRow: View {
 #Preview("Wallet card — light", traits: .sizeThatFitsLayout) {
     WalletCardPreviewRow()
         .padding(Space.margin)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
 }
 
 #Preview("Wallet card — dark", traits: .sizeThatFitsLayout) {
     WalletCardPreviewRow()
         .padding(Space.margin)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .preferredColorScheme(.dark)
 }

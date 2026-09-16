@@ -11,9 +11,9 @@ public struct Eyebrow: View {
     /// crowd back together as the type grows, which is the one thing an
     /// eyebrow cannot afford. Seeded from the documented base, so at the
     /// default size this is exactly 1.98 and the label is untouched.
-    @ScaledMetric(relativeTo: .caption2) private var tracking: CGFloat = CalibreType.eyebrowTracking
+    @ScaledMetric(relativeTo: .caption2) private var tracking: CGFloat = RewoundType.eyebrowTracking
 
-    public init(_ text: String, color: Color = Color.calibre.mutedForeground) {
+    public init(_ text: String, color: Color = Color.rewound.mutedForeground) {
         self.text = text
         self.color = color
     }
@@ -24,7 +24,7 @@ public struct Eyebrow: View {
         // as a display case the spoken text stays the words that were passed
         // in, and the drawn label is identical either way.
         Text(text)
-            .font(CalibreType.eyebrow)
+            .font(RewoundType.eyebrow)
             .tracking(typeSize.isAccessibilitySize ? 0 : tracking)
             .fixedSize(horizontal: false, vertical: true)
             .foregroundStyle(color)
@@ -42,11 +42,11 @@ public struct ConditionPill: View {
 
     public var body: some View {
         Text(condition)
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.foreground)
             .padding(.horizontal, Space.m)
             .padding(.vertical, 5)
-            .background(Color.calibre.background.opacity(0.95), in: Capsule())
+            .background(Color.rewound.background.opacity(0.95), in: Capsule())
     }
 }
 
@@ -64,11 +64,11 @@ public struct WatcherPill: View {
     public var body: some View {
         Label("\(count)", systemImage: "eye")
             .labelStyle(.titleAndIcon)
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.foreground)
             .padding(.horizontal, Space.s)
             .padding(.vertical, 4)
-            .background(Color.calibre.background.opacity(0.95), in: Capsule())
+            .background(Color.rewound.background.opacity(0.95), in: Capsule())
             .accessibilityElement(children: .ignore)
             // The eye carries the meaning and is not spoken, so without this
             // the card ends on a bare number.
@@ -93,11 +93,11 @@ public struct InCartPill: View {
     public var body: some View {
         Label("In cart", systemImage: "bag.fill")
             .labelStyle(.titleAndIcon)
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.primary)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.primary)
             .padding(.horizontal, Space.s)
             .padding(.vertical, 4)
-            .background(Color.calibre.background.opacity(0.95), in: Capsule())
+            .background(Color.rewound.background.opacity(0.95), in: Capsule())
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("In your cart")
     }
@@ -110,16 +110,16 @@ public struct StatusBadge: View {
 
         var tint: Color {
             switch self {
-            case .neutral: Color.calibre.mutedForeground
-            case .info: Color.calibre.primary
-            case .success: Color.calibre.success
+            case .neutral: Color.rewound.mutedForeground
+            case .info: Color.rewound.primary
+            case .success: Color.rewound.success
             // Was a raw sRGB literal — the one tone in this switch with no
             // dynamic provider behind it, so a "Reserved" badge stayed a
             // light-tuned amber on the dark page while its four siblings
             // moved, and Increase Contrast had nothing to reach. The palette
             // now carries the token the other four already had.
-            case .warning: Color.calibre.warning
-            case .danger: Color.calibre.destructive
+            case .warning: Color.rewound.warning
+            case .danger: Color.rewound.destructive
             }
         }
     }
@@ -134,7 +134,7 @@ public struct StatusBadge: View {
 
     public var body: some View {
         Text(text)
-            .font(CalibreType.label)
+            .font(RewoundType.label)
             .foregroundStyle(tone.tint)
             .padding(.horizontal, Space.m)
             .padding(.vertical, 4)
@@ -154,5 +154,5 @@ public struct StatusBadge: View {
         }
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }

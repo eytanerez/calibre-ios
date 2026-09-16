@@ -64,7 +64,7 @@ struct ListingSubmittedFilm: View {
     var body: some View {
         if side == .over, stage.width > 0 {
             ZStack {
-                Color.calibre.background
+                Color.rewound.background
                     .opacity(1 - MomentCurve.easeOut(Self.reveal.progress(time)))
                     .ignoresSafeArea()
                 form
@@ -98,10 +98,10 @@ struct ListingSubmittedFilm: View {
         let scale = sealSide / MarkGrid.side
         return Canvas { context, _ in
             context.scaleBy(x: scale, y: scale)
-            context.fill(WaxSealMark.wax, with: .color(Color.calibre.wax))
+            context.fill(WaxSealMark.wax, with: .color(Color.rewound.wax))
             context.stroke(
                 WaxSealMark.wax,
-                with: .color(Color.calibre.waxHighlight),
+                with: .color(Color.rewound.waxHighlight),
                 style: MarkGrid.style
             )
             context.stroke(

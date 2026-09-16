@@ -1,4 +1,4 @@
-import CalibreDesign
+import RewoundDesign
 import Foundation
 import LocalAuthentication
 import Observation
@@ -151,28 +151,28 @@ struct VaultLockedView: View {
         VStack(spacing: Space.l) {
             Image(systemName: "lock.fill")
                 .font(.system(size: 34, weight: .light))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
             Text("Your vault is locked")
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
             Text("Only you should see what's in the drawer.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
             if let error = lock.lastError {
                 Text(error)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
             }
             Button("Unlock with \(lock.methodLabel)") {
                 Task { await lock.authenticate() }
             }
-            .buttonStyle(.calibre(.primary))
+            .buttonStyle(.rewound(.primary))
             .disabled(lock.authenticating)
         }
         .multilineTextAlignment(.center)
         .padding(Space.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .ignoresSafeArea()
     }
 }

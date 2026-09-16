@@ -1,13 +1,13 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The client half of four backend features: notifications that are cleared
 /// rather than read, support conversations that are plural, the "this one
 /// sold" notice, and the thread list's preview and unread count.
 final class LastPassClientTests: XCTestCase {
     private func scratchDefaults() -> UserDefaults {
-        let suite = "calibre.tests.\(UUID().uuidString)"
+        let suite = "rewound.tests.\(UUID().uuidString)"
         addTeardownBlock { UserDefaults.standard.removePersistentDomain(forName: suite) }
         return UserDefaults(suiteName: suite)!
     }
@@ -233,7 +233,7 @@ final class LastPassClientTests: XCTestCase {
                     .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }?["new_thread"] != nil
                     ? "token-two" : "token-one"
                 return (201, envelope("""
-                {"thread": {"id": "c1", "status": "waiting_on_calibre", "title": "September 8, 2026",
+                {"thread": {"id": "c1", "status": "waiting_on_rewound", "title": "September 8, 2026",
                             "resolved": false, "resumable": true,
                             "created_at": "2026-09-08T09:00:00Z", "last_message_at": "2026-09-08T10:00:00Z",
                             "messages": [], "assigned_contact": null},
@@ -242,13 +242,13 @@ final class LastPassClientTests: XCTestCase {
             }
             return (200, envelope("""
             {"results": [
-               {"id": "c2", "status": "waiting_on_calibre", "title": "September 8, 2026",
+               {"id": "c2", "status": "waiting_on_rewound", "title": "September 8, 2026",
                 "resolved": false, "resumable": true, "origin": "customer",
                 "created_at": "2026-09-08T09:00:00Z", "last_message_at": "2026-09-08T10:00:00Z",
                 "snippet": "Is the bracelet original?", "assigned_contact": null,
                 "guest_token": "token-two"},
                {"id": "c1", "status": "closed", "title": "March 2, 2026",
-                "resolved": true, "resumable": false, "origin": "calibre",
+                "resolved": true, "resumable": false, "origin": "rewound",
                 "created_at": "2026-03-02T09:00:00Z", "last_message_at": "2026-03-02T10:00:00Z",
                 "snippet": "All sorted, thank you.", "assigned_contact": {"key": "ez", "display_name": "Eytan"},
                 "guest_token": "token-one"}
@@ -272,7 +272,7 @@ final class LastPassClientTests: XCTestCase {
         XCTAssertTrue(threads[0].resumable)
         XCTAssertTrue(threads[1].resolved)
         XCTAssertFalse(threads[1].resumable)
-        XCTAssertEqual(threads[1].origin, .calibre)
+        XCTAssertEqual(threads[1].origin, .rewound)
     }
 
     /// New chat is a flag on the send, and the token it mints is kept
@@ -285,7 +285,7 @@ final class LastPassClientTests: XCTestCase {
             seen.record(request)
             let token = seen.callCount == 1 ? "token-one" : "token-two"
             return (201, envelope("""
-            {"thread": {"id": "c\(seen.callCount)", "status": "waiting_on_calibre",
+            {"thread": {"id": "c\(seen.callCount)", "status": "waiting_on_rewound",
                         "title": "September 8, 2026", "resolved": false, "resumable": true,
                         "created_at": "2026-09-08T09:00:00Z", "last_message_at": "2026-09-08T10:00:00Z",
                         "messages": [], "assigned_contact": null},
@@ -370,7 +370,7 @@ final class LastPassClientTests: XCTestCase {
         }
 
         let defaults = scratchDefaults()
-        defaults.set(["token-one", "token-two"], forKey: "calibre.support.guestTokens")
+        defaults.set(["token-one", "token-two"], forKey: "rewound.support.guestTokens")
         let store = SupportStore(client: APIClient(configuration: mockConfiguration(), auth: nil), defaults: defaults)
 
         _ = try await store.send("one more thing", authenticated: false, threadID: "c1")
@@ -414,7 +414,7 @@ final class LastPassClientTests: XCTestCase {
         }
 
         let defaults = scratchDefaults()
-        defaults.set(["token-one", "token-two"], forKey: "calibre.support.guestTokens")
+        defaults.set(["token-one", "token-two"], forKey: "rewound.support.guestTokens")
         let store = SupportStore(client: APIClient(configuration: mockConfiguration(), auth: nil), defaults: defaults)
 
         let attachment = try await store.uploadAttachment(
@@ -462,7 +462,7 @@ final class LastPassClientTests: XCTestCase {
             {"notices": [
                {"id": "no1", "listing_id": "l1", "listing_number": 4242, "reason": "sold",
                 "source": "both", "title": "Omega Speedmaster Professional",
-                "image": "https://cdn.calibre.test/l1.jpg", "price": "6250.00",
+                "image": "https://cdn.rewound.test/l1.jpg", "price": "6250.00",
                 "currency": "USD", "created_at": "2026-09-08T12:00:00Z"}
              ],
              "has_more": false}
@@ -582,7 +582,7 @@ final class LastPassClientTests: XCTestCase {
             """.utf8))
         }
         let configuration = APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre-messaging.test")!,
+            baseURL: URL(string: "https://mock.rewound-messaging.test")!,
             protocolClasses: [MockURLProtocol.self]
         )
         let store = MessagingStore(client: MessagingClient(configuration: configuration, auth: nil))

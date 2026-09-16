@@ -21,22 +21,22 @@ import Foundation
 ///
 /// The server's `payout_status` is a longer list than this, and several of its
 /// words mean the same thing to somebody asking "am I still owed this". They
-/// are folded here, and a word this build does not recognise says so rather
+/// are folded here, and a word this build does not recognize says so rather
 /// than being folded into `scheduled` — which would promise a payout that may
 /// not be coming.
 public enum SellerPayoutState: String, Sendable, Equatable, CaseIterable {
     /// Priced and waiting on its release trigger.
     case scheduled
-    /// Money Calibre is holding rather than sending — bank details outstanding,
+    /// Money Rewound is holding rather than sending — bank details outstanding,
     /// or a payment under review. The row's own status line says which.
     case held
-    /// Sent. It has left Calibre; where it is after that is the bank's answer,
+    /// Sent. It has left Rewound; where it is after that is the bank's answer,
     /// never this app's.
     case released
-    /// Calibre could not send it, or the bank sent it back. Different people to
+    /// Rewound could not send it, or the bank sent it back. Different people to
     /// call, same answer to "am I still owed this": yes.
     case failed
-    /// Cancelled, refunded or reversed. Nothing further is coming on this sale.
+    /// Canceled, refunded or reversed. Nothing further is coming on this sale.
     case closed
     /// A word this build has not been taught.
     case unknown
@@ -84,7 +84,7 @@ public enum SellerPayoutState: String, Sendable, Equatable, CaseIterable {
 /// rules: `sellerActionState` is the server saying the seller owes something,
 /// and it is the only thing that puts a sale on the seller's own list.
 public struct SellerSaleStep: Sendable, Equatable {
-    /// "Waiting on you" / "Waiting on the buyer" / "Waiting on Calibre" /
+    /// "Waiting on you" / "Waiting on the buyer" / "Waiting on Rewound" /
     /// "Nothing needed from you".
     public let who: String
     /// The one line under it.
@@ -123,7 +123,7 @@ public extension Order {
         if sellerActionState == "sold_awaiting_label_creation" {
             return SellerSaleStep(
                 who: "Waiting on you",
-                what: "Add the shipping details and Calibre buys the label.",
+                what: "Add the shipping details and Rewound buys the label.",
                 needsShippingDetails: true
             )
         }
@@ -136,20 +136,20 @@ public extension Order {
         if status == .cancelled || status == .refunded {
             return SellerSaleStep(who: "Nothing needed from you", what: "This sale is closed.")
         }
-        return SellerSaleStep(who: "Waiting on Calibre", what: sellerCalibreLine)
+        return SellerSaleStep(who: "Waiting on Rewound", what: sellerRewoundLine)
     }
 
-    /// What Calibre is doing with the watch, where the order status is the only
+    /// What Rewound is doing with the watch, where the order status is the only
     /// thing that knows. `.unknown` is a status word this build has not been
     /// taught, so it says that the sale is moving and nothing more precise.
-    private var sellerCalibreLine: String {
+    private var sellerRewoundLine: String {
         switch status {
         case .purchased: "The sale is being prepared."
         case .toAuth: "On its way to the authentication center."
         case .authPass: "Authenticated. It goes out to the buyer next."
         case .authFail: "It didn't pass authentication. Someone here is in touch."
         case .toBuyer: "On its way to the buyer."
-        case .awaitingWire, .delivered, .cancelled, .refunded, .unknown: "This sale is with Calibre."
+        case .awaitingWire, .delivered, .cancelled, .refunded, .unknown: "This sale is with Rewound."
         }
     }
 }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Every negotiation in one place — Sent / Received segments, swipe actions
@@ -55,11 +55,11 @@ struct OffersListScreen: View {
             } else if let model {
                 content(model)
             } else {
-                Color.calibre.background
+                Color.rewound.background
             }
         }
-        .calibrePageSwipe(selection: $segment, values: [.sent, .received])
-        .calibrePageBackground()
+        .rewoundPageSwipe(selection: $segment, values: [.sent, .received])
+        .rewoundPageBackground()
         .tutorialOverlay(tutorial)
         .navigationTitle("Offers")
         .navigationBarTitleDisplayMode(.inline)
@@ -128,8 +128,8 @@ struct OffersListScreen: View {
                     includesShipping: model.hasShippingEstimate(for: offer)
                 )
                 .onAppear { model.thumbs.warm(listingID: offer.listingId) }
-                .listRowBackground(Color.calibre.background)
-                .listRowSeparatorTint(Color.calibre.border)
+                .listRowBackground(Color.rewound.background)
+                .listRowSeparatorTint(Color.rewound.border)
                 .listRowInsets(EdgeInsets(top: Space.m, leading: Space.margin, bottom: Space.m, trailing: Space.margin))
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
                     if segment == .received, offer.status == .pendingSeller {
@@ -138,7 +138,7 @@ struct OffersListScreen: View {
                         } label: {
                             Label("Accept", systemImage: "checkmark")
                         }
-                        .tint(Color.calibre.success)
+                        .tint(Color.rewound.success)
                     }
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -148,14 +148,14 @@ struct OffersListScreen: View {
                         } label: {
                             Label("Decline", systemImage: "xmark")
                         }
-                        .tint(Color.calibre.destructive)
+                        .tint(Color.rewound.destructive)
                     } else if segment == .sent, offerIsOpen(offer) {
                         Button {
                             model.pendingAction = .cancel(offer)
                         } label: {
                             Label("Cancel", systemImage: "xmark")
                         }
-                        .tint(Color.calibre.destructive)
+                        .tint(Color.rewound.destructive)
                     }
                 }
             }
@@ -251,13 +251,13 @@ private struct OfferRow: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(offer.listing?.title ?? "Listing")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(1)
 
                     Text(PriceFormatter.format(offerCurrentAmount(offer), currency: offer.currency))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.priceSmall)
+                        .foregroundStyle(Color.rewound.foreground)
 
                     HStack(spacing: Space.s) {
                         let presentation = offerStatusPresentation(for: offer, viewerIsSeller: viewerIsSeller)
@@ -273,8 +273,8 @@ private struct OfferRow: View {
                             viewerIsSeller ? "Buyer\u{2019}s deposit expiring" : "Renew your deposit",
                             systemImage: "creditcard.trianglebadge.exclamationmark"
                         )
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.primary)
                         .padding(.top, 1)
                     }
 
@@ -284,8 +284,8 @@ private struct OfferRow: View {
 
                     if let preview = offerLatestMessage(offer) {
                         Text(preview)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .lineLimit(1)
                             .padding(.top, 1)
                     }
@@ -295,22 +295,22 @@ private struct OfferRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// What the seller would take home, and the working behind it. Labelled
+    /// What the seller would take home, and the working behind it. Labeled
     /// an estimate every time it is shown: the shipping figure is priced from
     /// a standard box, and the real label is bought after the sale.
     private func netProceedsLine(_ estimate: SellerNetProceeds) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text("You\u{2019}d take home about \(PriceFormatter.format(estimate.takeHome, currency: currency))")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             Text(workingText(estimate))
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Text("An estimate \u{2014} the shipping figure is priced from a standard box, and the actual label cost is what comes off your payout.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, 2)

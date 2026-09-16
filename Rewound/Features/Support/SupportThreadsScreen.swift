@@ -1,9 +1,9 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Support opens here: the list of this customer's own conversations with
-/// Calibre, newest activity first, with a New chat button.
+/// Rewound, newest activity first, with a New chat button.
 ///
 /// It used to open straight onto a composer, because the backend could hold
 /// exactly one conversation per customer and the New-chat control was wired to
@@ -22,7 +22,7 @@ struct SupportThreadsScreen: View {
     var body: some View {
         Group {
             if loading && threads.isEmpty {
-                CalibreLoadingView("Finding your conversations")
+                RewoundLoadingView("Finding your conversations")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorText, threads.isEmpty {
                 EmptyState(
@@ -44,7 +44,7 @@ struct SupportThreadsScreen: View {
                 list
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Support")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -55,8 +55,8 @@ struct SupportThreadsScreen: View {
                 } label: {
                     Label("New chat", systemImage: "square.and.pencil")
                 }
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.primary)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.primary)
                 .accessibilityLabel("New chat")
             }
         }
@@ -70,9 +70,9 @@ struct SupportThreadsScreen: View {
     private var list: some View {
         ScrollView {
             LazyVStack(spacing: Space.m) {
-                Text("Write here or email support@buycalibre.com — it is the same conversation either way.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                Text("Write here or email support@shoprewound.com — it is the same conversation either way.")
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -113,14 +113,14 @@ private struct SupportThreadRow: View {
                 // first message — a thread named after its opening line
                 // repeats a sentence that is already on screen inside it.
                 Text(thread.title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if !thread.snippet.isEmpty {
                     Text(thread.snippet)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
@@ -131,8 +131,8 @@ private struct SupportThreadRow: View {
                     }
                     if !dateText.isEmpty {
                         Text(dateText)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.placeholder)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.placeholder)
                     }
                 }
             }
@@ -141,14 +141,14 @@ private struct SupportThreadRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .padding(.top, 3)
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
@@ -160,7 +160,7 @@ private struct SupportThreadRow: View {
         switch thread.status {
         case .waitingOnCustomer: "Waiting on you"
         case .closed: "Resolved"
-        case .waitingOnCalibre, .open, .unknown: nil
+        case .waitingOnRewound, .open, .unknown: nil
         }
     }
 

@@ -1,6 +1,6 @@
 @preconcurrency import AVFoundation
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 @preconcurrency import PhotosUI
 import SwiftUI
 import UIKit
@@ -49,7 +49,7 @@ struct CaptureScreen: View {
         .modifier(ListingPhotoLibrary(isPresented: $showingLibrary) { image in
             // PhotosUI dismisses before its asynchronous import finishes. Keep
             // the preview mounted until AVFoundation has stopped before
-            // replacing it (CALIBRE-IOS-3).
+            // replacing it (REWOUND-IOS-3).
             librarySelectionPending = true
             Task { @MainActor in
                 await camera.stopAndWait()
@@ -129,7 +129,7 @@ struct CaptureScreen: View {
                     Spacer()
                     VStack(spacing: Space.l) {
                         Text(target.instruction)
-                            .font(CalibreType.bodyMedium)
+                            .font(RewoundType.bodyMedium)
                             .foregroundStyle(Color(white: 1))
                             .padding(.horizontal, Space.l)
                             .padding(.vertical, Space.s)
@@ -158,7 +158,7 @@ struct CaptureScreen: View {
             Spacer()
 
             Text(target.title)
-                .font(CalibreType.bodyMedium)
+                .font(RewoundType.bodyMedium)
                 .foregroundStyle(Color(white: 1))
 
             Spacer()
@@ -188,7 +188,7 @@ struct CaptureScreen: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(active ? Color.calibre.primary : Color(white: 1))
+                .foregroundStyle(active ? Color.rewound.primary : Color(white: 1))
                 .frame(width: Space.touchTarget, height: Space.touchTarget)
                 .background(Color.black.opacity(0.45), in: Circle())
         }
@@ -198,7 +198,7 @@ struct CaptureScreen: View {
 
     private var shutterRow: some View {
         ZStack {
-            // Shutter stays dead-centre; the library sits out to its right.
+            // Shutter stays dead-center; the library sits out to its right.
             Button {
                 Haptics.shared.play(.capture)
                 camera.capture(flash: flashOn) { image in
@@ -299,7 +299,7 @@ struct CaptureScreen: View {
                 Button("Retake") {
                     captured = nil
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
 
                 Button("Use photo") {
                     Task { @MainActor in
@@ -308,7 +308,7 @@ struct CaptureScreen: View {
                         dismiss()
                     }
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
             }
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.l)
@@ -342,24 +342,24 @@ struct CaptureScreen: View {
             VStack(spacing: Space.m) {
                 IconTile(systemName: "camera")
                 Text(target.title)
-                    .font(CalibreType.sectionTitle)
+                    .font(RewoundType.sectionTitle)
                     .foregroundStyle(Color(white: 1))
                 Text(camera.deniedAccess
-                    ? "Camera access is off for Calibre. You can allow it in Settings, or pick a photo from your library."
+                    ? "Camera access is off for Rewound. You can allow it in Settings, or pick a photo from your library."
                     : "No camera here — pick a photo from your library instead.")
-                    .font(CalibreType.body)
+                    .font(RewoundType.body)
                     .foregroundStyle(Color(white: 0.72))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Space.xxl)
                 Text(target.instruction)
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                     .foregroundStyle(Color(white: 0.72))
             }
 
             Button("Choose from library") {
                 showingLibrary = true
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .padding(.horizontal, Space.margin)
 
             Spacer()
@@ -380,7 +380,7 @@ final class CameraController {
     @ObservationIgnored let session = AVCaptureSession()
     @ObservationIgnored private let output = AVCapturePhotoOutput()
     @ObservationIgnored private var device: AVCaptureDevice?
-    @ObservationIgnored private let queue = DispatchQueue(label: "com.buycalibre.capture")
+    @ObservationIgnored private let queue = DispatchQueue(label: "com.shoprewound.capture")
     @ObservationIgnored private var delegateBox: PhotoDelegate?
     @ObservationIgnored weak var previewLayer: AVCaptureVideoPreviewLayer?
 
@@ -653,7 +653,7 @@ struct ConsumerPageSwipeSmokeScreen: View {
             }
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, value in scrollY = value }
         }
-        .calibrePageSwipe(selection: $page, values: [0, 1, 2])
+        .rewoundPageSwipe(selection: $page, values: [0, 1, 2])
     }
 }
 #endif

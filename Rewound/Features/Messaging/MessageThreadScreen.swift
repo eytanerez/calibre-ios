@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One buyer↔seller conversation, anchored to a listing. Not support chat —
@@ -42,16 +42,16 @@ struct MessageThreadScreen: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if threadState == .blocked {
                 Text("This conversation is closed")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .frame(maxWidth: .infinity)
                     .padding(Space.m)
-                    .calibreComposerSurface()
+                    .rewoundComposerSurface()
             } else {
                 composer
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Message")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -79,7 +79,7 @@ struct MessageThreadScreen: View {
 
     @ViewBuilder private var messagesList: some View {
         if loading && messages.isEmpty {
-            CalibreLoadingView("Opening this conversation")
+            RewoundLoadingView("Opening this conversation")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let loadErrorText, messages.isEmpty {
             EmptyState(
@@ -104,7 +104,7 @@ struct MessageThreadScreen: View {
                             Button(loadingOlder ? "Loading…" : "Load older messages") {
                                 Task { await loadOlder() }
                             }
-                            .buttonStyle(.calibre(.ghost))
+                            .buttonStyle(.rewound(.ghost))
                             .disabled(loadingOlder)
                         }
                         ForEach(messages) { message in
@@ -143,21 +143,21 @@ struct MessageThreadScreen: View {
         VStack(spacing: Space.s) {
             if let sendErrorText {
                 Text(sendErrorText)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             HStack(alignment: .bottom, spacing: Space.s) {
-                CalibreMessageField(text: $draft)
+                RewoundMessageField(text: $draft)
                     .accessibilityIdentifier("message-composer")
                 Button {
                     Task { await send() }
                 } label: {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.calibre.primaryForeground)
+                        .foregroundStyle(Color.rewound.primaryForeground)
                         .frame(width: 40, height: 40)
-                        .background(canSend ? Color.calibre.primary : Color.calibre.placeholder, in: Circle())
+                        .background(canSend ? Color.rewound.primary : Color.rewound.placeholder, in: Circle())
                         .a11yExpandTarget(currentSize: 40)
                 }
                 .disabled(!canSend || sending)
@@ -175,7 +175,7 @@ struct MessageThreadScreen: View {
         // the keyboard twice — a documented trap, and the hole it leaves is a
         // whole keyboard tall.
         .padding(Space.m)
-        .calibreComposerSurface()
+        .rewoundComposerSurface()
     }
 
     private var canSend: Bool {
@@ -315,12 +315,12 @@ private struct MessageBubbleRow: View {
 
             VStack(alignment: isMine ? .trailing : .leading, spacing: 5) {
                 Text(message.body)
-                    .font(CalibreType.body)
-                    .foregroundStyle(isMine ? Color.calibre.primaryForeground : Color.calibre.foreground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(isMine ? Color.rewound.primaryForeground : Color.rewound.foreground)
                     .padding(.horizontal, Space.m)
                     .padding(.vertical, Space.s)
                     .background(
-                        isMine ? Color.calibre.primary : Color.calibre.secondary,
+                        isMine ? Color.rewound.primary : Color.rewound.secondary,
                         in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     )
                     .overlay {
@@ -335,7 +335,7 @@ private struct MessageBubbleRow: View {
                         Image(systemName: state == .held ? "clock" : "exclamationmark.triangle")
                             .font(.system(size: 12, weight: .medium))
                         Text(notice)
-                            .font(CalibreType.caption)
+                            .font(RewoundType.caption)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .foregroundStyle(tone)
@@ -352,6 +352,6 @@ private struct MessageBubbleRow: View {
     }
 
     private var tone: Color {
-        state == .held ? Color.calibre.warning : Color.calibre.destructive
+        state == .held ? Color.rewound.warning : Color.rewound.destructive
     }
 }

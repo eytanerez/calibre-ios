@@ -75,11 +75,11 @@ public struct ProgressCheckpoints: View {
                 VStack(spacing: Space.s) {
                     dot(at: index)
                     Text(steps[index])
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .foregroundStyle(
                             index <= currentIndex
-                                ? Color.calibre.foreground
-                                : Color.calibre.mutedForeground
+                                ? Color.rewound.foreground
+                                : Color.rewound.mutedForeground
                         )
                         .multilineTextAlignment(.center)
                         // One line, at its natural width, and never shrunk or
@@ -112,8 +112,8 @@ public struct ProgressCheckpoints: View {
                             Capsule()
                                 .fill(
                                     index < currentIndex
-                                        ? Color.calibre.primary
-                                        : Color.calibre.border
+                                        ? Color.rewound.primary
+                                        : Color.rewound.border
                                 )
                                 .frame(width: 2)
                                 .frame(maxHeight: .infinity)
@@ -122,11 +122,11 @@ public struct ProgressCheckpoints: View {
                     .frame(width: dotSize)
 
                     Text(steps[index])
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .foregroundStyle(
                             index <= currentIndex
-                                ? Color.calibre.foreground
-                                : Color.calibre.mutedForeground
+                                ? Color.rewound.foreground
+                                : Color.rewound.mutedForeground
                         )
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,10 +144,10 @@ public struct ProgressCheckpoints: View {
 
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.calibre.border)
+                    .fill(Color.rewound.border)
                     .frame(width: usable, height: 2)
                 Capsule()
-                    .fill(Color.calibre.primary)
+                    .fill(Color.rewound.primary)
                     .frame(width: usable * completedFraction, height: 2)
                     .animation(Motion.easeSlow, value: currentIndex)
             }
@@ -160,7 +160,7 @@ public struct ProgressCheckpoints: View {
     private func dot(at index: Int) -> some View {
         if index < currentIndex {
             Circle()
-                .fill(Color.calibre.primary)
+                .fill(Color.rewound.primary)
                 .frame(width: dotSize, height: dotSize)
         } else if index == currentIndex {
             if reduceMotion {
@@ -169,19 +169,19 @@ public struct ProgressCheckpoints: View {
                 // finished dot. A ring says "here" while standing still.
                 // Motion on — the default — is untouched.
                 Circle()
-                    .fill(Color.calibre.card)
-                    .strokeBorder(Color.calibre.primary, lineWidth: 3)
+                    .fill(Color.rewound.card)
+                    .strokeBorder(Color.rewound.primary, lineWidth: 3)
                     .frame(width: dotSize, height: dotSize)
             } else {
                 Circle()
-                    .fill(Color.calibre.primary)
+                    .fill(Color.rewound.primary)
                     .frame(width: dotSize, height: dotSize)
                     .opacity(pulsing ? 1 : 0.6)
             }
         } else {
             Circle()
-                .fill(Color.calibre.card)
-                .strokeBorder(Color.calibre.borderBright, lineWidth: 1.5)
+                .fill(Color.rewound.card)
+                .strokeBorder(Color.rewound.borderBright, lineWidth: 1.5)
                 .frame(width: dotSize, height: dotSize)
         }
     }
@@ -205,12 +205,12 @@ private let demoSteps = ["Placed", "In transit", "Verified", "Shipped", "Deliver
 #Preview("Checkpoints — light", traits: .sizeThatFitsLayout) {
     ProgressCheckpoints(steps: demoSteps, currentIndex: 2)
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
 }
 
 #Preview("Checkpoints — dark", traits: .sizeThatFitsLayout) {
     ProgressCheckpoints(steps: demoSteps, currentIndex: 2)
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .preferredColorScheme(.dark)
 }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The owner's own note about their own watch.
@@ -12,7 +12,7 @@ import SwiftUI
 /// nobody opens.
 ///
 /// Set in the interface's face, not the hand. The list of places the hand is
-/// allowed is exhaustive (`CALIBRE_BY_HAND_CONTRACTS.md` §2.3) and an owner's
+/// allowed is exhaustive (`REWOUND_BY_HAND_CONTRACTS.md` §2.3) and an owner's
 /// private note is not on it — the nickname is, and it is set in the hand
 /// wherever it is drawn.
 struct VaultOwnerNote: View {
@@ -30,8 +30,8 @@ struct VaultOwnerNote: View {
         VStack(alignment: .leading, spacing: Space.m) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Your note")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer(minLength: Space.m)
                 if !editing {
                     Button(watch.notes == nil ? "Add a note" : "Edit") {
@@ -39,22 +39,22 @@ struct VaultOwnerNote: View {
                         errorMessage = nil
                         editing = true
                     }
-                    .buttonStyle(.calibre(.secondary))
+                    .buttonStyle(.rewound(.secondary))
                 }
             }
 
             HStack(spacing: Space.xs) {
                 Image(systemName: "lock")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 Text("Only you can read this. It never goes on a listing or a Passport.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .accessibilityElement(children: .combine)
 
             if editing {
-                CalibreTextEditor(
+                RewoundTextEditor(
                     "Your note about this watch",
                     text: $draft,
                     placeholder: "Where it came from, who wore it before you, what you're waiting to do with it.",
@@ -63,40 +63,40 @@ struct VaultOwnerNote: View {
 
                 if let errorMessage {
                     Text(errorMessage)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.destructive)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack(spacing: Space.m) {
                     Button(saveTitle) { save() }
-                        .buttonStyle(.calibre(.primary))
+                        .buttonStyle(.rewound(.primary))
                         .disabled(saving)
                     Button("Cancel") {
                         errorMessage = nil
                         editing = false
                     }
-                    .buttonStyle(.calibre(.ghost))
+                    .buttonStyle(.rewound(.ghost))
                     .disabled(saving)
                 }
             } else if let notes = watch.notes, !notes.isEmpty {
                 Text(notes)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("Nothing written down yet.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 

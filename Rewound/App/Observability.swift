@@ -5,9 +5,9 @@ import UIKit
 #endif
 
 /// One place that turns crash reporting, log shipping and the analytics
-/// identity on — started once from `CalibreApp.init()`, mirroring
-/// `admin-ios/CalibreAdmin/App/Observability.swift` so one set of keys and one
-/// mental model serves every Calibre client.
+/// identity on — started once from `RewoundApp.init()`, mirroring
+/// `admin-ios/RewoundAdmin/App/Observability.swift` so one set of keys and one
+/// mental model serves every Rewound client.
 ///
 /// ## Where a person pastes the keys
 ///
@@ -16,14 +16,14 @@ import UIKit
 ///
 /// | Service | xcconfig variable | Info.plist key |
 /// |---|---|---|
-/// | PostHog | `CALIBRE_POSTHOG_KEY` / `CALIBRE_POSTHOG_HOST` | `CalibrePostHogKey` / `CalibrePostHogHost` |
-/// | Sentry | `CALIBRE_SENTRY_DSN` | `CalibreSentryDSN` |
-/// | Better Stack | `CALIBRE_BETTERSTACK_TOKEN` | `CalibreBetterStackToken` |
-/// | Better Stack host | `CALIBRE_BETTERSTACK_HOST` | `CalibreBetterStackHost` |
+/// | PostHog | `REWOUND_POSTHOG_KEY` / `REWOUND_POSTHOG_HOST` | `RewoundPostHogKey` / `RewoundPostHogHost` |
+/// | Sentry | `REWOUND_SENTRY_DSN` | `RewoundSentryDSN` |
+/// | Better Stack | `REWOUND_BETTERSTACK_TOKEN` | `RewoundBetterStackToken` |
+/// | Better Stack host | `REWOUND_BETTERSTACK_HOST` | `RewoundBetterStackHost` |
 ///
-/// The variables live in **`Calibre/Config/Release.xcconfig`** (the file every
+/// The variables live in **`Rewound/Config/Release.xcconfig`** (the file every
 /// TestFlight and archive build reads — this is the one to fill in) and
-/// **`Calibre/Config/Debug.xcconfig`**. Both ship blank. A blank value is a
+/// **`Rewound/Config/Debug.xcconfig`**. Both ship blank. A blank value is a
 /// documented silent no-op: that SDK is never configured, makes no network
 /// call, and cannot crash a build that shipped before the key existed. The
 /// the services are independent — Sentry can be live while PostHog and
@@ -41,7 +41,7 @@ enum Observability {
     /// Stamped on every Sentry event and Better Stack line.
     ///
     /// Release is `"staging"` because every release build of this app —
-    /// TestFlight included — talks to the calibre-server staging box (see
+    /// TestFlight included — talks to the rewound-server staging box (see
     /// `API_BASE_URL` in `Config/Release.xcconfig`). **That is the line below
     /// to change on the day a production backend exists**; nothing else here
     /// has an opinion about it.
@@ -71,8 +71,8 @@ enum Observability {
 
         startSentry()
         BetterStackShipper.shared.configure(
-            token: infoValue("CalibreBetterStackToken"),
-            host: infoValue("CalibreBetterStackHost")
+            token: infoValue("RewoundBetterStackToken"),
+            host: infoValue("RewoundBetterStackHost")
         )
 
         log(.info, "app_launch")
@@ -112,7 +112,7 @@ enum Observability {
     // MARK: - Sentry
 
     private static func startSentry() {
-        guard let dsn = infoValue("CalibreSentryDSN") else { return }
+        guard let dsn = infoValue("RewoundSentryDSN") else { return }
 
         SentrySDK.start { options in
             options.dsn = dsn
@@ -133,7 +133,7 @@ enum Observability {
     }
 
     private static func releaseName() -> String {
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.buycalibre.calibre"
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.shoprewound.rewound"
         let version = (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "0"
         let build = (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "0"
         return "\(bundleID)@\(version)+\(build)"
@@ -147,7 +147,7 @@ enum Observability {
     private static func infoValue(_ key: String) -> String? {
         let raw = (Bundle.main.object(forInfoDictionaryKey: key) as? String ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        // An xcconfig that failed to apply leaves the literal "$(CALIBRE_…)"
+        // An xcconfig that failed to apply leaves the literal "$(REWOUND_…)"
         // token in Info.plist; that is "no key", not a DSN. Same guard as
         // Analytics.infoValue.
         guard !raw.hasPrefix("$(") else { return nil }
@@ -171,7 +171,7 @@ final class BetterStackShipper: @unchecked Sendable {
     /// Where the batches go when no host is configured. Better Stack mints a
     /// dedicated ingesting host per source (`s<id>.<region>.betterstackdata.com`)
     /// and this shared host answers 401 to a token minted for one of those, so
-    /// the host travels with the token (`CalibreBetterStackHost`). This stays
+    /// the host travels with the token (`RewoundBetterStackHost`). This stays
     /// only as the fallback for a token that predates per-source hosts.
     private static let legacyEndpoint = URL(string: "https://in.logs.betterstack.com")!
     private static let maxBatch = 20
@@ -242,7 +242,7 @@ final class BetterStackShipper: @unchecked Sendable {
                 "dt": Self.dateFormatter.string(from: Date()),
                 "level": level.rawValue,
                 "message": message,
-                "app": "calibre-ios",
+                "app": "rewound-ios",
                 "platform": "ios",
                 "app_version": Self.appVersion,
                 "build": Self.buildNumber,

@@ -3,7 +3,7 @@ import SwiftUI
 /// The radius ladder — five tiers, assigned by the SIZE of a surface, not by
 /// what kind of component it is. A large panel at 12pt reads squarer than a
 /// chip at 12pt even though the number is identical, so the bigger the
-/// surface, the rounder the corner. CALIBRE_FINAL_PUSH_CONTRACTS.md §1.
+/// surface, the rounder the corner. REWOUND_FINAL_PUSH_CONTRACTS.md §1.
 ///
 /// When the tier is not obvious, measure the surface's **short edge** at its
 /// most common rendered size:
@@ -43,7 +43,7 @@ public enum Radius {
     /// same 16pt the `panel` tier now carries. Kept so the app's existing
     /// sheet and cover call sites keep building while they are renamed; new
     /// code says `panel`.
-    @available(*, deprecated, renamed: "panel", message: "The 16pt tier is now Radius.panel — see CALIBRE_FINAL_PUSH_CONTRACTS.md §1.")
+    @available(*, deprecated, renamed: "panel", message: "The 16pt tier is now Radius.panel — see REWOUND_FINAL_PUSH_CONTRACTS.md §1.")
     public static let overlay: CGFloat = panel
 }
 
@@ -81,12 +81,12 @@ public enum Elevation {
 
 public extension View {
     /// Applies the brand elevation style (ink-tinted, never cold black).
-    func calibreShadow(_ elevation: Elevation) -> some View {
-        modifier(CalibreShadowModifier(elevation: elevation))
+    func rewoundShadow(_ elevation: Elevation) -> some View {
+        modifier(RewoundShadowModifier(elevation: elevation))
     }
 }
 
-private struct CalibreShadowModifier: ViewModifier {
+private struct RewoundShadowModifier: ViewModifier {
     let elevation: Elevation
     @Environment(\.colorScheme) private var scheme
 
@@ -95,7 +95,7 @@ private struct CalibreShadowModifier: ViewModifier {
         let boost: CGFloat = scheme == .dark ? 1.6 : 1.0
         return elevation.layers.reduce(AnyView(content)) { view, layer in
             AnyView(view.shadow(
-                color: Color.calibre.shadowTint.opacity(layer.opacity * boost),
+                color: Color.rewound.shadowTint.opacity(layer.opacity * boost),
                 radius: layer.radius,
                 x: 0,
                 y: layer.y

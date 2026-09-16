@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import Nuke
 import NukeUI
 import SwiftUI
@@ -7,7 +7,7 @@ import SwiftUI
 // MARK: - Local navigation
 //
 // The shared NavigationStacks bind typed `[Route]` paths owned by AppRouter
-// (Calibre/App is read-only to this track), so the browse screens navigate
+// (Rewound/App is read-only to this track), so the browse screens navigate
 // among themselves with `navigationDestination(item:)` pushes. The
 // orchestrator wires the shared Route cases to these screens after P3 lands.
 
@@ -240,7 +240,7 @@ extension Listing {
 
     /// The listing's page on the web marketplace — used for sharing.
     var webURL: URL {
-        URL(string: "https://buycalibre.com/listing/\(id)")!
+        URL(string: "https://shoprewound.com/listing/\(id)")!
     }
 }
 
@@ -248,7 +248,7 @@ extension WatchlistItem {
     /// The listing's page on the web marketplace — used for sharing a saved
     /// watch, same as a full `Listing`'s `webURL`.
     var webURL: URL {
-        URL(string: "https://buycalibre.com/listing/\(listingId)")!
+        URL(string: "https://shoprewound.com/listing/\(listingId)")!
     }
 }
 
@@ -375,7 +375,7 @@ struct ListingImageWell: View {
 
     var body: some View {
         ZStack {
-            Color.calibre.secondary.opacity(0.5)
+            Color.rewound.secondary.opacity(0.5)
 
             if let request {
                 LazyImage(request: request) { state in
@@ -406,7 +406,7 @@ struct ListingImageWell: View {
     private var fallbackGlyph: some View {
         Image(systemName: "clock")
             .font(.system(size: min(40, max(18, targetWidth * 0.1)), weight: .light))
-            .foregroundStyle(Color.calibre.placeholder)
+            .foregroundStyle(Color.rewound.placeholder)
             .accessibilityHidden(true)
     }
 }
@@ -497,15 +497,15 @@ struct ListingLaneRow: View {
     /// The width scales too. It used to be a frozen 168pt, which is what put
     /// "R  2002" where "ROLEX 2002" belongs at accessibility text sizes and
     /// pushed the condition pill out over the photograph. Capped by
-    /// `calibreLaneCardWidth` so the card never outgrows the phone.
+    /// `rewoundLaneCardWidth` so the card never outgrows the phone.
     @ScaledMetric(relativeTo: .body) private var scaledCardWidth: CGFloat = 168
-    private var cardWidth: CGFloat { calibreLaneCardWidth(scaledCardWidth) }
+    private var cardWidth: CGFloat { rewoundLaneCardWidth(scaledCardWidth) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(title)
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
                 .padding(.horizontal, Space.margin)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -568,28 +568,28 @@ struct ListingLaneViewAllCard: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: Space.s) {
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(Color.calibre.secondary.opacity(0.5))
+                    .fill(Color.rewound.secondary.opacity(0.5))
                     .aspectRatio(1, contentMode: .fit)
                     .overlay(
                         RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                            .strokeBorder(Color.calibre.border, lineWidth: 1)
+                            .strokeBorder(Color.rewound.border, lineWidth: 1)
                     )
                     .overlay {
                         Image(systemName: "arrow.right")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color.calibre.primary)
+                            .foregroundStyle(Color.rewound.primary)
                     }
 
                 VStack(alignment: .leading, spacing: 3) {
                     Eyebrow(title)
                     Text("See the full shelf")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(1)
                     HStack(alignment: .firstTextBaseline) {
                         Text("View all")
-                            .font(CalibreType.price)
-                            .foregroundStyle(Color.calibre.primary)
+                            .font(RewoundType.price)
+                            .foregroundStyle(Color.rewound.primary)
                         Spacer()
                     }
                     .padding(.top, 1)
@@ -618,7 +618,7 @@ struct ListingLaneSkeleton: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: Space.l) {
                     ForEach(0..<4, id: \.self) { _ in
-                        ListingCardSkeleton().frame(width: calibreLaneCardWidth(scaledCardWidth))
+                        ListingCardSkeleton().frame(width: rewoundLaneCardWidth(scaledCardWidth))
                     }
                 }
                 .padding(.horizontal, Space.margin)
@@ -632,7 +632,7 @@ struct ListingLaneSkeleton: View {
 
 /// Visual twin of the design system's `SearchField` that additionally
 /// autofocuses and reports submits — the kit component keeps its focus state
-/// private, and CalibreDesign is read-only to feature tracks. Tokens only.
+/// private, and RewoundDesign is read-only to feature tracks. Tokens only.
 struct BrowseSearchField: View {
     @Binding var text: String
     var placeholder = "Search watches"
@@ -645,16 +645,16 @@ struct BrowseSearchField: View {
         HStack(spacing: Space.s) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             TextField(
                 "",
                 text: $text,
-                prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
+                prompt: Text(placeholder).foregroundStyle(Color.rewound.placeholder)
             )
-            .font(CalibreType.body)
-            .foregroundStyle(Color.calibre.foreground)
-            .tint(Color.calibre.primary)
+            .font(RewoundType.body)
+            .foregroundStyle(Color.rewound.foreground)
+            .tint(Color.rewound.primary)
             .focused($focused)
             .submitLabel(.search)
             .autocorrectionDisabled()
@@ -666,7 +666,7 @@ struct BrowseSearchField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 15))
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .foregroundStyle(Color.rewound.placeholder)
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("Clear search")
@@ -676,16 +676,16 @@ struct BrowseSearchField: View {
         .padding(.horizontal, Space.m)
         .frame(minHeight: Space.touchTarget)
         .background(
-            Color.calibre.secondary,
+            Color.rewound.secondary,
             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                .strokeBorder(focused ? Color.calibre.borderBright : Color.calibre.border, lineWidth: 1)
+                .strokeBorder(focused ? Color.rewound.borderBright : Color.rewound.border, lineWidth: 1)
         )
         .overlay {
             RoundedRectangle(cornerRadius: Radius.control + 3, style: .continuous)
-                .strokeBorder(Color.calibre.primary.opacity(0.11), lineWidth: 3)
+                .strokeBorder(Color.rewound.primary.opacity(0.11), lineWidth: 3)
                 .padding(-3)
                 .opacity(focused ? 1 : 0)
         }

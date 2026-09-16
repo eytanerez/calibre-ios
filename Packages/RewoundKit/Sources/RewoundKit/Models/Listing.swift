@@ -7,7 +7,7 @@ public enum ListingStatus: String, Codable, Sendable {
     case active
     case reserved
     case sold
-    /// Calibre took the listing down because the seller's guarantee card
+    /// Rewound took the listing down because the seller's guarantee card
     /// lapsed. Never a seller action, and never the same thing as archived —
     /// it comes back on its own once a valid credit card is on file.
     case pausedCard = "paused_card"

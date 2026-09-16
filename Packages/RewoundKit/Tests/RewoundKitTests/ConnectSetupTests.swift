@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The seller-setup status model: the six words the backend can send, the
 /// seventh it might send one day, and the screen each one asks for.

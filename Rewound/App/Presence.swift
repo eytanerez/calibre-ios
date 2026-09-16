@@ -1,4 +1,4 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 
 /// "Somebody is here" — one beat every 30 seconds while the app is in front.
@@ -7,8 +7,8 @@ import Foundation
 /// lifecycle and screen-view capture off (see `Analytics.start()`), so a
 /// person reading listings on the phone is invisible to it until they tap one
 /// of the schema's own events. This answers a different question — how many
-/// people are on Calibre right now — for the admin overview alone, and it
-/// emits nothing PostHog would recognise.
+/// people are on Rewound right now — for the admin overview alone, and it
+/// emits nothing PostHog would recognize.
 ///
 /// Three rules, all of them the endpoint's
 /// (`Backend/app/api/views/presence.py`):
@@ -35,7 +35,7 @@ final class PresenceHeartbeat {
         self.client = client
     }
 
-    /// Beats until the calling task is cancelled — which is what leaving the
+    /// Beats until the calling task is canceled — which is what leaving the
     /// foreground does, because the app root drives this from `scenePhase`
     /// through `.task(id:)`.
     func beatWhileForeground() async {
@@ -44,7 +44,7 @@ final class PresenceHeartbeat {
             do {
                 try await Task.sleep(for: Self.interval)
             } catch {
-                // Cancelled mid-wait: the app is no longer in front.
+                // Canceled mid-wait: the app is no longer in front.
                 return
             }
         }

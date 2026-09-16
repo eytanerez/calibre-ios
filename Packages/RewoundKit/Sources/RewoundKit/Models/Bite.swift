@@ -6,7 +6,7 @@ import Foundation
 ///
 /// A Bite is not a short Journal article and shares nothing with one: its own
 /// tables, its own routes, its own reads. `JournalArticle` stays exactly as it
-/// is, and a Bite can never appear in the Journal feed. The two are modelled
+/// is, and a Bite can never appear in the Journal feed. The two are modeled
 /// apart here for the same reason the server keeps them apart — a Bite carries
 /// an archive slot, the sources it was published against, and a correction
 /// that is added *beside* the original date rather than replacing it.
@@ -64,8 +64,8 @@ public struct Bite: Decodable, Sendable, Identifiable, Hashable {
 
     /// The Bite's page on the web marketplace — used for sharing.
     public var webURL: URL {
-        URL(string: "https://buycalibre.com/bites/\(id)")
-            ?? URL(string: "https://buycalibre.com/bites")!
+        URL(string: "https://shoprewound.com/bites/\(id)")
+            ?? URL(string: "https://shoprewound.com/bites")!
     }
 }
 

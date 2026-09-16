@@ -1,7 +1,7 @@
 import SwiftUI
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 /// The dual-thumb price filter could be dragged into a state it could not be
 /// dragged out of.
@@ -22,7 +22,7 @@ import XCTest
 /// move independently".
 ///
 /// Note what that repro rules out. At that price step the two values differ by
-/// $100 while their centres differ by about a third of a point, so a rule
+/// $100 while their centers differ by about a third of a point, so a rule
 /// keyed on `lower >= upper` never fires on the state that actually traps
 /// people. The test has to be about pixels.
 ///
@@ -32,7 +32,7 @@ final class PriceRangeSliderTests: XCTestCase {
     private let bounds = 0.0...128_100.0
     private let grab: CGFloat = Space.touchTarget / 2  // 22pt
 
-    /// Where a value's thumb centre lands on a 360pt track, matching the
+    /// Where a value's thumb center lands on a 360pt track, matching the
     /// view's own `x(for:width:)`.
     private func x(_ value: Double, width: CGFloat = 360, thumb: CGFloat = 28) -> CGFloat {
         let usable = width - thumb

@@ -7,14 +7,14 @@ import SwiftUI
 /// Wax is one of the materials the vocabulary lets a mark fill. It gets one
 /// because a seal that reads as an outline reads as a coin.
 ///
-/// This is the only mark that carries its own colour, because sealing wax has
+/// This is the only mark that carries its own color, because sealing wax has
 /// one. Every other mark takes the page's ink and must go on doing so — in the
 /// primary this seal is a brown disc, which is the coin the scallop was already
-/// working to keep it from being. Recorded in CALIBRE_BY_HAND_CONTRACTS.md §17;
+/// working to keep it from being. Recorded in REWOUND_BY_HAND_CONTRACTS.md §17;
 /// do not put it back.
 ///
 /// The die is embossed rather than knocked out: a knockout would need the
-/// surface colour to paint with, and the surface is whatever the seal was
+/// surface color to paint with, and the surface is whatever the seal was
 /// pressed onto.
 struct WaxSealMark: View {
     private var stillness = MarkStillness()
@@ -72,29 +72,29 @@ struct WaxSealMark: View {
 
     private var seal: some View {
         ZStack {
-            Self.halo.stroke(Color.calibre.wax.opacity(0.3), style: MarkGrid.style)
-            Self.wax.fill(Color.calibre.wax)
-            Self.wax.stroke(Color.calibre.waxHighlight, style: MarkGrid.style)
+            Self.halo.stroke(Color.rewound.wax.opacity(0.3), style: MarkGrid.style)
+            Self.wax.fill(Color.rewound.wax)
+            Self.wax.stroke(Color.rewound.waxHighlight, style: MarkGrid.style)
             Self.impression.stroke(Self.struck, style: MarkGrid.style)
         }
     }
 
     /// The die stands proud of the wax and catches the light, so it is struck
-    /// as a highlight of the lit edge rather than in the body colour: at the
-    /// body colour the monogram is a shape you can only find by looking for it,
+    /// as a highlight of the lit edge rather than in the body color: at the
+    /// body color the monogram is a shape you can only find by looking for it,
     /// and whose seal it is was the whole point of pressing one. White here is
-    /// light rather than a palette colour — it is what a raised edge catches,
+    /// light rather than a palette color — it is what a raised edge catches,
     /// in either appearance.
     static var struck: Color {
-        Color.calibre.waxHighlight.mix(with: .white, by: 0.45, in: .device)
+        Color.rewound.waxHighlight.mix(with: .white, by: 0.45, in: .device)
     }
 
-    /// The die: the Calibre mark, taken from `CalibreLogoMark` and shrunk about
-    /// its own jewel until it sits inside the wax. The jewel's filled centre is
-    /// left out — a die presses its raised parts in, and the centre is the part
+    /// The die: the Rewound mark, taken from `RewoundLogoMark` and shrunk about
+    /// its own jewel until it sits inside the wax. The jewel's filled center is
+    /// left out — a die presses its raised parts in, and the center is the part
     /// the wax fills back up.
     static var impression: Path {
-        CalibreLogoMark.strokes.applying(
+        RewoundLogoMark.strokes.applying(
             CGAffineTransform(translationX: 60, y: 60)
                 .scaledBy(x: 0.62, y: 0.62)
                 .translatedBy(x: -60.48, y: -58.52)
@@ -114,7 +114,7 @@ struct WaxSealMark: View {
         for sample in 0...samples {
             let angle = Angle.degrees(Double(sample) / Double(samples) * 360)
             let radius = 40 + 1.8 * cos(12 * angle.radians)
-            let point = markPoint(MarkGrid.centre, radius, angle)
+            let point = markPoint(MarkGrid.center, radius, angle)
             if sample == 0 { path.move(to: point) } else { path.addLine(to: point) }
         }
         path.closeSubpath()
@@ -127,17 +127,17 @@ struct WaxSealMark: View {
             let reach = 44 + frame.throwOff * 16
             for step in 0..<6 {
                 let angle = Angle.degrees(Double(step) * 60 + 24)
-                path.move(to: markPoint(MarkGrid.centre, reach, angle))
-                path.addLine(to: markPoint(MarkGrid.centre, reach + 7, angle))
+                path.move(to: markPoint(MarkGrid.center, reach, angle))
+                path.addLine(to: markPoint(MarkGrid.center, reach + 7, angle))
             }
         }
-        .stroke(Color.calibre.wax, style: MarkGrid.hairline)
+        .stroke(Color.rewound.wax, style: MarkGrid.hairline)
         .opacity(frame.flecks)
     }
 }
 
 #Preview("waxSeal", traits: .sizeThatFitsLayout) {
-    CalibreMark.waxSeal()
+    RewoundMark.waxSeal()
         .padding(Space.xl)
-        .calibrePageBackground()
+        .rewoundPageBackground()
 }

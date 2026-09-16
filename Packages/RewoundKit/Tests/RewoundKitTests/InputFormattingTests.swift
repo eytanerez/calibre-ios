@@ -1,7 +1,7 @@
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
-/// CALIBRE_FINAL_PUSH_CONTRACTS.md §6 — money and US phone numbers format as
+/// REWOUND_FINAL_PUSH_CONTRACTS.md §6 — money and US phone numbers format as
 /// the user types. These test the two properties that are easy to get wrong
 /// and impossible to see in a screenshot: that every intermediate keystroke is
 /// still typable, and that every backspace still deletes something.

@@ -1,9 +1,9 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One reference from the board: the published price, the chart drawn from
-/// its change-points, what Calibre knows about the watch itself, and a way to
+/// its change-points, what Rewound knows about the watch itself, and a way to
 /// go find the real thing on the marketplace.
 struct MarketDetailSheet: View {
     let price: MarketReferencePrice
@@ -49,19 +49,19 @@ struct MarketDetailSheet: View {
                 }
                 .padding(Space.l)
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     ShareLink(
-                        item: URL(string: "https://buycalibre.com/community?room=market&reference=\(price.slug)")
-                            ?? URL(string: "https://buycalibre.com/community?room=market")!,
-                        message: Text("\(price.brand) \(title) (Ref. \(price.reference)) on Calibre.")
+                        item: URL(string: "https://shoprewound.com/community?room=market&reference=\(price.slug)")
+                            ?? URL(string: "https://shoprewound.com/community?room=market")!,
+                        message: Text("\(price.brand) \(title) (Ref. \(price.reference)) on Rewound.")
                     ) {
                         Image(systemName: "square.and.arrow.up")
                     }
-                    .tint(Color.calibre.primary)
+                    .tint(Color.rewound.primary)
                     .accessibilityLabel("Share \(price.brand) \(title)")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -70,7 +70,7 @@ struct MarketDetailSheet: View {
                     } label: {
                         Image(systemName: "xmark")
                     }
-                    .tint(Color.calibre.primary)
+                    .tint(Color.rewound.primary)
                     .accessibilityLabel("Close")
                 }
             }
@@ -80,19 +80,19 @@ struct MarketDetailSheet: View {
     private var priceHeader: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text(price.brand.uppercased())
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Text(title)
-                .font(CalibreType.serif(.semiBold, 26, relativeTo: .title))
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.serif(.semiBold, 26, relativeTo: .title))
+                .foregroundStyle(Color.rewound.foreground)
             Text("Ref. \(price.reference)")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             HStack(alignment: .lastTextBaseline, spacing: Space.m) {
                 Text(MarketFormat.usdFull(price.currentValue))
-                    .font(CalibreType.serif(.semiBold, 32, relativeTo: .largeTitle))
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.serif(.semiBold, 32, relativeTo: .largeTitle))
+                    .foregroundStyle(Color.rewound.foreground)
                     .monospacedDigit()
                 if series.isDrawable {
                     ChangePillView(change: series.change)
@@ -100,16 +100,16 @@ struct MarketDetailSheet: View {
             }
             .padding(.top, Space.xs)
             Text(publishedLine)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
     }
 
     private var publishedLine: String {
         if let day = MarketFormat.day(iso: price.setAt) {
-            return "Calibre reference price \u{00B7} set \(day)"
+            return "Rewound reference price \u{00B7} set \(day)"
         }
-        return "Calibre reference price"
+        return "Rewound reference price"
     }
 
     @ViewBuilder
@@ -123,12 +123,12 @@ struct MarketDetailSheet: View {
             )
         } else {
             Text("This is the first price we've published for this reference, so there's no history to chart yet.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Space.l)
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
         }
     }
 
@@ -138,15 +138,15 @@ struct MarketDetailSheet: View {
                 VStack(spacing: Space.xs) {
                     Text(window.label.uppercased())
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                     ChangePillView(change: window.value)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
         .padding(.vertical, Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 
     private var statGrid: some View {
@@ -174,8 +174,8 @@ struct MarketDetailSheet: View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("The watch")
-                    .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.serif(.semiBold, 20, relativeTo: .title3))
+                    .foregroundStyle(Color.rewound.foreground)
                 SpecList(rows)
             }
         }
@@ -187,23 +187,23 @@ struct MarketDetailSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased())
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Text(value)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(tone == .up ? Color.calibre.success : (tone == .down ? Color.calibre.destructive : Color.calibre.foreground))
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(tone == .up ? Color.rewound.success : (tone == .down ? Color.rewound.destructive : Color.rewound.foreground))
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Reference-level pricing. Availability and asking prices vary by listing.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             Button {
                 let brand = price.brand
@@ -217,12 +217,12 @@ struct MarketDetailSheet: View {
                     Text("Find on the marketplace")
                     Image(systemName: "arrow.right")
                 }
-                .font(CalibreType.bodyMedium)
+                .font(RewoundType.bodyMedium)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.m)
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color.calibre.primary)
+            .tint(Color.rewound.primary)
         }
     }
 }

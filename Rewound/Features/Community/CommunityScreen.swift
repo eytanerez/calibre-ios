@@ -1,9 +1,9 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The Community tab's quiet rooms: Today (the day's two questions — one about
-/// watches, one about Calibre), Market (reference-level pricing), and Bites
+/// watches, one about Rewound), Market (reference-level pricing), and Bites
 /// (the desk's short, sourced notes). Guests can read everything; voting
 /// funnels through the sign-in gate.
 ///
@@ -52,8 +52,8 @@ struct CommunityScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageSwipe(selection: $section, values: [.today, .market, .bites])
-        .calibrePageBackground()
+        .rewoundPageSwipe(selection: $section, values: [.today, .market, .bites])
+        .rewoundPageBackground()
         .navigationTitle("Community")
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
@@ -78,7 +78,7 @@ struct CommunityScreen: View {
         VStack(spacing: Space.l) {
             ForEach(0..<3, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .fill(Color.calibre.card)
+                    .fill(Color.rewound.card)
                     .frame(height: 140)
                     .shimmer()
             }
@@ -109,8 +109,8 @@ struct CommunityScreen: View {
                 let live = today?.liveLanes ?? []
                 if live.isEmpty {
                     Text("Today's questions are being wound. Check back soon.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.vertical, Space.xxl)
                 } else {
@@ -121,8 +121,8 @@ struct CommunityScreen: View {
                     }
                     ForEach(today?.dryLanes ?? []) { lane in
                         Text(lane.voice.emptyLane)
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -133,7 +133,7 @@ struct CommunityScreen: View {
                         VStack(spacing: 0) {
                             ForEach(Array(recent.enumerated()), id: \.element.id) { index, prompt in
                                 if index > 0 {
-                                    Rectangle().fill(Color.calibre.border).frame(height: 1)
+                                    Rectangle().fill(Color.rewound.border).frame(height: 1)
                                 }
                                 NavigationLink(value: Route.poll(prompt)) {
                                     RecentResultRow(prompt: prompt)
@@ -142,12 +142,12 @@ struct CommunityScreen: View {
                             }
                         }
                         .background(
-                            Color.calibre.card,
+                            Color.rewound.card,
                             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                                .strokeBorder(Color.rewound.border, lineWidth: 1)
                         )
                     }
                 }
@@ -171,8 +171,8 @@ struct CommunityScreen: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.serif(.semiBold, 20, relativeTo: .title3))
+            .foregroundStyle(Color.rewound.foreground)
     }
 }
 
@@ -188,17 +188,17 @@ private struct RecentResultRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(prompt.question)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 .multilineTextAlignment(.leading)
             if let winner, let results = prompt.results, results.totalVotes > 0 {
                 Text("\u{201C}\(winner.label)\u{201D} · \(winner.percent)% of \(results.totalVotes) vote\(results.totalVotes == 1 ? "" : "s")")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             } else {
                 Text("No votes were cast.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -208,7 +208,7 @@ private struct RecentResultRow: View {
         .overlay(alignment: .trailing) {
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .padding(.trailing, Space.l)
         }
     }
@@ -233,24 +233,24 @@ struct CommunityPromptCard: View {
             VStack(alignment: .leading, spacing: Space.s) {
                 HStack(alignment: .firstTextBaseline) {
                     Text((prompt.closed ? prompt.voice.closedEyebrow : prompt.voice.eyebrow).uppercased())
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.primary)
                     Spacer()
                     ShareLink(item: prompt.shareURL, message: Text(prompt.shareText)) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                     .accessibilityLabel("Share this question")
                 }
                 Text(prompt.question)
-                    .font(CalibreType.serif(.semiBold, featured ? 24 : 18, relativeTo: featured ? .title2 : .title3))
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.serif(.semiBold, featured ? 24 : 18, relativeTo: featured ? .title2 : .title3))
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 if !prompt.closed, !prompt.voice.invitation.isEmpty {
                     Text(prompt.voice.invitation)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -264,12 +264,12 @@ struct CommunityPromptCard: View {
         .padding(featured ? Space.xl : Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            Color.calibre.card,
+            Color.rewound.card,
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -280,18 +280,18 @@ struct CommunityPromptCard: View {
                     vote(option.key)
                 } label: {
                     Text(option.label)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, Space.l)
                         .padding(.vertical, Space.m)
                         .background(
-                            Color.calibre.background,
+                            Color.rewound.background,
                             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                                .strokeBorder(Color.rewound.border, lineWidth: 1)
                         )
                 }
                 .buttonStyle(PressableStyle())
@@ -306,31 +306,31 @@ struct CommunityPromptCard: View {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(option.label)
-                            .font(prompt.myVote == option.key ? CalibreType.bodyMedium : CalibreType.body)
+                            .font(prompt.myVote == option.key ? RewoundType.bodyMedium : RewoundType.body)
                             .foregroundStyle(
                                 prompt.myVote == option.key
-                                    ? Color.calibre.foreground
-                                    : Color.calibre.mutedForeground
+                                    ? Color.rewound.foreground
+                                    : Color.rewound.mutedForeground
                             )
                         if prompt.myVote == option.key {
                             Text("Your pick")
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.primary)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.primary)
                         }
                         Spacer()
                         Text("\(option.percent)%")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                             .monospacedDigit()
                     }
                     GeometryReader { proxy in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color.calibre.border.opacity(0.45))
+                            Capsule().fill(Color.rewound.border.opacity(0.45))
                             Capsule()
                                 .fill(
                                     prompt.myVote == option.key
-                                        ? Color.calibre.primary
-                                        : Color.calibre.primary.opacity(0.3)
+                                        ? Color.rewound.primary
+                                        : Color.rewound.primary.opacity(0.3)
                                 )
                                 .frame(width: max(proxy.size.width * CGFloat(option.percent) / 100, 6))
                         }
@@ -339,8 +339,8 @@ struct CommunityPromptCard: View {
                 }
             }
             Text("\(prompt.results?.totalVotes ?? 0) vote\((prompt.results?.totalVotes ?? 0) == 1 ? "" : "s")\(prompt.closed ? " · closed" : "")")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
     }
 

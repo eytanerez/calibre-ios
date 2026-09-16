@@ -18,8 +18,8 @@ struct CrownMark: View {
 
     var body: some View {
         ZStack {
-            Self.knurl.stroke(Color.calibre.primary, style: MarkGrid.style)
-            rim.stroke(Color.calibre.primary, style: MarkGrid.style)
+            Self.knurl.stroke(Color.rewound.primary, style: MarkGrid.style)
+            rim.stroke(Color.rewound.primary, style: MarkGrid.style)
         }
         .rotationEffect(.degrees(turn))
         .markCanvas(size)
@@ -83,8 +83,8 @@ struct CrownMark: View {
             let knurls = Int((360 / MarkMotion.clickTurn.degrees).rounded())
             for index in 0..<knurls {
                 let angle = Angle.degrees(MarkMotion.clickTurn.degrees * Double(index))
-                path.move(to: markPoint(MarkGrid.centre, 32, angle))
-                path.addLine(to: markPoint(MarkGrid.centre, index == 0 ? 45 : 40, angle))
+                path.move(to: markPoint(MarkGrid.center, 32, angle))
+                path.addLine(to: markPoint(MarkGrid.center, index == 0 ? 45 : 40, angle))
             }
         }
     }
@@ -95,7 +95,7 @@ struct CrownMark: View {
 }
 
 #Preview("crown", traits: .sizeThatFitsLayout) {
-    CalibreMark.crown()
+    RewoundMark.crown()
         .padding(Space.xl)
-        .calibrePageBackground()
+        .rewoundPageBackground()
 }

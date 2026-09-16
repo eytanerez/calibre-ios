@@ -53,11 +53,11 @@ public struct StarRating: View {
     private func partialStar(fraction: Double) -> some View {
         Image(systemName: "star.fill")
             .font(.system(size: starSize))
-            .foregroundStyle(Color.calibre.border)
+            .foregroundStyle(Color.rewound.border)
             .overlay {
                 Image(systemName: "star.fill")
                     .font(.system(size: starSize))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                     .mask(alignment: .leading) {
                         GeometryReader { geometry in
                             Rectangle()
@@ -78,8 +78,8 @@ public struct StarRating: View {
                         .font(.system(size: starSize, weight: .light))
                         .foregroundStyle(
                             index <= selection.wrappedValue
-                                ? Color.calibre.primary
-                                : Color.calibre.borderBright
+                                ? Color.rewound.primary
+                                : Color.rewound.borderBright
                         )
                 }
             }
@@ -105,8 +105,8 @@ public struct StarRating: View {
             .padding(.vertical, -5.5)
 
             Text(selection.wrappedValue > 0 ? Self.labels[selection.wrappedValue - 1] : "Tap to rate")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Rating")
@@ -133,13 +133,13 @@ private struct StarRatingPreviewHost: View {
             HStack(spacing: Space.s) {
                 StarRating(rating: 4.5)
                 Text("4.5 · 128 reviews")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             StarRating(selection: $rating)
         }
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
     }
 }
 

@@ -79,7 +79,7 @@ struct LoupeMark: View {
     }
 
     private var loupe: some View {
-        Self.glass.stroke(Color.calibre.primary, style: MarkGrid.style)
+        Self.glass.stroke(Color.rewound.primary, style: MarkGrid.style)
     }
 
     /// Lens and handle. The handle is the whole reason this is not another set
@@ -90,8 +90,8 @@ struct LoupeMark: View {
             path.addEllipse(in: CGRect(
                 x: 60 - lens, y: 60 - lens, width: lens * 2, height: lens * 2
             ))
-            path.move(to: markPoint(MarkGrid.centre, lens, .degrees(45)))
-            path.addLine(to: markPoint(MarkGrid.centre, 56, .degrees(45)))
+            path.move(to: markPoint(MarkGrid.center, lens, .degrees(45)))
+            path.addLine(to: markPoint(MarkGrid.center, 56, .degrees(45)))
         }
     }
 
@@ -102,16 +102,16 @@ struct LoupeMark: View {
     /// grown into the lens, because magnified means larger than it was.
     private var jewel: some View {
         ZStack {
-            Self.centred(10.71).stroke(Color.calibre.primary, style: MarkGrid.style)
-            Self.centred(4.88).fill(Color.calibre.primary)
+            Self.centred(10.71).stroke(Color.rewound.primary, style: MarkGrid.style)
+            Self.centred(4.88).fill(Color.rewound.primary)
         }
     }
 
     /// `r 10.71` around `r 4.88` is the logo's jewel out of §3, on the grid's
-    /// own centre rather than the logo's slightly-off-centre one.
+    /// own center rather than the logo's slightly-off-center one.
     static func centred(_ radius: CGFloat) -> Path {
         Path(ellipseIn: CGRect(
-            x: MarkGrid.centre.x - radius, y: MarkGrid.centre.y - radius,
+            x: MarkGrid.center.x - radius, y: MarkGrid.center.y - radius,
             width: radius * 2, height: radius * 2
         ))
     }
@@ -129,7 +129,7 @@ struct LoupeMark: View {
 }
 
 #Preview("loupe", traits: .sizeThatFitsLayout) {
-    CalibreMark.loupe()
+    RewoundMark.loupe()
         .padding(Space.xl)
-        .calibrePageBackground()
+        .rewoundPageBackground()
 }

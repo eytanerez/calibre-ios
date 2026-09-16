@@ -1,14 +1,14 @@
 #!/bin/bash
-# Records real API responses from the local backend into CalibreKit test
+# Records real API responses from the local backend into RewoundKit test
 # fixtures. Re-run whenever the API shape changes. Requires the local docker
 # backend on :8000 with seeded demo data.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-FIXTURES=Packages/CalibreKit/Tests/CalibreKitTests/Fixtures
+FIXTURES=Packages/RewoundKit/Tests/RewoundKitTests/Fixtures
 BASE=http://localhost:8000
 # Test account registered against the local dev DB (register-or-login).
-BUYER_EMAIL="iosbuyer.calibre@gmail.com"
-BUYER_PASSWORD="CalibreiOS123!"
+BUYER_EMAIL="iosbuyer.rewound@gmail.com"
+BUYER_PASSWORD="RewoundiOS123!"
 mkdir -p "$FIXTURES"
 
 jar=$(mktemp)

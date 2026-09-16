@@ -1,12 +1,12 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The seller's part of fulfillment, start to finish: the box they measured,
 /// what that box costs, what it leaves them, and then the label.
 ///
 /// The seller no longer buys their own label — there is no checkout here and
-/// nothing is charged to them. They give the real dimensions, Calibre buys
+/// nothing is charged to them. They give the real dimensions, Rewound buys
 /// the label, and what it actually cost is what comes off the payout. That is
 /// why the form shows the consequence next to the cause before the button
 /// does anything.
@@ -63,8 +63,8 @@ struct ShippingDetailsFlow: View {
                 if let deadline = order.fulfillmentDeadlineAt {
                     HStack(spacing: Space.m) {
                         Text("Ship by")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                         CountdownChip(until: deadline)
                         Spacer(minLength: 0)
                     }
@@ -76,7 +76,7 @@ struct ShippingDetailsFlow: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollDismissesKeyboard(.interactively)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Shipping details")
         .navigationBarTitleDisplayMode(.inline)
         .animation(Motion.easeFast, value: validationError)
@@ -89,19 +89,19 @@ struct ShippingDetailsFlow: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text([order.listing?.title, order.displayNumber].compactMap { $0 }.joined(separator: " \u{00B7} "))
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Text("How big is the box?")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
-            Text("Measure the box you are actually sending. Calibre buys the label \u{2014} you pay nothing now, and what the label costs comes off your payout.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
+            Text("Measure the box you are actually sending. Rewound buys the label \u{2014} you pay nothing now, and what the label costs comes off your payout.")
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Text("It ships to our authentication center, insured for the full sale price, signature required.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -115,14 +115,14 @@ struct ShippingDetailsFlow: View {
                 dimensionField("Width", text: $widthText)
                 dimensionField("Height", text: $heightText)
             }
-            CalibreTextField("Weight", text: $weightText, placeholder: "2", kind: .decimal) {
+            RewoundTextField("Weight", text: $weightText, placeholder: "2", kind: .decimal) {
                 Text("lb")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .onChange(of: weightText) { _, _ in boxChanged() }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Notes for the carrier (optional)",
                 text: $notes,
                 placeholder: "Leave at the front desk",
@@ -135,10 +135,10 @@ struct ShippingDetailsFlow: View {
     }
 
     private func dimensionField(_ label: String, text: Binding<String>) -> some View {
-        CalibreTextField(label, text: text, placeholder: "0", kind: .decimal) {
+        RewoundTextField(label, text: text, placeholder: "0", kind: .decimal) {
             Text("in")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .onChange(of: text.wrappedValue) { _, _ in boxChanged() }
     }
@@ -153,12 +153,12 @@ struct ShippingDetailsFlow: View {
             } label: {
                 BusyLabel(title: "Price this box", busy: quoting)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(package == nil || validationError != nil || quoting)
 
             Text("Nothing is bought and nothing is charged \u{2014} this is only what the box would cost.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -168,12 +168,12 @@ struct ShippingDetailsFlow: View {
         VStack(alignment: .leading, spacing: Space.l) {
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text("This box costs \(PriceFormatter.format(amount, currency: quote.currency ?? order.currency))")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Calibre buys the label. The actual cost comes off your payout \u{2014} here is what that leaves.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                Text("Rewound buys the label. The actual cost comes off your payout \u{2014} here is what that leaves.")
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -187,13 +187,13 @@ struct ShippingDetailsFlow: View {
             } label: {
                 BusyLabel(title: "Confirm and get my label", busy: submitting)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(submitting)
 
             Button("Change the box") {
                 quotedKey = nil
             }
-            .buttonStyle(.calibre(.ghost, fullWidth: true))
+            .buttonStyle(.rewound(.ghost, fullWidth: true))
             .disabled(submitting)
         }
     }
@@ -344,7 +344,7 @@ struct ShippingDetailsFlow: View {
     }
 }
 
-/// The label Calibre bought: the PDF, tracking, where it is going, the ship-by
+/// The label Rewound bought: the PDF, tracking, where it is going, the ship-by
 /// clock, and what that label did to the payout.
 struct LabelReadyScreen: View {
     let order: Order
@@ -353,7 +353,7 @@ struct LabelReadyScreen: View {
 
     private var shipment: Shipment? { order.toAuthShipment ?? order.latestShipment }
 
-    /// The fact the carton announces: Calibre has bought this order's label.
+    /// The fact the carton announces: Rewound has bought this order's label.
     /// Nil on a payload that does not carry the timestamp, and nothing is
     /// drawn for nil.
     private var labelKey: String? {
@@ -365,8 +365,8 @@ struct LabelReadyScreen: View {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.s) {
                     Text("Your label is ready")
-                        .font(CalibreType.title)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.title)
+                        .foregroundStyle(Color.rewound.foreground)
                     HStack(alignment: .center, spacing: Space.m) {
                         // The seller's label is bought, so the parcel packs
                         // itself beside the sentence that tells them to pack
@@ -376,12 +376,12 @@ struct LabelReadyScreen: View {
                         // announced once per session. No `label`: the words
                         // beside it are the words.
                         if let labelKey {
-                            CalibreMark.box(size: 40, trigger: labelKey)
+                            RewoundMark.box(size: 40, trigger: labelKey)
                                 .markAnnounces(labelKey)
                         }
                         Text("Print it, pack the watch snugly, and drop it off. Tracking updates land in your Activity feed.")
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -391,7 +391,7 @@ struct LabelReadyScreen: View {
                         Label("Download label PDF", systemImage: "arrow.down.doc")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                 }
 
                 trackingCard
@@ -409,8 +409,8 @@ struct LabelReadyScreen: View {
                 if let deadline = order.fulfillmentDeadlineAt {
                     HStack(spacing: Space.m) {
                         Text("Ship by")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                         CountdownChip(until: deadline)
                     }
                 }
@@ -419,7 +419,7 @@ struct LabelReadyScreen: View {
             .padding(.top, Space.l)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Shipping label")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -433,12 +433,12 @@ struct LabelReadyScreen: View {
                         HStack(spacing: Space.m) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Tracking number")
-                                    .font(CalibreType.label)
-                                    .foregroundStyle(Color.calibre.secondaryForeground)
+                                    .font(RewoundType.label)
+                                    .foregroundStyle(Color.rewound.secondaryForeground)
                                 Text(tracking)
-                                    .font(CalibreType.bodyMedium)
+                                    .font(RewoundType.bodyMedium)
                                     .monospacedDigit()
-                                    .foregroundStyle(Color.calibre.foreground)
+                                    .foregroundStyle(Color.rewound.foreground)
                             }
                             Spacer()
                             Button {
@@ -448,7 +448,7 @@ struct LabelReadyScreen: View {
                             } label: {
                                 Image(systemName: "doc.on.doc")
                                     .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(Color.calibre.primary)
+                                    .foregroundStyle(Color.rewound.primary)
                                     .frame(width: Space.touchTarget, height: Space.touchTarget)
                             }
                             .buttonStyle(PressableStyle())
@@ -456,18 +456,18 @@ struct LabelReadyScreen: View {
                         }
                         .padding(.horizontal, Space.l)
                         .padding(.vertical, Space.m)
-                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                        Rectangle().fill(Color.rewound.border).frame(height: 1)
                     }
                     HStack {
                         Text("Carrier")
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                         Spacer()
                         Text(shipment.carrier?.uppercased() == shipment.carrier
                             ? (shipment.carrier ?? "—")
                             : (shipment.carrier?.capitalized ?? "—"))
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     .padding(.horizontal, Space.l)
                     .padding(.vertical, Space.m)
@@ -479,23 +479,23 @@ struct LabelReadyScreen: View {
     private var destinationCard: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Destination")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             SellCard {
                 HStack(alignment: .top, spacing: Space.m) {
                     IconTile(systemName: "checkmark.shield")
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Calibre Authentication Center")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                        Text("Rewound Authentication Center")
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                         ForEach(addressLines, id: \.self) { line in
                             Text(line)
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         Text("The label is pre-addressed — nothing to write.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .padding(.top, Space.xs)
                     }
                     Spacer(minLength: 0)

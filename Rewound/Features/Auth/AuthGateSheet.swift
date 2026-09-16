@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The sheet a signed-out visitor meets when they reach for something that
@@ -48,8 +48,8 @@ struct AuthGateSheet: View {
                     // `AuthSession.replayPendingIntent`) — and the same
                     // promise checkout already makes in the same words.
                     Text("We'll bring you right back here.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     // One error line for the whole sheet, above everything
@@ -71,7 +71,7 @@ struct AuthGateSheet: View {
                         Haptics.shared.play(.press)
                         showRegister = true
                     }
-                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    .buttonStyle(.rewound(.secondary, fullWidth: true))
 
                     if showsCredentials {
                         credentialForm
@@ -80,14 +80,14 @@ struct AuthGateSheet: View {
                             Haptics.shared.play(.press)
                             showsCredentials = true
                         }
-                        .buttonStyle(.calibre(.ghost, fullWidth: true))
+                        .buttonStyle(.rewound(.ghost, fullWidth: true))
                     }
 
                     Button("Not now") {
                         dismiss()
                     }
-                    .buttonStyle(.calibreGhost)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .buttonStyle(.rewoundGhost)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 .padding(.bottom, Space.xxl)
             }
@@ -106,7 +106,7 @@ struct AuthGateSheet: View {
     /// an account.
     private var credentialForm: some View {
         VStack(spacing: Space.l) {
-            CalibreTextField(
+            RewoundTextField(
                 "Email or username",
                 text: $identifier,
                 placeholder: "you@example.com",
@@ -116,7 +116,7 @@ struct AuthGateSheet: View {
             .submitLabel(.next)
             .onSubmit { focusedField = .password }
 
-            CalibreTextField("Password", text: $password, kind: .password)
+            RewoundTextField("Password", text: $password, kind: .password)
                 .focused($focusedField, equals: .password)
                 .submitLabel(.go)
                 .onSubmit { if canSubmit { Task { await signIn() } } }
@@ -125,9 +125,9 @@ struct AuthGateSheet: View {
                 Haptics.shared.play(.press)
                 Task { await signIn() }
             } label: {
-                CalibreBusyLabel("Sign In", busy: busy)
+                RewoundBusyLabel("Sign In", busy: busy)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(!canSubmit)
         }
         // Focused here rather than in the button that opened the form: the

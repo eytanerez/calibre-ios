@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The seller's sold watches and the money on them.
@@ -10,7 +10,7 @@ import SwiftUI
 /// sale screen prints. Nothing here is a second order system.
 ///
 /// Two rules it holds to. Nothing infers that money reached a bank: a released
-/// payout has left Calibre and carries the server's expected arrival, and no
+/// payout has left Rewound and carries the server's expected arrival, and no
 /// line here says it landed. And a payout with nothing on the payload to
 /// describe it says its state is unclear rather than falling back to
 /// "Scheduled", which is a promise of money on its way.
@@ -53,8 +53,8 @@ struct SellerOrdersTab: View {
             SellSectionHeader("Your sales")
 
             Text("Where each sale has got to, who it is waiting on, and what you are due on it. The sale carries the line-by-line ledger and the paperwork.")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if salesFailed, sales.isEmpty {
@@ -69,14 +69,14 @@ struct SellerOrdersTab: View {
                 )
             } else if sales.isEmpty {
                 Text("Sales appear here after a buyer completes checkout.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 if salesFailed {
                     Text("This is the last list that loaded — the most recent check didn't come back.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 VStack(spacing: Space.m) {
@@ -125,12 +125,12 @@ private struct SaleCard: View {
             SellThumb(url: order.listing?.image?.url, size: 56)
             VStack(alignment: .leading, spacing: 2) {
                 Text(order.listing?.title ?? "Sold watch")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(reference)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -163,7 +163,7 @@ private struct SaleCard: View {
     }
 
     /// Only a failed payout is an alarm. Everything else is a state, including
-    /// a hold — money Calibre has not sent yet is not money that went wrong.
+    /// a hold — money Rewound has not sent yet is not money that went wrong.
     private var payoutTone: StatusBadge.Tone {
         switch payoutState {
         case .failed: .danger
@@ -175,11 +175,11 @@ private struct SaleCard: View {
     private var whoseMove: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(step.who)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
             Text(step.what)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -192,26 +192,26 @@ private struct SaleCard: View {
     private var payoutStanding: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text("Payout: \(order.sellerPayoutStatusLine)")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(payoutDates)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if order.payoutBlock?.firstPayoutHold == true {
                 Text("First payouts take longer than later ones; the date above already allows for it.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             if let failure = order.payoutBlock?.failureReason, !failure.isEmpty {
                 Text("This payout didn't go through: \(failure)")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -220,7 +220,7 @@ private struct SaleCard: View {
 
     /// The dates a payout actually has.
     ///
-    /// A released payout has left Calibre and has an estimated arrival; nothing
+    /// A released payout has left Rewound and has an estimated arrival; nothing
     /// here has seen it land anywhere. A payout that did not go through gets no
     /// arrival date at all rather than one already contradicted, and a closed
     /// or unrecognised one is never told it is "not released yet" — that is a
@@ -254,6 +254,6 @@ private struct SaleCard: View {
             Text(step.needsShippingDetails ? "Add shipping details" : "View sale")
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.calibre(step.needsShippingDetails ? .primary : .secondary, fullWidth: true))
+        .buttonStyle(.rewound(step.needsShippingDetails ? .primary : .secondary, fullWidth: true))
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `poll(maxAttempts:delay:fetch:isReady:sleep:)` — the generic backoff loop
 /// backing the Payment Method page's "wait for the webhook to land" refresh.

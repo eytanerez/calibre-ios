@@ -105,7 +105,7 @@ struct OrderPlacedFilm: View {
                 // Bleeds past the app's own screen: the safe-area strips are
                 // part of what the film covers, or the destination shows
                 // through them while the box is still on its way.
-                Color.calibre.background
+                Color.rewound.background
                     .opacity(1 - MomentCurve.easeOut(Self.reveal.progress(time)))
                     .ignoresSafeArea()
                 page(box)
@@ -150,7 +150,7 @@ struct OrderPlacedFilm: View {
         return CGFloat((1 - scale) / (1 - landed)) * box.mouthY
     }
 
-    /// The `offset` that puts a centre-anchored `scaleEffect` there. A page
+    /// The `offset` that puts a center-anchored `scaleEffect` there. A page
     /// drawn at `scale` already sits `stage.height * (1 - scale) / 2` down the
     /// screen before anything moves it, because that is where converging on
     /// its own middle leaves it.
@@ -186,15 +186,15 @@ struct OrderPlacedFilm: View {
             // vanish behind this panel rather than show through it.
             var panel = walls
             panel.closeSubpath()
-            context.fill(panel, with: .color(Color.calibre.background))
-            context.fill(panel, with: .color(Color.calibre.primary.opacity(0.10)))
-            context.stroke(walls, with: .color(Color.calibre.primary), style: MarkGrid.style)
+            context.fill(panel, with: .color(Color.rewound.background))
+            context.fill(panel, with: .color(Color.rewound.primary.opacity(0.10)))
+            context.stroke(walls, with: .color(Color.rewound.primary), style: MarkGrid.style)
 
             for flap in [
                 flap(hinge: CGPoint(x: 14, y: 38), tip: CGPoint(x: 66, y: 38), open: -104, clip: Self.nearFlap),
                 flap(hinge: CGPoint(x: 118, y: 38), tip: CGPoint(x: 66, y: 38), open: 104, clip: Self.farFlap),
             ] {
-                context.stroke(flap, with: .color(Color.calibre.primary), style: MarkGrid.style)
+                context.stroke(flap, with: .color(Color.rewound.primary), style: MarkGrid.style)
             }
         }
         .frame(width: box.rect.width, height: box.rect.height)

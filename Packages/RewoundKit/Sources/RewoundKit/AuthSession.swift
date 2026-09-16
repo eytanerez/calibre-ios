@@ -27,7 +27,7 @@ public struct CurrentUser: Codable, Sendable, Equatable {
     /// flag sends, and a member on that backend must not be held behind a gate
     /// nothing can satisfy.
     public let profileComplete: Bool?
-    /// The member's named Calibre contact. Optional for compatibility with
+    /// The member's named Rewound contact. Optional for compatibility with
     /// older API deployments and accounts that have not been assigned yet.
     public let assignedContact: SupportContact?
 
@@ -263,7 +263,7 @@ public final class AuthSession {
         // The body carries the access token; the refresh token arrives only as
         // an HttpOnly cookie — harvest it from Set-Cookie ourselves.
         let refreshToken = envelope.data.tokens.refreshToken ?? harvestCookie(
-            named: "calibre_refresh_token",
+            named: "rewound_refresh_token",
             from: http
         )
         applySession(

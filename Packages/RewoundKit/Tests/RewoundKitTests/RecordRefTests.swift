@@ -1,5 +1,5 @@
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// Record references in a support message body (contracts §12.9b).
 ///
@@ -14,16 +14,16 @@ final class RecordRefTests: XCTestCase {
     func testTargetIsSchemeQualifiedRatherThanAPath() {
         XCTAssertEqual(
             RecordRef(kind: .order, recordID: orderID, label: "Order #13").target,
-            "calibre:order/\(orderID)"
+            "rewound:order/\(orderID)"
         )
         XCTAssertEqual(
             RecordRef(kind: .listing, recordID: listingID, label: "Speedmaster").target,
-            "calibre:listing/\(listingID)"
+            "rewound:listing/\(listingID)"
         )
     }
 
     func testAReferenceParsesIntoItsKindAndItsLabel() {
-        let parts = RecordRefs.parts("Shipped — [Order #13](calibre:order/\(orderID)) has tracking.")
+        let parts = RecordRefs.parts("Shipped — [Order #13](rewound:order/\(orderID)) has tracking.")
         XCTAssertEqual(parts.count, 3)
         guard case .reference(let ref) = parts[1] else {
             return XCTFail("the middle part is the reference")
@@ -31,13 +31,13 @@ final class RecordRefTests: XCTestCase {
         XCTAssertEqual(ref.kind, .order)
         XCTAssertEqual(ref.recordID, orderID)
         XCTAssertEqual(ref.label, "Order #13")
-        XCTAssertEqual(ref.route?.absoluteString, "calibre://order/\(orderID)")
+        XCTAssertEqual(ref.route?.absoluteString, "rewound://order/\(orderID)")
     }
 
     func testAKindThisBuildDoesNotKnowDegradesToItsLabel() {
-        let parts = RecordRefs.parts("See [Invoice 4](calibre:invoice/abc) please.")
+        let parts = RecordRefs.parts("See [Invoice 4](rewound:invoice/abc) please.")
         XCTAssertFalse(parts.contains { if case .reference = $0 { return true } else { return false } })
-        XCTAssertEqual(RecordRefs.flatten("See [Invoice 4](calibre:invoice/abc) please."), "See Invoice 4 please.")
+        XCTAssertEqual(RecordRefs.flatten("See [Invoice 4](rewound:invoice/abc) please."), "See Invoice 4 please.")
     }
 
     func testALegacyConsolePathFlattensRatherThanReachingACustomer() {
@@ -55,7 +55,7 @@ final class RecordRefTests: XCTestCase {
         let ref = RecordRef(kind: .order, recordID: orderID, label: "Order #13")
         XCTAssertEqual(
             RecordRefs.compose(text: "Any update on Order #13 please?", refs: [ref]),
-            "Any update on [Order #13](calibre:order/\(orderID)) please?"
+            "Any update on [Order #13](rewound:order/\(orderID)) please?"
         )
     }
 
@@ -68,7 +68,7 @@ final class RecordRefTests: XCTestCase {
         )
         XCTAssertEqual(
             composed,
-            "[Order #13](calibre:order/\(orderID)) is the [Speedmaster](calibre:listing/\(listingID))"
+            "[Order #13](rewound:order/\(orderID)) is the [Speedmaster](rewound:listing/\(listingID))"
         )
     }
 

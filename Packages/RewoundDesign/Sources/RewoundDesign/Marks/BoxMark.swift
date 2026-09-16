@@ -58,11 +58,11 @@ struct BoxMark: View {
 
     private func render(_ frame: Frame) -> some View {
         ZStack {
-            Self.kraft.fill(Color.calibre.primary.opacity(0.1))
-            Self.carton.stroke(Color.calibre.primary, style: MarkGrid.style)
-            flaps(frame).stroke(Color.calibre.primary, style: MarkGrid.style)
+            Self.kraft.fill(Color.rewound.primary.opacity(0.1))
+            Self.carton.stroke(Color.rewound.primary, style: MarkGrid.style)
+            flaps(frame).stroke(Color.rewound.primary, style: MarkGrid.style)
             Self.tape
-                .stroke(Color.calibre.primary, style: MarkGrid.style)
+                .stroke(Color.rewound.primary, style: MarkGrid.style)
                 .opacity(min(frame.nearFlap, frame.farFlap))
         }
         .offset(x: 10 * frame.carry)
@@ -138,7 +138,7 @@ struct BoxMark: View {
 }
 
 #Preview("box", traits: .sizeThatFitsLayout) {
-    CalibreMark.box()
+    RewoundMark.box()
         .padding(Space.xl)
-        .calibrePageBackground()
+        .rewoundPageBackground()
 }

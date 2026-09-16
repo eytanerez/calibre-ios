@@ -1,18 +1,18 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
-/// The vault's two quiet contracts: what Calibre will say about a watch's
+/// The vault's two quiet contracts: what Rewound will say about a watch's
 /// worth, and what the owner's own edits put on the wire.
 ///
 /// Both are places where a wrong answer is silent. An estimate state folded
 /// into a neighbouring one puts a sentence about evidence under somebody's
-/// watch that Calibre never said; a PATCH that writes an absent key where it
+/// watch that Rewound never said; a PATCH that writes an absent key where it
 /// meant a null leaves a note on a row the owner just cleared, and one that
 /// names a key it means nothing by wipes a column nobody asked it to touch.
 final class VaultRecordsTests: XCTestCase {
 
-    // MARK: - What Calibre will say about a figure
+    // MARK: - What Rewound will say about a figure
 
     private func watch(estimate: String?) throws -> VaultWatch {
         let block = estimate.map { ", \"estimate\": \($0)" } ?? ""
@@ -39,7 +39,7 @@ final class VaultRecordsTests: XCTestCase {
     private func stampable(
         id: String = "v1",
         authenticated: Bool,
-        source: String = "calibre_order",
+        source: String = "rewound_order",
         passportCode: String? = nil
     ) throws -> VaultWatch {
         let code = passportCode.map { "\"\($0)\"" } ?? "null"
@@ -56,14 +56,14 @@ final class VaultRecordsTests: XCTestCase {
 
     // MARK: - The stamp on the vault detail
 
-    /// The mark asserts that Calibre stands behind this watch, so it is gated
+    /// The mark asserts that Rewound stands behind this watch, so it is gated
     /// on the server's own answer to that and on nothing that merely tends to
     /// travel with it.
     func testTheStampFollowsTheServersFlag() throws {
         XCTAssertNotNil(try stampable(authenticated: true).authenticationMarkKey)
         XCTAssertNil(
             try stampable(authenticated: false, source: "manual").authenticationMarkKey,
-            "a watch somebody typed in is a watch nobody at Calibre has held"
+            "a watch somebody typed in is a watch nobody at Rewound has held"
         )
     }
 
@@ -78,7 +78,7 @@ final class VaultRecordsTests: XCTestCase {
     /// would quietly withdraw a true claim.
     func testTheStampIsNotKeyedToSourceOrToAPassport() throws {
         XCTAssertNil(
-            try stampable(authenticated: false, source: "calibre_order").authenticationMarkKey,
+            try stampable(authenticated: false, source: "rewound_order").authenticationMarkKey,
             "the flag is the server's, never re-derived from `source` here"
         )
         XCTAssertNil(
@@ -196,7 +196,7 @@ final class VaultRecordsTests: XCTestCase {
     /// The one key an edit from this app must never carry.
     ///
     /// `photo_url` is a live column the server still accepts a write to, and a
-    /// watch that arrived from a Calibre order keeps the seller's photograph
+    /// watch that arrived from a Rewound order keeps the seller's photograph
     /// in it. The link form is gone, so nothing here means anything by that
     /// column — and a PATCH that named it while meaning nothing would wipe the
     /// seller's picture, leaving the card with no cover at all the moment the

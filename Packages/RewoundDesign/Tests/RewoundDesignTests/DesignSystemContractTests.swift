@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 final class DesignSystemContractTests: XCTestCase {
     func testSpacingAndRadiusScalesStayOrdered() {
@@ -20,7 +20,7 @@ final class DesignSystemContractTests: XCTestCase {
     /// control 8, card 12, overlay 16 — and it was the reason the product read
     /// boxy at the corners: a 350pt panel and a 60pt chip were drawn at the
     /// same 12, so the big one looked square. It is now five rungs assigned by
-    /// the *size* of the surface (CALIBRE_FINAL_PUSH_CONTRACTS.md §1), and the
+    /// the *size* of the surface (REWOUND_FINAL_PUSH_CONTRACTS.md §1), and the
     /// two names that survived changed meaning: `card` is the 20pt top of the
     /// ladder rather than the 12pt middle, and the 16pt tier is `panel`.
     ///
@@ -71,8 +71,8 @@ final class DesignSystemContractTests: XCTestCase {
     /// note in the app silently falls back to the system face and looks fine.
     @MainActor
     func testTheHandRegistersFromTheBundle() {
-        CalibreFonts.register()
-        XCTAssertNotNil(UIFont(name: CalibreFonts.Name.hand, size: 17))
+        RewoundFonts.register()
+        XCTAssertNotNil(UIFont(name: RewoundFonts.Name.hand, size: 17))
     }
 
     /// Caveat draws small for its point size, so the hand runs above the Geist
@@ -80,9 +80,9 @@ final class DesignSystemContractTests: XCTestCase {
     /// failure this guards.
     @MainActor
     func testTheHandRunsLargerThanTheSansItSitsBeside() {
-        CalibreFonts.register()
-        let hand = UIFont(name: CalibreFonts.Name.hand, size: 17)
-        let sans = UIFont(name: CalibreFonts.Name.sansRegular, size: 15)
+        RewoundFonts.register()
+        let hand = UIFont(name: RewoundFonts.Name.hand, size: 17)
+        let sans = UIFont(name: RewoundFonts.Name.sansRegular, size: 15)
         XCTAssertNotNil(hand)
         XCTAssertNotNil(sans)
         XCTAssertLessThan(hand?.xHeight ?? .infinity, sans?.xHeight ?? 0)
@@ -98,7 +98,7 @@ final class DesignSystemContractTests: XCTestCase {
     /// folder copied back into the package, or a `.copy` line restored, would
     /// put the tile back in the bundle where nothing draws it and no one
     /// looks. `PaperGrain.swift` and `Resources/paper-grain.png` are both
-    /// gone; `calibrePageBackground()` stays as the one page ground.
+    /// gone; `rewoundPageBackground()` stays as the one page ground.
     func testPaperGrainIsNotBundled() {
         XCTAssertNil(Bundle.module.url(forResource: "paper-grain", withExtension: "png"))
     }
@@ -111,7 +111,7 @@ final class DesignSystemContractTests: XCTestCase {
     /// the app and it still sits under everything.
     @MainActor
     func testTheCardIsWarmInLightAndNeutralNearBlackInDark() {
-        let card = UIColor(Color.calibre.card)
+        let card = UIColor(Color.rewound.card)
 
         var light = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
         card.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
@@ -143,10 +143,10 @@ final class DesignSystemContractTests: XCTestCase {
     @MainActor
     func testTheDarkGroundsStayNeutralRatherThanBrown() {
         let grounds: [(String, Color)] = [
-            ("background", Color.calibre.background),
-            ("card", Color.calibre.card),
-            ("secondary", Color.calibre.secondary),
-            ("accent", Color.calibre.accent),
+            ("background", Color.rewound.background),
+            ("card", Color.rewound.card),
+            ("secondary", Color.rewound.secondary),
+            ("accent", Color.rewound.accent),
         ]
 
         for (name, token) in grounds {
@@ -158,15 +158,15 @@ final class DesignSystemContractTests: XCTestCase {
     }
 
     /// Copper is the one warm hue the neutral ramp keeps, and the wax seal
-    /// keeps a colour of its own (CALIBRE_BY_HAND_CONTRACTS.md §17). Both were
+    /// keeps a color of its own (REWOUND_BY_HAND_CONTRACTS.md §17). Both were
     /// standing next to twelve tokens being swept to neutral.
     @MainActor
     func testCopperAndWaxSurvivedTheNeutralSweep() {
         for (name, token, expected) in [
-            ("primary", Color.calibre.primary, (0xC7, 0x92, 0x74)),
-            ("primaryDeep", Color.calibre.primaryDeep, (0xB5, 0x80, 0x63)),
-            ("wax", Color.calibre.wax, (0xB4, 0x48, 0x3D)),
-            ("waxHighlight", Color.calibre.waxHighlight, (0xD0, 0x65, 0x5A)),
+            ("primary", Color.rewound.primary, (0xC7, 0x92, 0x74)),
+            ("primaryDeep", Color.rewound.primaryDeep, (0xB5, 0x80, 0x63)),
+            ("wax", Color.rewound.wax, (0xB4, 0x48, 0x3D)),
+            ("waxHighlight", Color.rewound.waxHighlight, (0xD0, 0x65, 0x5A)),
         ] {
             var c = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
             UIColor(token).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
@@ -180,11 +180,11 @@ final class DesignSystemContractTests: XCTestCase {
     /// The palette had `success` and `destructive` and nothing for pending or
     /// expiring, so `StatusBadge.Tone.warning` invented its own amber as a raw
     /// sRGB literal and was the one tone in the app that ignored dark mode.
-    /// This asserts the token resolves to two different colours, which the
+    /// This asserts the token resolves to two different colors, which the
     /// literal could not have done.
     @MainActor
     func testWarningIsARealTokenAndNotAFrozenAmber() {
-        let warning = UIColor(Color.calibre.warning)
+        let warning = UIColor(Color.rewound.warning)
 
         var light = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), a: CGFloat(0))
         warning.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
@@ -220,14 +220,14 @@ final class DesignSystemContractTests: XCTestCase {
         ])
 
         let checks: [(String, Color, Color, UITraitCollection, CGFloat)] = [
-            ("mutedForeground/dark", Color.calibre.mutedForeground, Color.calibre.accent, highContrastDark, 4.5),
-            ("placeholder/dark", Color.calibre.placeholder, Color.calibre.card, highContrastDark, 4.5),
-            ("border/dark", Color.calibre.border, Color.calibre.accent, highContrastDark, 3),
-            ("borderBright/dark", Color.calibre.borderBright, Color.calibre.accent, highContrastDark, 3),
-            ("mutedForeground/light", Color.calibre.mutedForeground, Color.calibre.background, highContrastLight, 4.5),
-            ("placeholder/light", Color.calibre.placeholder, Color.calibre.card, highContrastLight, 4.5),
-            ("border/light", Color.calibre.border, Color.calibre.card, highContrastLight, 3),
-            ("borderBright/light", Color.calibre.borderBright, Color.calibre.card, highContrastLight, 3),
+            ("mutedForeground/dark", Color.rewound.mutedForeground, Color.rewound.accent, highContrastDark, 4.5),
+            ("placeholder/dark", Color.rewound.placeholder, Color.rewound.card, highContrastDark, 4.5),
+            ("border/dark", Color.rewound.border, Color.rewound.accent, highContrastDark, 3),
+            ("borderBright/dark", Color.rewound.borderBright, Color.rewound.accent, highContrastDark, 3),
+            ("mutedForeground/light", Color.rewound.mutedForeground, Color.rewound.background, highContrastLight, 4.5),
+            ("placeholder/light", Color.rewound.placeholder, Color.rewound.card, highContrastLight, 4.5),
+            ("border/light", Color.rewound.border, Color.rewound.card, highContrastLight, 3),
+            ("borderBright/light", Color.rewound.borderBright, Color.rewound.card, highContrastLight, 3),
         ]
 
         for (name, ink, ground, traits, target) in checks {
@@ -257,12 +257,12 @@ final class DesignSystemContractTests: XCTestCase {
 
 /// The logo's arc is an ellipse, and the difference between it and the circle
 /// it nearly is decides the shape of the opening. These check the drawn
-/// centreline lands where the traced original says it does.
+/// centerline lands where the traced original says it does.
 final class MarkGeometryTests: XCTestCase {
     func testLogoArcMeetsTheTracedEndpoints() {
         var arc = Path()
         arc.addEllipticalArc(
-            centre: CGPoint(x: 61.2149, y: 58.1656),
+            center: CGPoint(x: 61.2149, y: 58.1656),
             radii: CGSize(width: 43.36, height: 42.55),
             rotation: .degrees(-98.29),
             start: .degrees(136.9632),
@@ -294,7 +294,7 @@ final class MarkGeometryTests: XCTestCase {
     }
 
     /// Every point of the arc has to sit on the fitted ellipse. The ellipse is
-    /// only a couple of percent off round, so the departure from a same-centre
+    /// only a couple of percent off round, so the departure from a same-center
     /// circle is a fraction of a stroke width — small, but it is the fitted
     /// shape, and a circle substituted for it would read as a re-trace by eye.
     /// Pinning the departure catches both mistakes: a circle collapses it to
@@ -302,7 +302,7 @@ final class MarkGeometryTests: XCTestCase {
     func testLogoArcStaysOnTheEllipseAndNotOnACircle() {
         var arc = Path()
         arc.addEllipticalArc(
-            centre: CGPoint(x: 61.2149, y: 58.1656),
+            center: CGPoint(x: 61.2149, y: 58.1656),
             radii: CGSize(width: 43.36, height: 42.55),
             rotation: .degrees(-98.29),
             start: .degrees(136.9632),
@@ -329,7 +329,7 @@ final class MarkGeometryTests: XCTestCase {
         XCTAssertEqual(offCircle, 0.405, accuracy: 0.02)
     }
 
-    /// The centre the endpoint-to-centre conversion derives has to agree with
+    /// The center the endpoint-to-center conversion derives has to agree with
     /// the jewel the mark is drawn around. They are independent numbers in §3,
     /// so them landing together is what says the conversion is right.
     func testDerivedArcCentreAgreesWithTheJewel() {
@@ -343,7 +343,7 @@ final class MarkGeometryTests: XCTestCase {
     func testCircularArcTracksItsRadius() {
         var quarter = Path()
         quarter.addCircularArc(
-            centre: CGPoint(x: 60, y: 60),
+            center: CGPoint(x: 60, y: 60),
             radius: 44,
             start: .degrees(180),
             delta: .degrees(90)
@@ -380,9 +380,9 @@ final class MarkDrawingTests: XCTestCase {
     }
 
     /// The one that matters most: what comes down on the passport is the
-    /// Calibre mark. A tick, or any other borrowed glyph, has none of the
+    /// Rewound mark. A tick, or any other borrowed glyph, has none of the
     /// logo's traced points anywhere near it.
-    func testTheStampPressesTheCalibreMarkAndNotAGlyph() {
+    func testTheStampPressesTheRewoundMarkAndNotAGlyph() {
         let drawn = vertices(StampMark.head)
         // The traced arc's two ends, §3, carried through the same shrink the
         // drawing uses. Both have to land on the head.
@@ -393,7 +393,7 @@ final class MarkDrawingTests: XCTestCase {
         }
 
         // And it sits inside the rim rather than over it.
-        let monogram = CalibreLogoMark.strokes.applying(StampMark.die).boundingRect
+        let monogram = RewoundLogoMark.strokes.applying(StampMark.die).boundingRect
         XCTAssertGreaterThan(monogram.minX, 24)
         XCTAssertLessThan(monogram.maxX, 96)
     }
@@ -501,7 +501,7 @@ final class MarkDrawingTests: XCTestCase {
     }
 
     /// A balance, not a crosshair: arms that stop at the staff instead of
-    /// running through the centre, and the canonical number of them.
+    /// running through the center, and the canonical number of them.
     func testTheBalanceWheelIsABalanceAndNotACrosshair() {
         let arms = vertices(BalanceWheelMark.rim).suffix(BalanceWheelMark.arms.count * 2)
         XCTAssertEqual(BalanceWheelMark.arms.count, 3)
@@ -580,10 +580,10 @@ final class MarkFillTests: XCTestCase {
     /// to is a motion state, and this is asking about a shape.
     func testTheMarksAllowedAFillHaveOne() throws {
         let filled: [(String, AnyView, [CGPoint])] = [
-            ("stamp", AnyView(CalibreMark.stamp()), [CGPoint(x: 60, y: 60), CGPoint(x: 60, y: 42)]),
-            ("waxSeal", AnyView(CalibreMark.waxSeal()), [CGPoint(x: 60, y: 26)]),
-            ("loupe", AnyView(CalibreMark.loupe()), [CGPoint(x: 60, y: 60)]),
-            ("box", AnyView(CalibreMark.box()), [CGPoint(x: 40, y: 85)]),
+            ("stamp", AnyView(RewoundMark.stamp()), [CGPoint(x: 60, y: 60), CGPoint(x: 60, y: 42)]),
+            ("waxSeal", AnyView(RewoundMark.waxSeal()), [CGPoint(x: 60, y: 26)]),
+            ("loupe", AnyView(RewoundMark.loupe()), [CGPoint(x: 60, y: 60)]),
+            ("box", AnyView(RewoundMark.box()), [CGPoint(x: 40, y: 85)]),
         ]
 
         for (name, mark, points) in filled {
@@ -595,13 +595,13 @@ final class MarkFillTests: XCTestCase {
     /// these is the drawing leaving the vocabulary.
     func testTheOtherMarksStayOutlines() throws {
         let hollow: [(String, AnyView, CGPoint)] = [
-            ("balanceWheel", AnyView(CalibreMark.balanceWheel()), CGPoint(x: 60, y: 60)),
-            ("dialArc", AnyView(CalibreMark.dialArc(0)), CGPoint(x: 60, y: 78)),
-            ("powerReserve", AnyView(CalibreMark.powerReserve(1)), CGPoint(x: 60, y: 60)),
-            ("crown", AnyView(CalibreMark.crown()), CGPoint(x: 60, y: 60)),
+            ("balanceWheel", AnyView(RewoundMark.balanceWheel()), CGPoint(x: 60, y: 60)),
+            ("dialArc", AnyView(RewoundMark.dialArc(0)), CGPoint(x: 60, y: 78)),
+            ("powerReserve", AnyView(RewoundMark.powerReserve(1)), CGPoint(x: 60, y: 60)),
+            ("crown", AnyView(RewoundMark.crown()), CGPoint(x: 60, y: 60)),
         ]
 
-        // Each of these sits at the centre of something that does not move, so
+        // Each of these sits at the center of something that does not move, so
         // it is the same claim wherever the mark is in its own motion.
         for (name, mark, point) in hollow {
             XCTAssertFalse(try ink(mark, at: point), "\(name) has grown a fill")

@@ -13,10 +13,10 @@ public struct IconTile: View {
     public var body: some View {
         Image(systemName: systemName)
             .font(.system(size: 18, weight: .medium))
-            .foregroundStyle(Color.calibre.accentForeground)
+            .foregroundStyle(Color.rewound.accentForeground)
             .frame(width: 40, height: 40)
             .background(
-                Color.calibre.accent,
+                Color.rewound.accent,
                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
             )
             // The tile decorates a row that already says the thing in words —
@@ -34,7 +34,7 @@ public struct IconTile: View {
         IconTile(systemName: "arrow.uturn.left")
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }
 
 #Preview("Icon tiles — dark", traits: .sizeThatFitsLayout) {
@@ -45,6 +45,6 @@ public struct IconTile: View {
         IconTile(systemName: "arrow.uturn.left")
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
     .preferredColorScheme(.dark)
 }

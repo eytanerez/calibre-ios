@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 /// The recommendation reason moved above the price, which is where Eytan wants
 /// it read: the reason is what makes the figure mean something.
@@ -10,7 +10,7 @@ import XCTest
 /// Moving it there put back the exact misalignment the old order was chosen to
 /// avoid. On a shelf of five cards where the server justified three, the two
 /// unjustified ones had nothing above their price, so their prices sat two
-/// lines higher than their neighbours' and the shelf read as a staircase.
+/// lines higher than their neighbors' and the shelf read as a staircase.
 /// `reservesReasonLine` is the fix, and these are the measurements that say
 /// whether it works — taken off the rendered pixels, because the bug is about
 /// where ink lands and a passing assertion about the source would not have
@@ -65,7 +65,7 @@ final class ListingCardReasonSlotTests: XCTestCase {
     @MainActor
     private func height(_ card: Card, reserving: Bool) -> CGFloat {
         let host = UIHostingController(rootView: ListingCard(model: card.model(reserving: reserving)) { _ in
-            Rectangle().fill(Color.calibre.secondary)
+            Rectangle().fill(Color.rewound.secondary)
         })
         return host.sizeThatFits(
             in: CGSize(width: Self.cardWidth, height: .greatestFiniteMagnitude)
@@ -77,11 +77,11 @@ final class ListingCardReasonSlotTests: XCTestCase {
     @MainActor
     private func image(_ card: Card, reserving: Bool) -> UIImage? {
         let view = ListingCard(model: card.model(reserving: reserving)) { _ in
-            Rectangle().fill(Color.calibre.secondary)
+            Rectangle().fill(Color.rewound.secondary)
         }
         .frame(width: Self.cardWidth)
         .frame(width: Self.cardWidth, height: 360, alignment: .top)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .environment(\.colorScheme, .light)
 
         let renderer = ImageRenderer(content: view)
@@ -153,7 +153,7 @@ final class ListingCardReasonSlotTests: XCTestCase {
     /// that do not, and every price on it is painted at one height.
     @MainActor
     func testPricesLineUpOnAShelfWhereOnlySomeCardsCarryAReason() {
-        CalibreFonts.register()
+        RewoundFonts.register()
         var tops: [(Card, Int)] = []
         for card in Card.allCases {
             guard let top = priceTop(card, reserving: true) else {
@@ -179,7 +179,7 @@ final class ListingCardReasonSlotTests: XCTestCase {
     /// height, so a grid of them is a grid.
     @MainActor
     func testCardsOnAJustifiedShelfAreTheSameHeight() {
-        CalibreFonts.register()
+        RewoundFonts.register()
         let heights = Card.allCases.map { height($0, reserving: true) }
         print("REASON-SHELF-HEIGHTS " + zip(Card.allCases, heights).map { "\($0)=\($1)" }.joined(separator: " "))
         for height in heights {
@@ -193,7 +193,7 @@ final class ListingCardReasonSlotTests: XCTestCase {
     /// never fill.
     @MainActor
     func testAnUnjustifiedShelfSpendsNoSpaceOnTheSlot() {
-        CalibreFonts.register()
+        RewoundFonts.register()
         let reserved = height(.noReason, reserving: true)
         let plain = height(.noReason, reserving: false)
         print("REASON-SLOT-COST reserved=\(reserved) plain=\(plain)")

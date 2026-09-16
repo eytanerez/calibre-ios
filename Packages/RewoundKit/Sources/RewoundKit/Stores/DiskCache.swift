@@ -23,7 +23,7 @@ struct DiskCache<Value: Codable & Sendable>: Sendable {
         let base = directory
             ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        let folder = base.appending(path: "CalibreKit", directoryHint: .isDirectory)
+        let folder = base.appending(path: "RewoundKit", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         fileURL = folder.appending(path: filename)
     }

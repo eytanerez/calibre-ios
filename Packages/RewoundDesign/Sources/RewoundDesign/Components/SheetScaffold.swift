@@ -23,15 +23,15 @@ public struct SheetScaffold<Content: View>: View {
     public var body: some View {
         VStack(spacing: 0) {
             Capsule()
-                .fill(Color.calibre.borderBright)
+                .fill(Color.rewound.borderBright)
                 .frame(width: 36, height: 5)
                 .padding(.top, Space.s)
                 .padding(.bottom, Space.l)
 
             if let title {
                 Text(title)
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                     // Serif and size are all that mark this as the sheet's
                     // title; the trait is what puts it in VoiceOver's heading
                     // rotor so a sheet can be identified without reading it.
@@ -47,7 +47,7 @@ public struct SheetScaffold<Content: View>: View {
         }
         .presentationDetents(detents)
         .presentationDragIndicator(.hidden)
-        .presentationBackground(Color.calibre.card)
+        .presentationBackground(Color.rewound.card)
         .presentationCornerRadius(Radius.panel)
     }
 }
@@ -56,19 +56,19 @@ private struct SheetScaffoldPreviewHost: View {
     @State private var presented = true
 
     var body: some View {
-        Color.calibre.background
+        Color.rewound.background
             .ignoresSafeArea()
             .sheet(isPresented: $presented) {
                 SheetScaffold(title: "Make an offer") {
                     VStack(alignment: .leading, spacing: Space.l) {
                         Text("Rolex Submariner Date · Ref. 116610LN")
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                         Text("$12,400")
-                            .font(CalibreType.priceLarge)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.priceLarge)
+                            .foregroundStyle(Color.rewound.foreground)
                         Button("Send Offer") {}
-                            .buttonStyle(.calibre(.primary, fullWidth: true))
+                            .buttonStyle(.rewound(.primary, fullWidth: true))
                     }
                 }
             }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The complete brand directory. Home intentionally shows only a concise
@@ -52,7 +52,7 @@ struct AllBrandsScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("All brands")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "Search brands")
@@ -69,21 +69,21 @@ struct AllBrandsScreen: View {
                     } label: {
                         HStack(spacing: Space.m) {
                             Text(group.brand)
-                                .font(CalibreType.bodyMedium)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.bodyMedium)
+                                .foregroundStyle(Color.rewound.foreground)
                                 .multilineTextAlignment(.leading)
 
                             Spacer(minLength: Space.m)
 
                             if let count = group.liveTotal {
                                 Text(count == 1 ? "1 watch" : "\(count.formatted()) watches")
-                                    .font(CalibreType.label)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.label)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                             }
 
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         .padding(.horizontal, Space.l)
                         .frame(minHeight: Space.touchTarget + 8)
@@ -94,18 +94,18 @@ struct AllBrandsScreen: View {
 
                     if group.brand != brands.last?.brand {
                         Divider()
-                            .overlay(Color.calibre.border)
+                            .overlay(Color.rewound.border)
                             .padding(.leading, Space.l)
                     }
                 }
             }
             .background(
-                Color.calibre.card,
+                Color.rewound.card,
                 in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
             .padding(Space.margin)
         }
@@ -122,13 +122,13 @@ struct AllBrandsScreen: View {
                 }
                 .frame(minHeight: Space.touchTarget + 8)
                 if index < 7 {
-                    Divider().overlay(Color.calibre.border)
+                    Divider().overlay(Color.rewound.border)
                 }
             }
         }
         .padding(.horizontal, Space.l)
         .background(
-            Color.calibre.card,
+            Color.rewound.card,
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .padding(Space.margin)

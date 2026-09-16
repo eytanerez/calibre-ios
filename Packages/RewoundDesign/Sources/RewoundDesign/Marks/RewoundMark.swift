@@ -15,7 +15,7 @@ import SwiftUI
 /// whenever `trigger` changes. `balanceWheel` is the one that loops, because
 /// looping is the thing it is saying.
 @MainActor
-public enum CalibreMark {
+public enum RewoundMark {
     /// The square a mark renders on when the caller does not say. The geometry
     /// is authored on the same square, so this is also the size at which the
     /// stroke is exactly the logo's.
@@ -24,7 +24,7 @@ public enum CalibreMark {
     /// Work in progress — any loading state.
     ///
     /// `tint` is nil for the copper the mark is drawn in everywhere it stands
-    /// on the page. Pass a colour only where the ground underneath is itself
+    /// on the page. Pass a color only where the ground underneath is itself
     /// copper — inside a filled button, above all — because the mark's own
     /// ink on that ground is invisible rather than quiet.
     public static func balanceWheel(size: CGFloat = defaultSize, tint: Color? = nil) -> some View {

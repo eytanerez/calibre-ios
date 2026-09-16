@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The Discover tab root — full-screen card-deck browsing, the app's
@@ -40,7 +40,7 @@ struct DiscoverScreen: View {
         .padding(.horizontal, Space.margin)
         .padding(.bottom, Space.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .tutorialOverlay(tutorial)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $showSaved) {
@@ -78,10 +78,10 @@ struct DiscoverScreen: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.calibre.foreground)
+                        .foregroundStyle(Color.rewound.foreground)
                         .frame(width: 36, height: 36)
-                        .background(Color.calibre.card, in: Circle())
-                        .overlay(Circle().strokeBorder(Color.calibre.border, lineWidth: 1))
+                        .background(Color.rewound.card, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.rewound.border, lineWidth: 1))
                         // The 4pt of growth spills into the screen margin and the
                         // gap to the title, neither of which is tappable; the
                         // circle still draws and still measures 36.
@@ -92,8 +92,8 @@ struct DiscoverScreen: View {
                 .accessibilityIdentifier("deck.close.button")
 
                 Text("Discover")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                     // The navigation bar is hidden here, so this is the screen's
                     // only title — without the trait, heading navigation finds
                     // nothing on the whole deck.
@@ -103,8 +103,8 @@ struct DiscoverScreen: View {
             }
 
             Text("Swipe right to save, left to pass. Tap a watch for its details.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, Space.s)
@@ -119,16 +119,16 @@ struct DiscoverScreen: View {
                 Image(systemName: session.isAuthenticated ? "heart.fill" : "heart")
                     .font(.system(size: 10, weight: .medium))
                 Text(session.isAuthenticated ? "\(count) saved" : "Saved")
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                     .monospacedDigit()
                     .contentTransition(.numericText())
                 Image(systemName: "chevron.right")
                     .font(.system(size: 8, weight: .semibold))
             }
-            .foregroundStyle(Color.calibre.accentForeground)
+            .foregroundStyle(Color.rewound.accentForeground)
             .padding(.horizontal, Space.m)
             .frame(minHeight: 36)
-            .background(Color.calibre.accent, in: Capsule())
+            .background(Color.rewound.accent, in: Capsule())
             // Same 4pt of growth as the close button, into the same untappable
             // margin; the capsule is drawn and measured unchanged.
             .a11yExpandTarget(currentSize: 36)
@@ -206,7 +206,7 @@ struct DiscoverScreen: View {
                 circleButton(
                     icon: "xmark",
                     label: "Pass on this watch",
-                    tint: Color.calibre.mutedForeground
+                    tint: Color.rewound.mutedForeground
                 ) {
                     swipeCommand = .pass
                 }
@@ -214,7 +214,7 @@ struct DiscoverScreen: View {
                 circleButton(
                     icon: "heart.fill",
                     label: "Save this watch",
-                    tint: Color.calibre.success
+                    tint: Color.rewound.success
                 ) {
                     swipeCommand = .save
                 }
@@ -242,11 +242,11 @@ struct DiscoverScreen: View {
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(tint)
                 .frame(width: 60, height: 60)
-                .background(Color.calibre.card, in: Circle())
-                .overlay(Circle().strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.rewound.card, in: Circle())
+                .overlay(Circle().strokeBorder(Color.rewound.border, lineWidth: 1))
         }
         .buttonStyle(PressableStyle())
-        .calibreShadow(.resting)
+        .rewoundShadow(.resting)
         .disabled(!deckIsActive || swipeCommand != nil)
         .opacity(deckIsActive ? 1 : 0.4)
         .accessibilityLabel(label)
@@ -260,16 +260,16 @@ struct DiscoverScreen: View {
                 Image(systemName: "arrow.uturn.left")
                     .font(.system(size: 12, weight: .medium))
                 Text("Undo")
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
             }
-            .foregroundStyle(Color.calibre.secondaryForeground)
+            .foregroundStyle(Color.rewound.secondaryForeground)
             .padding(.horizontal, Space.l)
             .frame(minHeight: Space.touchTarget)
-            .background(Color.calibre.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+            .background(Color.rewound.card, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.rewound.border, lineWidth: 1))
         }
         .buttonStyle(PressableStyle())
-        .calibreShadow(.resting)
+        .rewoundShadow(.resting)
         .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
         .accessibilityLabel(record.kind == .save ? "Undo save" : "Undo pass")
     }

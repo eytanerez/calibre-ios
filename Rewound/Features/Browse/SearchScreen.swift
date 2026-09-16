@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Type-ahead search: facet suggestions matched locally against metadata,
@@ -44,7 +44,7 @@ struct SearchScreen: View {
             }
             .scrollDismissesKeyboard(.immediately)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
@@ -73,8 +73,8 @@ struct SearchScreen: View {
                 Button("Clear") {
                     recents.clear()
                 }
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.primary)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.primary)
                 .buttonStyle(PressableStyle())
             }
             .padding(.horizontal, Space.margin)
@@ -89,10 +89,10 @@ struct SearchScreen: View {
                     HStack(spacing: Space.m) {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                         Text(entry)
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.foreground)
                         Spacer()
                     }
                     .padding(.horizontal, Space.margin)
@@ -115,23 +115,23 @@ struct SearchScreen: View {
                 HStack(spacing: Space.m) {
                     Image(systemName: icon(for: suggestion.kind))
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.calibre.primary)
+                        .foregroundStyle(Color.rewound.primary)
                         .frame(width: 24)
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(suggestion.text)
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                         Text(subtitle(for: suggestion.kind))
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
 
                     Spacer()
 
                     Image(systemName: "arrow.up.left")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .foregroundStyle(Color.rewound.placeholder)
                 }
                 .padding(.horizontal, Space.margin)
                 .frame(minHeight: Space.touchTarget)
@@ -158,26 +158,26 @@ struct SearchScreen: View {
                     HStack(spacing: Space.m) {
                         ListingImageWell(url: listing.images.first?.url, targetWidth: 96)
                             .frame(width: 48, height: 48)
-                            .background(Color.calibre.secondary.opacity(0.5))
+                            .background(Color.rewound.secondary.opacity(0.5))
                             .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
 
                         VStack(alignment: .leading, spacing: 1) {
                             Text(listing.title)
-                                .font(CalibreType.bodyMedium)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.bodyMedium)
+                                .foregroundStyle(Color.rewound.foreground)
                                 .lineLimit(1)
                             if let reference = listing.referenceNumber {
                                 Text("Ref. \(reference)")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                             }
                         }
 
                         Spacer()
 
                         Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
-                            .font(CalibreType.priceSmall)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.priceSmall)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     .padding(.horizontal, Space.margin)
                     .frame(minHeight: 56)

@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The payload shapes the 2026-08 system-changes build added or altered, each
 /// read from a fixture recorded against the pinned contract
@@ -46,7 +46,7 @@ final class SystemChangesDecodingTests: XCTestCase {
         XCTAssertEqual(breakdown.commission?.percent?.value, Decimal(string: "6.00"))
         XCTAssertEqual(breakdown.commission?.amount?.value, Decimal(string: "600.00"))
         XCTAssertEqual(breakdown.commission?.minimumApplied, false)
-        // The label Calibre bought, not one the seller paid for.
+        // The label Rewound bought, not one the seller paid for.
         XCTAssertEqual(breakdown.shippingLabel?.value, Decimal(string: "38.40"))
         XCTAssertEqual(breakdown.amount?.value, Decimal(string: "9400.00"))
     }
@@ -62,7 +62,7 @@ final class SystemChangesDecodingTests: XCTestCase {
         XCTAssertEqual(quote.payoutPreview?.amount?.value, Decimal(string: "9361.60"))
     }
 
-    func testShippingDetailsAnswersWithTheLabelCalibreBought() throws {
+    func testShippingDetailsAnswersWithTheLabelRewoundBought() throws {
         let result = try apiDecoder().decode(
             Envelope<FulfillmentShippingDetails>.self,
             from: fixtureData("fulfillment-shipping-details")
@@ -183,7 +183,7 @@ final class SystemChangesDecodingTests: XCTestCase {
         let paused = listings[1]
         XCTAssertEqual(paused.status, .pausedCard)
         XCTAssertEqual(paused.sellerStatus, "paused_card")
-        // Never the same thing as archived: Calibre took this one down.
+        // Never the same thing as archived: Rewound took this one down.
         XCTAssertNotEqual(paused.status, .archived)
         // A half-graded draft reads back with real blanks — nothing is
         // back-filled from the grades that are there.
@@ -261,7 +261,7 @@ final class SystemChangesDecodingTests: XCTestCase {
         XCTAssertEqual(hold.clientSecret, "pi_3PxWireHold001_secret_zzz")
         // A native SDK has to be keyed before it can confirm anything, and
         // the wire path may never have priced a card.
-        XCTAssertEqual(hold.publishableKey, "pk_test_calibre")
+        XCTAssertEqual(hold.publishableKey, "pk_test_rewound")
         // The instructions are already in hand, which is what makes
         // confirming that same intent — rather than opening a second
         // checkout — the whole of what is left to do.

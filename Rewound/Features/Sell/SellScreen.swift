@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The Sell tab root. Guests get the warm explainer with a sign-in gate;
@@ -27,11 +27,11 @@ struct SellScreen: View {
                 content
                     .environment(sell)
             } else {
-                Color.calibre.background
+                Color.rewound.background
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Sell")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(session.isAuthenticated)-\(retryToken)") {
@@ -114,7 +114,7 @@ struct SellScreen: View {
     /// nothing it could be covering. A seller who already has inventory or a
     /// sale — setup went stale, Stripe reopened a requirement — must still
     /// reach their listings, offers, sales and storefront; replacing all of it
-    /// with "Start selling on Calibre" is what reads as having lost the
+    /// with "Start selling on Rewound" is what reads as having lost the
     /// account. Listing stays blocked either way; that is the readiness
     /// payload's call, not this one's, and the dashboard says so at the top.
     ///

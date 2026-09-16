@@ -4,7 +4,7 @@ import Foundation
 /// that want it.
 ///
 /// The budget is one illustrated moment per step of a journey
-/// (`CALIBRE_BY_HAND_CONTRACTS.md` §4), so the precedence is written once here
+/// (`REWOUND_BY_HAND_CONTRACTS.md` §4), so the precedence is written once here
 /// and read in order rather than worked out again in the view. The order is
 /// chosen so the mark is about the thing the reader is looking at right now.
 ///
@@ -15,7 +15,7 @@ import Foundation
 /// why `orderMarkFor` has a clause for it there and this does not.
 ///
 /// Lives in the domain package rather than the view so it can be tested
-/// without a screen; the names are the vocabulary's, and `CalibreDesign` is
+/// without a screen; the names are the vocabulary's, and `RewoundDesign` is
 /// what draws them.
 public enum OrderMark: String, Sendable, Equatable {
     case box
@@ -32,15 +32,15 @@ public extension Order {
     ///
     /// The same two statuses the screen's own sixty-second refetch runs on, so
     /// the parcel and the poll can never disagree about whether a watch is
-    /// travelling.
+    /// traveling.
     var isTravelling: Bool {
         status == .toAuth || status == .toBuyer
     }
 
     /// Which mark this order gets, or none.
     ///
-    /// - `box` while it is travelling. Never on `delivered`, `purchased`,
-    ///   `authPass`, `cancelled`, `refunded` or `authFail`: a carton leaving
+    /// - `box` while it is traveling. Never on `delivered`, `purchased`,
+    ///   `authPass`, `canceled`, `refunded` or `authFail`: a carton leaving
     ///   the frame on a delivered order reads as the watch going away again.
     /// - `stamp` on the bench's own positive verdict. Read that gate
     ///   literally: it is **not** `status == .authPass` and it is emphatically
@@ -76,7 +76,7 @@ public extension Order {
     /// nothing has shipped yet, so the parcel is being packed. Drawn in the
     /// lead rather than the journey header — the journey has no leg to show
     /// yet — and only while `mark(now:)` has nothing else to say, which keeps
-    /// the screen at one mark: a bench verdict or a travelling parcel outranks
+    /// the screen at one mark: a bench verdict or a traveling parcel outranks
     /// the checkout moment. The web keys its `CheckoutSuccessMoment` on the
     /// same fact with the same key.
     func checkoutMarkKey(now: Date = .now) -> String? {
@@ -88,7 +88,7 @@ public extension Order {
     ///
     /// Android's order screen keys its box the same way and its comment is the
     /// reason — the screen refetches every sixty seconds while a watch is
-    /// travelling, and a correctly keyed mark ignores every one of those while
+    /// traveling, and a correctly keyed mark ignores every one of those while
     /// still setting off again on a status that changes under the buyer.
     var transitMarkKey: String { "order-transit:\(id):\(status.rawValue)" }
 

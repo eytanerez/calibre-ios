@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 // MARK: - The seller's own words
@@ -125,14 +125,14 @@ struct QuickSpecRow: View {
             // no floor under it, so a longer localized label would silently wrap
             // the tile and grow the row for everyone.
             Text(label)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             // Two-word values ("Very Good", "Like New") need room to wrap —
             // a single line with only an 0.8 scale factor was clipping them.
             Text(value)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 .lineLimit(2)
                 .minimumScaleFactor(0.75)
                 .multilineTextAlignment(.center)
@@ -141,7 +141,7 @@ struct QuickSpecRow: View {
         .padding(.horizontal, Space.xs)
         .padding(.vertical, Space.m)
         .background(
-            Color.calibre.secondary.opacity(0.6),
+            Color.rewound.secondary.opacity(0.6),
             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
         )
         .accessibilityElement(children: .combine)
@@ -178,8 +178,8 @@ struct ConditionGradingCard: View {
             ForEach(rows.indices, id: \.self) { index in
                 HStack(spacing: Space.l) {
                     Text(rows[index].label)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                     Spacer(minLength: Space.l)
                     StatusBadge(rows[index].value, tone: Self.tone(for: rows[index].value))
                 }
@@ -188,16 +188,16 @@ struct ConditionGradingCard: View {
 
                 if index < rows.count - 1 {
                     Rectangle()
-                        .fill(Color.calibre.border)
+                        .fill(Color.rewound.border)
                         .frame(height: 1)
                 }
             }
         }
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -228,8 +228,8 @@ struct SellerCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: Space.xs) {
                         Text("@\(seller.username)")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                         // A verified business is behind this listing — that is
                         // the whole of what the badge claims.
                         if seller.isVerifiedDealer == true {
@@ -237,9 +237,9 @@ struct SellerCard: View {
                         }
                     }
                     if let reputation = seller.reputation {
-                        Text(reputation.salesCount == 1 ? "1 sale on Calibre" : "\(reputation.salesCount) sales on Calibre")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                        Text(reputation.salesCount == 1 ? "1 sale on Rewound" : "\(reputation.salesCount) sales on Rewound")
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                 }
 
@@ -250,21 +250,21 @@ struct SellerCard: View {
                     HStack(spacing: Space.xs) {
                         StarRating(rating: average)
                         Text("(\(reputation.ratingCount))")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                 }
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .padding(Space.l)
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
         .buttonStyle(PressableStyle())
@@ -281,9 +281,9 @@ struct AuthenticationInfoSheet: View {
         SheetScaffold(title: "Inspected before it ships", detents: [.medium, .large]) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Every watch sold on Calibre travels to the authentication center before it travels to you. Nothing ships buyer-direct.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.secondaryForeground)
+                    Text("Every watch sold on Rewound travels to the authentication center before it travels to you. Nothing ships buyer-direct.")
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.secondaryForeground)
                         .lineSpacing(5)
 
                     infoRow(
@@ -299,7 +299,7 @@ struct AuthenticationInfoSheet: View {
                     infoRow(
                         icon: "wrench.and.screwdriver",
                         title: "1-year mechanical warranty",
-                        message: "Every watch that passes authentication includes a one-year mechanical warranty in Calibre's name."
+                        message: "Every watch that passes authentication includes a one-year mechanical warranty in Rewound's name."
                     )
                     infoRow(
                         icon: "shippingbox",
@@ -309,19 +309,19 @@ struct AuthenticationInfoSheet: View {
 
                     VStack(alignment: .leading, spacing: Space.s) {
                         Text("If something is wrong")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                         Text("If a watch is found to be counterfeit, authentication costs you nothing, you're refunded in full including the card fee, and the watch is destroyed — it cannot legally be returned to anyone.")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("If a watch is genuine but not as described, your Calibre contact treats it as urgent and settles it case by case — either a partial refund, or the watch goes back.")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                        Text("If a watch is genuine but not as described, your Rewound contact treats it as urgent and settles it case by case — either a partial refund, or the watch goes back.")
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("If authentication runs past its commitment, you hear from your Calibre contact before you have to ask.")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                        Text("If authentication runs past its commitment, you hear from your Rewound contact before you have to ask.")
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, Space.xs)
@@ -336,11 +336,11 @@ struct AuthenticationInfoSheet: View {
             IconTile(systemName: icon)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(message)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .lineSpacing(3)
             }
         }

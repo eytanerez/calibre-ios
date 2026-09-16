@@ -1,4 +1,4 @@
-import CalibreDesign
+import RewoundDesign
 import SwiftUI
 import UIKit
 
@@ -71,7 +71,7 @@ private struct ScrubGestureOverlay: UIViewRepresentable {
 /// destructive red when it's down. Matches the web board's color logic.
 enum MarketTrend {
     static func color(for change: Double) -> Color {
-        change >= 0 ? Color.calibre.success : Color.calibre.destructive
+        change >= 0 ? Color.rewound.success : Color.rewound.destructive
     }
 }
 
@@ -200,11 +200,11 @@ struct MarketAreaChart: View {
                         grid.addLine(to: CGPoint(x: size.width - padR, y: y))
                         context.stroke(
                             grid,
-                            with: .color(Color.calibre.border),
+                            with: .color(Color.rewound.border),
                             style: StrokeStyle(lineWidth: 1, dash: step == 0 ? [] : [3, 5])
                         )
                         context.draw(
-                            Text(formatValue(value)).font(.system(size: axisSize)).foregroundColor(Color.calibre.mutedForeground),
+                            Text(formatValue(value)).font(.system(size: axisSize)).foregroundColor(Color.rewound.mutedForeground),
                             at: CGPoint(x: padL - 6, y: y),
                             anchor: .trailing
                         )
@@ -246,7 +246,7 @@ struct MarketAreaChart: View {
                             style: StrokeStyle(lineWidth: 1, dash: [4, 4])
                         )
                         let markerPoint = CGPoint(x: xPos(dragIndex), y: yPos(series[dragIndex]))
-                        context.fill(Path(ellipseIn: CGRect(x: markerPoint.x - 5, y: markerPoint.y - 5, width: 10, height: 10)), with: .color(Color.calibre.card))
+                        context.fill(Path(ellipseIn: CGRect(x: markerPoint.x - 5, y: markerPoint.y - 5, width: 10, height: 10)), with: .color(Color.rewound.card))
                         context.stroke(Path(ellipseIn: CGRect(x: markerPoint.x - 5, y: markerPoint.y - 5, width: 10, height: 10)), with: .color(color), lineWidth: 2.5)
                     }
 
@@ -254,7 +254,7 @@ struct MarketAreaChart: View {
                     for index in [0, series.count / 2, series.count - 1] where dates.indices.contains(index) {
                         let anchor: UnitPoint = index == 0 ? .bottomLeading : (index == series.count - 1 ? .bottomTrailing : .bottom)
                         context.draw(
-                            Text(Self.axisDateFormatter.string(from: dates[index])).font(.system(size: axisSize)).foregroundColor(Color.calibre.mutedForeground),
+                            Text(Self.axisDateFormatter.string(from: dates[index])).font(.system(size: axisSize)).foregroundColor(Color.rewound.mutedForeground),
                             at: CGPoint(x: xPos(index), y: size.height - 4),
                             anchor: anchor
                         )
@@ -338,11 +338,11 @@ struct MarketAreaChart: View {
 
         VStack(spacing: 2) {
             Text(formatValue(series[index]))
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
             Text(Self.tooltipDateFormatter.string(from: dates[index]))
                 .font(.system(size: axisSize))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .padding(.horizontal, Space.s)
         .padding(.vertical, Space.xs)
@@ -351,12 +351,12 @@ struct MarketAreaChart: View {
         // has always been — but at large text sizes a fixed width truncated
         // the very number the tooltip exists to show.
         .frame(minWidth: tooltipWidth)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
-        .shadow(color: Color.calibre.shadowTint.opacity(0.12), radius: 8, y: 4)
+        .shadow(color: Color.rewound.shadowTint.opacity(0.12), radius: 8, y: 4)
         .position(x: clampedX, y: max(yPos - 34, 24))
         .allowsHitTesting(false)
     }

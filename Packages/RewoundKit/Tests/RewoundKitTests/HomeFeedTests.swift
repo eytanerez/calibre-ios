@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `GET /home/feed` — the server-composed feed, recorded from the running API
 /// (`home-feed-guest.json`).
@@ -343,9 +343,9 @@ final class HomeFeedTests: XCTestCase {
          "bite": {"id": "papers-prove-less-than-you-think",
            "title": "A warranty card proves a sale happened.", "topic": "provenance",
            "body": "Box and papers reliably raise what a watch sells for.",
-           "author": "Calibre Desk", "date": "June 18, 2026", "datePublishedISO": "2026-06-18",
+           "author": "Rewound Desk", "date": "June 18, 2026", "datePublishedISO": "2026-06-18",
            "isArchive": true, "archived": false, "image": null, "imageAlt": null,
-           "sources": [{"href": "https://buycalibre.com/journal", "label": "The Calibre Journal"}],
+           "sources": [{"href": "https://shoprewound.com/journal", "label": "The Rewound Journal"}],
            "article": null, "next": null, "correctedOn": null, "correctionNote": null}}
         """.utf8))
 

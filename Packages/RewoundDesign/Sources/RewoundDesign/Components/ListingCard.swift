@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Display-only data the card needs — CalibreKit models map into this.
+/// Display-only data the card needs — RewoundKit models map into this.
 public struct ListingCardModel: Identifiable, Hashable, Sendable {
     public let id: String
     public let brand: String
@@ -89,12 +89,12 @@ public struct DealerBadge: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: sealSize, weight: .semibold))
             Text("Dealer")
-                .font(compact ? CalibreType.caption : CalibreType.label)
+                .font(compact ? RewoundType.caption : RewoundType.label)
         }
-        .foregroundStyle(Color.calibre.primary)
+        .foregroundStyle(Color.rewound.primary)
         .padding(.horizontal, compact ? 6 : Space.s)
         .padding(.vertical, compact ? 2 : 3)
-        .background(Color.calibre.accent.opacity(0.6), in: Capsule())
+        .background(Color.rewound.accent.opacity(0.6), in: Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Verified dealer")
     }
@@ -153,7 +153,7 @@ private struct SteadyReasonSlot<Content: View>: View {
         ZStack(alignment: .topLeading) {
             if reserved, !unlimited {
                 Text(verbatim: ghost)
-                    .font(CalibreType.caption)
+                    .font(RewoundType.caption)
                     .hidden()
                     .accessibilityHidden(true)
             }
@@ -168,7 +168,7 @@ private struct SteadyReasonSlot<Content: View>: View {
 
 /// The one listing card. Every grid and lane of watches on every surface uses
 /// it, and the element order below is fixed across the product
-/// (CALIBRE_FINAL_PUSH_CONTRACTS.md §4):
+/// (REWOUND_FINAL_PUSH_CONTRACTS.md §4):
 ///
 ///     [ photo, bleeding to the card edge, square, radius = card ]
 ///        ⌐ condition pill (top-left, over the photo)
@@ -188,7 +188,7 @@ private struct SteadyReasonSlot<Content: View>: View {
 /// element, same card, one row higher.
 ///
 /// Borders define the card; the watch is the hero. Image loading is injected
-/// so CalibreDesign stays UI-only.
+/// so RewoundDesign stays UI-only.
 public struct ListingCard<ImageContent: View>: View {
     let model: ListingCardModel
     @ViewBuilder let image: (URL?) -> ImageContent
@@ -230,7 +230,7 @@ public struct ListingCard<ImageContent: View>: View {
                 ZStack(alignment: .topLeading) {
                     image(model.imageURL)
                         .frame(width: side, height: side)
-                        .background(Color.calibre.secondary.opacity(0.5))
+                        .background(Color.rewound.secondary.opacity(0.5))
                         .clipped()
 
                     if let condition = model.condition {
@@ -275,7 +275,7 @@ public struct ListingCard<ImageContent: View>: View {
                 // brand's own width first is what cut "2…" off the year the
                 // first time. `ListingCardAlignmentTests` measures the two
                 // worst real brands against the width they actually get.
-                SteadyLine(font: CalibreType.eyebrow) {
+                SteadyLine(font: RewoundType.eyebrow) {
                     HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                         Eyebrow(model.brand)
                             .lineLimit(1)
@@ -296,10 +296,10 @@ public struct ListingCard<ImageContent: View>: View {
                 // "Santos…" identifies nothing, and the reference is how a
                 // buyer checks a listing. Above the accessibility threshold
                 // the limits lift entirely instead.
-                SteadyLine(font: CalibreType.bodyMedium) {
+                SteadyLine(font: RewoundType.bodyMedium) {
                     Text(model.title)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                         .minimumScaleFactor(0.8)
                 }
@@ -311,10 +311,10 @@ public struct ListingCard<ImageContent: View>: View {
                 // it carries the font's own line metrics, drawn at zero
                 // opacity and hidden from VoiceOver — there is nothing there
                 // to read, only a line to hold.
-                SteadyLine(font: CalibreType.caption) {
+                SteadyLine(font: RewoundType.caption) {
                     Text(model.reference.map { "Ref. \($0)" } ?? "Ref.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                         .minimumScaleFactor(0.8)
                         .opacity(model.reference == nil ? 0 : 1)
@@ -350,8 +350,8 @@ public struct ListingCard<ImageContent: View>: View {
                     ) {
                         if let reason = model.reason, !reason.isEmpty {
                             Text(reason)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                                 .lineLimit(typeSize.isAccessibilitySize ? nil : listingCardReasonLines)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -359,8 +359,8 @@ public struct ListingCard<ImageContent: View>: View {
                 }
                 HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                     Text(model.priceText)
-                        .font(CalibreType.price)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.price)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                         .layoutPriority(1)
                     if model.isVerifiedDealer {
@@ -397,9 +397,9 @@ public struct ListingCard<ImageContent: View>: View {
             .resizable()
             .scaledToFit()
             .padding(40)
-            .foregroundStyle(Color.calibre.placeholder)
+            .foregroundStyle(Color.rewound.placeholder)
     }
     .frame(width: 180)
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }

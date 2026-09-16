@@ -25,7 +25,7 @@ public enum VaultFieldEdit: Encodable, Equatable, Sendable {
     }
 }
 
-/// The member's Collection. Calibre purchases land here automatically on
+/// The member's Collection. Rewound purchases land here automatically on
 /// delivery; manual adds cover watches bought elsewhere.
 @MainActor
 @Observable
@@ -102,7 +102,7 @@ public final class VaultStore {
     /// to it, but this app no longer has a link form to write one from
     /// (contracts §9d) — and a PATCH that named the column while meaning
     /// nothing by it would wipe the seller's photograph of a watch that
-    /// arrived from a Calibre order, leaving the card with no cover at all the
+    /// arrived from a Rewound order, leaving the card with no cover at all the
     /// moment the owner deletes their own uploads. Never sending the key is
     /// what keeps that from being one careless argument away.
     @discardableResult
@@ -317,11 +317,11 @@ public final class VaultStore {
     // There is deliberately no total here.
     //
     // What was here summed `estimatedValue` with a `?? 0`, which cannot tell a
-    // watch Calibre has refused to value from a watch it valued at nothing —
+    // watch Rewound has refused to value from a watch it valued at nothing —
     // so a collection of five unvalued watches added up to $0 and a collection
     // where one refusal sat among four figures quietly under-reported itself.
     // `VaultEstimate` is the whole answer and only its `ok` state carries a
-    // figure; no consumer surface prints one, and a column of numbers Calibre
+    // figure; no consumer surface prints one, and a column of numbers Rewound
     // withholds in most cases would add up to the one figure on the screen
     // that could not be true.
 }

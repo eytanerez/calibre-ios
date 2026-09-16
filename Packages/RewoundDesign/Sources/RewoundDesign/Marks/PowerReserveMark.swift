@@ -55,8 +55,8 @@ struct PowerReserveMark: View {
 
     private func render(_ reading: Double) -> some View {
         ZStack {
-            Self.spring(1).stroke(Color.calibre.primary.opacity(0.22), style: MarkGrid.style)
-            Self.spring(reading).stroke(Color.calibre.primary, style: MarkGrid.style)
+            Self.spring(1).stroke(Color.rewound.primary.opacity(0.22), style: MarkGrid.style)
+            Self.spring(reading).stroke(Color.rewound.primary, style: MarkGrid.style)
         }
     }
 
@@ -73,7 +73,7 @@ struct PowerReserveMark: View {
             guard drawn > 0 else { break }
 
             path.addCircularArc(
-                centre: pivots[turn % pivots.count],
+                center: pivots[turn % pivots.count],
                 radius: radius,
                 start: .degrees(turn.isMultiple(of: 2) ? 180 : 0),
                 delta: .degrees(180 * drawn)
@@ -91,17 +91,17 @@ struct PowerReserveMark: View {
 
     private static var length: CGFloat { coils.reduce(0) { $0 + .pi * $1 } }
 
-    /// The centres the coil alternates between. The gap between them is the
-    /// spiral's pitch — turn every coil about one centre and it is a stack of
+    /// The centers the coil alternates between. The gap between them is the
+    /// spiral's pitch — turn every coil about one center and it is a stack of
     /// rings.
     private static let pivots = [CGPoint(x: 60, y: 60), CGPoint(x: 56, y: 60)]
 }
 
 #Preview("powerReserve", traits: .sizeThatFitsLayout) {
     HStack(spacing: Space.l) {
-        CalibreMark.powerReserve(0.35, size: 96)
-        CalibreMark.powerReserve(0.9, size: 96)
+        RewoundMark.powerReserve(0.35, size: 96)
+        RewoundMark.powerReserve(0.9, size: 96)
     }
     .padding(Space.xl)
-    .calibrePageBackground()
+    .rewoundPageBackground()
 }

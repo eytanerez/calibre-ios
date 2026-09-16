@@ -15,8 +15,8 @@ struct StampMark: View {
 
     var body: some View {
         ZStack {
-            Self.head.stroke(Color.calibre.primary, style: MarkGrid.style)
-            CalibreLogoMark.jewelCentre.applying(Self.die).fill(Color.calibre.primary)
+            Self.head.stroke(Color.rewound.primary, style: MarkGrid.style)
+            RewoundLogoMark.jewelCentre.applying(Self.die).fill(Color.rewound.primary)
         }
         .scaleEffect(stillness.isRequested || arrived ? 1 : 1.08)
         .offset(y: stillness.isRequested || arrived ? 0 : -6)
@@ -38,12 +38,12 @@ struct StampMark: View {
     static var head: Path {
         var path = Path()
         path.addEllipse(in: CGRect(x: 24, y: 24, width: 72, height: 72))
-        path.addPath(CalibreLogoMark.strokes, transform: die)
+        path.addPath(RewoundLogoMark.strokes, transform: die)
         return path
     }
 
     /// The logo shrunk about its own jewel until it sits inside the rim. The
-    /// paths come from `CalibreLogoMark` rather than being drawn again at this
+    /// paths come from `RewoundLogoMark` rather than being drawn again at this
     /// size — a second trace is a second, slightly different mark.
     ///
     /// Transforming the path leaves the stroke alone, so the weight stays the
@@ -56,7 +56,7 @@ struct StampMark: View {
 }
 
 #Preview("stamp", traits: .sizeThatFitsLayout) {
-    CalibreMark.stamp()
+    RewoundMark.stamp()
         .padding(Space.xl)
-        .calibrePageBackground()
+        .rewoundPageBackground()
 }

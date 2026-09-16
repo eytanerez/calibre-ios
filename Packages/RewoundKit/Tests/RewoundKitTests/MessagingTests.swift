@@ -1,13 +1,13 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The client half of the messaging pass: reporting a push tap, and the guest
 /// support thread surviving sign-in.
 final class MessagingTests: XCTestCase {
     /// Isolated defaults so a test's guest token never touches the real app's.
     private func scratchDefaults() -> UserDefaults {
-        let suite = "calibre.tests.\(UUID().uuidString)"
+        let suite = "rewound.tests.\(UUID().uuidString)"
         // Only the suite name crosses into the teardown block: `UserDefaults`
         // is not Sendable, and the domain can be dropped by name.
         addTeardownBlock { UserDefaults.standard.removePersistentDomain(forName: suite) }
@@ -62,7 +62,7 @@ final class MessagingTests: XCTestCase {
         MockURLProtocol.setHandler { _ in (200, Data("{\"ok\": true, \"data\": null}".utf8)) }
 
         let defaults = scratchDefaults()
-        defaults.set("guest-token-1", forKey: "calibre.support.guestToken")
+        defaults.set("guest-token-1", forKey: "rewound.support.guestToken")
         let store = SupportStore(client: APIClient(configuration: mockConfiguration(), auth: nil), defaults: defaults)
 
         _ = try await store.loadThread(authenticated: true)
@@ -79,7 +79,7 @@ final class MessagingTests: XCTestCase {
         MockURLProtocol.setHandler { _ in (200, Data("{\"ok\": true, \"data\": null}".utf8)) }
 
         let defaults = scratchDefaults()
-        defaults.set("guest-token-1", forKey: "calibre.support.guestToken")
+        defaults.set("guest-token-1", forKey: "rewound.support.guestToken")
         let store = SupportStore(client: APIClient(configuration: mockConfiguration(), auth: nil), defaults: defaults)
         _ = try await store.loadThread(authenticated: false)
 

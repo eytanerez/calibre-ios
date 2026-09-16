@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 // MARK: - The rooms
@@ -104,19 +104,19 @@ struct SellerTabBar: View {
         } label: {
             HStack(spacing: Space.s) {
                 Text(tab.title)
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                 if let badge {
                     countPill(badge.count, isSelected: isSelected)
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
-            .foregroundStyle(isSelected ? Color.calibre.primaryForeground : Color.calibre.foreground)
+            .foregroundStyle(isSelected ? Color.rewound.primaryForeground : Color.rewound.foreground)
             .padding(.horizontal, Space.m)
             .padding(.vertical, Space.s)
             .frame(minHeight: Space.touchTarget)
-            .background(isSelected ? Color.calibre.primary : Color.calibre.card, in: Capsule())
+            .background(isSelected ? Color.rewound.primary : Color.rewound.card, in: Capsule())
             .overlay {
-                Capsule().strokeBorder(isSelected ? Color.clear : Color.calibre.border, lineWidth: 1)
+                Capsule().strokeBorder(isSelected ? Color.clear : Color.rewound.border, lineWidth: 1)
             }
             .contentShape(Capsule())
         }
@@ -130,12 +130,12 @@ struct SellerTabBar: View {
 
     private func countPill(_ count: Int, isSelected: Bool) -> some View {
         Text("\(count)")
-            .font(CalibreType.caption)
+            .font(RewoundType.caption)
             .monospacedDigit()
-            .foregroundStyle(isSelected ? Color.calibre.primary : Color.calibre.primaryForeground)
+            .foregroundStyle(isSelected ? Color.rewound.primary : Color.rewound.primaryForeground)
             .padding(.horizontal, Space.xs)
             .padding(.vertical, 2)
-            .background(isSelected ? Color.calibre.primaryForeground : Color.calibre.primary, in: Capsule())
+            .background(isSelected ? Color.rewound.primaryForeground : Color.rewound.primary, in: Capsule())
             .accessibilityHidden(true)
     }
 }
@@ -207,7 +207,7 @@ extension View {
 /// It exists because the seller dashboard is behind a sign-in and a Stripe
 /// Connect readiness check, so the one screen this bar ships on cannot be put
 /// in front of a reviewer's eyes in a few seconds — and a measurement is not a
-/// look (CALIBRE_FINAL_PUSH_CONTRACTS.md §0.3). The narrowest phone the app
+/// look (REWOUND_FINAL_PUSH_CONTRACTS.md §0.3). The narrowest phone the app
 /// supports at its iOS 18 floor is 375pt wide, which leaves 335pt between the
 /// screen margins; the other two rows are an iPhone 17 Pro and a Pro Max at
 /// the same margins.
@@ -242,7 +242,7 @@ struct SellerTabStripHarness: View {
             }
             .padding(Space.margin)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Seller tab strip")
         .navigationBarTitleDisplayMode(.inline)
     }

@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import Calibre
+@testable import Rewound
 
 /// The silent push that says a notification was cleared somewhere else.
 ///

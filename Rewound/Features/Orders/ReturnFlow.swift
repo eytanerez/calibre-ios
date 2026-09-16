@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import Foundation
 import NukeUI
 import SwiftUI
@@ -79,7 +79,7 @@ final class ReturnFlowModel {
     var reasonNote = ""
     /// The six angles, keyed by category.
     var photos: [ListingImageCategory: ReturnPhotoSlot] = [:]
-    /// Set when a cancelled return should close the sheet it was cancelled in.
+    /// Set when a canceled return should close the sheet it was canceled in.
     private(set) var requestsDismiss = false
 
     /// The order re-fetched after anything that changes it, plus a token the
@@ -96,7 +96,7 @@ final class ReturnFlowModel {
 
     // MARK: Order sync
 
-    /// Keeps the flow in step with the screen's order. A cancelled return is
+    /// Keeps the flow in step with the screen's order. A canceled return is
     /// not a live case — the window resumes and the buyer may start again.
     func adopt(_ order: Order) {
         summary = order.returnSummary
@@ -133,7 +133,7 @@ final class ReturnFlowModel {
             // authority, so a closed window here ends the flow honestly.
             if let window = fetched.window, !window.open {
                 phase = .closed(
-                    "The return window on this order has closed, so a return can't be started now. If something isn't right with the watch, your Calibre contact can help."
+                    "The return window on this order has closed, so a return can't be started now. If something isn't right with the watch, your Rewound contact can help."
                 )
                 return
             }
@@ -489,7 +489,7 @@ func returnErrorMessage(_ error: Error) -> String {
     case "return_photos_missing":
         return "Some of the six photos are still missing."
     case "return_label_unavailable":
-        return "We couldn't produce the return label just now. Please try again in a moment, or your Calibre contact can sort it out for you."
+        return "We couldn't produce the return label just now. Please try again in a moment, or your Rewound contact can sort it out for you."
     default:
         return "Something went wrong. Please try again."
     }
@@ -551,13 +551,13 @@ struct ReturnFlowSheet: View {
                 .padding(.top, Space.l)
                 .padding(.bottom, Space.xxl)
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle("Return this watch")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close") { dismiss() }
-                        .foregroundStyle(Color.calibre.foreground)
+                        .foregroundStyle(Color.rewound.foreground)
                 }
             }
         }
@@ -578,18 +578,18 @@ struct ReturnFlowSheet: View {
     }
 
     private var loading: some View {
-        CalibreLoadingView("Working out your exact refund.")
+        RewoundLoadingView("Working out your exact refund.")
     }
 
     private var openedHeader: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             StatusBadge(model.badge.text, tone: model.badge.tone)
             Text(model.headline)
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
             Text(model.detail)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -623,21 +623,21 @@ private struct ReturnQuoteView: View {
         VStack(alignment: .leading, spacing: Space.xl) {
             VStack(alignment: .leading, spacing: Space.s) {
                 Text("What comes back to you")
-                    .font(CalibreType.title)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.title)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text("Here is the exact refund on this return, line by line, before you decide anything.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text("Your refund")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                 Text(money(quote.refundTotal))
-                    .font(CalibreType.priceLarge)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.priceLarge)
+                    .foregroundStyle(Color.rewound.foreground)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.l)
@@ -649,8 +649,8 @@ private struct ReturnQuoteView: View {
             VStack(alignment: .leading, spacing: Space.s) {
                 ForEach(notes, id: \.self) { note in
                     Text(note)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -662,8 +662,8 @@ private struct ReturnQuoteView: View {
 
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("How a return goes")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 ReturnFactRow(
                     icon: "pause.circle",
                     text: "Starting the return stops the clock on your return window."
@@ -689,14 +689,14 @@ private struct ReturnQuoteView: View {
                 } label: {
                     BusyLabel(title: "Start the return", busy: model.busy)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(!model.canOpenReturn)
 
                 Text(model.canOpenReturn
                     ? "Nothing changes until you tap this."
                     : stillNeededSentence)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -717,21 +717,21 @@ private struct ReturnQuoteView: View {
     private var reasonSection: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Why are you sending it back?")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             VStack(spacing: 0) {
                 ForEach(Array(OrderReturnReason.allCases.enumerated()), id: \.element) { index, reason in
                     reasonRow(reason)
                     if index < OrderReturnReason.allCases.count - 1 {
-                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                        Rectangle().fill(Color.rewound.border).frame(height: 1)
                     }
                 }
             }
             .returnCardSurface()
 
             if model.reason?.requiresNote == true {
-                CalibreTextEditor(
+                RewoundTextEditor(
                     "Tell us what happened",
                     text: $bindable.reasonNote,
                     placeholder: "A sentence or two is plenty.",
@@ -739,7 +739,7 @@ private struct ReturnQuoteView: View {
                     characterLimit: 1_000
                 )
             } else if model.reason != nil {
-                CalibreTextEditor(
+                RewoundTextEditor(
                     "Anything you\u{2019}d like to add (optional)",
                     text: $bindable.reasonNote,
                     placeholder: "A sentence or two is plenty.",
@@ -758,10 +758,10 @@ private struct ReturnQuoteView: View {
             HStack(spacing: Space.m) {
                 Image(systemName: model.reason == reason ? "inset.filled.circle" : "circle")
                     .font(.system(size: 18))
-                    .foregroundStyle(model.reason == reason ? Color.calibre.primary : Color.calibre.borderBright)
+                    .foregroundStyle(model.reason == reason ? Color.rewound.primary : Color.rewound.borderBright)
                 Text(reason.label)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.foreground)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
@@ -782,12 +782,12 @@ private struct ReturnQuoteView: View {
     private var photoSection: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Photograph the watch")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             Text("Six shots, the same angles the listing carries. They are put side by side with the seller\u{2019}s photos when the watch arrives, which is what protects you if anything is disputed.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -806,8 +806,8 @@ private struct ReturnQuoteView: View {
                             .accessibilityLabel("\(category.label) photo")
                             .accessibilityValue(model.photos[category]?.isStaged == true ? "taken" : "not taken")
                             Text(category.label)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                                 .frame(width: slotLabelWidth)
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -820,8 +820,8 @@ private struct ReturnQuoteView: View {
             ForEach(ListingImageCategory.allCases, id: \.self) { category in
                 if let failure = model.photos[category]?.error {
                     Text("\(category.label): \(failure)")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.destructive)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -838,7 +838,7 @@ private struct ReturnQuoteView: View {
                 if let image = state.image {
                     image.resizable().scaledToFill()
                 } else {
-                    Color.calibre.secondary.opacity(0.5)
+                    Color.rewound.secondary.opacity(0.5)
                 }
             }
         } else {
@@ -873,7 +873,7 @@ private struct ReturnQuoteView: View {
         if let outbound = quote.outboundLabelDeduction {
             rows.append(("Original shipping label", "− " + money(outbound)))
         }
-        // Calibre's return label is deducted from the refund too, and the
+        // Rewound's return label is deducted from the refund too, and the
         // buyer sees it here rather than discovering it afterwards.
         if let returnLabel = quote.returnLabelDeduction {
             rows.append(("Return label", "− " + money(returnLabel)))
@@ -956,7 +956,7 @@ struct ReturnCaseBody: View {
                     Label("Get the return label", systemImage: "arrow.down.doc")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
             }
 
             if let tracking = model.trackingNumber {
@@ -967,16 +967,16 @@ struct ReturnCaseBody: View {
                 VStack(alignment: .leading, spacing: Space.s) {
                     HStack(spacing: Space.m) {
                         Text("Ship by")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                         CountdownChip(until: deadline)
                         Spacer(minLength: 0)
                     }
                     .accessibilityElement(children: .combine)
 
                     Text("You have 48 business hours from the moment this return opened. Deadlines that need a person to act run on business days.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -989,12 +989,12 @@ struct ReturnCaseBody: View {
                     } label: {
                         BusyLabel(title: "I shipped it", busy: model.busy)
                     }
-                    .buttonStyle(.calibre(shippedButtonVariant, fullWidth: true))
+                    .buttonStyle(.rewound(shippedButtonVariant, fullWidth: true))
                     .disabled(model.busy)
 
-                    Text("Telling us buys a short grace period for the carrier's first scan. If no scan follows, the original clock resumes and your Calibre contact takes the case from there.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                    Text("Telling us buys a short grace period for the carrier's first scan. If no scan follows, the original clock resumes and your Rewound contact takes the case from there.")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1003,7 +1003,7 @@ struct ReturnCaseBody: View {
                 Button("Cancel this return") {
                     confirmingCancel = true
                 }
-                .buttonStyle(.calibre(.ghost, fullWidth: true))
+                .buttonStyle(.rewound(.ghost, fullWidth: true))
                 .disabled(model.busy)
                 .confirmationDialog(
                     "Cancel this return?",
@@ -1028,7 +1028,7 @@ struct ReturnCaseBody: View {
 
     /// The label download is the loud action while it exists; once it does,
     /// "I shipped it" sits quietly beneath it.
-    private var shippedButtonVariant: CalibreButtonVariant {
+    private var shippedButtonVariant: RewoundButtonVariant {
         model.labelURL == nil ? .primary : .secondary
     }
 
@@ -1036,12 +1036,12 @@ struct ReturnCaseBody: View {
         HStack(spacing: Space.m) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Tracking number")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                 Text(tracking)
-                    .font(CalibreType.bodyMedium)
+                    .font(RewoundType.bodyMedium)
                     .monospacedDigit()
-                    .foregroundStyle(Color.calibre.foreground)
+                    .foregroundStyle(Color.rewound.foreground)
             }
             Spacer(minLength: 0)
             Button {
@@ -1051,7 +1051,7 @@ struct ReturnCaseBody: View {
             } label: {
                 Image(systemName: "doc.on.doc")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                     .frame(width: Space.touchTarget, height: Space.touchTarget)
             }
             .buttonStyle(PressableStyle())
@@ -1073,18 +1073,18 @@ struct ReturnCaseCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Your return")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             VStack(alignment: .leading, spacing: Space.l) {
                 VStack(alignment: .leading, spacing: Space.s) {
                     StatusBadge(model.badge.text, tone: model.badge.tone)
                     Text(model.headline)
-                        .font(CalibreType.bodySemiBold)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodySemiBold)
+                        .foregroundStyle(Color.rewound.foreground)
                     Text(model.detail)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1109,11 +1109,11 @@ private struct ReturnFactRow: View {
         HStack(alignment: .top, spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
                 .frame(width: 20)
             Text(text)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -1124,10 +1124,10 @@ private struct ReturnFactRow: View {
 private extension View {
     /// The bordered card surface the order screens share.
     func returnCardSurface() -> some View {
-        background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
     }
 }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The camera-first listing wizard — Details → Photos → Price → Review, one
@@ -31,12 +31,12 @@ struct ListingWizardScreen: View {
                 if let model {
                     content(model)
                 } else {
-                    Color.calibre.background
+                    Color.rewound.background
                         .onAppear { createModel() }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -44,7 +44,7 @@ struct ListingWizardScreen: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.calibre.foreground)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     // The promise is conditional, so the label has to be too.
                     // `persistSnapshot()` opens with `guard let listing`, and
@@ -127,7 +127,7 @@ struct ListingWizardScreen: View {
                     // no server draft exists before Details is completed.
                     // The rail's captions are the words; the mark has none.
                     if let draftMarkKey {
-                        CalibreMark.crown(size: 36, trigger: draftMarkKey)
+                        RewoundMark.crown(size: 36, trigger: draftMarkKey)
                             .markAnnounces(draftMarkKey)
                     }
                 }
@@ -180,7 +180,7 @@ struct ListingWizardScreen: View {
                     Button("Back") {
                         advance(model, to: model.step - 1)
                     }
-                    .buttonStyle(.calibreGhost)
+                    .buttonStyle(.rewoundGhost)
                 }
                 // Always tappable: pressing it on an incomplete step is how a
                 // seller asks what's missing, and the answer belongs beside
@@ -190,22 +190,22 @@ struct ListingWizardScreen: View {
                 } label: {
                     BusyLabel(title: "Continue", busy: creatingDraft)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(creatingDraft)
                 .accessibilityIdentifier("listing-wizard-continue")
             }
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.m)
-            .background(Color.calibre.background)
+            .background(Color.rewound.background)
             .overlay(alignment: .top) {
-                Rectangle().fill(Color.calibre.border).frame(height: 1)
+                Rectangle().fill(Color.rewound.border).frame(height: 1)
             }
         } else {
             HStack(spacing: Space.m) {
                 Button("Back") {
                     advance(model, to: 2)
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
                 Spacer()
             }
             .padding(.horizontal, Space.margin)
@@ -287,7 +287,7 @@ struct ListingWizardScreen: View {
                 Haptics.shared.play(.success)
                 // The form gathers up and the seal presses onto it. What
                 // collapses is the seller's own filled-in wizard.
-                CalibreMoments.play(.listingSubmitted)
+                RewoundMoments.play(.listingSubmitted)
                 withAnimation(Motion.easeSlow) {
                     showSuccess = true
                 }
@@ -300,7 +300,7 @@ struct ListingWizardScreen: View {
                 // this — the listing is already in.
                 try? await Task.sleep(
                     for: .seconds(
-                        A11y.isNavigatingByFocus ? 8 : CalibreMoment.listingSubmitted.duration + 0.2
+                        A11y.isNavigatingByFocus ? 8 : RewoundMoment.listingSubmitted.duration + 0.2
                     )
                 )
                 dismiss()
@@ -337,18 +337,18 @@ struct ListingWizardScreen: View {
         VStack(spacing: Space.l) {
             Image(systemName: "checkmark.circle")
                 .font(.system(size: 44, weight: .light))
-                .foregroundStyle(Color.calibre.success)
+                .foregroundStyle(Color.rewound.success)
             Text("In review.")
-                .font(CalibreType.display)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.display)
+                .foregroundStyle(Color.rewound.foreground)
             Text("We'll let you know the moment it's live.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .multilineTextAlignment(.center)
         .padding(Space.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .transition(.opacity)
         .accessibilityAddTraits(.isModal)
     }

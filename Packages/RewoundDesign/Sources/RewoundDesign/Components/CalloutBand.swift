@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Quiet trust/info band — "Authenticated by Calibre", buyer protection,
+/// Quiet trust/info band — "Authenticated by Rewound", buyer protection,
 /// shipping notes. Accent-at-40% fill with a hairline border, a small tile
 /// holding a brand-colored icon, and body copy. Pass an action to make the
 /// band tappable (adds a chevron and press feedback).
@@ -35,22 +35,22 @@ public struct CalloutBand: View {
         HStack(alignment: title == nil ? .center : .top, spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
                 .frame(width: 32, height: 32)
                 .background(
-                    Color.calibre.card,
+                    Color.rewound.card,
                     in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                 )
 
             VStack(alignment: .leading, spacing: 2) {
                 if let title {
                     Text(title)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                 }
                 Text(message)
-                    .font(title == nil ? CalibreType.body : CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(title == nil ? RewoundType.body : RewoundType.label)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -58,18 +58,18 @@ public struct CalloutBand: View {
             if action != nil {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
         .multilineTextAlignment(.leading)
         .padding(Space.l)
         .background(
-            Color.calibre.accent.opacity(0.4),
+            Color.rewound.accent.opacity(0.4),
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }
@@ -78,7 +78,7 @@ public struct CalloutBand: View {
     VStack(spacing: Space.m) {
         CalloutBand(
             icon: "checkmark.shield",
-            title: "Authenticated by Calibre",
+            title: "Authenticated by Rewound",
             message: "Every watch is inspected by our in-house watchmakers before it ships to you.",
             action: {}
         )
@@ -88,17 +88,17 @@ public struct CalloutBand: View {
         )
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }
 
 #Preview("Callout band — dark", traits: .sizeThatFitsLayout) {
     CalloutBand(
         icon: "checkmark.shield",
-        title: "Authenticated by Calibre",
+        title: "Authenticated by Rewound",
         message: "Every watch is inspected by our in-house watchmakers before it ships to you.",
         action: {}
     )
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
     .preferredColorScheme(.dark)
 }

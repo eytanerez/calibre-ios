@@ -1,12 +1,12 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// Buyer↔seller messaging (`MessagingClient`, `MessagingStore`, and the wire
 /// models) — not `MessagingTests.swift`, which covers push-tap reporting and
 /// the support-chat guest token.
 ///
-/// The one thing worth a dedicated suite: calibre-messaging is not Backend.
+/// The one thing worth a dedicated suite: rewound-messaging is not Backend.
 /// It answers plain JSON, never Backend's `{ok, data}` envelope, and refuses
 /// with FastAPI's `{"detail": ...}` rather than `{"error": ...}`. A
 /// `MessagingClient` built like `APIClient` would fail to decode every
@@ -15,7 +15,7 @@ import XCTest
 final class BuyerSellerMessagingTests: XCTestCase {
     private func mockConfiguration() -> APIConfiguration {
         APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre-messaging.test")!,
+            baseURL: URL(string: "https://mock.rewound-messaging.test")!,
             protocolClasses: [MockURLProtocol.self]
         )
     }
@@ -24,7 +24,7 @@ final class BuyerSellerMessagingTests: XCTestCase {
 
     // `MessagingStore` is @MainActor, so the test that builds one has to be.
     @MainActor
-    func testListThreadsDecodesThePlainJSONArrayCalibreMessagingActuallySends() async throws {
+    func testListThreadsDecodesThePlainJSONArrayRewoundMessagingActuallySends() async throws {
         MockURLProtocol.setHandler { _ in
             (200, Data("""
             [{"id": "t1", "listing_id": "l1", "buyer_id": "b1", "seller_id": "s1",

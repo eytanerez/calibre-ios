@@ -84,7 +84,7 @@ final class AuthFlowUITests: XCTestCase {
         identifier.typeText("   ")
         let password = app.secureTextFields.firstMatch
         password.tap()
-        password.typeText("Calibre1")
+        password.typeText("Rewound1")
         XCTAssertFalse(signIn.isEnabled, "Whitespace-only identifiers must never submit")
 
         app.buttons["Forgot password?"].tap()
@@ -162,7 +162,7 @@ final class AuthFlowUITests: XCTestCase {
         snap("09-login-screen")
 
         // Register step 1 — live username availability. `demo_buyer` is the
-        // dev-seed buyer's username (`buyer@demo.calibre.local`, per the
+        // dev-seed buyer's username (`buyer@demo.rewound.local`, per the
         // dev-seed logins) — a stable, documented "taken" username, unlike
         // the test's former "iosbuyer", which the current dev database no
         // longer has an account for (`GET /auth/username-availability` now
@@ -342,9 +342,9 @@ final class AuthFlowUITests: XCTestCase {
 
     // MARK: - Live sign-in / sign-out against the local backend
 
-    /// Uses the seeded dev-stack demo buyer (`buyer@demo.calibre.local` /
+    /// Uses the seeded dev-stack demo buyer (`buyer@demo.rewound.local` /
     /// `demo_buyer`, per the dev-seed logins) rather than a bespoke fixture
-    /// account — a prior `iosbuyer.calibre@gmail.com` fixture this test used
+    /// account — a prior `iosbuyer.rewound@gmail.com` fixture this test used
     /// to sign in with no longer exists in the dev database
     /// (`POST /auth/login` now returns `account_not_found` for it), which
     /// this test's own tab-name bug had been hiding: it always failed one
@@ -373,7 +373,7 @@ final class AuthFlowUITests: XCTestCase {
         let identifierField = app.textFields["you@example.com"]
         XCTAssertTrue(identifierField.waitForExistence(timeout: 5))
         identifierField.tap()
-        identifierField.typeText("buyer@demo.calibre.local")
+        identifierField.typeText("buyer@demo.rewound.local")
         let passwordField = app.secureTextFields.firstMatch
         passwordField.tap()
         passwordField.typeText("wrong-password")
@@ -387,7 +387,7 @@ final class AuthFlowUITests: XCTestCase {
         // Now the real credentials.
         passwordField.tap()
         for _ in 0..<14 { passwordField.typeText(XCUIKeyboardKey.delete.rawValue) }
-        passwordField.typeText("CalibreDemo123!")
+        passwordField.typeText("RewoundDemo123!")
         app.buttons["Sign In"].tap()
         dismissPasswordPromptIfNeeded(app)
 
@@ -415,13 +415,13 @@ final class AuthFlowUITests: XCTestCase {
 
     // MARK: - Deep links
 
-    /// calibre://listing/:id selects the Home tab and pushes the listing route.
+    /// rewound://listing/:id selects the Home tab and pushes the listing route.
     func testDeepLinkOpensListingRoute() throws {
         let app = returningApp(hasSeenIntro: true, guest: true)
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
 
-        XCUIDevice.shared.system.open(URL(string: "calibre://listing/rolex-sub-116610")!)
+        XCUIDevice.shared.system.open(URL(string: "rewound://listing/rolex-sub-116610")!)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let openButton = springboard.buttons["Open"]
         if openButton.waitForExistence(timeout: 4) {

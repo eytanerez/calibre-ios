@@ -120,7 +120,7 @@ struct TutorialScrim: View {
             path.addRect(outer)
             if let rect = spotRect { addCutout(&path, rect) }
         }
-        .fill(Color.calibre.shadowTint.opacity(0.62), style: FillStyle(eoFill: true))
+        .fill(Color.rewound.shadowTint.opacity(0.62), style: FillStyle(eoFill: true))
         .allowsHitTesting(false)
     }
 
@@ -201,13 +201,13 @@ struct TutorialScrim: View {
             .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 8)))
     }
 
-    /// Where to centre the coach card. Prefer the gap opposite the target;
-    /// if neither gap fits the measured card, centre it over the spotlight so
+    /// Where to center the coach card. Prefer the gap opposite the target;
+    /// if neither gap fits the measured card, center it over the spotlight so
     /// it is always fully on-screen. A generous bottom clearance keeps it
     /// clear of a floating tab bar (which iOS doesn't report as a safe inset).
     private var cardCenterY: CGFloat {
         // A card taller than the room available is drawn capped and scrolling,
-        // so centre the height it actually occupies. Identical below that
+        // so center the height it actually occupies. Identical below that
         // threshold, where the card is shorter than the room it has.
         let half = min(cardHeight, availableCardHeight) / 2
         let minCenter = safeAreaInsets.top + Space.l + half
@@ -223,7 +223,7 @@ struct TutorialScrim: View {
         let above = rect.minY - gap - half
         let targetInTopHalf = rect.midY < containerSize.height * 0.5
 
-        // Preferred side first, then the other, then centre-over.
+        // Preferred side first, then the other, then center-over.
         let preferred = targetInTopHalf ? below : above
         let fallback = targetInTopHalf ? above : below
         if fitsBelow(preferred, min: minCenter, max: maxCenter) { return clamp(preferred, minCenter, maxCenter) }
@@ -295,20 +295,20 @@ struct TutorialCoachCard: View {
                 }
                 Spacer()
                 Button("Skip") { controller.skip() }
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .buttonStyle(PressableStyle())
                     .accessibilityHint("Ends this walkthrough and won't show it again")
             }
 
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text(step.title)
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(step.message)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -316,12 +316,12 @@ struct TutorialCoachCard: View {
         }
         .frame(maxWidth: 380, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
-        .calibreShadow(.modal)
+        .rewoundShadow(.modal)
         .accessibilityElement(children: .contain)
     }
 
@@ -334,16 +334,16 @@ struct TutorialCoachCard: View {
                 Text(isLast ? "Got it" : "Next")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
         case .perform(let event):
             if let prompt = step.actionPrompt {
                 HStack(spacing: Space.s) {
                     Image(systemName: promptSymbol)
                         .font(.system(size: 13, weight: .semibold))
                     Text(prompt)
-                        .font(CalibreType.bodySemiBold)
+                        .font(RewoundType.bodySemiBold)
                 }
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isSummaryElement)
             }
@@ -359,7 +359,7 @@ struct TutorialCoachCard: View {
                     Text(isLast ? "Got it" : "Continue")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .accessibilityHint("Moves on without performing the gesture")
             }
         }

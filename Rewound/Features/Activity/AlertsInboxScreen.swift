@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The Alerts inbox. Signed-in members read the server-side notification
@@ -38,7 +38,7 @@ struct AlertsInboxScreen: View {
                         VStack(spacing: Space.s) {
                             ForEach(0..<4, id: \.self) { _ in
                                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                                    .fill(Color.calibre.card)
+                                    .fill(Color.rewound.card)
                                     .frame(height: 76)
                                     .shimmer()
                             }
@@ -68,7 +68,7 @@ struct AlertsInboxScreen: View {
                 }
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Alerts")
         .navigationBarTitleDisplayMode(.inline)
         // Clear all sits on top, above the rows it sweeps.
@@ -76,8 +76,8 @@ struct AlertsInboxScreen: View {
             if remainingCount > 0 {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Clear all") { confirmingClearAll = true }
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.primary)
                 }
             }
         }
@@ -241,19 +241,19 @@ private struct AlertRow: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(row.title)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                     if !row.body.isEmpty {
                         Text(row.body)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                             .multilineTextAlignment(.leading)
                     }
                     if !row.dateText.isEmpty {
                         Text(row.dateText)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.placeholder)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.placeholder)
                     }
                 }
 
@@ -265,10 +265,10 @@ private struct AlertRow: View {
                 Color.clear.frame(width: 20, height: 20)
             }
             .padding(Space.l)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
         .buttonStyle(PressableStyle())
@@ -290,7 +290,7 @@ private struct AlertRow: View {
         Button(action: onClear) {
             Image(systemName: "xmark")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(width: Space.touchTarget, height: Space.touchTarget)
                 .contentShape(Rectangle())
         }
@@ -300,9 +300,9 @@ private struct AlertRow: View {
         // element floating over the row would otherwise be a second thing for
         // VoiceOver to find in the same place.
         .accessibilityHidden(true)
-        // The glyph sits at the centre of a 44pt target, so the target is
+        // The glyph sits at the center of a 44pt target, so the target is
         // offset to put the glyph back where it was drawn rather than where a
-        // 44pt box would centre it. Nothing overhangs the card.
+        // 44pt box would center it. Nothing overhangs the card.
         .padding(.top, 4)
     }
 

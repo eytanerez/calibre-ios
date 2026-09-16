@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import PhotosUI
 import SwiftUI
 
@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// Every question it draws comes from the server. There is no list of questions
 /// in this file and there must never be one — the website, this app and the
-/// server's own validator all read one catalogue
+/// server's own validator all read one catalog
 /// (`Backend/app/services/beta_program.py`), which is what stops an option
 /// reworded on the site and still shipping in a TestFlight build from producing
 /// two answers to one question that can never be counted together.
@@ -42,7 +42,7 @@ struct BetaFeedbackSheet: View {
                     questionsView
                 }
             }
-            .background(Color.calibre.background)
+            .background(Color.rewound.background)
             .navigationTitle("Beta feedback")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -64,8 +64,8 @@ struct BetaFeedbackSheet: View {
             VStack(alignment: .leading, spacing: Space.m) {
                 if let form = beta.config.form {
                     Text(form.kindQuestion)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
 
                     ForEach(form.kinds) { choice in
                         Button {
@@ -74,20 +74,20 @@ struct BetaFeedbackSheet: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(choice.label)
-                                    .font(CalibreType.bodySemiBold)
-                                    .foregroundStyle(Color.calibre.foreground)
+                                    .font(RewoundType.bodySemiBold)
+                                    .foregroundStyle(Color.rewound.foreground)
                                 if let description = choice.description {
                                     Text(description)
-                                        .font(CalibreType.caption)
-                                        .foregroundStyle(Color.calibre.mutedForeground)
+                                        .font(RewoundType.caption)
+                                        .foregroundStyle(Color.rewound.mutedForeground)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(Space.m)
-                            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box))
+                            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box))
                             .overlay(
                                 RoundedRectangle(cornerRadius: Radius.box)
-                                    .stroke(Color.calibre.border, lineWidth: 1)
+                                    .stroke(Color.rewound.border, lineWidth: 1)
                             )
                         }
                         .buttonStyle(.plain)
@@ -112,9 +112,9 @@ struct BetaFeedbackSheet: View {
                         if !visible.isEmpty {
                             VStack(alignment: .leading, spacing: Space.l) {
                                 Text(section.title.uppercased())
-                                    .font(CalibreType.eyebrow)
-                                    .tracking(CalibreType.eyebrowTracking)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.eyebrow)
+                                    .tracking(RewoundType.eyebrowTracking)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
 
                                 ForEach(visible) { question in
                                     BetaQuestionRow(
@@ -134,24 +134,24 @@ struct BetaFeedbackSheet: View {
             VStack(spacing: Space.s) {
                 if let errorMessage {
                     Text(errorMessage)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.destructive)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Button(isSending ? "Sending…" : "Send feedback") { send() }
-                    .buttonStyle(.calibrePrimary)
+                    .buttonStyle(.rewoundPrimary)
                     .frame(maxWidth: .infinity)
                     .disabled(!canSend)
                 if !BetaStore.hasAnyAnswer(answers) {
                     Text("Answer at least one question to send.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
             .padding(Space.margin)
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .overlay(alignment: .top) {
-                Rectangle().fill(Color.calibre.border).frame(height: 1)
+                Rectangle().fill(Color.rewound.border).frame(height: 1)
             }
         }
     }
@@ -160,20 +160,20 @@ struct BetaFeedbackSheet: View {
         VStack(spacing: Space.m) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(Color.calibre.success)
+                .foregroundStyle(Color.rewound.success)
             Text("That is with us")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             Text("We read every one of these. Thank you for taking the time.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             Button("Send something else") {
                 sent = false
                 kind = nil
             }
-            .buttonStyle(.calibreGhost)
+            .buttonStyle(.rewoundGhost)
         }
         .padding(Space.margin)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -205,9 +205,9 @@ struct BetaFeedbackSheet: View {
             answers["bug_device"] = .text(idiom == .pad ? "ipad_tablet" : "iphone")
         }
         if answers["bug_browser"] == nil {
-            // Not a browser at all. The catalogue offers "Calibre iOS app" for
+            // Not a browser at all. The catalog offers "Rewound iOS app" for
             // exactly this, and it is the true answer.
-            answers["bug_browser"] = .text("calibre_ios_app")
+            answers["bug_browser"] = .text("rewound_ios_app")
         }
     }
 
@@ -245,14 +245,14 @@ private struct BetaQuestionRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text(question.prompt)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let help = question.help {
                 Text(help)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
 
             switch BetaAnswerKind(question.type) {
@@ -269,21 +269,21 @@ private struct BetaQuestionRow: View {
             case .longtext:
                 // The label is empty because the prompt above already IS the
                 // label; passing the question again would print it twice.
-                CalibreTextEditor("", text: textBinding)
+                RewoundTextEditor("", text: textBinding)
             case .text, .email:
-                CalibreTextField("", text: textBinding)
+                RewoundTextField("", text: textBinding)
                     .keyboardType(BetaAnswerKind(question.type) == .email ? .emailAddress : .default)
                     .textInputAutocapitalization(
                         BetaAnswerKind(question.type) == .email ? .never : .sentences
                     )
             case .unsupported:
-                // A question type added to the catalogue after this build
+                // A question type added to the catalog after this build
                 // shipped. Named rather than silently skipped, so a tester who
                 // sees a gap knows it is not their app failing to draw
                 // something — and so nobody reads its absence as an answer.
                 Text("This question needs a newer version of the app.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
     }
@@ -308,16 +308,16 @@ private struct ChoiceChip: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(CalibreType.label)
-                .foregroundStyle(isOn ? Color.calibre.primaryForeground : Color.calibre.foreground)
+                .font(RewoundType.label)
+                .foregroundStyle(isOn ? Color.rewound.primaryForeground : Color.rewound.foreground)
                 .padding(.horizontal, Space.m)
                 .padding(.vertical, Space.s)
                 .background(
-                    Capsule().fill(isOn ? Color.calibre.primary : Color.calibre.card)
+                    Capsule().fill(isOn ? Color.rewound.primary : Color.rewound.card)
                 )
                 .overlay(
                     Capsule().stroke(
-                        isOn ? Color.calibre.primary : Color.calibre.border,
+                        isOn ? Color.rewound.primary : Color.rewound.border,
                         lineWidth: 1
                     )
                 )
@@ -377,8 +377,8 @@ private struct MultiChoice: View {
             }
             if let ceiling = question.maxSelect {
                 Text("\(selected.count) of \(ceiling) chosen")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
     }
@@ -397,17 +397,17 @@ private struct ScaleChoice: View {
                         answer = isOn ? nil : .number(step)
                     } label: {
                         Text("\(step)")
-                            .font(CalibreType.label)
+                            .font(RewoundType.label)
                             .monospacedDigit()
-                            .foregroundStyle(isOn ? Color.calibre.primaryForeground : Color.calibre.foreground)
+                            .foregroundStyle(isOn ? Color.rewound.primaryForeground : Color.rewound.foreground)
                             .frame(width: 40, height: 40)
                             .background(
                                 RoundedRectangle(cornerRadius: Radius.control)
-                                    .fill(isOn ? Color.calibre.primary : Color.calibre.card)
+                                    .fill(isOn ? Color.rewound.primary : Color.rewound.card)
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: Radius.control)
-                                    .stroke(isOn ? Color.calibre.primary : Color.calibre.border, lineWidth: 1)
+                                    .stroke(isOn ? Color.rewound.primary : Color.rewound.border, lineWidth: 1)
                             )
                     }
                     .buttonStyle(.plain)
@@ -420,8 +420,8 @@ private struct ScaleChoice: View {
                     Spacer()
                     Text(question.maxLabel ?? "")
                 }
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
     }
@@ -441,8 +441,8 @@ private struct MatrixChoice: View {
             ForEach(question.rows ?? []) { row in
                 VStack(alignment: .leading, spacing: Space.s) {
                     Text(row.label)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.foreground)
                     FlowRow(spacing: Space.xs) {
                         ForEach(question.options ?? []) { option in
                             let isOn = values[row.value] == option.value
@@ -460,7 +460,7 @@ private struct MatrixChoice: View {
                 }
                 .padding(Space.s)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box))
+                .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box))
             }
         }
     }
@@ -485,21 +485,21 @@ private struct FilePicker: View {
                 HStack(spacing: Space.xs) {
                     Image(systemName: "paperclip").font(.caption)
                     Text(isUploading ? "Uploading…" : "Choose from your photos")
-                        .font(CalibreType.label)
+                        .font(RewoundType.label)
                 }
-                .foregroundStyle(Color.calibre.foreground)
+                .foregroundStyle(Color.rewound.foreground)
                 .padding(.horizontal, Space.m)
                 .padding(.vertical, Space.s)
-                .background(Capsule().fill(Color.calibre.card))
-                .overlay(Capsule().stroke(Color.calibre.border, lineWidth: 1))
+                .background(Capsule().fill(Color.rewound.card))
+                .overlay(Capsule().stroke(Color.rewound.border, lineWidth: 1))
             }
             .disabled(isUploading)
 
             ForEach(attachments) { attachment in
                 HStack {
                     Text(attachment.filename)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(1)
                     Spacer()
                     Button {
@@ -508,20 +508,20 @@ private struct FilePicker: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.caption2)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Remove \(attachment.filename)")
                 }
                 .padding(.horizontal, Space.s)
                 .padding(.vertical, 6)
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control))
+                .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.control))
             }
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
             }
         }
         .onChange(of: picked) { _, items in

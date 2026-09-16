@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One brand's corner of the market: serif hero, the locked-brand grid with
@@ -25,7 +25,7 @@ struct BrandScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle(brand)
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
@@ -44,12 +44,12 @@ struct BrandScreen: View {
         VStack(alignment: .leading, spacing: Space.s) {
             Eyebrow("Brand")
             Text(brand)
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
             if let count = brandGroup?.liveTotal ?? model?.total {
-                Text(count == 1 ? "1 watch live on Calibre." : "\(count.formatted()) watches live on Calibre.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                Text(count == 1 ? "1 watch live on Rewound." : "\(count.formatted()) watches live on Rewound.")
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -66,23 +66,23 @@ struct BrandScreen: View {
                 HStack(spacing: Space.m) {
                     Image(systemName: "square.grid.2x2")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.calibre.primary)
+                        .foregroundStyle(Color.rewound.primary)
                     Text("Browse all brands")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 .padding(.horizontal, Space.margin)
                 .frame(minHeight: Space.touchTarget + 8)
                 .contentShape(Rectangle())
             }
             .buttonStyle(PressableStyle())
-            .background(Color.calibre.background.opacity(0.97))
+            .background(Color.rewound.background.opacity(0.97))
             .overlay(alignment: .top) {
-                Rectangle().fill(Color.calibre.border).frame(height: 1)
+                Rectangle().fill(Color.rewound.border).frame(height: 1)
             }
             .accessibilityHint("Opens the complete brand directory")
         }

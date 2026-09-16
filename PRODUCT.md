@@ -6,11 +6,11 @@ product
 
 ## Users
 
-Watch buyers, collectors, and sellers using Calibre on iPhone to discover, evaluate, save, buy, and list luxury watches. They need to understand inventory and transaction terms quickly, move between browsing and deeper research without losing context, and trust that marketplace actions are clear and reversible.
+Watch buyers, collectors, and sellers using Rewound on iPhone to discover, evaluate, save, buy, and list luxury watches. They need to understand inventory and transaction terms quickly, move between browsing and deeper research without losing context, and trust that marketplace actions are clear and reversible.
 
 ## Product Purpose
 
-Calibre is a native marketplace and collecting companion for authenticated luxury watches. It brings discovery, shopping, saved watches, editorial education, offers, checkout, selling, and post-purchase activity into one coherent mobile product. Success means users can confidently find the right watch, understand the costs and authentication process, and complete a transaction without ambiguity.
+Rewound is a native marketplace and collecting companion for authenticated luxury watches. It brings discovery, shopping, saved watches, editorial education, offers, checkout, selling, and post-purchase activity into one coherent mobile product. Success means users can confidently find the right watch, understand the costs and authentication process, and complete a transaction without ambiguity.
 
 Current seller rates are a 6% fee for private/member sellers and a 4% fee for verified dealers. Historical orders continue to display the rate recorded when the transaction was placed.
 

@@ -3,7 +3,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 import XCTest
-@testable import Calibre
+@testable import Rewound
 
 final class PhotoImportTests: XCTestCase {
     @MainActor

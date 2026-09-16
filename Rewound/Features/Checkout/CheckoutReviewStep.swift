@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import PassKit
 import SwiftUI
 
@@ -20,8 +20,8 @@ struct CheckoutReviewStep: View {
                 EyebrowProgress(steps: ["Shipping", "Payment", "Review"], currentIndex: 2)
 
                 Text("Review and pay")
-                    .font(CalibreType.title)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.title)
+                    .foregroundStyle(Color.rewound.foreground)
 
                 // What is being bought. One watch keeps its mini card; a set
                 // is itemised, because each watch has its own price, its own
@@ -74,7 +74,7 @@ struct CheckoutReviewStep: View {
             .padding(.top, Space.m)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
@@ -107,20 +107,20 @@ struct CheckoutReviewStep: View {
             // promise behind the number.
             if CheckoutCopy.cardFeeAmount(breakdown) != nil {
                 Text(CheckoutCopy.cardFeeNote(breakdown))
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, Space.l)
             }
 
             HStack(alignment: .firstTextBaseline) {
                 Text("Total")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer()
                 Text(PriceFormatter.format(breakdown.grandTotal.value, currency: breakdown.currency))
-                    .font(CalibreType.price)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.price)
+                    .foregroundStyle(Color.rewound.foreground)
             }
             .padding(.horizontal, Space.l)
             .accessibilityElement(children: .combine)
@@ -162,10 +162,10 @@ struct CheckoutReviewStep: View {
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -174,14 +174,14 @@ struct CheckoutReviewStep: View {
     private func cardSection(_ breakdown: CheckoutBreakdown) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Your card")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             // Which cards work here, said at card entry — while wire is still
             // one tap away, never after submission.
             Text(CheckoutCopy.acceptedCardsNote(breakdown, statesText: discountStatesText))
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             // Cards the buyer already has, when they have any. Each one still
@@ -216,15 +216,15 @@ struct CheckoutReviewStep: View {
                             }
                         }
                     }
-                    .buttonStyle(.calibreGhost)
+                    .buttonStyle(.rewoundGhost)
                 }
             }
 
             if model.canOfferApplePay {
                 VStack(spacing: Space.s) {
                     Text("or")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(maxWidth: .infinity)
                     PayWithApplePayButton(.buy) {
                         Haptics.shared.play(.press)
@@ -248,7 +248,7 @@ struct CheckoutReviewStep: View {
     ///
     /// A saved card is drawn here exactly as it is drawn in settings — one
     /// `WalletCardFace`, two contexts — so the thing a buyer picks at checkout
-    /// is the thing they recognise from their own account rather than a row
+    /// is the thing they recognize from their own account rather than a row
     /// with a radio dot beside it. Picking one runs the same server-side
     /// funding check a typed card runs, and the Pay button stays dead until it
     /// comes back yes.
@@ -275,7 +275,7 @@ struct CheckoutReviewStep: View {
                 Haptics.shared.play(.selection)
                 model.enterNewCard()
             }
-            .buttonStyle(.calibreGhost)
+            .buttonStyle(.rewoundGhost)
             .disabled(model.payState.isBusy || model.confirmingOrder)
         }
     }
@@ -314,7 +314,7 @@ struct CheckoutReviewStep: View {
                     Haptics.shared.play(.selection)
                     model.useSavedCardsInstead()
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
                 .disabled(model.payState.isBusy || model.confirmingOrder)
             }
         }
@@ -323,10 +323,10 @@ struct CheckoutReviewStep: View {
     /// The check is quick and quiet, but it is happening, so it says so.
     private var cardCheckRow: some View {
         HStack(spacing: Space.s) {
-            CalibreInlineLoading(size: 18)
+            RewoundInlineLoading(size: 18)
             Text("Checking your card…")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -334,8 +334,8 @@ struct CheckoutReviewStep: View {
 
     private var cardAcceptedRow: some View {
         Label("This card works here. Nothing has been charged yet.", systemImage: "checkmark.circle")
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
@@ -348,16 +348,16 @@ struct CheckoutReviewStep: View {
             VStack(alignment: .leading, spacing: Space.xs) {
                 Label {
                     Text(CheckoutCopy.refusalMessage(refusal, statesText: discountStatesText))
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                 } icon: {
                     Image(systemName: "creditcard.trianglebadge.exclamationmark")
-                        .foregroundStyle(Color.calibre.destructive)
+                        .foregroundStyle(Color.rewound.destructive)
                 }
                 Text("Nothing has been charged.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
 
             HStack(spacing: Space.m) {
@@ -367,7 +367,7 @@ struct CheckoutReviewStep: View {
                 Button("Use a different card") {
                     model.enterNewCard()
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
 
                 Button {
                     Haptics.shared.play(.press)
@@ -375,23 +375,23 @@ struct CheckoutReviewStep: View {
                 } label: {
                     BusyLabel(title: "Pay by wire", busy: model.preparingWire)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
             }
 
             Text(CheckoutCopy.wireAlwaysAvailable)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            Color.calibre.destructive.opacity(0.06),
+            Color.rewound.destructive.opacity(0.06),
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.destructive.opacity(0.35), lineWidth: 1)
+                .strokeBorder(Color.rewound.destructive.opacity(0.35), lineWidth: 1)
         )
         .transition(.opacity)
     }
@@ -414,24 +414,24 @@ struct CheckoutReviewStep: View {
             if !returnLines.isEmpty {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     Text("Returns on this watch")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                     ForEach(returnLines, id: \.self) { line in
                         Text(line)
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Space.l)
                 .background(
-                    Color.calibre.card,
+                    Color.rewound.card,
                     in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                        .strokeBorder(Color.calibre.border, lineWidth: 1)
+                        .strokeBorder(Color.rewound.border, lineWidth: 1)
                 )
                 .accessibilityElement(children: .combine)
             }
@@ -448,7 +448,7 @@ struct CheckoutReviewStep: View {
             } label: {
                 BusyLabel(title: "Pay by wire instead", busy: model.preparingWire)
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
             .disabled(model.payState.isBusy || model.confirmingOrder)
         }
     }
@@ -457,11 +457,11 @@ struct CheckoutReviewStep: View {
         HStack(alignment: .top, spacing: Space.s) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(width: 18)
             Text(text)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -472,9 +472,9 @@ struct CheckoutReviewStep: View {
     /// sentence loses its number rather than gaining a guess.
     private var offerForfeitureText: String {
         if let hold = model.offerHoldText {
-            return "This is payment on an accepted offer. If it isn't completed in time, the \(hold) hold is forfeited and split between the seller and Calibre."
+            return "This is payment on an accepted offer. If it isn't completed in time, the \(hold) hold is forfeited and split between the seller and Rewound."
         }
-        return "This is payment on an accepted offer. If it isn't completed in time, your hold is forfeited and split between the seller and Calibre."
+        return "This is payment on an accepted offer. If it isn't completed in time, your hold is forfeited and split between the seller and Rewound."
     }
 
     private var discountStatesText: String? {
@@ -498,21 +498,21 @@ struct CheckoutReviewStep: View {
                     Text(payTitle)
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(!model.canPayWithCard)
             }
         }
         .padding(.horizontal, Space.margin)
         .padding(.vertical, Space.m)
-        .background(Color.calibre.background.opacity(0.97))
+        .background(Color.rewound.background.opacity(0.97))
     }
 
     private func busyRow(_ text: String) -> some View {
         HStack(spacing: Space.m) {
-            CalibreInlineLoading(size: 20)
+            RewoundInlineLoading(size: 20)
             Text(text)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.secondaryForeground)
         }
         .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
         .accessibilityElement(children: .combine)

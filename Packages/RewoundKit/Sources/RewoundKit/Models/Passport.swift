@@ -50,7 +50,7 @@ public struct PassportEvent: Decodable, Sendable {
     public let details: PassportEventDetails?
 
     /// The one kind a person wrote themselves. Everything else on the
-    /// timeline is Calibre stating a fact about the watch, and only this
+    /// timeline is Rewound stating a fact about the watch, and only this
     /// takes the hand.
     public var isOwnerWritten: Bool { kind == "service_added" }
 

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Offers buyers have made, the ones needing an answer first.
@@ -61,20 +61,20 @@ struct SellerOffersTab: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(offer.listing?.title ?? listing?.title ?? "Your listing")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(1)
 
                     // The amount on the table right now, which after a
                     // counter is not the amount the offer opened at.
                     Text(PriceFormatter.format(offerCurrentAmount(offer), currency: offer.currency))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.priceSmall)
+                        .foregroundStyle(Color.rewound.foreground)
 
                     if let asking = offer.listing?.price.value ?? listing?.price.value {
                         Text("Asking \(PriceFormatter.format(asking, currency: offer.currency))")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
 
                     HStack(spacing: Space.s) {
@@ -87,14 +87,14 @@ struct SellerOffersTab: View {
 
                     if let buyer = offer.buyer?.username {
                         Text("From @\(buyer)")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
 
                     if let message = offerLatestMessage(offer) {
                         Text(message)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -104,15 +104,15 @@ struct SellerOffersTab: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .padding(.top, Space.xs)
             }
             .padding(Space.m)
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
             .contentShape(Rectangle())
         }

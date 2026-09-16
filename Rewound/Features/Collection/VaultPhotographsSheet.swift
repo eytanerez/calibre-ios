@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import PhotosUI
 import SwiftUI
 
@@ -7,7 +7,7 @@ import SwiftUI
 /// taking one off for good.
 ///
 /// This replaced a form that asked for an `https://` address and said, in the
-/// form, that Calibre did not store pictures for watches in a vault. It does
+/// form, that Rewound did not store pictures for watches in a vault. It does
 /// now, so the link form is gone rather than kept beside the picker — two ways
 /// to set one photograph is how a surface ends up with copy explaining which
 /// one is real.
@@ -68,8 +68,8 @@ struct VaultPhotographsSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.l) {
                         Text(explanation)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
 
                         if loaded {
@@ -80,8 +80,8 @@ struct VaultPhotographsSheet: View {
 
                         if let errorMessage {
                             Text(errorMessage)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.destructive)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.destructive)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
@@ -89,26 +89,26 @@ struct VaultPhotographsSheet: View {
                             errorMessage = nil
                             showingPicker = true
                         }
-                        .buttonStyle(.calibre(.primary, fullWidth: true))
+                        .buttonStyle(.rewound(.primary, fullWidth: true))
                         .disabled(busy || !loaded || remaining == 0)
 
                         if loaded, remaining == 0 {
                             Text("You can keep up to eight photographs of a watch. Delete one to add another.")
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .padding(Space.l)
                 }
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle("Photographs")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
-                        .tint(Color.calibre.primary)
+                        .tint(Color.rewound.primary)
                 }
             }
         }
@@ -143,7 +143,7 @@ struct VaultPhotographsSheet: View {
             }
             Button("Keep it", role: .cancel) { pendingDeletion = nil }
         } message: { _ in
-            Text("It is removed from Calibre for good. There is no undo.")
+            Text("It is removed from Rewound for good. There is no undo.")
         }
         .task { await load() }
     }
@@ -192,7 +192,7 @@ struct VaultPhotographsSheet: View {
         HStack(spacing: Space.m) {
             ForEach(0..<Self.columns, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .fill(Color.calibre.secondary)
+                    .fill(Color.rewound.secondary)
                     .frame(width: cell, height: cell)
                     .shimmer()
             }
@@ -204,7 +204,7 @@ struct VaultPhotographsSheet: View {
         let lifted = dragging?.id == photo.id
         return ZStack(alignment: .topTrailing) {
             ZStack {
-                Color.calibre.secondary
+                Color.rewound.secondary
                 if let url = photo.url?.url {
                     PrivateImage(url: url, side: cell) { phase in
                         switch phase {
@@ -230,19 +230,19 @@ struct VaultPhotographsSheet: View {
             .overlay(alignment: .bottomLeading) {
                 if index == 0 {
                     Text("Cover")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primaryForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.primaryForeground)
                         .padding(.horizontal, Space.s)
                         .padding(.vertical, Space.xs)
                         .background(
-                            Capsule().fill(Color.calibre.primaryDeep.opacity(0.92))
+                            Capsule().fill(Color.rewound.primaryDeep.opacity(0.92))
                         )
                         .padding(Space.s)
                 }
             }
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
 
             Button {
@@ -259,7 +259,7 @@ struct VaultPhotographsSheet: View {
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(Color(white: 1))
                     .frame(width: 24, height: 24)
-                    .background(Circle().fill(Color.calibre.shadowTint.opacity(0.62)))
+                    .background(Circle().fill(Color.rewound.shadowTint.opacity(0.62)))
                     // The dot is small because it sits on somebody's
                     // photograph; the target around it is not.
                     .frame(width: Space.touchTarget, height: Space.touchTarget)
@@ -275,7 +275,7 @@ struct VaultPhotographsSheet: View {
         .frame(width: cell, height: cell)
         .scaleEffect(lifted ? 1.06 : 1)
         .shadow(
-            color: Color.calibre.shadowTint.opacity(lifted ? 0.28 : 0),
+            color: Color.rewound.shadowTint.opacity(lifted ? 0.28 : 0),
             radius: lifted ? 14 : 0,
             y: lifted ? 8 : 0
         )
@@ -296,8 +296,8 @@ struct VaultPhotographsSheet: View {
 
     private var unreadable: some View {
         Text("Unreadable")
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .multilineTextAlignment(.center)
             .padding(Space.s)
     }

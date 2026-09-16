@@ -33,24 +33,24 @@ public struct EmptyState: View {
 
             VStack(spacing: Space.s) {
                 Text(title)
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(message)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .multilineTextAlignment(.center)
 
             if let aside, !aside.isEmpty {
                 Text(aside)
-                    .font(CalibreType.hand)
-                    .foregroundStyle(Color.calibre.foreground.opacity(0.85))
+                    .font(RewoundType.hand)
+                    .foregroundStyle(Color.rewound.foreground.opacity(0.85))
                     .multilineTextAlignment(.center)
             }
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(.calibrePrimary)
+                    .buttonStyle(.rewoundPrimary)
                     .padding(.top, Space.s)
             }
         }
@@ -68,7 +68,7 @@ public struct EmptyState: View {
         actionTitle: "Browse the market",
         action: {}
     )
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }
 
 #Preview("Empty state — dark", traits: .sizeThatFitsLayout) {
@@ -79,6 +79,6 @@ public struct EmptyState: View {
         actionTitle: "Browse the market",
         action: {}
     )
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
     .preferredColorScheme(.dark)
 }

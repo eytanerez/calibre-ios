@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One watch, opened from the Vault list, carrying the photograph's frame.
@@ -9,7 +9,7 @@ import SwiftUI
 /// The row used to be `NavigationLink { VaultWatchDetailScreen(…) }`, a
 /// destination view, which SwiftUI holds as navigation state rather than as an
 /// element of the path. That is fine until something re-parents the app: a
-/// watch Calibre authenticated plays the Vault film the moment it opens, the
+/// watch Rewound authenticated plays the Vault film the moment it opens, the
 /// moment host swaps the whole app into its staging layer, every
 /// `NavigationStack` under it is built afresh — and a push the path never knew
 /// about is not restored. The screen appeared and was thrown back to the list
@@ -28,7 +28,7 @@ struct VaultWatchLink: Hashable {
 }
 
 /// The Vault tab: every watch the member owns, led by their own photograph of
-/// it. Calibre purchases arrive automatically on delivery — authenticated,
+/// it. Rewound purchases arrive automatically on delivery — authenticated,
 /// with their Passport — and manual adds cover the rest of the drawer.
 ///
 /// A collection is not a shopfront. What a row carries is the picture, what
@@ -75,7 +75,7 @@ struct CollectionScreen: View {
                 EmptyState(
                     icon: "latch.2.case",
                     title: "Your vault lives here",
-                    message: "Sign in and every watch you buy on Calibre arrives in your vault authenticated — plus anything else you own.",
+                    message: "Sign in and every watch you buy on Rewound arrives in your vault authenticated — plus anything else you own.",
                     actionTitle: "Sign in"
                 ) {
                     services.auth.require("Sign in to see your vault") {}
@@ -95,7 +95,7 @@ struct CollectionScreen: View {
                 EmptyState(
                     icon: "latch.2.case",
                     title: "No watches yet",
-                    message: "Buy on Calibre and your watch lands in your vault authenticated — or add what you already own to keep the whole drawer in one place.",
+                    message: "Buy on Rewound and your watch lands in your vault authenticated — or add what you already own to keep the whole drawer in one place.",
                     actionTitle: "Add a watch"
                 ) {
                     openAddSheet()
@@ -105,7 +105,7 @@ struct CollectionScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         // Declared here rather than on the tab shell because the zoom needs
         // this screen's namespace: the frame the watch grows out of is the
         // thumbnail in the row that was tapped.
@@ -124,7 +124,7 @@ struct CollectionScreen: View {
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .tint(Color.calibre.primary)
+                    .tint(Color.rewound.primary)
                     .accessibilityLabel("Add a watch")
                 }
                 if lock.isAvailable {
@@ -139,7 +139,7 @@ struct CollectionScreen: View {
                         } label: {
                             Image(systemName: "ellipsis.circle")
                         }
-                        .tint(Color.calibre.primary)
+                        .tint(Color.rewound.primary)
                         .accessibilityLabel("Vault options")
                     }
                 }
@@ -214,16 +214,16 @@ struct CollectionScreen: View {
                 ForEach(0..<5, id: \.self) { _ in
                     HStack(alignment: .top, spacing: Space.m) {
                         RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                            .fill(Color.calibre.card)
+                            .fill(Color.rewound.card)
                             .frame(width: 72, height: 72)
                             .shimmer()
                         VStack(alignment: .leading, spacing: Space.s) {
                             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                .fill(Color.calibre.card)
+                                .fill(Color.rewound.card)
                                 .frame(width: 180, height: 18)
                                 .shimmer()
                             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                .fill(Color.calibre.card)
+                                .fill(Color.rewound.card)
                                 .frame(width: 120, height: 14)
                                 .shimmer()
                         }
@@ -241,8 +241,8 @@ struct CollectionScreen: View {
     private var vaultHeader: some View {
         HStack(alignment: .center, spacing: Space.m) {
             Text("Every watch you own, kept in its place.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -379,7 +379,7 @@ private struct CollectionWatchRow: View {
                         VStack(alignment: .leading, spacing: Space.xs) {
                             // One chip, whichever it is, and the server's flag
                             // is the only thing that decides which. A watch
-                            // somebody typed in is a watch nobody at Calibre
+                            // somebody typed in is a watch nobody at Rewound
                             // has held, however good its photograph looks.
                             if watch.authenticated {
                                 AuthenticatedBadge()
@@ -393,25 +393,25 @@ private struct CollectionWatchRow: View {
                             Text(watch.displayTitle)
                                 .font(
                                     watch.isNicknamed
-                                        ? CalibreType.hand
-                                        : CalibreType.serif(.semiBold, 17, relativeTo: .headline)
+                                        ? RewoundType.hand
+                                        : RewoundType.serif(.semiBold, 17, relativeTo: .headline)
                                 )
-                                .foregroundStyle(Color.calibre.foreground)
+                                .foregroundStyle(Color.rewound.foreground)
                                 .multilineTextAlignment(.leading)
 
                             Text(subtitle)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                                 .multilineTextAlignment(.leading)
 
                             // What they paid, where they have told us. Nothing
                             // is invented for a watch with no figure on it —
-                            // and this is never Calibre's estimate, which is
+                            // and this is never Rewound's estimate, which is
                             // settled as a number no owner is shown.
                             if let acquired = acquiredText {
                                 Text(acquired)
-                                    .font(CalibreType.priceSmall)
-                                    .foregroundStyle(Color.calibre.foreground)
+                                    .font(RewoundType.priceSmall)
+                                    .foregroundStyle(Color.rewound.foreground)
                                     .accessibilityLabel("Acquired for \(acquired)")
                             }
                         }
@@ -428,7 +428,7 @@ private struct CollectionWatchRow: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(width: Space.touchTarget, height: Space.touchTarget)
                         .contentShape(Rectangle())
                 }
@@ -438,7 +438,7 @@ private struct CollectionWatchRow: View {
 
             if showsHairline {
                 Rectangle()
-                    .fill(Color.calibre.border)
+                    .fill(Color.rewound.border)
                     .frame(height: 1)
             }
         }
@@ -466,18 +466,18 @@ private struct CollectionWatchRow: View {
     }
 }
 
-/// "Authenticated by Calibre" — driven by the server's own flag, never by
+/// "Authenticated by Rewound" — driven by the server's own flag, never by
 /// re-reading `source`.
 struct AuthenticatedBadge: View {
     var body: some View {
-        Text("AUTHENTICATED BY CALIBRE")
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.primary)
+        Text("AUTHENTICATED BY REWOUND")
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.primary)
             .multilineTextAlignment(.trailing)
             .padding(.horizontal, Space.s)
             .padding(.vertical, Space.xs)
-            .background(Color.calibre.primary.opacity(0.1), in: Capsule())
-            .accessibilityLabel("Authenticated by Calibre")
+            .background(Color.rewound.primary.opacity(0.1), in: Capsule())
+            .accessibilityLabel("Authenticated by Rewound")
     }
 }
 
@@ -502,16 +502,16 @@ private struct AddCollectionWatchSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    CalibreTextField("Brand", text: $brand, placeholder: "Rolex", kind: .sentence)
-                    CalibreTextField("Model", text: $model, placeholder: "Submariner", kind: .sentence)
-                    CalibreTextField(
+                    RewoundTextField("Brand", text: $brand, placeholder: "Rolex", kind: .sentence)
+                    RewoundTextField("Model", text: $model, placeholder: "Submariner", kind: .sentence)
+                    RewoundTextField(
                         "Reference",
                         text: $reference,
                         placeholder: "126610LN",
                         kind: .reference
                     )
-                    CalibreTextField("Year", text: $yearText, placeholder: "2022", kind: .integer)
-                    CalibreTextField(
+                    RewoundTextField("Year", text: $yearText, placeholder: "2022", kind: .integer)
+                    RewoundTextField(
                         "What you paid (USD)",
                         text: $priceText,
                         placeholder: "9,500",
@@ -523,21 +523,21 @@ private struct AddCollectionWatchSheet: View {
                     // owner does fill it in, it becomes the vault's primary
                     // line and the reference moves underneath.
                     VStack(alignment: .leading, spacing: Space.xs) {
-                        CalibreTextField(
+                        RewoundTextField(
                             "What do you call it?",
                             text: $nickname,
                             placeholder: "The daily",
                             kind: .sentence
                         )
                         Text("Optional. Yours only — buyers never see it.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
 
                     if let errorMessage {
                         Text(errorMessage)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.destructive)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.destructive)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -545,23 +545,23 @@ private struct AddCollectionWatchSheet: View {
                         save()
                     } label: {
                         Text(saveTitle)
-                            .font(CalibreType.bodyMedium)
+                            .font(RewoundType.bodyMedium)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, Space.m)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Color.calibre.primary)
+                    .tint(Color.rewound.primary)
                     .disabled(brand.trimmingCharacters(in: .whitespaces).isEmpty || saving)
                 }
                 .padding(Space.l)
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle("Add a watch")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
-                        .tint(Color.calibre.primary)
+                        .tint(Color.rewound.primary)
                 }
             }
         }

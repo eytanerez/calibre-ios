@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import NukeUI
 import Nuke
 import SwiftUI
@@ -14,7 +14,7 @@ struct SquareThumb: View {
 
     var body: some View {
         ZStack {
-            Color.calibre.secondary.opacity(0.5)
+            Color.rewound.secondary.opacity(0.5)
             if let request {
                 LazyImage(request: request) { state in
                     if let image = state.image {
@@ -48,7 +48,7 @@ struct SquareThumb: View {
     private var fallbackGlyph: some View {
         Image(systemName: "clock")
             .font(.system(size: side * 0.3, weight: .light))
-            .foregroundStyle(Color.calibre.placeholder)
+            .foregroundStyle(Color.rewound.placeholder)
             .accessibilityHidden(true)
     }
 }
@@ -88,20 +88,20 @@ struct ListingMiniCard: View {
                     Eyebrow(eyebrow)
                 }
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .lineLimit(2)
                 Text(priceText)
-                    .font(CalibreType.priceSmall)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.priceSmall)
+                    .foregroundStyle(Color.rewound.foreground)
             }
             Spacer(minLength: 0)
         }
         .padding(Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
     }
@@ -129,17 +129,17 @@ struct CheckoutItemsCard: View {
                     row(item)
                     if index < items.count - 1 {
                         Rectangle()
-                            .fill(Color.calibre.border)
+                            .fill(Color.rewound.border)
                             .frame(height: 1)
                             .padding(.leading, 56 + Space.m + Space.l)
                     }
                 }
             }
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
     }
@@ -150,21 +150,21 @@ struct CheckoutItemsCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 if let line = priceLine(item) {
                     Text(line)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
 
                 if showsReturnTerms, let line = item.line.flatMap(CheckoutCopy.itemReturnLine) {
                     Text(line)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -198,10 +198,10 @@ struct ListingMiniCardSkeleton: View {
             Spacer(minLength: 0)
         }
         .padding(Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }
@@ -218,13 +218,13 @@ struct EyebrowProgress: View {
                 Eyebrow(
                     steps[index],
                     color: index == currentIndex
-                        ? Color.calibre.foreground
-                        : Color.calibre.mutedForeground.opacity(0.55)
+                        ? Color.rewound.foreground
+                        : Color.rewound.mutedForeground.opacity(0.55)
                 )
                 if index < steps.count - 1 {
                     Image(systemName: "arrow.right")
                         .font(.system(size: 8, weight: .medium))
-                        .foregroundStyle(Color.calibre.mutedForeground.opacity(0.4))
+                        .foregroundStyle(Color.rewound.mutedForeground.opacity(0.4))
                 }
             }
         }
@@ -243,10 +243,10 @@ struct InlineErrorLine: View {
             Image(systemName: "exclamationmark.circle")
                 .font(.system(size: 13, weight: .medium))
             Text(message)
-                .font(CalibreType.label)
+                .font(RewoundType.label)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .foregroundStyle(Color.calibre.destructive)
+        .foregroundStyle(Color.rewound.destructive)
         .frame(maxWidth: .infinity, alignment: .leading)
         .transition(.opacity.combined(with: .offset(y: -3)))
     }
@@ -315,22 +315,22 @@ struct CheckoutProblemBlock: View {
                         busy: model.preparingCardIntent || model.preparingWire
                     )
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(model.preparingCardIntent || model.preparingWire)
 
                 Text("Nothing has been charged. We'll price your purchase again without it.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             } else if problem.listingReserved {
                 Button("Back to the watch") {
                     Haptics.shared.play(.press)
                     model.path.removeAll()
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
             } else if problem.retryable {
                 Button("Try again", action: retry)
-                    .buttonStyle(.calibreGhost)
+                    .buttonStyle(.rewoundGhost)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -358,16 +358,16 @@ struct DroppedWatchNote: View {
         HStack(alignment: .top, spacing: Space.s) {
             Image(systemName: "arrow.uturn.backward.circle")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Text("We left \(title) out — someone else was checking out with it. You're buying \(CheckoutCopy.watchCount(remaining)).")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .frame(width: 28, height: 28)
             }
             .accessibilityLabel("Dismiss")
@@ -379,7 +379,7 @@ struct DroppedWatchNote: View {
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.secondary.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.secondary.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }
@@ -393,7 +393,7 @@ struct BusyLabel: View {
         // The wheel joins the words rather than replacing them: a button that
         // goes blank at the moment money moves has taken away the one thing
         // that said what it is doing.
-        CalibreBusyLabel(title, busy: busy)
+        RewoundBusyLabel(title, busy: busy)
     }
 }
 
@@ -416,14 +416,14 @@ struct DisclosureCard<Content: View>: View {
         HStack(alignment: .top, spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
                 .frame(width: 20)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 content
             }
@@ -431,10 +431,10 @@ struct DisclosureCard<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
     }

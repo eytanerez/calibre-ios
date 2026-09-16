@@ -1,9 +1,9 @@
-import CalibreDesign
+import RewoundDesign
 import StripePaymentsUI
 import SwiftUI
 import UIKit
 
-/// Stripe's own card control, wearing Calibre's type and colours.
+/// Stripe's own card control, wearing Rewound's type and colors.
 ///
 /// Buyer checkout collects the card here rather than in PaymentSheet because
 /// the card's funding has to be known *before* we take money: prepaid is
@@ -75,17 +75,17 @@ struct CardEntryField: UIViewRepresentable {
     }
 
     /// The control exposes a handful of knobs. Every one it does expose is
-    /// pinned to the same tokens `CalibreStripe.appearance()` gives
+    /// pinned to the same tokens `RewoundStripe.appearance()` gives
     /// PaymentSheet, so the two never read as different products. The font
     /// goes through `UIFontMetrics` because this field is the one place in
     /// checkout where UIKit, not SwiftUI, owns the type.
     private func style(_ field: STPPaymentCardTextField) {
-        field.backgroundColor = UIColor(Color.calibre.card)
-        field.textColor = UIColor(Color.calibre.foreground)
-        field.textErrorColor = UIColor(Color.calibre.destructive)
-        field.placeholderColor = UIColor(Color.calibre.placeholder)
-        field.cursorColor = UIColor(Color.calibre.primary)
-        field.borderColor = UIColor(Color.calibre.border)
+        field.backgroundColor = UIColor(Color.rewound.card)
+        field.textColor = UIColor(Color.rewound.foreground)
+        field.textErrorColor = UIColor(Color.rewound.destructive)
+        field.placeholderColor = UIColor(Color.rewound.placeholder)
+        field.cursorColor = UIColor(Color.rewound.primary)
+        field.borderColor = UIColor(Color.rewound.border)
         field.borderWidth = 1
         field.cornerRadius = Radius.control
         if let geist = UIFont(name: "Geist-Regular", size: 17) {

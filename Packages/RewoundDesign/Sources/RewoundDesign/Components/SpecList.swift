@@ -31,27 +31,27 @@ public struct SpecList: View {
 
                 if index < rows.count - 1 {
                     Rectangle()
-                        .fill(Color.calibre.border)
+                        .fill(Color.rewound.border)
                         .frame(height: 1)
                 }
             }
         }
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
     @ViewBuilder
     private func specRow(_ spec: (label: String, value: String)) -> some View {
         let label = Text(spec.label)
-            .font(CalibreType.body)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.body)
+            .foregroundStyle(Color.rewound.mutedForeground)
         let value = Text(spec.value)
-            .font(CalibreType.bodyMedium)
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.bodyMedium)
+            .foregroundStyle(Color.rewound.foreground)
 
         Group {
             if sideBySide {
@@ -86,12 +86,12 @@ private let demoRows: [(label: String, value: String)] = [
 #Preview("Spec list — light", traits: .sizeThatFitsLayout) {
     SpecList(demoRows)
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
 }
 
 #Preview("Spec list — dark", traits: .sizeThatFitsLayout) {
     SpecList(demoRows)
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .preferredColorScheme(.dark)
 }

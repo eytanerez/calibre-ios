@@ -21,7 +21,7 @@ public struct CountdownChip: View {
                 Image(systemName: expired ? "clock.badge.xmark" : "clock")
                     .font(.system(size: 11, weight: .medium))
                 Text(text(remaining: remaining))
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                     .monospacedDigit()
             }
             .foregroundStyle(tint(remaining: remaining))
@@ -34,7 +34,7 @@ public struct CountdownChip: View {
                     Haptics.shared.play(.warning)
                     // The haptic is how a sighted user learns the deadline
                     // passed. This is the same beat for someone who won't see
-                    // the chip go grey; silent when nothing is listening.
+                    // the chip go gray; silent when nothing is listening.
                     A11y.announce("Expired")
                 }
             }
@@ -80,10 +80,10 @@ public struct CountdownChip: View {
     }
 
     private func tint(remaining: TimeInterval) -> Color {
-        if remaining <= 0 { return Color.calibre.mutedForeground }
+        if remaining <= 0 { return Color.rewound.mutedForeground }
         // Final hour shares the StatusBadge warning tint — one warm amber, not a new color.
         if remaining < 3_600 { return StatusBadge.Tone.warning.tint }
-        return Color.calibre.accentForeground
+        return Color.rewound.accentForeground
     }
 }
 
@@ -94,7 +94,7 @@ public struct CountdownChip: View {
         CountdownChip(until: .now.addingTimeInterval(-60))
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }
 
 #Preview("Countdown — dark", traits: .sizeThatFitsLayout) {
@@ -104,6 +104,6 @@ public struct CountdownChip: View {
         CountdownChip(until: .now.addingTimeInterval(-60))
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
     .preferredColorScheme(.dark)
 }

@@ -1,7 +1,7 @@
 import XCTest
 
-@testable import Calibre
-@testable import CalibreKit
+@testable import Rewound
+@testable import RewoundKit
 
 /// The description became prose, and the spec sheet became a payload.
 ///

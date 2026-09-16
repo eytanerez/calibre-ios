@@ -1,11 +1,11 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// A watch's Passport, as the booklet it is.
 ///
 /// The record itself is not new — it has always been at
-/// `buycalibre.com/passport/<code>`, and until now the app's only answer was
+/// `shoprewound.com/passport/<code>`, and until now the app's only answer was
 /// to hand the reader to Safari. What is new is that it reads like the thing
 /// it describes: kraft stock, a stamp pressed into the front, and service
 /// entries filled in by hand with the date out in the margin, the way a real
@@ -14,11 +14,11 @@ import SwiftUI
 /// And it is paged, not scrolled. The passport exists to be handed to a
 /// stranger deciding whether to trust a watch, and a booklet is the form that
 /// object takes in the real world — a cover you open and leaves you move
-/// through one at a time. `CALIBRE_PASSPORT_BOOKLET.md` is the contract the
+/// through one at a time. `REWOUND_PASSPORT_BOOKLET.md` is the contract the
 /// three platforms share: the page order, the stamp rule, the fixed-zone
 /// dates and the turn. Only the gesture is ours.
 ///
-/// The split is the whole design. Everything Calibre states about the watch —
+/// The split is the whole design. Everything Rewound states about the watch —
 /// what it is, that it was authenticated, that it sold — is set in the sans,
 /// because it is a fact on a record. Only the entry a person wrote themselves
 /// is in the hand. A booklet where the printing and the handwriting look the
@@ -94,8 +94,8 @@ struct PassportScreen: View {
     /// the app, and a passport that only opens for people who do is not the
     /// document being described.
     private var shareURL: URL {
-        URL(string: "https://buycalibre.com/passport/\(publicCode)")
-            ?? URL(string: "https://buycalibre.com")!
+        URL(string: "https://shoprewound.com/passport/\(publicCode)")
+            ?? URL(string: "https://shoprewound.com")!
     }
 
     // MARK: - The booklet
@@ -119,7 +119,7 @@ struct PassportScreen: View {
                 readingWhole = true
             } label: {
                 Text("Read the whole passport")
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                     .foregroundStyle(Kraft.primary)
                     .padding(.vertical, Space.s)
                     .frame(maxWidth: .infinity)
@@ -210,19 +210,19 @@ struct PassportScreen: View {
     /// leaf underneath rather than on the stamp itself.
     private func coverLeaf(_ passport: WatchPassport) -> some View {
         VStack(spacing: Space.m) {
-            CalibreLogoMark(size: 34)
+            RewoundLogoMark(size: 34)
 
-            Eyebrow("Calibre Passport", color: Kraft.coverInkMuted)
+            Eyebrow("Rewound Passport", color: Kraft.coverInkMuted)
 
             Text(passport.title)
-                .font(CalibreType.serif(.semiBold, 26, relativeTo: .title))
+                .font(RewoundType.serif(.semiBold, 26, relativeTo: .title))
                 .foregroundStyle(Kraft.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, Space.m)
 
             if let subtitle = passport.subtitle {
                 Text(subtitle)
-                    .font(CalibreType.body)
+                    .font(RewoundType.body)
                     .foregroundStyle(Kraft.coverInkMuted)
             }
 
@@ -233,13 +233,13 @@ struct PassportScreen: View {
             Eyebrow("Passport number", color: Kraft.coverInkMuted)
 
             Text(passport.publicCode.uppercased())
-                .font(CalibreType.label)
+                .font(RewoundType.label)
                 .tracking(2)
                 .monospaced()
                 .foregroundStyle(Kraft.ink)
 
             if isAuthenticated(passport) {
-                CalibreMark.stamp(size: 72, trigger: stampTrigger)
+                RewoundMark.stamp(size: 72, trigger: stampTrigger)
                     .rotationEffect(.degrees(-11))
                     .padding(.top, Space.l)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -263,8 +263,8 @@ struct PassportScreen: View {
         VStack(alignment: .leading, spacing: Space.xl) {
             runningHead("The watch")
             specTable(watchSpecs(passport))
-            Text("The permanent record of this specific watch on Calibre — every authentication, sale, and owner-added service entry, carried with the watch for life.")
-                .font(CalibreType.body)
+            Text("The permanent record of this specific watch on Rewound — every authentication, sale, and owner-added service entry, carried with the watch for life.")
+                .font(RewoundType.body)
                 .foregroundStyle(Kraft.inkMuted)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -296,7 +296,7 @@ struct PassportScreen: View {
             ForEach(Array(authentications(passport).enumerated()), id: \.offset) { _, event in
                 VStack(alignment: .leading, spacing: Space.m) {
                     Text(marginDate(event))
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .foregroundStyle(Kraft.inkMuted)
                         .monospacedDigit()
 
@@ -304,13 +304,13 @@ struct PassportScreen: View {
                     // server's own words. Set in the sans like every other
                     // fact on the record.
                     Text(event.summary)
-                        .font(CalibreType.sans(.medium, 17, relativeTo: .body))
+                        .font(RewoundType.sans(.medium, 17, relativeTo: .body))
                         .foregroundStyle(Kraft.ink)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if event.details?.boxPapers == true {
                         Text("Verified with box & papers.")
-                            .font(CalibreType.caption)
+                            .font(RewoundType.caption)
                             .foregroundStyle(Kraft.inkMuted)
                     }
 
@@ -321,7 +321,7 @@ struct PassportScreen: View {
                     if let report = event.details?.reportPdfUrl?.url {
                         Link(destination: report) {
                             Text("View authentication report")
-                                .font(CalibreType.label)
+                                .font(RewoundType.label)
                                 .foregroundStyle(Kraft.primary)
                         }
                     }
@@ -351,7 +351,7 @@ struct PassportScreen: View {
                         // them: the page is titled, and every entry on it is
                         // the same kind of thing.
                         Text(event.ownerEntry)
-                            .font(CalibreType.hand)
+                            .font(RewoundType.hand)
                             .foregroundStyle(Kraft.ink)
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -378,12 +378,12 @@ struct PassportScreen: View {
                     if index > 0 { Rule() }
                     marginRow(event) {
                         Text(label(for: event.kind))
-                            .font(CalibreType.eyebrow)
-                            .tracking(CalibreType.eyebrowTracking)
+                            .font(RewoundType.eyebrow)
+                            .tracking(RewoundType.eyebrowTracking)
                             .foregroundStyle(Kraft.primary)
 
                         Text(event.summary)
-                            .font(CalibreType.body)
+                            .font(RewoundType.body)
                             .foregroundStyle(Kraft.ink)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -394,22 +394,22 @@ struct PassportScreen: View {
             // names are not withheld from them specifically, they are not on
             // the document at all.
             Text("A public passport records the transfers, never the owners.")
-                .font(CalibreType.caption)
+                .font(RewoundType.caption)
                 .foregroundStyle(Kraft.inkMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let listing = activeListing(passport) {
                 VStack(alignment: .leading, spacing: Space.m) {
                     Rule()
-                    Text("This watch is on Calibre right now.")
-                        .font(CalibreType.bodyMedium)
+                    Text("This watch is on Rewound right now.")
+                        .font(RewoundType.bodyMedium)
                         .foregroundStyle(Kraft.ink)
                     Button {
                         routePush(.listing(listing.listingId))
                     } label: {
                         Text("View the listing")
                     }
-                    .buttonStyle(.calibre(.primary))
+                    .buttonStyle(.rewound(.primary))
                 }
                 .padding(.top, Space.s)
             }
@@ -455,7 +455,7 @@ struct PassportScreen: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         let date = Text(marginDate(event))
-            .font(CalibreType.caption)
+            .font(RewoundType.caption)
             .foregroundStyle(Kraft.inkMuted)
             .monospacedDigit()
             .multilineTextAlignment(.leading)
@@ -500,10 +500,10 @@ struct PassportScreen: View {
     @ViewBuilder
     private func specRow(_ row: (label: String, value: String)) -> some View {
         let label = Text(row.label)
-            .font(CalibreType.body)
+            .font(RewoundType.body)
             .foregroundStyle(Kraft.inkMuted)
         let value = Text(row.value)
-            .font(CalibreType.bodyMedium)
+            .font(RewoundType.bodyMedium)
             .foregroundStyle(Kraft.ink)
 
         if sideBySide {
@@ -537,7 +537,7 @@ struct PassportScreen: View {
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Kraft.inkMuted)
                     Text(row.value)
-                        .font(CalibreType.label)
+                        .font(RewoundType.label)
                         .foregroundStyle(Kraft.ink)
                 }
             }
@@ -571,8 +571,8 @@ struct PassportScreen: View {
         switch kind {
         case "authenticated": "AUTHENTICATED"
         case "transferred": "OWNERSHIP TRANSFERRED"
-        case "sold": "SOLD ON CALIBRE"
-        case "listed": "LISTED ON CALIBRE"
+        case "sold": "SOLD ON REWOUND"
+        case "listed": "LISTED ON REWOUND"
         case "service_added": "SERVICE RECORDED"
         default: kind.replacingOccurrences(of: "_", with: " ").uppercased()
         }
@@ -592,8 +592,8 @@ struct PassportScreen: View {
                         leafView(leaf, passport, scrolls: false)
                     }
 
-                    Text("Every watch sold on Calibre passes physical authentication before delivery.")
-                        .font(CalibreType.caption)
+                    Text("Every watch sold on Rewound passes physical authentication before delivery.")
+                        .font(RewoundType.caption)
                         .foregroundStyle(Kraft.inkMuted)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
@@ -790,7 +790,7 @@ private struct BookletDeck<Leaf: View>: View {
     private var board: some View {
         Booklet.boardShape
             .fill(Kraft.cover)
-            .calibreShadow(.modal)
+            .rewoundShadow(.modal)
             .overlay(alignment: .leading) {
                 Stitching()
                     .stroke(Kraft.rule, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [9, 13]))
@@ -916,7 +916,7 @@ private enum Booklet {
     /// How far a leaf has to be pulled before letting go turns it.
     static let commit: Double = 0.3
 
-    /// The turn, from `CALIBRE_PASSPORT_BOOKLET.md` §4: 420ms, accelerating
+    /// The turn, from `REWOUND_PASSPORT_BOOKLET.md` §4: 420ms, accelerating
     /// into contact and settling without overshoot.
     ///
     /// `Motion`'s ease-out is the interface's curve and stays exactly that —
@@ -1021,7 +1021,7 @@ private enum Kraft {
     static let inkMuted = dynamic(light: 0x6E5C46, dark: 0xB6A48C)
     /// Secondary type on the cover board. `inkMuted` is mixed for a leaf and
     /// falls under three to one on the darker stock of the cover, so it drops
-    /// the ink's own weight instead of changing colour.
+    /// the ink's own weight instead of changing color.
     static let coverInkMuted = ink.opacity(0.72)
     /// The stamp, the heads down the leaves, and the links.
     static let primary = dynamic(light: 0x7D5440, dark: 0xC79274)

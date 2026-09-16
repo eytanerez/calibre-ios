@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const frontend = resolve(here, "../../frontend");
 const source = join(frontend, "src/pages/public/journalArticles.ts");
-const outDir = resolve(here, "../Calibre/Resources/Journal");
+const outDir = resolve(here, "../Rewound/Resources/Journal");
 
 const ts = readFileSync(source, "utf8");
 const start = ts.indexOf("JOURNAL_ARTICLES");

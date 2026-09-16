@@ -1,11 +1,11 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// Which illustrated mark the offer screen is allowed to draw for the seller's
 /// first-round window.
 ///
-/// Written as behaviour rather than as a count: every failure here is a gauge
+/// Written as behavior rather than as a count: every failure here is a gauge
 /// asserting a window the server did not describe — a reading on a countered
 /// offer, a needle on a closed window, a denominator that was guessed.
 final class OfferMarkPlacementTests: XCTestCase {

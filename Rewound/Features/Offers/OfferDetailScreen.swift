@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One negotiation, both sides of it. Route: `.offer(offerID)`. Works for
@@ -24,7 +24,7 @@ struct OfferDetailScreen: View {
                 loadingSkeleton
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Offer")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -100,7 +100,7 @@ private struct OfferDetailContent: View {
                 }
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .tutorialOverlay(tutorial)
         .onChange(of: model.offer?.id) { _, id in
             if id != nil { tutorial.startIfNeeded() }
@@ -117,7 +117,7 @@ private struct OfferDetailContent: View {
 
             HStack(spacing: Space.m) {
                 // Agreed and binding. `waxSeal` is the mark for exactly this
-                // moment (CALIBRE_BY_HAND_CONTRACTS.md §4) and this is the one
+                // moment (REWOUND_BY_HAND_CONTRACTS.md §4) and this is the one
                 // screen in the negotiation that reaches it, so the budget of
                 // one illustrated moment per step is spent here and nowhere
                 // else in the flow. It presses when the status changes under
@@ -128,7 +128,7 @@ private struct OfferDetailContent: View {
                 // every push, and an offer opened four times in an afternoon
                 // is one agreement, not four.
                 if isAgreed(offer) {
-                    CalibreMark.waxSeal(size: 44, trigger: offer.status)
+                    RewoundMark.waxSeal(size: 44, trigger: offer.status)
                         .markAnnounces("offer-agreed:\(offer.id):\(offer.status.rawValue)")
                 }
 
@@ -146,7 +146,7 @@ private struct OfferDetailContent: View {
                             // gate is a status the seal never shares, which
                             // is what keeps this screen at one mark.
                             if let reading = offer.firstRoundWindowRemaining() {
-                                CalibreMark.dialArc(reading, size: 40, trigger: offer.id)
+                                RewoundMark.dialArc(reading, size: 40, trigger: offer.id)
                                     .markStill(true)
                             }
                             CountdownChip(until: deadline)
@@ -175,9 +175,9 @@ private struct OfferDetailContent: View {
                     Image(systemName: "lock.shield")
                         .font(.system(size: 12, weight: .medium))
                     Text(holdCaption)
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                 }
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
             }
 
             if !offer.negotiationHistory.isEmpty {
@@ -243,7 +243,7 @@ private struct OfferDetailContent: View {
                 } label: {
                     BusyLabel(title: "Renew your deposit", busy: model.renewer.renewing)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(model.renewer.renewing)
             }
 
@@ -278,9 +278,9 @@ private struct OfferDetailContent: View {
                     model.confirmingCancel = true
                 } label: {
                     BusyLabel(title: "Cancel offer", busy: model.acting)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .foregroundStyle(Color.rewound.destructive)
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
                 .disabled(model.acting)
 
             case .acceptedPendingPayment where !isSeller:
@@ -291,16 +291,16 @@ private struct OfferDetailContent: View {
                     Text("Pay now")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
 
                 Button {
                     model.confirmingBackOut = true
                 } label: {
                     Text("Back out")
-                        .foregroundStyle(Color.calibre.destructive)
+                        .foregroundStyle(Color.rewound.destructive)
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
 
             case .countered where isSeller:
                 waitingCaption("Waiting on the buyer to respond to your counter.")
@@ -316,7 +316,7 @@ private struct OfferDetailContent: View {
                         Text("View the order")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    .buttonStyle(.rewound(.secondary, fullWidth: true))
                 }
 
             default:
@@ -375,7 +375,7 @@ private struct OfferDetailContent: View {
         } label: {
             BusyLabel(title: title, busy: model.acting)
         }
-        .buttonStyle(.calibre(.primary, fullWidth: true))
+        .buttonStyle(.rewound(.primary, fullWidth: true))
         .disabled(model.acting)
     }
 
@@ -393,23 +393,23 @@ private struct OfferDetailContent: View {
                     Text("Counter")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
 
                 Button {
                     model.confirmingDecline = true
                 } label: {
                     Text("Decline")
-                        .foregroundStyle(Color.calibre.destructive)
+                        .foregroundStyle(Color.rewound.destructive)
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
             }
         }
     }
 
     private func counterForm(_ offer: Offer) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            CalibreTextField(
+            RewoundTextField(
                 "Your counter",
                 text: $model.counterAmountText,
                 placeholder: "0",
@@ -417,12 +417,12 @@ private struct OfferDetailContent: View {
                 kind: .money
             ) {
                 Text(offer.currency)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .moneyFormatted($model.counterAmountText)
 
-            CalibreTextField(
+            RewoundTextField(
                 "Message (optional)",
                 text: $model.counterMessage,
                 placeholder: "Add a note with your number",
@@ -441,7 +441,7 @@ private struct OfferDetailContent: View {
                 } label: {
                     BusyLabel(title: "Send counter", busy: model.acting)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(model.parsedCounterAmount == nil || model.acting)
 
                 Button("Never mind") {
@@ -449,22 +449,22 @@ private struct OfferDetailContent: View {
                         model.showCounterForm = false
                     }
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         .transition(.opacity.combined(with: .offset(y: -6)))
     }
 
     private func waitingCaption(_ text: String) -> some View {
         Text(text)
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -613,7 +613,7 @@ final class OfferDetailModel {
         guard let offer, let hold = offer.hold else { return nil }
         let noun = offerHoldNoun(offerHoldText(offer, config: config))
         if offerSettledForfeit(offer) != nil || hold.capturedAt != nil {
-            return "\(noun) forfeited and split between the seller and Calibre"
+            return "\(noun) forfeited and split between the seller and Rewound"
         }
         if hold.releasedAt != nil { return "\(noun) released" }
         if hold.authorizedAt != nil || hold.status == "requires_capture" {
@@ -645,7 +645,7 @@ final class OfferDetailModel {
     /// the exact amount at stake.
     var backOutMessage: String {
         let noun = offerHoldNoun(offerHoldText(offer, config: config))
-        return "You agreed to buy this watch. If you back out now, your \(noun) is forfeited and split between the seller and Calibre."
+        return "You agreed to buy this watch. If you back out now, your \(noun) is forfeited and split between the seller and Rewound."
     }
 
     var acceptDialogTitle: String {
@@ -737,7 +737,7 @@ final class OfferDetailModel {
 
     func payNow() {
         guard let offer else { return }
-        CalibreMoments.play(.offerAccepted)
+        RewoundMoments.play(.offerAccepted)
         router.open(.checkout(offer.listingId, offerID: offer.id))
     }
 

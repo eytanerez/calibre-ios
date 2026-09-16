@@ -1,22 +1,22 @@
 {
-  "name": "Calibre (Personal)",
-  "identifier": "com.buycalibre.calibre.source",
-  "sourceURL": "https://raw.githubusercontent.com/eytanerez/calibre-ios/main/source.json",
+  "name": "Rewound (Personal)",
+  "identifier": "com.shoprewound.rewound.source",
+  "sourceURL": "https://raw.githubusercontent.com/eytanerez/rewound-ios/main/source.json",
   "apps": [
     {
-      "name": "Calibre",
-      "bundleIdentifier": "com.buycalibre.calibre",
+      "name": "Rewound",
+      "bundleIdentifier": "com.shoprewound.rewound",
       "developerName": "Eytan Erez",
       "localizedDescription": "A native iOS marketplace for discovering, buying, and selling watches.",
-      "iconURL": "https://raw.githubusercontent.com/eytanerez/calibre-ios/main/icon.png",
+      "iconURL": "https://raw.githubusercontent.com/eytanerez/rewound-ios/main/icon.png",
       "permissions": [
         {
           "type": "camera",
-          "usageDescription": "Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents."
+          "usageDescription": "Rewound uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents."
         },
         {
           "type": "photos",
-          "usageDescription": "Calibre lets you choose existing photos of your watch when creating a listing."
+          "usageDescription": "Rewound lets you choose existing photos of your watch when creating a listing."
         }
       ],
       "versions": [
@@ -24,7 +24,7 @@
           "version": "1.0",
           "date": "2026-07-12",
           "localizedDescription": "Initial SideStore release (build 1).",
-          "downloadURL": "https://github.com/eytanerez/calibre-ios/releases/download/v1.0-b1/Calibre.ipa",
+          "downloadURL": "https://github.com/eytanerez/rewound-ios/releases/download/v1.0-b1/Rewound.ipa",
           "size": 13818075,
           "minOSVersion": "18.0"
         }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Step 1 — where the watch ships. Saved addresses as radio cards with the
@@ -14,8 +14,8 @@ struct CheckoutShippingStep: View {
                 EyebrowProgress(steps: ["Shipping", "Payment", "Review"], currentIndex: 0)
 
                 Text("Where should it ship?")
-                    .font(CalibreType.title)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.title)
+                    .foregroundStyle(Color.rewound.foreground)
 
                 switch model.phase {
                 case .loading:
@@ -38,7 +38,7 @@ struct CheckoutShippingStep: View {
             .padding(.top, Space.m)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -53,11 +53,11 @@ struct CheckoutShippingStep: View {
                     Text("Continue to payment")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(model.selectedAddressID == nil)
                 .padding(.horizontal, Space.margin)
                 .padding(.vertical, Space.m)
-                .background(Color.calibre.background.opacity(0.97))
+                .background(Color.rewound.background.opacity(0.97))
             }
         }
     }
@@ -85,9 +85,9 @@ struct CheckoutShippingStep: View {
                         model.showAddressForm ? "Never mind — use a saved address" : "Use a different address",
                         systemImage: model.showAddressForm ? "chevron.up" : "plus"
                     )
-                    .font(CalibreType.bodyMedium)
+                    .font(RewoundType.bodyMedium)
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
             }
 
             if model.showAddressForm {
@@ -120,21 +120,21 @@ private struct AddressRadioCard: View {
             HStack(alignment: .top, spacing: Space.m) {
                 Image(systemName: isSelected ? "inset.filled.circle" : "circle")
                     .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(isSelected ? Color.calibre.primary : Color.calibre.borderBright)
+                    .foregroundStyle(isSelected ? Color.rewound.primary : Color.rewound.borderBright)
                     .padding(.top, 1)
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: Space.s) {
                         Text(displayName)
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                         if address.isDefaultShipping {
                             StatusBadge("Default", tone: .info)
                         }
                     }
                     Text(addressLines)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 0)
@@ -142,13 +142,13 @@ private struct AddressRadioCard: View {
             .padding(Space.l)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                isSelected ? Color.calibre.primary.opacity(0.06) : Color.calibre.card,
+                isSelected ? Color.rewound.primary.opacity(0.06) : Color.rewound.card,
                 in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(
-                        isSelected ? Color.calibre.primary.opacity(0.5) : Color.calibre.border,
+                        isSelected ? Color.rewound.primary.opacity(0.5) : Color.rewound.border,
                         lineWidth: 1
                     )
             )
@@ -209,8 +209,8 @@ private struct AddressForm: View {
             }
         } label: {
             Label("Start from a saved address", systemImage: "square.on.square")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.primary)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(minHeight: Space.touchTarget)
                 .contentShape(Rectangle())
@@ -250,7 +250,7 @@ private struct AddressForm: View {
                 quickFillMenu
             }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Full name",
                 text: $fullName,
                 placeholder: "First and last name",
@@ -258,7 +258,7 @@ private struct AddressForm: View {
                 kind: .fullName
             )
 
-            CalibreTextField(
+            RewoundTextField(
                 "Street address",
                 text: $street,
                 placeholder: "Street and number",
@@ -266,9 +266,9 @@ private struct AddressForm: View {
                 kind: .addressLine1
             )
 
-            CalibreTextField("Apt, suite, unit (optional)", text: $apartment, kind: .addressLine2)
+            RewoundTextField("Apt, suite, unit (optional)", text: $apartment, kind: .addressLine2)
 
-            CalibreTextField(
+            RewoundTextField(
                 "City",
                 text: $city,
                 error: fieldError(city, "Enter a city."),
@@ -276,7 +276,7 @@ private struct AddressForm: View {
             )
 
             HStack(alignment: .top, spacing: Space.m) {
-                CalibreTextField(
+                RewoundTextField(
                     "State",
                     text: $state,
                     placeholder: "e.g. NY",
@@ -284,7 +284,7 @@ private struct AddressForm: View {
                     kind: .state
                 )
 
-                CalibreTextField(
+                RewoundTextField(
                     "ZIP",
                     text: $zip,
                     error: fieldError(zip, "Required."),
@@ -292,14 +292,14 @@ private struct AddressForm: View {
                 )
             }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Country",
                 text: $country,
                 error: countryError,
                 kind: .country
             )
 
-            CalibreTextField(
+            RewoundTextField(
                 "Phone (optional)",
                 text: $phone,
                 placeholder: "(415) 555-0134",
@@ -320,14 +320,14 @@ private struct AddressForm: View {
             } label: {
                 BusyLabel(title: "Save and use this address", busy: model.savingAddress)
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
             .disabled(model.savingAddress)
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         .animation(Motion.easeFast, value: model.addressFormError)
     }

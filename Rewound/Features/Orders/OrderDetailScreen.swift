@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The order detail — the lead, the journey, the record's own panels, and a
@@ -7,7 +7,7 @@ import SwiftUI
 /// transit.
 ///
 /// What the screen says about the order is not decided here. `Order.nextStep()`
-/// and `Order.timeline()` in `CalibreKit` decide it, so this screen and the
+/// and `Order.timeline()` in `RewoundKit` decide it, so this screen and the
 /// list cannot word the same order two different ways, and so the readings can
 /// be tested without a screen.
 struct OrderDetailScreen: View {
@@ -49,17 +49,17 @@ struct OrderDetailScreen: View {
                 // is a stopped watch. The line beside it carries the meaning —
                 // a still wheel is not self-evidently "loading".
                 VStack(spacing: Space.m) {
-                    CalibreMark.balanceWheel(size: 24)
+                    RewoundMark.balanceWheel(size: 24)
                     Text("Opening your order")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Opening your order")
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Order")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: orderID) { await load() }
@@ -94,7 +94,7 @@ struct OrderDetailScreen: View {
                     ReturnCaseCard(model: returnFlow)
                 }
 
-                // Nil for a cancelled or refunded order: a column of steps
+                // Nil for a canceled or refunded order: a column of steps
                 // nothing will ever reach is not a journey, and the lead has
                 // already said in one line what happened instead.
                 if let steps = order.timeline() {
@@ -157,31 +157,31 @@ struct OrderDetailScreen: View {
 
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text(order.listing?.title ?? "Your watch")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(identityLine(order))
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Divider().overlay(Color.calibre.borderBright)
+            Divider().overlay(Color.rewound.borderBright)
 
             VStack(alignment: .leading, spacing: Space.s) {
                 if let actor = step.actor {
                     Eyebrow(actor.label)
                 }
                 Text(step.headline)
-                    .font(CalibreType.title)
+                    .font(RewoundType.title)
                     .foregroundStyle(
-                        tone == .stopped ? Color.calibre.destructive : Color.calibre.foreground
+                        tone == .stopped ? Color.rewound.destructive : Color.rewound.foreground
                     )
                     .fixedSize(horizontal: false, vertical: true)
                 if let body = step.body {
                     Text(body)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 // Null wherever the server gave no date. A "we expect" line
@@ -189,8 +189,8 @@ struct OrderDetailScreen: View {
                 // fallback sentence here to fall back to.
                 if let next = step.next {
                     Text(next)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -233,11 +233,11 @@ struct OrderDetailScreen: View {
     /// mark carries the rest.
     private func checkoutMoment(_ key: String) -> some View {
         HStack(alignment: .center, spacing: Space.m) {
-            CalibreMark.box(size: 40, trigger: key)
+            RewoundMark.box(size: 40, trigger: key)
                 .markAnnounces(key)
             Text("Its journey to you starts now — authentication first, then your door.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -255,17 +255,17 @@ struct OrderDetailScreen: View {
 
         var fill: Color {
             switch self {
-            case .ask: Color.calibre.accent.opacity(0.4)
-            case .stopped: Color.calibre.destructive.opacity(0.08)
-            case .calm: Color.calibre.card
+            case .ask: Color.rewound.accent.opacity(0.4)
+            case .stopped: Color.rewound.destructive.opacity(0.08)
+            case .calm: Color.rewound.card
             }
         }
 
         var stroke: Color {
             switch self {
-            case .ask: Color.calibre.borderBright
-            case .stopped: Color.calibre.destructive.opacity(0.35)
-            case .calm: Color.calibre.border
+            case .ask: Color.rewound.borderBright
+            case .stopped: Color.rewound.destructive.opacity(0.35)
+            case .calm: Color.rewound.border
             }
         }
     }
@@ -298,21 +298,21 @@ struct OrderDetailScreen: View {
     private func policyLine(_ order: Order) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(returnTermsLine(order.returns))
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             // Said plainly, because a buyer will look for a cancel button and
             // there is not one. A person can still help before the watch is on
             // its way, and this is where they are.
-            Text("Orders can\u{2019}t be cancelled once the seller ships.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+            Text("Orders can\u{2019}t be canceled once the seller ships.")
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
-            Button("Talk to your Calibre contact") {
+            Button("Talk to your Rewound contact") {
                 Haptics.shared.play(.press)
                 routePush(.supportChat)
             }
-            .buttonStyle(.calibreGhost)
+            .buttonStyle(.rewoundGhost)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -328,33 +328,33 @@ struct OrderDetailScreen: View {
         VStack(alignment: .leading, spacing: Space.s) {
             if let due = order.paymentDueAt {
                 HStack {
-                    Text("Payment due").font(CalibreType.label).foregroundStyle(Color.calibre.accentForeground)
+                    Text("Payment due").font(RewoundType.label).foregroundStyle(Color.rewound.accentForeground)
                     Spacer()
                     CountdownChip(until: due)
                 }
             }
             Text("Send your wire to secure this watch. We'll email you the moment it clears.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.accentForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.accentForeground)
 
             // The authorization the buyer can see on their statement, said
             // where they will look for it. There is no control here to take
             // it off: it comes off when the transfer arrives.
             if let hold = order.wireHold, hold.isLive {
                 Text(wireHoldLine(hold))
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.accentForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.accentForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
     }
 
     /// The amount is the payload's own — never a remembered $250.
     private func wireHoldLine(_ hold: OrderWireHold) -> String {
         let amount = hold.amount.map { PriceFormatter.format($0.value) } ?? "The"
-        return "\(amount) authorization placed \u{2014} released when your transfer arrives. If the transfer isn\u{2019}t sent by the deadline it is charged and split between the seller and Calibre."
+        return "\(amount) authorization placed \u{2014} released when your transfer arrives. If the transfer isn\u{2019}t sent by the deadline it is charged and split between the seller and Rewound."
     }
 
     // MARK: - Cards
@@ -367,13 +367,13 @@ struct OrderDetailScreen: View {
                 OrderThumb(url: order.listing?.image?.url)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(order.listing?.title ?? "Your watch")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                     Text(PriceFormatter.format(order.subtotal.value, currency: order.currency))
-                        .font(CalibreType.price)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.price)
+                        .foregroundStyle(Color.rewound.foreground)
                 }
                 Spacer(minLength: 0)
             }
@@ -394,20 +394,20 @@ struct OrderDetailScreen: View {
                 VStack(alignment: .leading, spacing: Space.s) {
                     Label {
                         Text("Part of a purchase with \(siblings.count == 1 ? "1 other watch" : "\(siblings.count) other watches"). Each one is its own order, tracked separately.")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     } icon: {
                         Image(systemName: "square.stack")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
 
                     if siblings.count == 1, let other = siblings.first {
                         Button("View the other order") {
                             routePush(.order(other))
                         }
-                        .buttonStyle(.calibreGhost)
+                        .buttonStyle(.rewoundGhost)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -420,15 +420,15 @@ struct OrderDetailScreen: View {
 
     /// The one thing the verdict card said that the lead does not.
     ///
-    /// What it replaces re-announced the verdict — "Authenticated by Calibre",
+    /// What it replaces re-announced the verdict — "Authenticated by Rewound",
     /// or the whole refund paragraph — directly under a lead that had just
     /// said the same thing, because the lead could not say it before. This is
     /// the remainder: a note about the watch itself, not about the outcome.
     @ViewBuilder private func aftermarketNote(_ order: Order) -> some View {
         if order.authResult?.aftermarketFlag == true {
             Label("Aftermarket parts were noted during inspection.", systemImage: "wrench.and.screwdriver")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Space.l)
                 .cardSurface()
@@ -454,21 +454,21 @@ struct OrderDetailScreen: View {
                 HStack(spacing: Space.m) {
                     Image(systemName: "doc.text")
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(Color.calibre.primary)
+                        .foregroundStyle(Color.rewound.primary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("This watch's Passport")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                             .multilineTextAlignment(.leading)
                         Text("The record that travels with it.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .multilineTextAlignment(.leading)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .foregroundStyle(Color.rewound.placeholder)
                 }
                 .padding(Space.m)
                 .leadRowSurface()
@@ -484,7 +484,7 @@ struct OrderDetailScreen: View {
     ///
     /// The only conversation this screen offered was Support, and a buyer with
     /// a question about their own watch — which links came in the box, what it
-    /// was serviced with — was being sent to Calibre staff to ask it. Those are
+    /// was serviced with — was being sent to Rewound staff to ask it. Those are
     /// the seller's answers. Support keeps its place further down for the order
     /// itself; this is for the watch.
     ///
@@ -501,21 +501,21 @@ struct OrderDetailScreen: View {
                 HStack(spacing: Space.m) {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(Color.calibre.primary)
+                        .foregroundStyle(Color.rewound.primary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Contact seller")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                             .multilineTextAlignment(.leading)
                         Text("Ask about the watch itself.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .multilineTextAlignment(.leading)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .foregroundStyle(Color.rewound.placeholder)
                 }
                 .padding(Space.m)
                 .leadRowSurface()
@@ -534,7 +534,7 @@ struct OrderDetailScreen: View {
     /// And the viewer has to be this order's buyer. A seller looking at their
     /// own sale gets nothing: the thread is keyed on (listing, buyer), so the
     /// only thread they could open is one with themselves — which is why
-    /// calibre-messaging answers `seller_id == user.id` with a 400 rather than
+    /// rewound-messaging answers `seller_id == user.id` with a 400 rather than
     /// creating it. Withheld here so nobody has to read that error to find out.
     private func canContactSeller(_ order: Order) -> Bool {
         guard let sellerID = order.listing?.seller?.id,
@@ -547,7 +547,7 @@ struct OrderDetailScreen: View {
     /// screen does.
     ///
     /// `listingTitle` is sent for the same reason the listing screen sends it
-    /// and with the same weight: none. calibre-messaging refetches the listing
+    /// and with the same weight: none. rewound-messaging refetches the listing
     /// itself and writes its own title and reference onto the thread
     /// (`create_thread` in `app/api/views/threads.py`), so what goes up here
     /// cannot name the conversation wrongly — which is also why the reference
@@ -581,7 +581,7 @@ struct OrderDetailScreen: View {
 
     // MARK: - Tracking
 
-    /// The tracking number, while the watch is actually travelling.
+    /// The tracking number, while the watch is actually traveling.
     ///
     /// An action for exactly as long as that is true, and a line in the detail
     /// at the foot for the rest of the time — one control either way. Gated on
@@ -597,22 +597,22 @@ struct OrderDetailScreen: View {
                 HStack(spacing: Space.m) {
                     Image(systemName: "shippingbox")
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(Color.calibre.primary)
+                        .foregroundStyle(Color.rewound.primary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Tracking number")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                             .multilineTextAlignment(.leading)
                         Text(tracking)
-                            .font(CalibreType.caption)
+                            .font(RewoundType.caption)
                             .monospacedDigit()
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .multilineTextAlignment(.leading)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "doc.on.doc")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .foregroundStyle(Color.rewound.placeholder)
                 }
                 .padding(Space.m)
                 .leadRowSurface()
@@ -640,10 +640,10 @@ struct OrderDetailScreen: View {
     private func packingNoteCard(_ order: Order) -> some View {
         if order.status == .delivered, let note = order.packingNote, !note.isEmpty {
             VStack(alignment: .leading, spacing: Space.m) {
-                Text("From the seller").font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+                Text("From the seller").font(RewoundType.sectionTitle).foregroundStyle(Color.rewound.foreground)
                 Text(note)
-                    .font(CalibreType.hand)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.hand)
+                    .foregroundStyle(Color.rewound.foreground)
                     .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -664,8 +664,8 @@ struct OrderDetailScreen: View {
     private func detailsBlock(_ order: Order) -> some View {
         VStack(alignment: .leading, spacing: Space.l) {
             Text("Details")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             detailGroup("Receipt", rows: receiptRows(order))
 
@@ -682,15 +682,15 @@ struct OrderDetailScreen: View {
 
             if let address = order.shippingAddress {
                 VStack(alignment: .leading, spacing: Space.s) {
-                    Text("Delivery address").font(CalibreType.label).foregroundStyle(Color.calibre.mutedForeground)
+                    Text("Delivery address").font(RewoundType.label).foregroundStyle(Color.rewound.mutedForeground)
                     VStack(alignment: .leading, spacing: 2) {
-                        if let name = address.fullName { Text(name).font(CalibreType.bodyMedium) }
-                        if let line1 = address.line1 { Text(line1).font(CalibreType.body) }
-                        if let line2 = address.line2, !line2.isEmpty { Text(line2).font(CalibreType.body) }
+                        if let name = address.fullName { Text(name).font(RewoundType.bodyMedium) }
+                        if let line1 = address.line1 { Text(line1).font(RewoundType.body) }
+                        if let line2 = address.line2, !line2.isEmpty { Text(line2).font(RewoundType.body) }
                         Text([address.city, address.region, address.postalCode].compactMap { $0 }.joined(separator: ", "))
-                            .font(CalibreType.body)
+                            .font(RewoundType.body)
                     }
-                    .foregroundStyle(Color.calibre.foreground)
+                    .foregroundStyle(Color.rewound.foreground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -704,7 +704,7 @@ struct OrderDetailScreen: View {
     @ViewBuilder private func detailGroup(_ title: String, rows: [(String, String)]) -> some View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: Space.s) {
-                Text(title).font(CalibreType.label).foregroundStyle(Color.calibre.mutedForeground)
+                Text(title).font(RewoundType.label).foregroundStyle(Color.rewound.mutedForeground)
                 SpecList(rows)
             }
         }
@@ -780,14 +780,14 @@ struct OrderDetailScreen: View {
         if let terms = order.returns, !hasLiveReturn(order) {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("Returns")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
 
                 if terms.accepted {
                     acceptedReturnsCard(order, terms)
                 } else {
                     returnsNote(
-                        "This watch was listed without returns, so this order can't be sent back. If something isn't right with it, your Calibre contact will help — they're one message away."
+                        "This watch was listed without returns, so this order can't be sent back. If something isn't right with it, your Rewound contact will help — they're one message away."
                     )
                 }
             }
@@ -800,11 +800,11 @@ struct OrderDetailScreen: View {
                 HStack(alignment: .top, spacing: Space.m) {
                     VStack(alignment: .leading, spacing: Space.xs) {
                         Text("Your return window is open")
-                            .font(CalibreType.bodySemiBold)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodySemiBold)
+                            .foregroundStyle(Color.rewound.foreground)
                         Text(openWindowDetail(order, terms))
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -823,7 +823,7 @@ struct OrderDetailScreen: View {
                     // decoration. The date in words above is the deadline; the
                     // arc never carries it alone.
                     if order.mark() == .dialArc, let remaining = terms.remainingFraction() {
-                        CalibreMark.dialArc(remaining, size: 40, trigger: order.id)
+                        RewoundMark.dialArc(remaining, size: 40, trigger: order.id)
                             .markAnnounces("return-window:\(order.id)")
                     }
                 }
@@ -832,18 +832,18 @@ struct OrderDetailScreen: View {
                     Haptics.shared.play(.press)
                     showingReturnFlow = true
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
 
                 Text("We'll show you the exact refund, line by line, before anything is confirmed.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(Space.l)
             .cardSurface()
         } else if order.status == .delivered {
             returnsNote(
-                "The return window on this order has closed. If something isn't right with the watch, your Calibre contact will help."
+                "The return window on this order has closed. If something isn't right with the watch, your Rewound contact will help."
             )
         } else {
             returnsNote(pendingWindowDetail(terms))
@@ -869,8 +869,8 @@ struct OrderDetailScreen: View {
 
     private func returnsNote(_ message: String) -> some View {
         Text(message)
-            .font(CalibreType.body)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.body)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.l)
@@ -881,12 +881,12 @@ struct OrderDetailScreen: View {
 
     @ViewBuilder private func reviewSection(_ order: Order) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Text("Rate the seller").font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+            Text("Rate the seller").font(RewoundType.sectionTitle).foregroundStyle(Color.rewound.foreground)
             if let review {
                 VStack(alignment: .leading, spacing: Space.s) {
                     if editingReview {
                         StarRating(selection: $reviewRating)
-                        CalibreTextField(
+                        RewoundTextField(
                             "Anything you'd like to add? (optional)",
                             text: $reviewComment,
                             kind: .sentence
@@ -897,26 +897,26 @@ struct OrderDetailScreen: View {
                         Button(submittingReview ? "Saving…" : "Save review") {
                             Task { await updateReview(order) }
                         }
-                        .buttonStyle(.calibre(.primary, fullWidth: true))
+                        .buttonStyle(.rewound(.primary, fullWidth: true))
                         .disabled(reviewRating == 0 || submittingReview)
                         Button("Cancel") { editingReview = false }
-                            .buttonStyle(.calibre(.secondary, fullWidth: true))
+                            .buttonStyle(.rewound(.secondary, fullWidth: true))
                     } else {
                         StarRating(rating: Double(review.rating))
                         if let comment = review.comment, !comment.isEmpty {
-                            Text(comment).font(CalibreType.body).foregroundStyle(Color.calibre.foreground)
+                            Text(comment).font(RewoundType.body).foregroundStyle(Color.rewound.foreground)
                         }
                         Text("Thanks for sharing how it went.")
-                            .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption).foregroundStyle(Color.rewound.mutedForeground)
                         HStack(spacing: Space.s) {
                             Button("Edit review") {
                                 reviewRating = review.rating
                                 reviewComment = review.comment ?? ""
                                 editingReview = true
                             }
-                            .buttonStyle(.calibre(.secondary))
+                            .buttonStyle(.rewound(.secondary))
                             Button("Withdraw") { confirmingReviewWithdrawal = true }
-                                .buttonStyle(.calibre(.destructive))
+                                .buttonStyle(.rewound(.destructive))
                         }
                     }
                 }
@@ -938,7 +938,7 @@ struct OrderDetailScreen: View {
             } else {
                 VStack(alignment: .leading, spacing: Space.m) {
                     StarRating(selection: $reviewRating)
-                    CalibreTextField(
+                    RewoundTextField(
                         "Anything you'd like to add? (optional)",
                         text: $reviewComment,
                         kind: .sentence
@@ -951,7 +951,7 @@ struct OrderDetailScreen: View {
                     Button(submittingReview ? "Sending…" : "Submit review") {
                         Task { await submitReview(order) }
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(reviewRating == 0 || submittingReview)
                 }
                 .padding(Space.l)
@@ -1088,14 +1088,14 @@ struct OrderDetailScreen: View {
     ///
     /// No `label` on any of them: the journey's own steps and the lead above
     /// them already say where the watch is and what the bench found, in words
-    /// a screen reader reads. `CalibreMark` hides every drawing from
+    /// a screen reader reads. `RewoundMark` hides every drawing from
     /// accessibility for this reason.
     private func progressMark(_ order: Order) -> AnyView? {
         switch order.mark() {
         case .box:
             // The carton comes to rest in frame, packed and square, because
             // the departure is the journey and not the destination — and it
-            // draws for the travelling statuses alone. Delivered, cancelled,
+            // draws for the traveling statuses alone. Delivered, canceled,
             // refunded and failed get no parcel: a carton leaving the frame on
             // a delivered order would read as the watch going away again.
             //
@@ -1103,16 +1103,16 @@ struct OrderDetailScreen: View {
             // sixty-second refetch re-sealing the same parcel while still
             // sending it off again on a status that moves under the buyer.
             return AnyView(
-                CalibreMark.box(size: 48, trigger: order.status)
+                RewoundMark.box(size: 48, trigger: order.status)
                     .markAnnounces(order.transitMarkKey)
             )
         case .stamp:
-            // Calibre's bench passed this specific watch. Gated on the verdict
+            // Rewound's bench passed this specific watch. Gated on the verdict
             // and never on how far along the journey is: the step a failed
             // order stops on is the step a passed one completes.
             guard let verdict = order.verdictMarkKey else { return nil }
             return AnyView(
-                CalibreMark.stamp(size: 44, trigger: verdict)
+                RewoundMark.stamp(size: 44, trigger: verdict)
                     .markAnnounces(verdict)
             )
         case .dialArc, .none:
@@ -1128,21 +1128,21 @@ private extension View {
     /// rows are a shade of the ground they are on rather than cards on a card.
     func leadRowSurface() -> some View {
         background(
-            Color.calibre.card.opacity(0.85),
+            Color.rewound.card.opacity(0.85),
             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
     /// Standard bordered card surface used throughout the order detail.
     func cardSurface() -> some View {
-        background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
     }
 }

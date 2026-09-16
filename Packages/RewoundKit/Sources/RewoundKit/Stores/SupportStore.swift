@@ -19,8 +19,8 @@ public final class SupportStore {
     /// The single token this app stored before a guest could have more than
     /// one conversation. Still read, once, so nobody loses the thread they
     /// already had; never written again.
-    @ObservationIgnored private let legacyGuestTokenKey = "calibre.support.guestToken"
-    @ObservationIgnored private let guestTokensKey = "calibre.support.guestTokens"
+    @ObservationIgnored private let legacyGuestTokenKey = "rewound.support.guestToken"
+    @ObservationIgnored private let guestTokensKey = "rewound.support.guestTokens"
 
     public private(set) var conversation: SupportConversation?
     public private(set) var threads: [SupportThreadSummary] = []

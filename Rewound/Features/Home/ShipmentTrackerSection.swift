@@ -1,11 +1,11 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Home's "where's my watch" band.
 ///
 /// Anything still moving gets a card at the top of Home so a buyer never has
-/// to go looking for it. A finished order (delivered, refunded, cancelled)
+/// to go looking for it. A finished order (delivered, refunded, canceled)
 /// lingers for a day so the good news is seen, then clears itself.
 struct ShipmentTrackerSection: View {
     @Environment(AppServices.self) private var services
@@ -40,8 +40,8 @@ struct ShipmentTrackerSection: View {
             if session.isAuthenticated, !tracked.isEmpty {
                 VStack(alignment: .leading, spacing: Space.m) {
                     Text(tracked.count == 1 ? "Your order" : "Your orders")
-                        .font(CalibreType.sectionTitle)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.sectionTitle)
+                        .foregroundStyle(Color.rewound.foreground)
 
                     ForEach(tracked) { order in
                         TrackedOrderCard(
@@ -96,13 +96,13 @@ private struct TrackedOrderCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(order.listing?.title ?? "Your watch")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(1)
                     Text(order.displayNumber)
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .monospacedDigit()
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                     StatusBadge(order.statusLabel, tone: order.statusTone)
                 }
 
@@ -120,7 +120,7 @@ private struct TrackedOrderCard: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(width: Space.touchTarget, height: Space.touchTarget)
                         .contentShape(Rectangle())
                 }
@@ -132,19 +132,19 @@ private struct TrackedOrderCard: View {
             }
 
             Text(order.statusSummary)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             Button("See tracking details", action: onOpen)
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }

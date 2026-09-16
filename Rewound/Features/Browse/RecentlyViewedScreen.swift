@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Every on-device "recently viewed" id resolved to its full listing — the
@@ -63,7 +63,7 @@ final class RecentlyViewedModel {
 struct RecentlyViewedScreen: View {
     @Environment(AppServices.self) private var services
     /// One column once the reader asks for accessibility text sizes, same as
-    /// every other listing grid — see `calibreGridColumns`.
+    /// every other listing grid — see `rewoundGridColumns`.
     @Environment(\.dynamicTypeSize) private var typeSize
 
     @State private var model: RecentlyViewedModel?
@@ -78,7 +78,7 @@ struct RecentlyViewedScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Recently Viewed")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
@@ -108,7 +108,7 @@ struct RecentlyViewedScreen: View {
         } else {
             ScrollView {
                 LazyVGrid(
-                    columns: calibreGridColumns(typeSize, spacing: Space.l),
+                    columns: rewoundGridColumns(typeSize, spacing: Space.l),
                     alignment: .leading,
                     spacing: Space.xl
                 ) {

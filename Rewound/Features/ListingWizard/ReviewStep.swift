@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import NukeUI
 import SwiftUI
 
@@ -21,8 +21,8 @@ struct ReviewStep: View {
                         .joined(separator: " · "))
                 }
                 Text(model.composedTitle)
-                    .font(CalibreType.title)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.title)
+                    .foregroundStyle(Color.rewound.foreground)
             }
 
             conditionGrid
@@ -37,14 +37,14 @@ struct ReviewStep: View {
             // silently inert button.
             if let error = model.submitError {
                 Text(error)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.destructive)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .transition(.opacity)
             } else if !canSubmitMissing.isEmpty {
                 Text("Missing: \(canSubmitMissing.joined(separator: ", "))")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.destructive)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .transition(.opacity)
             }
@@ -55,12 +55,12 @@ struct ReviewStep: View {
                 } label: {
                     // The words stay while it submits — a blank button at the
                     // moment a listing goes to review reads as a failure.
-                    CalibreBusyLabel(
+                    RewoundBusyLabel(
                         model.isEdit ? "Resubmit for approval" : "Submit for review",
                         busy: model.submitting
                     )
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(!canSubmit || model.submitting)
                 .accessibilityIdentifier("listing-wizard-submit")
 
@@ -69,32 +69,32 @@ struct ReviewStep: View {
                 // saying out loud rather than leaving an inert button.
                 if !model.payoutDisclosed, model.price != nil {
                     Text("Your net proceeds and the price buyers will see need to be on screen before this goes to review.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 } else if model.isEdit {
                     Text("Resubmit for approval — your watch leaves the market until re-approved.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 } else if !model.detailsComplete {
                     Text("Finish the watch details and grade each condition item before review.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 } else if !model.priceDetailsComplete {
                     Text("Add an asking price and notes for buyers before review.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 } else if !model.allRequiredPhotosDone {
                     Text("All six photos need to finish uploading before review.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
@@ -131,23 +131,23 @@ struct ReviewStep: View {
                     if let image = state.image {
                         image.resizable().scaledToFill()
                     } else {
-                        Color.calibre.secondary.opacity(0.5)
+                        Color.rewound.secondary.opacity(0.5)
                     }
                 }
             } else {
                 VStack(spacing: Space.s) {
                     Image(systemName: "camera")
                         .font(.system(size: 28))
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .foregroundStyle(Color.rewound.placeholder)
                     Text("The front shot becomes your hero photo.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 260)
-        .background(Color.calibre.secondary.opacity(0.5))
+        .background(Color.rewound.secondary.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 
@@ -156,8 +156,8 @@ struct ReviewStep: View {
     private var conditionGrid: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Condition")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             SpecList(ConditionPart.allCases.map { part in
                 (part.label, model.conditions[part] ?? "Not graded")
             })
@@ -172,61 +172,61 @@ struct ReviewStep: View {
     private var priceCard: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Price")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             SellCard {
                 VStack(alignment: .leading, spacing: Space.m) {
                     Text(model.price.map { PriceFormatter.listing($0) } ?? "No price yet")
-                        .font(CalibreType.priceLarge)
+                        .font(RewoundType.priceLarge)
                         .foregroundStyle(
-                            model.price == nil ? Color.calibre.placeholder : Color.calibre.foreground
+                            model.price == nil ? Color.rewound.placeholder : Color.rewound.foreground
                         )
 
                     if let preview = model.preview {
                         VStack(alignment: .leading, spacing: Space.xs) {
                             Text("You'll receive \(PriceFormatter.format(preview.netProceeds.value, currency: preview.currency))")
-                                .font(CalibreType.bodyMedium)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.bodyMedium)
+                                .foregroundStyle(Color.rewound.foreground)
                             Text("Buyers see \(PriceFormatter.format(preview.buyerDisplay.standard.price.value, currency: preview.currency))")
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         .accessibilityElement(children: .combine)
 
                         if preview.commission.minimumApplied {
                             Text("Every sale carries a minimum commission of \(PriceFormatter.format(preview.commission.minimum.value, currency: preview.currency)), and on this price that minimum is what applies.")
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     } else if model.previewing {
                         HStack(spacing: Space.s) {
-                            CalibreInlineLoading(size: 18)
+                            RewoundInlineLoading(size: 18)
                             Text("Working out what you'll receive")
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                     } else if model.price != nil {
                         VStack(alignment: .leading, spacing: Space.s) {
                             Text("We couldn't work out your net proceeds just now, and we won't guess at them. Try again before this goes to review.")
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                                 .fixedSize(horizontal: false, vertical: true)
                             Button("Try again") {
                                 Task { await model.refreshPreview() }
                             }
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.primary)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.primary)
                             .buttonStyle(PressableStyle())
                             .frame(minHeight: Space.touchTarget, alignment: .leading)
                         }
                     }
 
-                    Rectangle().fill(Color.calibre.border).frame(height: 1)
+                    Rectangle().fill(Color.rewound.border).frame(height: 1)
 
                     Text(returnTermsText)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -252,14 +252,14 @@ struct ReviewStep: View {
     private var photoChecklist: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Photos")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             SellCard {
                 VStack(spacing: 0) {
                     ForEach(Array(ListingImageCategory.allCases.enumerated()), id: \.element) { index, category in
                         checklistRow(category)
                         if index < ListingImageCategory.allCases.count - 1 {
-                            Rectangle().fill(Color.calibre.border).frame(height: 1)
+                            Rectangle().fill(Color.rewound.border).frame(height: 1)
                         }
                     }
                 }
@@ -272,11 +272,11 @@ struct ReviewStep: View {
         return HStack(spacing: Space.m) {
             statusIcon(phase)
             Text(category.label)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.foreground)
             Spacer()
             Text(statusText(phase))
-                .font(CalibreType.caption)
+                .font(RewoundType.caption)
                 .foregroundStyle(statusColor(phase))
         }
         .padding(.horizontal, Space.l)
@@ -289,18 +289,18 @@ struct ReviewStep: View {
         switch phase {
         case .done:
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(Color.calibre.success)
+                .foregroundStyle(Color.rewound.success)
         case .uploading:
             // Deliberately not the balance wheel. Every photo slot draws one
             // of these, so a batch upload would put a row of looping marks on
             // one screen, and the marks budget allows one.
-            ProgressView().controlSize(.small).tint(Color.calibre.primary)
+            ProgressView().controlSize(.small).tint(Color.rewound.primary)
         case .failed:
             Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(Color.calibre.destructive)
+                .foregroundStyle(Color.rewound.destructive)
         case .empty:
             Image(systemName: "circle.dashed")
-                .foregroundStyle(Color.calibre.placeholder)
+                .foregroundStyle(Color.rewound.placeholder)
         }
     }
 
@@ -315,10 +315,10 @@ struct ReviewStep: View {
 
     private func statusColor(_ phase: PhotoSlotPhase) -> Color {
         switch phase {
-        case .done: Color.calibre.success
-        case .uploading: Color.calibre.mutedForeground
-        case .failed: Color.calibre.destructive
-        case .empty: Color.calibre.mutedForeground
+        case .done: Color.rewound.success
+        case .uploading: Color.rewound.mutedForeground
+        case .failed: Color.rewound.destructive
+        case .empty: Color.rewound.mutedForeground
         }
     }
 }

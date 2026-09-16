@@ -21,17 +21,17 @@ public struct FilterChip: View {
             action()
         } label: {
             Text(title)
-                .font(CalibreType.label)
+                .font(RewoundType.label)
                 .foregroundStyle(
-                    isSelected ? Color.calibre.primaryForeground : Color.calibre.foreground
+                    isSelected ? Color.rewound.primaryForeground : Color.rewound.foreground
                 )
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.calibre.primary : Color.calibre.card, in: Capsule())
+                .background(isSelected ? Color.rewound.primary : Color.rewound.card, in: Capsule())
                 .overlay(
                     Capsule()
                         .strokeBorder(
-                            isSelected ? Color.clear : Color.calibre.border,
+                            isSelected ? Color.clear : Color.rewound.border,
                             lineWidth: 1
                         )
                 )
@@ -101,7 +101,7 @@ private struct FilterChipPreviewHost: View {
             }
         }
         .padding(.vertical)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
     }
 }
 

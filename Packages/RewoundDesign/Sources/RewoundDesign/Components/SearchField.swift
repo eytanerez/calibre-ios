@@ -22,16 +22,16 @@ public struct SearchField: View {
         HStack(spacing: Space.s) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: glyphSize, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             TextField(
                 "",
                 text: $text,
-                prompt: Text(placeholder).foregroundStyle(Color.calibre.placeholder)
+                prompt: Text(placeholder).foregroundStyle(Color.rewound.placeholder)
             )
-            .font(CalibreType.body)
-            .foregroundStyle(Color.calibre.foreground)
-            .tint(Color.calibre.primary)
+            .font(RewoundType.body)
+            .foregroundStyle(Color.rewound.foreground)
+            .tint(Color.rewound.primary)
             .focused($focused)
             .submitLabel(.search)
             .autocorrectionDisabled()
@@ -42,7 +42,7 @@ public struct SearchField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: glyphSize))
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .foregroundStyle(Color.rewound.placeholder)
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("Clear search")
@@ -52,20 +52,20 @@ public struct SearchField: View {
         .padding(.horizontal, Space.m)
         .frame(minHeight: Space.touchTarget)
         .background(
-            Color.calibre.secondary,
+            Color.rewound.secondary,
             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                 .strokeBorder(
-                    focused ? Color.calibre.borderBright : Color.calibre.border,
+                    focused ? Color.rewound.borderBright : Color.rewound.border,
                     lineWidth: 1
                 )
         )
         .overlay {
             // Focus ring: primary at 11% — a glow, not an outline.
             RoundedRectangle(cornerRadius: Radius.focusRing, style: .continuous)
-                .strokeBorder(Color.calibre.primary.opacity(0.11), lineWidth: 3)
+                .strokeBorder(Color.rewound.primary.opacity(0.11), lineWidth: 3)
                 .padding(-3)
                 .opacity(focused ? 1 : 0)
         }
@@ -86,7 +86,7 @@ private struct SearchFieldPreviewHost: View {
             SearchField(text: $filled)
         }
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
     }
 }
 

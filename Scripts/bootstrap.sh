@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-LOCK=/tmp/calibre-xcodegen.lock
+LOCK=/tmp/rewound-xcodegen.lock
 for i in $(seq 1 60); do
   if mkdir "$LOCK" 2>/dev/null; then
     trap 'rmdir "$LOCK"' EXIT
@@ -16,4 +16,4 @@ done
 [ -d "$LOCK" ] || { echo "could not acquire xcodegen lock"; exit 1; }
 
 xcodegen generate -q
-echo "Generated Calibre.xcodeproj"
+echo "Generated Rewound.xcodeproj"

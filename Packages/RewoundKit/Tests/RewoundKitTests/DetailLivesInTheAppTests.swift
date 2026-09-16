@@ -1,12 +1,12 @@
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The half of the change that lives in the app.
 ///
-/// Calibre's letters used to carry the explanation for every decision it made —
+/// Rewound's letters used to carry the explanation for every decision it made —
 /// why a listing did not go live, what the bench found, why a return was
 /// refused — and the app carried none of it. Eytan reversed that: the letter
-/// states that something happened and says to open Calibre, and what it says
+/// states that something happened and says to open Rewound, and what it says
 /// when you open it is what these tests read.
 ///
 /// What is worth pinning is not the wording. It is that **the explanation is
@@ -56,7 +56,7 @@ final class DetailLivesInTheAppTests: XCTestCase {
     }
 
     func testARejectionDoesNotOfferAResubmissionItCannotPromise() throws {
-        let row = try listing(status: "rejected", events: "[\(event("rejected", "Not a watch Calibre carries."))]")
+        let row = try listing(status: "rejected", events: "[\(event("rejected", "Not a watch Rewound carries."))]")
 
         XCTAssertEqual(row.review?.outcome, .rejected)
         XCTAssertNotNil(row.review?.next)
@@ -110,21 +110,21 @@ final class DetailLivesInTheAppTests: XCTestCase {
     func testTheFindingReachesTheOrderScreen() throws {
         let row = try order(authResult: failedResult("The movement is not the calibre the listing described."))
 
-        XCTAssertEqual(row.authenticationFinding, "The movement is not the calibre the listing described.")
+        XCTAssertEqual(row.authenticationFinding, "The movement is not the rewound the listing described.")
 
         let step = row.nextStep()
         XCTAssertEqual(step.headline, "This watch did not pass")
-        XCTAssertEqual(step.next, "The movement is not the calibre the listing described.")
+        XCTAssertEqual(step.next, "The movement is not the rewound the listing described.")
         // And the screen no longer answers the question by promising an email.
         XCTAssertFalse(step.next?.contains("will write to you") ?? true)
     }
 
     func testAFailureWithNothingWrittenPointsAtAPersonRatherThanInventingOne() throws {
         // Every failure recorded before this build has no such sentence, and
-        // deriving one from the verdict would be a claim Calibre never made.
+        // deriving one from the verdict would be a claim Rewound never made.
         let step = try order(authResult: failedResult(nil)).nextStep()
 
-        XCTAssertEqual(step.next, "Your Calibre contact has the detail of what we found and will go through it with you.")
+        XCTAssertEqual(step.next, "Your Rewound contact has the detail of what we found and will go through it with you.")
     }
 
     func testAPassingOrderHasNoFinding() throws {
@@ -158,6 +158,6 @@ final class DetailLivesInTheAppTests: XCTestCase {
         """
         let step = try order(authResult: "null", returnSummary: refused).nextStep()
 
-        XCTAssertEqual(step.next, "Someone from Calibre will contact you directly about what happens next.")
+        XCTAssertEqual(step.next, "Someone from Rewound will contact you directly about what happens next.")
     }
 }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// How the shop is doing, and what buyers are asking for.
@@ -47,13 +47,13 @@ struct SellerInsightsTab: View {
                     HStack(alignment: .top, spacing: 0) {
                         headlineFigure(metrics.totalViews.formatted(.number), label: "views")
                         Rectangle()
-                            .fill(Color.calibre.border)
+                            .fill(Color.rewound.border)
                             .frame(width: 1, height: 44)
                         headlineFigure(metrics.totalWatchers.formatted(.number), label: "watching")
                     }
                     .padding(.vertical, Space.l)
 
-                    Rectangle().fill(Color.calibre.border).frame(height: 1)
+                    Rectangle().fill(Color.rewound.border).frame(height: 1)
 
                     SellFigureRow(
                         label: "Views that became a sale",
@@ -68,14 +68,14 @@ struct SellerInsightsTab: View {
     private func headlineFigure(_ value: String, label: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(CalibreType.price)
+                .font(RewoundType.price)
                 .monospacedDigit()
-                .foregroundStyle(Color.calibre.foreground)
+                .foregroundStyle(Color.rewound.foreground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(label)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
@@ -112,8 +112,8 @@ struct SellerInsightsTab: View {
 
             if metrics.grossSales.value == 0 {
                 Text("Nothing has sold yet. When it does, this is where what buyers paid and what reached you sit side by side.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 SellCard {
@@ -122,14 +122,14 @@ struct SellerInsightsTab: View {
                             label: "What buyers paid",
                             value: PriceFormatter.format(metrics.grossSales.value)
                         )
-                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                        Rectangle().fill(Color.rewound.border).frame(height: 1)
                         if metrics.withheldFromSales > 0 {
                             SellFigureRow(
                                 label: "Commission, labels and refunds",
                                 value: "\u{2212} " + PriceFormatter.format(metrics.withheldFromSales),
-                                caption: "Calibre\u{2019}s commission on each sale, the to-authentication label Calibre bought for it, and anything refunded."
+                                caption: "Rewound\u{2019}s commission on each sale, the to-authentication label Rewound bought for it, and anything refunded."
                             )
-                            Rectangle().fill(Color.calibre.border).frame(height: 1)
+                            Rectangle().fill(Color.rewound.border).frame(height: 1)
                         }
                         SellFigureRow(
                             label: "What reached you",
@@ -172,21 +172,21 @@ struct SellerInsightsTab: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(tile.count.formatted(.number))
-                                .font(CalibreType.price)
+                                .font(RewoundType.price)
                                 .monospacedDigit()
-                                .foregroundStyle(Color.calibre.primary)
+                                .foregroundStyle(Color.rewound.primary)
                             Text(tile.filter.title)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(Space.l)
-                        .background(Color.calibre.card)
+                        .background(Color.rewound.card)
                         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                                .strokeBorder(Color.rewound.border, lineWidth: 1)
                         )
                         .contentShape(Rectangle())
                     }
@@ -213,11 +213,11 @@ struct SellerInsightsTab: View {
     private var demand: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Eyebrow("Demand signals")
-            SellSectionHeader("Interest on Calibre")
+            SellSectionHeader("Interest on Rewound")
 
             Text("References buyers here are watching and searching for, set against how many are listed. These are on-site counts, not a valuation and not a market read.")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: Space.m) {
@@ -234,22 +234,22 @@ struct SellerInsightsTab: View {
                 Eyebrow(suggestion.reason)
 
                 Text(suggestionTitle(suggestion))
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let reference = suggestion.referenceNumber, !reference.isEmpty {
                     Text(reference)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
 
                 let facts = suggestionFacts(suggestion)
                 if !facts.isEmpty {
                     Text(facts.joined(separator: " \u{00B7} "))
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .monospacedDigit()
-                        .foregroundStyle(Color.calibre.secondaryForeground)
+                        .foregroundStyle(Color.rewound.secondaryForeground)
                         .fixedSize(horizontal: false, vertical: true)
                         // The separators are typographic; spoken, they are commas.
                         .accessibilityLabel(facts.joined(separator: ", "))
@@ -264,7 +264,7 @@ struct SellerInsightsTab: View {
                         )
                     )
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
                 .padding(.top, Space.xs)
             }
             .padding(Space.l)
@@ -308,24 +308,24 @@ struct SellerInsightsTab: View {
                 IconTile(systemName: "sparkle.magnifyingglass")
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Watches buyers have asked for by name")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Source one and list it with the details filled in. The buyer is told when a match goes live.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .padding(Space.l)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
         .buttonStyle(PressableStyle())
@@ -362,8 +362,8 @@ struct SellFigureRow: View {
 
             if let caption {
                 Text(caption)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -375,15 +375,15 @@ struct SellFigureRow: View {
 
     private var labelText: some View {
         Text(label)
-            .font(emphasized ? CalibreType.bodyMedium : CalibreType.body)
-            .foregroundStyle(emphasized ? Color.calibre.foreground : Color.calibre.mutedForeground)
+            .font(emphasized ? RewoundType.bodyMedium : RewoundType.body)
+            .foregroundStyle(emphasized ? Color.rewound.foreground : Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     private var valueText: some View {
         Text(value)
-            .font(emphasized ? CalibreType.price : CalibreType.bodyMedium)
+            .font(emphasized ? RewoundType.price : RewoundType.bodyMedium)
             .monospacedDigit()
-            .foregroundStyle(Color.calibre.foreground)
+            .foregroundStyle(Color.rewound.foreground)
     }
 }

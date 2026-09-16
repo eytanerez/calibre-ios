@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The two seller-side readings the shop's Orders & payouts tab prints, and the
 /// setup rule the gate reads.
@@ -151,7 +151,7 @@ final class SellerSaleStateTests: XCTestCase {
     /// line claims nothing about where the watch is.
     func testAnUnknownStatusStillNamesWhoHasIt() throws {
         let sale = try order(status: "escheated")
-        XCTAssertEqual(sale.sellerNextStep.who, "Waiting on Calibre")
+        XCTAssertEqual(sale.sellerNextStep.who, "Waiting on Rewound")
         XCTAssertFalse(sale.sellerNextStep.what.isEmpty)
     }
 

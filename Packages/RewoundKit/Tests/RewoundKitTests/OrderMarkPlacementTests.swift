@@ -1,10 +1,10 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// Which illustrated mark the buyer's order screen is allowed to draw.
 ///
-/// Written as behaviour rather than as a count: what matters is which mark a
+/// Written as behavior rather than as a count: what matters is which mark a
 /// given order reaches, not how many placements exist. Every failure here is a
 /// mark asserting something the server did not say — a parcel on a delivered
 /// order, a stamp on a watch that failed the bench, a gauge on a window with a
@@ -45,10 +45,10 @@ final class OrderMarkPlacementTests: XCTestCase {
     }
 
     /// A carton leaving the frame on a delivered order reads as the watch
-    /// going away again, and on a cancelled one as a watch still coming.
+    /// going away again, and on a canceled one as a watch still coming.
     func testTheParcelDrawsForNothingElse() throws {
         for status in ["awaiting_wire", "purchased", "auth_fail", "cancelled", "refunded"] {
-            XCTAssertNotEqual(try order(status: status).mark(), .box, "\(status) is not travelling")
+            XCTAssertNotEqual(try order(status: status).mark(), .box, "\(status) is not traveling")
         }
         XCTAssertNotEqual(try order(status: "delivered").mark(), .box)
         // `auth_pass` is the bench's verdict, not a leg of the journey.

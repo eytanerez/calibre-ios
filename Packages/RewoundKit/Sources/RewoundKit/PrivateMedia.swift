@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reads the bytes of an object Calibre serves behind the member's own
+/// Reads the bytes of an object Rewound serves behind the member's own
 /// credential.
 ///
 /// Kept as a protocol so a view can be driven from a stub, and so the one
@@ -19,7 +19,7 @@ public protocol PrivateMediaFetching: Sendable {
 ///
 /// - **The credential never leaves the API's own origin.** `data(for:)`
 ///   refuses an address that is not the configured host, scheme and port, so
-///   the bearer token cannot be walked off Calibre by a URL that arrived in a
+///   the bearer token cannot be walked off Rewound by a URL that arrived in a
 ///   payload. `VaultCoverSource` makes the same distinction when it decides
 ///   what a cover *is*; this refuses it again at the moment a request would
 ///   actually be built, because that is the only place it can be enforced.
@@ -28,7 +28,7 @@ public protocol PrivateMediaFetching: Sendable {
 ///   cache is off, and every request ignores whatever a shared cache might
 ///   hold. What is kept is a bounded map in this process, dropped whole when
 ///   the session ends.
-/// - **A 401 is a refresh, once.** The same contract `APIClient` honours: an
+/// - **A 401 is a refresh, once.** The same contract `APIClient` honors: an
 ///   expired access token renews and the fetch is retried a single time, so a
 ///   gallery does not empty itself the first morning after a token ages out.
 public actor PrivateMediaLoader: PrivateMediaFetching {
@@ -130,7 +130,7 @@ public actor PrivateMediaLoader: PrivateMediaFetching {
             throw APIError.sessionExpired
         }
         guard (200..<300).contains(http.statusCode) else {
-            // The proxy answers a bare status here, not Calibre's JSON
+            // The proxy answers a bare status here, not Rewound's JSON
             // envelope, so there is no server sentence to carry up. The
             // status is what a caller can tell apart: 404 means this
             // photograph is not the caller's, and every retry of it is a

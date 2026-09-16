@@ -1,4 +1,4 @@
-import CalibreDesign
+import RewoundDesign
 import StripeConnect
 import SwiftUI
 import UIKit
@@ -33,8 +33,8 @@ struct ConnectOnboardingScreen: View {
 
     var body: some View {
         ZStack {
-            Color.calibre.background.ignoresSafeArea()
-            CalibreLoadingView("Opening secure verification…")
+            Color.rewound.background.ignoresSafeArea()
+            RewoundLoadingView("Opening secure verification…")
             ConnectOnboardingHost(
                 clientSecret: clientSecret,
                 publishableKey: publishableKey,
@@ -110,7 +110,7 @@ private struct ConnectOnboardingHost: UIViewControllerRepresentable {
             let secret = clientSecret
             let manager = EmbeddedComponentManager(
                 apiClient: apiClient,
-                appearance: Self.calibreAppearance(),
+                appearance: Self.rewoundAppearance(),
                 fetchClientSecret: { secret }
             )
             self.manager = manager
@@ -139,20 +139,20 @@ private struct ConnectOnboardingHost: UIViewControllerRepresentable {
 
         /// Brand tokens, where the SDK allows: chocolate primary, warm
         /// surfaces, the control radius.
-        static func calibreAppearance() -> EmbeddedComponentManager.Appearance {
+        static func rewoundAppearance() -> EmbeddedComponentManager.Appearance {
             var appearance = EmbeddedComponentManager.Appearance()
-            appearance.colors.primary = UIColor(Color.calibre.primary)
-            appearance.colors.actionPrimaryText = UIColor(Color.calibre.primary)
-            appearance.colors.background = UIColor(Color.calibre.background)
-            appearance.colors.text = UIColor(Color.calibre.foreground)
-            appearance.colors.secondaryText = UIColor(Color.calibre.mutedForeground)
-            appearance.colors.border = UIColor(Color.calibre.borderBright)
-            appearance.colors.formAccent = UIColor(Color.calibre.primary)
-            appearance.colors.danger = UIColor(Color.calibre.destructive)
+            appearance.colors.primary = UIColor(Color.rewound.primary)
+            appearance.colors.actionPrimaryText = UIColor(Color.rewound.primary)
+            appearance.colors.background = UIColor(Color.rewound.background)
+            appearance.colors.text = UIColor(Color.rewound.foreground)
+            appearance.colors.secondaryText = UIColor(Color.rewound.mutedForeground)
+            appearance.colors.border = UIColor(Color.rewound.borderBright)
+            appearance.colors.formAccent = UIColor(Color.rewound.primary)
+            appearance.colors.danger = UIColor(Color.rewound.destructive)
             appearance.cornerRadius.base = Radius.control
             appearance.cornerRadius.button = Radius.control
-            appearance.buttonPrimary.colorBackground = UIColor(Color.calibre.primary)
-            appearance.buttonPrimary.colorText = UIColor(Color.calibre.primaryForeground)
+            appearance.buttonPrimary.colorBackground = UIColor(Color.rewound.primary)
+            appearance.buttonPrimary.colorText = UIColor(Color.rewound.primaryForeground)
             return appearance
         }
     }

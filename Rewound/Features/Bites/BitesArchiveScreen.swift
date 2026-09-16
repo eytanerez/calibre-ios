@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Every published Bite, newest first, as its own screen.
@@ -15,7 +15,7 @@ struct BitesArchiveScreen: View {
                 .padding(.horizontal, Space.margin)
                 .padding(.vertical, Space.l)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Bites")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -80,7 +80,7 @@ struct BitesArchiveList: View {
                     Button("Show earlier bites") {
                         Task { await loadNextPage() }
                     }
-                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    .buttonStyle(.rewound(.secondary, fullWidth: true))
                     .disabled(isLoading)
                     .padding(.top, Space.s)
                 }
@@ -130,7 +130,7 @@ struct BitesArchiveList: View {
 /// says so, rather than sitting in the record as though it still stood.
 ///
 /// The picture is the row's own, not a stand-in: a Bite without one draws no
-/// well at all rather than a grey rectangle, so a short record of text-only
+/// well at all rather than a gray rectangle, so a short record of text-only
 /// Bites stays a list of claims instead of a column of empty frames.
 private struct BiteArchiveRow: View {
     let bite: Bite
@@ -146,35 +146,35 @@ private struct BiteArchiveRow: View {
             }
 
             HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-                Eyebrow(bite.topic, color: Color.calibre.primary)
+                Eyebrow(bite.topic, color: Color.rewound.primary)
                 Spacer(minLength: 0)
                 Text(bite.date)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
 
             Text(bite.title)
-                .font(CalibreType.serif(.semiBold, 17, relativeTo: .body))
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.serif(.semiBold, 17, relativeTo: .body))
+                .foregroundStyle(Color.rewound.foreground)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("\(bite.author) · \(bite.sources.count == 1 ? "1 source" : "\(bite.sources.count) sources")")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             if bite.archived {
                 Text("Retired from rotation.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)

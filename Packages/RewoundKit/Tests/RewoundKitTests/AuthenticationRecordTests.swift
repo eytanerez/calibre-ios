@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `order.authentication` — the block every new order surface is gated on.
 ///
@@ -101,10 +101,10 @@ final class AuthenticationRecordTests: XCTestCase {
         XCTAssertEqual(decoded.status, .purchased)
     }
 
-    /// Both parties are shown both figures, and Calibre's remainder is in
-    /// neither payload. A `calibre_take` appearing here would be a leak, and
+    /// Both parties are shown both figures, and Rewound's remainder is in
+    /// neither payload. A `rewound_take` appearing here would be a leak, and
     /// the model has nowhere to put it — this asserts the shape stays that way.
-    func testTheProposalCarriesBothSidesAndNotCalibresRemainder() throws {
+    func testTheProposalCarriesBothSidesAndNotRewoundsRemainder() throws {
         let json = """
         {
           "case_id": "c1", "status": "open", "order_number": 1041,
@@ -112,7 +112,7 @@ final class AuthenticationRecordTests: XCTestCase {
           "awaiting_you": true,
           "proposal": {
             "id": "p1", "refund_amount": "1029.00", "payout_amount": "12500.00",
-            "stripe_fee": "29.84", "stripe_fee_bearer": "calibre",
+            "stripe_fee": "29.84", "stripe_fee_bearer": "rewound",
             "buyer_receives": "1029.00", "seller_receives": "12500.00",
             "currency": "USD",
             "service": {"amount": "0.00", "payer": null, "your_share": "0.00",
@@ -135,7 +135,7 @@ final class AuthenticationRecordTests: XCTestCase {
         let mirror = Mirror(reflecting: proposal)
         let names = mirror.children.compactMap(\.label)
         XCTAssertFalse(names.isEmpty)
-        for forbidden in ["calibreTake", "calibreLosesMoney", "commissionAmount"] {
+        for forbidden in ["rewoundTake", "rewoundLosesMoney", "commissionAmount"] {
             XCTAssertFalse(names.contains(forbidden), "\(forbidden) has no business on a party's proposal")
         }
     }

@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// The multiline sibling of `CalibreTextField` — same label, card fill,
+/// The multiline sibling of `RewoundTextField` — same label, card fill,
 /// hairline border, focus ring and inline error, so a notes box never looks
 /// like it came from a different app than the field above it.
 ///
 /// Long-form entry is still a form field; the only differences are height and
 /// that capitalisation defaults to sentences.
-public struct CalibreTextEditor: View {
+public struct RewoundTextEditor: View {
     let label: String
     let placeholder: String
     @Binding var text: String
@@ -36,8 +36,8 @@ public struct CalibreTextEditor: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text(label)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 // The editor below carries `label` as its own accessible name,
                 // so leaving this reachable would say it twice.
                 .accessibilityHidden(true)
@@ -45,8 +45,8 @@ public struct CalibreTextEditor: View {
             ZStack(alignment: .topLeading) {
                 if text.isEmpty {
                     Text(placeholder)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.placeholder)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.placeholder)
                         .padding(.horizontal, Space.m + 5)
                         .padding(.vertical, Space.m + 8)
                         .allowsHitTesting(false)
@@ -56,22 +56,22 @@ public struct CalibreTextEditor: View {
                 }
 
                 TextEditor(text: $text)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
-                    .tint(Color.calibre.primary)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.foreground)
+                    .tint(Color.rewound.primary)
                     .textInputAutocapitalization(.sentences)
                     .scrollContentBackground(.hidden)
                     .focused($focused)
                     .padding(Space.m)
                     // A bare `TextEditor` has no title of its own, so without
                     // this it is announced as "text field" and nothing else —
-                    // the same name `CalibreTextField` gives its own entry.
+                    // the same name `RewoundTextField` gives its own entry.
                     .accessibilityLabel(label)
                     .accessibilityHint(error ?? "")
             }
             .frame(minHeight: minHeight, alignment: .topLeading)
             .background(
-                Color.calibre.card,
+                Color.rewound.card,
                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
             )
             .overlay(
@@ -88,15 +88,15 @@ public struct CalibreTextEditor: View {
             HStack(alignment: .top) {
                 if let error {
                     Text(error)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.destructive)
                         .transition(.opacity)
                 }
                 Spacer(minLength: 0)
                 if let characterLimit {
                     Text("\(text.count)/\(characterLimit)")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         // "123/2000" is read out as a date. Spelling it out
                         // costs no pixels and stays its own element, so it
                         // never displaces what the editor itself says.
@@ -109,11 +109,11 @@ public struct CalibreTextEditor: View {
     }
 
     private var borderColor: Color {
-        if error != nil { return Color.calibre.destructive }
-        return focused ? Color.calibre.borderBright : Color.calibre.border
+        if error != nil { return Color.rewound.destructive }
+        return focused ? Color.rewound.borderBright : Color.rewound.border
     }
 
     private var ringColor: Color {
-        error != nil ? Color.calibre.destructive : Color.calibre.primary
+        error != nil ? Color.rewound.destructive : Color.rewound.primary
     }
 }

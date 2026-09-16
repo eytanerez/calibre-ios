@@ -3,7 +3,7 @@ import SwiftUI
 /// The consumer Journal is retired — Bites replaced it.
 ///
 /// This destination still resolves rather than going missing, because things
-/// already point at it: the `calibre://journal` and `/journal` links, a push
+/// already point at it: the `rewound://journal` and `/journal` links, a push
 /// notification the desk sent before the change, and a home-feed module's
 /// route. It lands on the library that took the Journal's place.
 ///

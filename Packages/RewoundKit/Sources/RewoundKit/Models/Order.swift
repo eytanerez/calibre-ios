@@ -2,7 +2,7 @@ import Foundation
 
 /// Order state machine:
 /// awaiting_wire → purchased → to_auth → auth_pass|auth_fail → to_buyer →
-/// delivered, with cancelled/refunded terminals.
+/// delivered, with canceled/refunded terminals.
 public enum OrderStatus: String, Codable, Sendable {
     case awaitingWire = "awaiting_wire"
     case purchased
@@ -101,8 +101,8 @@ public struct Order: Codable, Sendable, Identifiable {
     public let fulfillmentDeadlineAt: Date?
     public let sellerLabelPaidAt: Date?
     public let sellerLabelCreatedAt: Date?
-    /// What Calibre actually paid the carrier for the to-auth label. Deducted
-    /// from the payout; `seller_label_paid_at` now means "Calibre paid".
+    /// What Rewound actually paid the carrier for the to-auth label. Deducted
+    /// from the payout; `seller_label_paid_at` now means "Rewound paid".
     public let sellerLabelPriceTotal: APIDecimal?
     /// The box the seller measured, in the `box_*_in` names the order has
     /// always stored. Empty until the shipping form is submitted.
@@ -274,12 +274,12 @@ extension Order {
     ///
     /// Nil-safe rather than nil-blind: a failure with no written sentence gets
     /// a line pointing at a person, because inventing one from the verdict
-    /// would be a claim Calibre did not make.
+    /// would be a claim Rewound did not make.
     public var authenticationFinding: String? {
         guard let result = authResult, result.outcome != "pass" else { return nil }
         let written = (result.buyerSummary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if !written.isEmpty { return written }
-        return "Your Calibre contact has the detail of what we found and will go through it with you."
+        return "Your Rewound contact has the detail of what we found and will go through it with you."
     }
 }
 

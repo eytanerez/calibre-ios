@@ -1,6 +1,6 @@
 import AuthenticationServices
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import CryptoKit
 import Security
 import SwiftUI
@@ -10,7 +10,7 @@ import SwiftUI
 /// the name parts Apple only supplies on first authorization) to /auth/apple.
 ///
 /// The entitlement is now present (com.apple.developer.applesignin, with the
-/// matching capability on the com.buycalibre.calibre App ID), so this works.
+/// matching capability on the com.shoprewound.rewound App ID), so this works.
 /// It previously failed with ASAuthorizationError.unknown purely because the
 /// entitlement was missing on a free team; the unknown-error branch below is
 /// kept because that is still what a mis-provisioned build reports, and a calm

@@ -1,4 +1,4 @@
-import CalibreDesign
+import RewoundDesign
 import SwiftUI
 
 // MARK: - Pushing onto the stack you are actually standing on
@@ -91,7 +91,7 @@ private struct TabJumpBack: ViewModifier {
                         Haptics.shared.play(.press)
                         router.returnFromJump()
                     } label: {
-                        // Spelled out rather than a `Label`: a labelled toolbar
+                        // Spelled out rather than a `Label`: a labeled toolbar
                         // item collapses to its icon here, and a bare chevron
                         // on a tab root reads as an ordinary back button
                         // instead of naming the place it returns to — which is
@@ -102,7 +102,7 @@ private struct TabJumpBack: ViewModifier {
                             Text(origin.title)
                         }
                     }
-                    .tint(Color.calibre.primary)
+                    .tint(Color.rewound.primary)
                     .accessibilityLabel("Back to \(origin.title)")
                 }
             }

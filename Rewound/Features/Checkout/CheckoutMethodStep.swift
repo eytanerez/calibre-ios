@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import StripePaymentSheet
 import SwiftUI
 
@@ -38,8 +38,8 @@ struct CheckoutMethodStep: View {
                 EyebrowProgress(steps: ["Shipping", "Payment", "Review"], currentIndex: 1)
 
                 Text("How would you like to pay?")
-                    .font(CalibreType.title)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.title)
+                    .foregroundStyle(Color.rewound.foreground)
 
                 // What is being paid for, before how. One payment covers the
                 // whole set, so the set is on screen when the method is chosen
@@ -98,8 +98,8 @@ struct CheckoutMethodStep: View {
                 // route at all — the card form says it again at entry.
                 if let breakdown = model.breakdown, model.method == .card {
                     Text(CheckoutCopy.acceptedCardsNote(breakdown, statesText: discountStatesText))
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -127,7 +127,7 @@ struct CheckoutMethodStep: View {
             .padding(.top, Space.m)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .tutorialOverlay(tutorial)
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
@@ -145,11 +145,11 @@ struct CheckoutMethodStep: View {
                     busy: model.preparingWire
                 )
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(model.preparingWire)
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.m)
-            .background(Color.calibre.background.opacity(0.97))
+            .background(Color.rewound.background.opacity(0.97))
         }
         .task { await model.prepareCardIntent() }
         .task { try? await services.config.load() }
@@ -173,8 +173,8 @@ struct CheckoutMethodStep: View {
                 ) {
                     ForEach(lines, id: \.self) { line in
                         Text(line)
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -188,12 +188,12 @@ struct CheckoutMethodStep: View {
     private var wireDepositDisclosure: some View {
         DisclosureCard(icon: "creditcard", title: "A $250 authorization") {
             Text(CheckoutCopy.wireHoldDisclosure)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Text("It has to be a credit card. Debit and prepaid cards can\u{2019}t hold a deposit.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -204,8 +204,8 @@ struct CheckoutMethodStep: View {
     private func wireCardRefusalBlock(_ refusal: WireCardRefusal) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(CheckoutCopy.wireCardRefusalMessage(refusal))
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if refusal.offersAddCard {
@@ -215,7 +215,7 @@ struct CheckoutMethodStep: View {
                 } label: {
                     BusyLabel(title: "Add a credit card", busy: model.addingWireCard)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(model.addingWireCard)
             }
 
@@ -224,17 +224,17 @@ struct CheckoutMethodStep: View {
                 model.dismissWireCardRefusal()
                 model.method = .card
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
         .background(
-            Color.calibre.destructive.opacity(0.06),
+            Color.rewound.destructive.opacity(0.06),
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.destructive.opacity(0.35), lineWidth: 1)
+                .strokeBorder(Color.rewound.destructive.opacity(0.35), lineWidth: 1)
         )
     }
 
@@ -248,19 +248,19 @@ struct CheckoutMethodStep: View {
                 // the tap with Stripe's own wording. Refusing here hands the
                 // buyer back to the refusal block they came from, where "Pay
                 // by card instead" is still on screen.
-                guard CalibreStripe.useKey(intent.publishableKey) else {
+                guard RewoundStripe.useKey(intent.publishableKey) else {
                     continuation.resume(returning: false)
                     return
                 }
                 let sheet = PaymentSheet(
                     setupIntentClientSecret: intent.setupIntent.clientSecret,
-                    configuration: CalibreStripe.configuration(
+                    configuration: RewoundStripe.configuration(
                         customerID: intent.customerId,
                         customerSessionClientSecret: intent.customerSessionMobile?.clientSecret
                     )
                 )
                 cardSheet = sheet
-                CalibreStripe.present(sheet) { result in
+                RewoundStripe.present(sheet) { result in
                     if case .completed = result {
                         continuation.resume(returning: true)
                     } else {
@@ -357,26 +357,26 @@ private struct MethodCard: View {
             HStack(alignment: .top, spacing: Space.m) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                     .frame(width: 36, height: 36)
                     .background(
-                        Color.calibre.accent.opacity(0.6),
+                        Color.rewound.accent.opacity(0.6),
                         in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                     )
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                     Text(subtitle)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if let detail {
                         Text(detail)
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.accentForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.accentForeground)
                             .padding(.top, 2)
                     } else if detailLoading {
                         Rectangle()
@@ -391,18 +391,18 @@ private struct MethodCard: View {
 
                 Image(systemName: isSelected ? "inset.filled.circle" : "circle")
                     .font(.system(size: 20))
-                    .foregroundStyle(isSelected ? Color.calibre.primary : Color.calibre.borderBright)
+                    .foregroundStyle(isSelected ? Color.rewound.primary : Color.rewound.borderBright)
             }
             .padding(Space.l)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                isSelected ? Color.calibre.primary.opacity(0.06) : Color.calibre.card,
+                isSelected ? Color.rewound.primary.opacity(0.06) : Color.rewound.card,
                 in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                     .strokeBorder(
-                        isSelected ? Color.calibre.primary.opacity(0.5) : Color.calibre.border,
+                        isSelected ? Color.rewound.primary.opacity(0.5) : Color.rewound.border,
                         lineWidth: 1
                     )
             )

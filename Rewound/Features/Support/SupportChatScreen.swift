@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
@@ -80,7 +80,7 @@ struct SupportChatScreen: View {
         !session.isAuthenticated && services.support.guestToken == nil
     }
 
-    /// The named person on the Calibre side, once one is assigned. Everything
+    /// The named person on the Rewound side, once one is assigned. Everything
     /// below falls back to the generic wording while this is nil.
     ///
     /// Off the payload every time, and nowhere else. There is no list of names
@@ -95,7 +95,7 @@ struct SupportChatScreen: View {
             messages
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle(conversation?.title() ?? "New conversation")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadAndPoll() }
@@ -104,25 +104,25 @@ struct SupportChatScreen: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text(conversation?.title() ?? "New conversation")
-                .font(CalibreType.bodySemiBold)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodySemiBold)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
             contactCard
 
             Text(statusLine)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Write here or email support@buycalibre.com — it is the same conversation either way.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+            Text("Write here or email support@shoprewound.com — it is the same conversation either way.")
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.margin)
-        .background(Color.calibre.card)
-        .overlay(alignment: .bottom) { Rectangle().fill(Color.calibre.border).frame(height: 1) }
+        .background(Color.rewound.card)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.rewound.border).frame(height: 1) }
         .accessibilityElement(children: .combine)
     }
 
@@ -137,14 +137,14 @@ struct SupportChatScreen: View {
             HStack(spacing: Space.s) {
                 AvatarInitial(initials: contact.initials, size: .s)
                 VStack(alignment: .leading, spacing: 0) {
-                    Eyebrow("Your contact at Calibre")
+                    Eyebrow("Your contact at Rewound")
                     Text(name)
-                        .font(CalibreType.bodySemiBold)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodySemiBold)
+                        .foregroundStyle(Color.rewound.foreground)
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Your contact at Calibre, \(name)")
+            .accessibilityLabel("Your contact at Rewound, \(name)")
         }
     }
 
@@ -156,7 +156,7 @@ struct SupportChatScreen: View {
             return "We typically reply within a day."
         }
         switch conversation.status {
-        case .waitingOnCalibre:
+        case .waitingOnRewound:
             if let contactName {
                 return "\(contactName) has your message and will reply, usually within a day."
             }
@@ -217,7 +217,7 @@ struct SupportChatScreen: View {
                 }
             }
         } else if loading {
-            CalibreLoadingView("Opening this conversation")
+            RewoundLoadingView("Opening this conversation")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if threadUnavailable {
             EmptyState(
@@ -239,11 +239,11 @@ struct SupportChatScreen: View {
     private var composer: some View {
         VStack(spacing: Space.s) {
             if let errorText {
-                Text(errorText).font(CalibreType.caption).foregroundStyle(Color.calibre.destructive)
+                Text(errorText).font(RewoundType.caption).foregroundStyle(Color.rewound.destructive)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             if needsGuestEmail {
-                CalibreTextField("Your email so we can reply", text: $guestEmail, kind: .email)
+                RewoundTextField("Your email so we can reply", text: $guestEmail, kind: .email)
             }
 
             if !attachments.isEmpty {
@@ -257,15 +257,15 @@ struct SupportChatScreen: View {
             HStack(alignment: .bottom, spacing: Space.s) {
                 attachButton
                 if canLinkRecords { linkRecordButton }
-                CalibreMessageField(text: $draft)
+                RewoundMessageField(text: $draft)
                 Button {
                     Task { await send() }
                 } label: {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.calibre.primaryForeground)
+                        .foregroundStyle(Color.rewound.primaryForeground)
                         .frame(width: 40, height: 40)
-                        .background(canSend ? Color.calibre.primary : Color.calibre.placeholder, in: Circle())
+                        .background(canSend ? Color.rewound.primary : Color.rewound.placeholder, in: Circle())
                         // The circle still draws at 40 and still takes 40 in the
                         // row; only the region that answers a finger grows.
                         .a11yExpandTarget(currentSize: 40)
@@ -278,8 +278,8 @@ struct SupportChatScreen: View {
 
             if !canAttach {
                 Text("Send your first message and you can attach photos or a PDF to the thread after that.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -293,7 +293,7 @@ struct SupportChatScreen: View {
         // the keyboard twice — a documented trap, and the hole it leaves is a
         // whole keyboard tall.
         .padding(Space.m)
-        .calibreComposerSurface()
+        .rewoundComposerSurface()
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
@@ -328,7 +328,7 @@ struct SupportChatScreen: View {
         } label: {
             Image(systemName: "link")
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
                 .frame(width: 40, height: 40)
                 .a11yExpandTarget(currentSize: 40)
         }
@@ -347,14 +347,14 @@ struct SupportChatScreen: View {
                         Image(systemName: ref.kind == .order ? "shippingbox" : "tag")
                             .font(.system(size: 12, weight: .medium))
                         Text(ref.label)
-                            .font(CalibreType.caption)
+                            .font(RewoundType.caption)
                             .fixedSize(horizontal: false, vertical: true)
                         Button {
                             linkedRecords.removeAll { $0.id == ref.id }
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 13))
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         .accessibilityLabel("Unlink \(ref.label)")
                         // A 13pt glyph was a 13pt target. The chip's own padding
@@ -364,7 +364,7 @@ struct SupportChatScreen: View {
                     }
                     .padding(.horizontal, Space.s)
                     .padding(.vertical, Space.xs)
-                    .background(Color.calibre.secondary, in: Capsule())
+                    .background(Color.rewound.secondary, in: Capsule())
                 }
             }
         }
@@ -402,11 +402,11 @@ struct SupportChatScreen: View {
         } label: {
             Group {
                 if uploading {
-                    CalibreInlineLoading(size: 18)
+                    RewoundInlineLoading(size: 18)
                 } else {
                     Image(systemName: "paperclip")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(canAttach ? Color.calibre.primary : Color.calibre.placeholder)
+                        .foregroundStyle(canAttach ? Color.rewound.primary : Color.rewound.placeholder)
                 }
             }
             .frame(width: 40, height: 40)
@@ -424,19 +424,19 @@ struct SupportChatScreen: View {
                         Image(systemName: attachment.isPDF ? "doc" : "photo")
                             .font(.system(size: 12, weight: .medium))
                         Text(attachment.filename ?? "Attachment")
-                            .font(CalibreType.caption)
+                            .font(RewoundType.caption)
                             .lineLimit(1)
                         if let size = attachment.sizeText {
                             Text(size)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         Button {
                             attachments.removeAll { $0.id == attachment.id }
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 13))
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         .accessibilityLabel("Remove \(attachment.filename ?? "attachment")")
                         // Same 13pt glyph, same absorbed growth as the record chips.
@@ -444,7 +444,7 @@ struct SupportChatScreen: View {
                     }
                     .padding(.horizontal, Space.s)
                     .padding(.vertical, Space.xs)
-                    .background(Color.calibre.secondary, in: Capsule())
+                    .background(Color.rewound.secondary, in: Capsule())
                 }
             }
         }
@@ -459,7 +459,7 @@ struct SupportChatScreen: View {
             && !uploading
     }
 
-    /// Why the send is off. Otherwise the only account of it is a grey fill,
+    /// Why the send is off. Otherwise the only account of it is a gray fill,
     /// and VoiceOver's flat "dimmed".
     private var sendHint: String {
         if threadUnavailable {
@@ -611,10 +611,10 @@ struct SupportChatScreen: View {
 
 private struct SupportBubble: View {
     let message: SupportMessage
-    /// Who the Calibre side of this thread is, when a contact is assigned.
+    /// Who the Rewound side of this thread is, when a contact is assigned.
     /// Nil falls back to the house name rather than to a name of its own.
     let contactName: String?
-    /// Where a chip goes. The reference serialises to `calibre://order/<id>`,
+    /// Where a chip goes. The reference serialises to `rewound://order/<id>`,
     /// which `AppRouter.handle(url:)` already understands, so a chip carries no
     /// route table of its own.
     let onOpen: (URL) -> Void
@@ -626,19 +626,19 @@ private struct SupportBubble: View {
             if isCustomer { Spacer(minLength: 40) }
             VStack(alignment: isCustomer ? .trailing : .leading, spacing: 3) {
                 if !isCustomer {
-                    Text(contactName ?? "Calibre")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                    Text(contactName ?? "Rewound")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 if !message.body.isEmpty {
                     Text(attributedBody)
-                        .font(CalibreType.body)
-                        .foregroundStyle(isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground)
-                        .tint(isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(isCustomer ? Color.rewound.primaryForeground : Color.rewound.foreground)
+                        .tint(isCustomer ? Color.rewound.primaryForeground : Color.rewound.foreground)
                         .padding(.horizontal, Space.m)
                         .padding(.vertical, Space.s)
                         .background(
-                            isCustomer ? Color.calibre.primary : Color.calibre.secondary,
+                            isCustomer ? Color.rewound.primary : Color.rewound.secondary,
                             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                         )
                         .environment(\.openURL, OpenURLAction { url in
@@ -676,11 +676,11 @@ private struct SupportBubble: View {
                 out.append(AttributedString(value))
             case .reference(let ref):
                 var chip = AttributedString("\u{2009}\(ref.label)\u{2009}")
-                chip.font = CalibreType.bodySemiBold
-                chip.foregroundColor = isCustomer ? Color.calibre.primaryForeground : Color.calibre.foreground
+                chip.font = RewoundType.bodySemiBold
+                chip.foregroundColor = isCustomer ? Color.rewound.primaryForeground : Color.rewound.foreground
                 chip.backgroundColor = isCustomer
-                    ? Color.calibre.primaryForeground.opacity(0.22)
-                    : Color.calibre.primary.opacity(0.14)
+                    ? Color.rewound.primaryForeground.opacity(0.22)
+                    : Color.rewound.primary.opacity(0.14)
                 chip.link = ref.route
                 out.append(chip)
             }
@@ -694,18 +694,18 @@ private struct SupportBubble: View {
             Image(systemName: attachment.isPDF ? "doc" : "photo")
                 .font(.system(size: 12, weight: .medium))
             Text(attachment.filename ?? "Attachment")
-                .font(CalibreType.caption)
+                .font(RewoundType.caption)
                 .lineLimit(1)
             if let size = attachment.sizeText {
                 Text(size)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
-        .foregroundStyle(Color.calibre.foreground)
+        .foregroundStyle(Color.rewound.foreground)
         .padding(.horizontal, Space.s)
         .padding(.vertical, Space.xs)
-        .background(Color.calibre.secondary, in: Capsule())
+        .background(Color.rewound.secondary, in: Capsule())
 
         if let url = attachment.url?.url {
             Link(destination: url) { label }
@@ -737,8 +737,8 @@ private struct RecordPickerSheet: View {
             List {
                 if let errorText {
                     Text(errorText)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.destructive)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 ForEach(options) { option in
@@ -747,13 +747,13 @@ private struct RecordPickerSheet: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(option.ref.label)
-                                .font(CalibreType.body)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.body)
+                                .foregroundStyle(Color.rewound.foreground)
                                 .fixedSize(horizontal: false, vertical: true)
                             if let detail = option.detail, !detail.isEmpty {
                                 Text(detail)
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -762,8 +762,8 @@ private struct RecordPickerSheet: View {
                 }
                 if options.isEmpty && !loading && errorText == nil {
                     Text("Your own orders and live listings are what can be named here — nothing matches that yet.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -778,7 +778,7 @@ private struct RecordPickerSheet: View {
             }
             .overlay {
                 if loading && options.isEmpty {
-                    CalibreLoadingView("Finding your records")
+                    RewoundLoadingView("Finding your records")
                 }
             }
         }

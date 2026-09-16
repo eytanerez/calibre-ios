@@ -1,11 +1,11 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Native SSN step before Stripe Connect onboarding. The number auto-formats
 /// as 123-45-6789 and stays fully visible.
 ///
-/// **Not masked, deliberately** — CALIBRE_FINAL_PUSH_CONTRACTS.md §6 records
+/// **Not masked, deliberately** — REWOUND_FINAL_PUSH_CONTRACTS.md §6 records
 /// Eytan's explicit call: the SSN formats as 123-45-6789 and is fully visible,
 /// with no masking and no reveal toggle. It was `isSecure: true`, which turned
 /// nine digits into nine dots and left a seller no way to check the one number
@@ -48,12 +48,12 @@ struct SSNStepSheet: View {
             // rather than adding rubber-band bounce to a page that never scrolls.
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xl) {
-                    Text("Before we open a payouts account, we check that this number doesn't match any banned or suspended Calibre account.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.secondaryForeground)
+                    Text("Before we open a payouts account, we check that this number doesn't match any banned or suspended Rewound account.")
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.secondaryForeground)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    CalibreTextField(
+                    RewoundTextField(
                         "Social Security number",
                         text: $ssn,
                         placeholder: "123-45-6789",
@@ -88,9 +88,9 @@ struct SSNStepSheet: View {
                         // The words stay. A button that goes blank on the
                         // screen where an SSN is handed over reads as a
                         // failure rather than as work.
-                        CalibreBusyLabel("Continue to Stripe", busy: busy)
+                        RewoundBusyLabel("Continue to Stripe", busy: busy)
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(busy || digits.count != 9)
 
                     Spacer(minLength: 0)

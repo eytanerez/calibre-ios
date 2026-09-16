@@ -1,5 +1,5 @@
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The crown beside seller setup winds when a step finishes, and never
 /// backwards.

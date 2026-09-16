@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The owner's own photographs of a watch in their Vault: what the four verbs
 /// put on the wire, what comes back, which picture leads, and — the one that
@@ -120,7 +120,7 @@ final class VaultGalleryTests: XCTestCase {
         XCTAssertEqual(vault.watches.first?.gallery.map(\.id), ["p1", "p2"])
         XCTAssertEqual(
             vault.watches.first?.coverUrl?.url?.absoluteString,
-            "https://mock.calibre.test/secure-media/vault_photos/v1/one.jpg"
+            "https://mock.rewound.test/secure-media/vault_photos/v1/one.jpg"
         )
         XCTAssertEqual(
             vault.watches.first?.photoUrl,
@@ -132,7 +132,7 @@ final class VaultGalleryTests: XCTestCase {
     /// A payload served by a deployment that predates the gallery carries no
     /// key at all, and absent is not the same claim as empty.
     func testAWatchWithNoGalleryKeyIsNotAWatchWithNoPhotographs() throws {
-        let row = try apiDecoder(origin: "https://mock.calibre.test")
+        let row = try apiDecoder(origin: "https://mock.rewound.test")
             .decode(VaultWatch.self, from: Self.rowWithoutAGalleryKey)
         XCTAssertNil(row.photos)
         XCTAssertTrue(row.gallery.isEmpty, "a grid has nothing to lay out either way")
@@ -145,36 +145,36 @@ final class VaultGalleryTests: XCTestCase {
     /// backwards is silent in both directions: the owner's photograph never
     /// appears, or the app's bearer token goes somewhere it was not needed.
     func testOnlyThePermissionCheckedPrefixIsPrivate() {
-        let origin = URL(string: "https://mock.calibre.test")!
+        let origin = URL(string: "https://mock.rewound.test")!
         XCTAssertEqual(
             VaultCoverSource.resolve(
-                URL(string: "https://mock.calibre.test/secure-media/vault_photos/v1/one.jpg"),
+                URL(string: "https://mock.rewound.test/secure-media/vault_photos/v1/one.jpg"),
                 apiOrigin: origin
             ),
-            .privateMedia(URL(string: "https://mock.calibre.test/secure-media/vault_photos/v1/one.jpg")!)
+            .privateMedia(URL(string: "https://mock.rewound.test/secure-media/vault_photos/v1/one.jpg")!)
         )
-        // Calibre's own host, but public media — a seeded demo watch, a
+        // Rewound's own host, but public media — a seeded demo watch, a
         // listing's own photographs. Nothing guards these, so nothing sends a
         // credential to them and they go through the ordinary image pipeline.
         XCTAssertEqual(
             VaultCoverSource.resolve(
-                URL(string: "https://mock.calibre.test/media/demo-watches/tudor.jpg"),
+                URL(string: "https://mock.rewound.test/media/demo-watches/tudor.jpg"),
                 apiOrigin: origin
             ),
-            .link(URL(string: "https://mock.calibre.test/media/demo-watches/tudor.jpg")!)
+            .link(URL(string: "https://mock.rewound.test/media/demo-watches/tudor.jpg")!)
         )
         XCTAssertEqual(
             VaultCoverSource.resolve(URL(string: "https://seller.example/tudor.jpg"), apiOrigin: origin),
             .link(URL(string: "https://seller.example/tudor.jpg")!)
         )
         // A different port on the same host is a different origin, so the
-        // prefix alone does not make it Calibre's.
+        // prefix alone does not make it Rewound's.
         XCTAssertEqual(
             VaultCoverSource.resolve(
-                URL(string: "https://mock.calibre.test:8443/secure-media/vault_photos/v1/one.jpg"),
+                URL(string: "https://mock.rewound.test:8443/secure-media/vault_photos/v1/one.jpg"),
                 apiOrigin: origin
             ),
-            .link(URL(string: "https://mock.calibre.test:8443/secure-media/vault_photos/v1/one.jpg")!)
+            .link(URL(string: "https://mock.rewound.test:8443/secure-media/vault_photos/v1/one.jpg")!)
         )
         // Neither of these is a photograph the app will load.
         XCTAssertNil(VaultCoverSource.resolve(URL(string: "http://seller.example/tudor.jpg"), apiOrigin: origin))
@@ -186,7 +186,7 @@ final class VaultGalleryTests: XCTestCase {
     /// origin the app already talks to. Requiring https of them would have
     /// resolved every seeded watch to nothing and drawn a placeholder over a
     /// picture that loads perfectly.
-    func testCalibresOwnPublicMediaLoadsOverTheOriginsOwnScheme() {
+    func testRewoundsOwnPublicMediaLoadsOverTheOriginsOwnScheme() {
         let origin = URL(string: "http://localhost:8010")!
         XCTAssertEqual(
             VaultCoverSource.resolve(
@@ -207,7 +207,7 @@ final class VaultGalleryTests: XCTestCase {
     /// The refusal is enforced again at the moment a request would actually be
     /// built, because that is the only place it can be: a URL that reached the
     /// loader by any other route still does not get the token.
-    func testTheLoaderRefusesToCarryTheTokenOffCalibre() async {
+    func testTheLoaderRefusesToCarryTheTokenOffRewound() async {
         let attempted = Attempted()
         MockURLProtocol.setHandler { request in
             attempted.record(request)
@@ -223,7 +223,7 @@ final class VaultGalleryTests: XCTestCase {
         }
     }
 
-    func testTheLoaderCarriesTheTokenToCalibresOwnOrigin() async throws {
+    func testTheLoaderCarriesTheTokenToRewoundsOwnOrigin() async throws {
         let attempted = Attempted()
         MockURLProtocol.setHandler { request in
             attempted.record(request)
@@ -232,14 +232,14 @@ final class VaultGalleryTests: XCTestCase {
         let loader = PrivateMediaLoader(configuration: mockConfiguration(), auth: SingleFlightAuthStub())
 
         let bytes = try await loader.data(
-            for: URL(string: "https://mock.calibre.test/secure-media/vault_photos/v1/one.jpg")!
+            for: URL(string: "https://mock.rewound.test/secure-media/vault_photos/v1/one.jpg")!
         )
 
         XCTAssertEqual(bytes, Data("bytes".utf8))
         XCTAssertEqual(attempted.authorization, "Bearer stale")
     }
 
-    /// The same contract `APIClient` honours. Without it a gallery empties
+    /// The same contract `APIClient` honors. Without it a gallery empties
     /// itself the first morning after an access token ages out, and the owner
     /// is shown a watch with no picture on it rather than a signed-in app.
     func testAnExpiredTokenRefreshesOnceAndTheFetchIsRetried() async throws {
@@ -253,7 +253,7 @@ final class VaultGalleryTests: XCTestCase {
         let loader = PrivateMediaLoader(configuration: mockConfiguration(), auth: auth)
 
         let bytes = try await loader.data(
-            for: URL(string: "https://mock.calibre.test/secure-media/vault_photos/v1/one.jpg")!
+            for: URL(string: "https://mock.rewound.test/secure-media/vault_photos/v1/one.jpg")!
         )
 
         XCTAssertEqual(bytes, Data("bytes".utf8))
@@ -274,7 +274,7 @@ final class VaultGalleryTests: XCTestCase {
 
         do {
             _ = try await loader.data(
-                for: URL(string: "https://mock.calibre.test/secure-media/vault_photos/v1/one.jpg")!
+                for: URL(string: "https://mock.rewound.test/secure-media/vault_photos/v1/one.jpg")!
             )
             XCTFail("a 404 is a refusal, not a picture")
         } catch {
@@ -292,7 +292,7 @@ final class VaultGalleryTests: XCTestCase {
             return (200, Data("bytes".utf8))
         }
         let loader = PrivateMediaLoader(configuration: mockConfiguration(), auth: SingleFlightAuthStub())
-        let url = URL(string: "https://mock.calibre.test/secure-media/vault_photos/v1/one.jpg")!
+        let url = URL(string: "https://mock.rewound.test/secure-media/vault_photos/v1/one.jpg")!
 
         _ = try await loader.data(for: url)
         _ = try await loader.data(for: url)
@@ -338,11 +338,11 @@ final class VaultGalleryTests: XCTestCase {
     {"ok": true, "data": {"results": [], "cover_url": "https://seller.example/tudor.jpg"}}
     """.utf8)
 
-    /// A watch that came from a Calibre order: the seller's photograph is on
+    /// A watch that came from a Rewound order: the seller's photograph is on
     /// the row as a link, and the owner has not photographed it themselves.
     private static let listWithOneLinkedWatch = Data("""
     {"ok": true, "data": {"results": [
-      {"id": "v1", "source": "calibre_order", "authenticated": true,
+      {"id": "v1", "source": "rewound_order", "authenticated": true,
        "order_id": null, "listing_id": null, "passport_code": null,
        "brand": "Tudor", "model": "Black Bay", "reference": "79030N",
        "production_year": null, "nickname": null, "notes": null,

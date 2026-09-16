@@ -1,10 +1,10 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 // MARK: - The hold
 
-/// A watch a person at Calibre is looking at more closely.
+/// A watch a person at Rewound is looking at more closely.
 ///
 /// What this replaces printed the bench's own notes under "Authentication
 /// issue", and only ever appeared on `auth_pass` or `auth_fail` — so on the one
@@ -12,8 +12,8 @@ import SwiftUI
 /// a misrepresentation never reaches `auth_fail`.
 ///
 /// The reason for the hold is not named. It is private to the two parties while
-/// it is open, and naming it would be Calibre's finding announced before
-/// Calibre has finished making it.
+/// it is open, and naming it would be Rewound's finding announced before
+/// Rewound has finished making it.
 struct AuthenticationHoldCard: View {
     let record: OrderAuthentication
     /// The seller is told their payout is paused; the buyer is not told that.
@@ -24,18 +24,18 @@ struct AuthenticationHoldCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Label(record.holdTitle, systemImage: "hourglass")
-                .font(CalibreType.bodySemiBold)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodySemiBold)
+                .foregroundStyle(Color.rewound.foreground)
             Text(record.holdBody)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Text(
                 audience == .seller
                     ? "Your payout is paused while we look. Nothing is expected of you right now."
                     : "Nothing is expected of you right now."
             )
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.mutedForeground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
@@ -100,21 +100,21 @@ struct AuthenticationReportRow: View {
             HStack(spacing: Space.m) {
                 Image(systemName: "checkmark.seal")
                     .font(.system(size: 17, weight: .regular))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Authentication report")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .multilineTextAlignment(.leading)
                     Text(subtitle)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.calibre.placeholder)
+                    .foregroundStyle(Color.rewound.placeholder)
             }
             .padding(Space.l)
             .authCardSurface()
@@ -171,7 +171,7 @@ struct AuthenticationReportScreen: View {
                     actionTitle: "Try again"
                 ) { Task { await load() } }
             } else {
-                CalibreLoadingView("Opening the report")
+                RewoundLoadingView("Opening the report")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
@@ -208,7 +208,7 @@ struct AuthenticationReportScreen: View {
                 }
                 .padding(Space.l)
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xl) {
@@ -220,14 +220,14 @@ struct AuthenticationReportScreen: View {
                     )
                     if let pdf = (report.pdfUrl ?? target.pdfUrl)?.url {
                         Link("Open the filed PDF", destination: pdf)
-                            .buttonStyle(.calibre(.secondary, fullWidth: true))
+                            .buttonStyle(.rewound(.secondary, fullWidth: true))
                     }
                     Button("Refresh report") { Task { await reload() } }
-                        .buttonStyle(.calibre(.ghost, fullWidth: true))
+                        .buttonStyle(.rewound(.ghost, fullWidth: true))
                 }
                 .padding(Space.l)
             }
-            .calibrePageBackground()
+            .rewoundPageBackground()
         }
     }
 
@@ -238,28 +238,28 @@ struct AuthenticationReportScreen: View {
     ///
     /// The report is its own screen, with the order behind it in the stack, so
     /// the loupe here can never be an order screen's second mark
-    /// (CALIBRE_BY_HAND_CONTRACTS.md §4 — one illustrated moment per step).
+    /// (REWOUND_BY_HAND_CONTRACTS.md §4 — one illustrated moment per step).
     private func reportHeader(_ report: AuthenticationReport) -> some View {
         HStack(spacing: Space.m) {
-            CalibreMark.loupe(size: 40, trigger: markKey(report))
+            RewoundMark.loupe(size: 40, trigger: markKey(report))
                 .markAnnounces(markKey(report))
             VStack(alignment: .leading, spacing: 2) {
                 Text("Authentication report")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(issuedLine(report))
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             Spacer(minLength: 0)
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -278,7 +278,7 @@ struct AuthenticationReportScreen: View {
         return parts.isEmpty ? "Filed by our authentication center" : parts.joined(separator: " · ")
     }
 
-    /// Calibre stands behind the watch and has no filed document to open for
+    /// Rewound stands behind the watch and has no filed document to open for
     /// it. What goes here is the route the owner actually has, rather than a
     /// "Try again" that can never work.
     private var noFiledReport: some View {
@@ -286,7 +286,7 @@ struct AuthenticationReportScreen: View {
             EmptyState(
                 icon: "doc.text.magnifyingglass",
                 title: "No filed report for this one",
-                message: "Calibre inspected this watch before it shipped, and there's no report document on file to open. Its Passport is the record of what has happened to it, and our team can tell you what the bench found."
+                message: "Rewound inspected this watch before it shipped, and there's no report document on file to open. Its Passport is the record of what has happened to it, and our team can tell you what the bench found."
             )
             VStack(spacing: Space.m) {
                 // Ordinary pushes now. This is a page on the reader's own
@@ -296,10 +296,10 @@ struct AuthenticationReportScreen: View {
                 // one.
                 if let code = target.passportCode {
                     Button("Open its Passport") { routePush(.passport(code)) }
-                        .buttonStyle(.calibre(.secondary, fullWidth: true))
+                        .buttonStyle(.rewound(.secondary, fullWidth: true))
                 }
                 Button("Ask us about this watch") { routePush(.supportChat) }
-                    .buttonStyle(.calibre(.ghost, fullWidth: true))
+                    .buttonStyle(.rewound(.ghost, fullWidth: true))
             }
             .padding(.horizontal, Space.l)
         }
@@ -360,8 +360,8 @@ private struct NativeAuthenticationReport: View {
 
             if let footer = content.findingsFooter, !footer.isEmpty {
                 Text(footer)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -369,29 +369,29 @@ private struct NativeAuthenticationReport: View {
 
     private var result: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Eyebrow(content.headLabel, color: Color.calibre.primary)
+            Eyebrow(content.headLabel, color: Color.rewound.primary)
             Text(content.title)
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             if let lede = content.lede, !lede.isEmpty {
                 Text(lede)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                 StatusBadge(content.result.label, tone: resultTone)
                 if let qualifier = content.result.qualifier, !qualifier.isEmpty {
                     Text(qualifier)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 Spacer(minLength: 0)
                 if let date = content.result.date, !date.isEmpty {
                     Text(date)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
         }
@@ -426,13 +426,13 @@ private struct NativeAuthenticationReport: View {
                     ForEach(Array(content.timepiece.enumerated()), id: \.element.id) { index, row in
                         HStack(alignment: .firstTextBaseline, spacing: Space.l) {
                             Text(row.label)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                             Spacer(minLength: Space.m)
-                            let valueFont = row.strong == true ? CalibreType.bodySemiBold : CalibreType.body
+                            let valueFont = row.strong == true ? RewoundType.bodySemiBold : RewoundType.body
                             Text(row.value)
                                 .font(row.tabular == true ? valueFont.monospacedDigit() : valueFont)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .foregroundStyle(Color.rewound.foreground)
                                 .multilineTextAlignment(.trailing)
                         }
                         .padding(.vertical, Space.m)
@@ -451,34 +451,34 @@ private struct NativeAuthenticationReport: View {
                     if let overall = content.condition.overall, !overall.isEmpty {
                         LabeledContent("Overall") {
                             Text(overall)
-                                .font(CalibreType.bodySemiBold)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.bodySemiBold)
+                                .foregroundStyle(Color.rewound.foreground)
                         }
                     }
                     if let lede = content.condition.lede, !lede.isEmpty {
                         Text(lede)
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if !content.condition.scale.isEmpty {
                         Text("Scale: \(content.condition.scale.joined(separator: " · "))")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     VStack(spacing: 0) {
                         ForEach(Array(content.condition.rows.enumerated()), id: \.element.id) { index, row in
                             VStack(alignment: .leading, spacing: Space.s) {
                                 HStack {
-                                    Text(row.label).font(CalibreType.bodyMedium)
+                                    Text(row.label).font(RewoundType.bodyMedium)
                                     Spacer()
                                     Label(
                                         row.agrees ? "Matches" : "Different",
                                         systemImage: row.agrees ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
                                     )
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(row.agrees ? Color.calibre.success : Color.calibre.warning)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(row.agrees ? Color.rewound.success : Color.rewound.warning)
                                 }
                                 comparisonLine("Seller", row.seller)
                                 comparisonLine("Calibre", row.calibre)
@@ -489,8 +489,8 @@ private struct NativeAuthenticationReport: View {
                     }
                     if let footnote = content.condition.footnote, !footnote.isEmpty {
                         Text(footnote)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -501,12 +501,12 @@ private struct NativeAuthenticationReport: View {
     private func comparisonLine(_ label: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.m) {
             Text(label)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(width: 52, alignment: .leading)
             Text(value)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -520,14 +520,14 @@ private struct NativeAuthenticationReport: View {
                     ForEach(Array(content.inclusions.enumerated()), id: \.element.id) { index, item in
                         HStack(alignment: .top, spacing: Space.m) {
                             Image(systemName: item.present ? "checkmark.circle.fill" : "minus.circle")
-                                .foregroundStyle(item.present ? Color.calibre.success : Color.calibre.mutedForeground)
+                                .foregroundStyle(item.present ? Color.rewound.success : Color.rewound.mutedForeground)
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(item.label).font(CalibreType.bodyMedium)
+                                Text(item.label).font(RewoundType.bodyMedium)
                                 if let detail = item.detail, !detail.isEmpty {
                                     Text(detail)
-                                        .font(CalibreType.caption)
-                                        .foregroundStyle(Color.calibre.mutedForeground)
+                                        .font(RewoundType.caption)
+                                        .foregroundStyle(Color.rewound.mutedForeground)
                                 }
                             }
                             Spacer(minLength: 0)
@@ -606,8 +606,8 @@ private struct NativeAuthenticationReport: View {
         if !photographs.isEmpty {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("Photographs")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 ForEach(photographs) { photograph in
                     AuthenticationReportPhoto(photograph: photograph)
                 }
@@ -619,20 +619,20 @@ private struct NativeAuthenticationReport: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             HStack(alignment: .firstTextBaseline) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer(minLength: Space.m)
                 if let value, !value.isEmpty {
                     Text(value)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.primary)
                         .multilineTextAlignment(.trailing)
                 }
             }
             if let detail, !detail.isEmpty {
                 Text(detail)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -644,8 +644,8 @@ private struct NativeAuthenticationReport: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(title)
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             content()
                 .padding(.horizontal, Space.l)
                 .authReportSurface()
@@ -653,7 +653,7 @@ private struct NativeAuthenticationReport: View {
     }
 
     private var reportDivider: some View {
-        Rectangle().fill(Color.calibre.border).frame(height: 1)
+        Rectangle().fill(Color.rewound.border).frame(height: 1)
     }
 }
 
@@ -671,7 +671,7 @@ private struct AuthenticationReportPhoto: View {
                         case .failed:
                             ContentUnavailableView("Photograph unavailable", systemImage: "photo")
                         case .loading:
-                            Rectangle().fill(Color.calibre.secondary).shimmer()
+                            Rectangle().fill(Color.rewound.secondary).shimmer()
                         }
                     }
                 } else {
@@ -679,18 +679,18 @@ private struct AuthenticationReportPhoto: View {
                 }
             }
             .aspectRatio(4 / 3, contentMode: .fit)
-            .background(Color.calibre.secondary)
+            .background(Color.rewound.secondary)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
 
             if let title = photograph.title, !title.isEmpty {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
             }
             if let caption = photograph.caption, !caption.isEmpty {
                 Text(caption)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -700,11 +700,11 @@ private struct AuthenticationReportPhoto: View {
 
 private extension View {
     func authReportSurface() -> some View {
-        background(Color.calibre.card)
+        background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
     }
 }
@@ -715,7 +715,7 @@ private extension View {
 ///
 /// Both figures go to both parties. That is deliberate and it is the opposite
 /// of the obvious choice: an asymmetric offer collapses the moment either side
-/// screenshots it. Calibre's own remainder is in neither payload.
+/// screenshots it. Rewound's own remainder is in neither payload.
 ///
 /// There is no countdown here and no default. Silence decides nothing.
 struct AuthCaseCard: View {
@@ -745,23 +745,23 @@ struct AuthCaseCard: View {
         let proposal = payload.proposal
         VStack(alignment: .leading, spacing: Space.m) {
             Text(headline(payload))
-                .font(CalibreType.bodySemiBold)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodySemiBold)
+                .foregroundStyle(Color.rewound.foreground)
 
             Text(
                 payload.summary
                     ?? "Our authentication center found something that does not match how this watch was described. "
-                    + "A person at Calibre is working out what should happen."
+                    + "A person at Rewound is working out what should happen."
             )
-            .font(CalibreType.body)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.body)
+            .foregroundStyle(Color.rewound.mutedForeground)
 
             Button(showingDocument ? "Hide what we found" : "See what we found") {
                 showingDocument.toggle()
                 if showingDocument, discrepancy == nil { Task { await loadDocument() } }
             }
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.primary)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.primary)
 
             if showingDocument { documentBody() }
 
@@ -779,11 +779,11 @@ struct AuthCaseCard: View {
             VStack(alignment: .leading, spacing: Space.s) {
                 if let faults = discrepancy.faultTypes, !faults.isEmpty {
                     Text(faults.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: " · "))
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 if let notes = discrepancy.notes, !notes.isEmpty {
-                    Text(notes).font(CalibreType.body).foregroundStyle(Color.calibre.foreground)
+                    Text(notes).font(RewoundType.body).foregroundStyle(Color.rewound.foreground)
                 }
                 let photos = (discrepancy.photos ?? []).filter { $0.url?.url != nil }
                 if !photos.isEmpty {
@@ -796,12 +796,12 @@ struct AuthCaseCard: View {
                                         case .loaded(let image):
                                             image.resizable().scaledToFill()
                                         case .loading:
-                                            Color.calibre.border.shimmer()
+                                            Color.rewound.border.shimmer()
                                         case .failed:
                                             Image(systemName: "photo")
-                                                .foregroundStyle(Color.calibre.mutedForeground)
+                                                .foregroundStyle(Color.rewound.mutedForeground)
                                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                                .background(Color.calibre.secondary)
+                                                .background(Color.rewound.secondary)
                                         }
                                     }
                                     .frame(width: 140, height: 140)
@@ -812,13 +812,13 @@ struct AuthCaseCard: View {
                     }
                 }
                 if (discrepancy.notes ?? "").isEmpty, photos.isEmpty, (discrepancy.faultTypes ?? []).isEmpty {
-                    Text("The written findings are still being put together. Your Calibre contact will send them through.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                    Text("The written findings are still being put together. Your Rewound contact will send them through.")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
         } else {
-            CalibreLoadingView()
+            RewoundLoadingView()
         }
     }
 
@@ -832,8 +832,8 @@ struct AuthCaseCard: View {
                 (youAreBuyer ? "Paid out to the seller" : "Refunded to the buyer", money(theirs, proposal.currency)),
             ])
             Text("Both of you are shown both figures.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             if proposal.youAcceptedAt != nil {
                 Text(
@@ -841,31 +841,31 @@ struct AuthCaseCard: View {
                         ? "You accepted this. Both sides have agreed."
                         : "You accepted this. We are waiting on the other side — nothing happens until they answer."
                 )
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
             } else if proposal.declinedBy != nil {
-                Text("This proposal was declined. Your Calibre contact will come back with another way forward.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                Text("This proposal was declined. Your Rewound contact will come back with another way forward.")
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             } else if proposal.canRespond == true {
                 HStack(spacing: Space.s) {
                     Button("Accept this") { Task { await answer(true) } }
-                        .buttonStyle(.calibre(.primary))
+                        .buttonStyle(.rewound(.primary))
                         .disabled(answering)
                     Button("Decline") { Task { await answer(false) } }
-                        .buttonStyle(.calibre(.secondary))
+                        .buttonStyle(.rewound(.secondary))
                         .disabled(answering)
                 }
                 Text("There is no deadline on this. Nothing happens until both of you have agreed.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
     }
 
     private func headline(_ payload: AuthCaseProposalPayload) -> String {
         if payload.status != "open" { return "This was settled" }
-        return payload.proposal == nil ? "We are looking at this watch" : "A proposal from Calibre"
+        return payload.proposal == nil ? "We are looking at this watch" : "A proposal from Rewound"
     }
 
     private func money(_ amount: String?, _ currency: String?) -> String {
@@ -892,7 +892,7 @@ struct AuthCaseCard: View {
             payload = try? await services.client.authCaseProposal(caseID: caseID)
             onAnswered()
             if !accept {
-                toasts.show(title: "We have recorded that", message: "Your Calibre contact will come back to you with another way forward.")
+                toasts.show(title: "We have recorded that", message: "Your Rewound contact will come back to you with another way forward.")
             } else if response.settlement?.status == "settled" {
                 toasts.show(title: "Agreed", message: "Both sides have accepted and this is settled.")
             } else {
@@ -915,10 +915,10 @@ struct AuthCaseCard: View {
 extension View {
     /// The order detail's card surface, reachable from these sections too.
     func authCardSurface() -> some View {
-        background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
     }
 }

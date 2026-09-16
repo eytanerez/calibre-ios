@@ -1,4 +1,4 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 
 // Everything checkout has to *say* about money, in one place, built only from
@@ -10,7 +10,7 @@ import Foundation
 /// can be written where the marketplace config lives.
 ///
 /// `code` is the backend's machine reason; `serverMessage` is its own
-/// plain-English line, used when the code is one we don't recognise.
+/// plain-English line, used when the code is one we don't recognize.
 struct CardRefusal: Equatable {
     let code: String?
     let serverMessage: String?
@@ -134,7 +134,7 @@ enum CheckoutCopy {
             sentences.append("This order accepts \(list(funding)) cards.")
         }
 
-        sentences.append("Prepaid cards are not accepted anywhere on Calibre.")
+        sentences.append("Prepaid cards are not accepted anywhere on Rewound.")
 
         if !breakdown.acceptsDebit {
             if let statesText {
@@ -158,7 +158,7 @@ enum CheckoutCopy {
     static func refusalMessage(_ refusal: CardRefusal, statesText: String?) -> String {
         switch refusal.code {
         case "prepaid_not_accepted":
-            return "Prepaid cards are not accepted anywhere on Calibre."
+            return "Prepaid cards are not accepted anywhere on Rewound."
         case "debit_not_accepted_in_state":
             if let statesText {
                 return "Debit cards are accepted only where the discount presentation applies — today that is \(statesText) — and this order is not one of those."
@@ -203,7 +203,7 @@ enum CheckoutCopy {
     /// before anything is committed. This wording is fixed and identical on
     /// web, iOS and Android \u{2014} it is what decides a dispute.
     static let wireHoldDisclosure =
-        "Choosing wire places a refundable $250 authorization on your card. It\u{2019}s released as soon as your transfer arrives. If the transfer isn\u{2019}t sent by the deadline, the $250 is charged and split between the seller and Calibre."
+        "Choosing wire places a refundable $250 authorization on your card. It\u{2019}s released as soon as your transfer arrives. If the transfer isn\u{2019}t sent by the deadline, the $250 is charged and split between the seller and Rewound."
 
     /// Said again on the instructions screen, where the buyer is looking at
     /// the authorization on their statement.
@@ -228,7 +228,7 @@ enum CheckoutCopy {
     /// any such thing on the buyer's side: once a sale is final, it is final.
     static func returnTermsHeadline(_ breakdown: CheckoutBreakdown) -> String {
         guard let terms = breakdown.returns, terms.accepted else {
-            return "This is a final sale \u{2014} it cannot be returned or cancelled"
+            return "This is a final sale \u{2014} it cannot be returned or canceled"
         }
         // Item 1.22 — the duration is the answer, so it leads. "This seller
         // accepts returns" tells a buyer nothing they can act on; "72-hour
@@ -268,7 +268,7 @@ enum CheckoutCopy {
             }
         }
 
-        lines.append("Calibre's return label is deducted from your refund.")
+        lines.append("Rewound's return label is deducted from your refund.")
         if breakdown.paymentDisclosures?.cardFeeNonrefundable == true {
             lines.append("The card fee is not refunded.")
         }
@@ -325,8 +325,8 @@ enum CheckoutCopy {
             // Not every failure in checkout comes back from our API, and the
             // ones that don't are the ones a buyer most needs words for: a
             // 3-D Secure decline carries Stripe's own sentence ("Your card has
-            // insufficient funds."), a cancelled challenge carries "You
-            // cancelled the check with your bank, so nothing was charged", an
+            // insufficient funds."), a canceled challenge carries "You
+            // canceled the check with your bank, so nothing was charged", an
             // unreadable card carries a line about checking the details. Every
             // one of them travels as `CheckoutMessageError`, which is not an
             // `APIError` — so all of them used to be thrown away here and

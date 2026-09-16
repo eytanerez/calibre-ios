@@ -2,11 +2,11 @@
  "ok": true,
  "data": {
   "payment_intent": {
-   "id": "pi_3PxCalibre001",
-   "client_secret": "pi_3PxCalibre001_secret_abc"
+   "id": "pi_3PxRewound001",
+   "client_secret": "pi_3PxRewound001_secret_abc"
   },
-  "publishable_key": "pk_test_calibre",
-  "customer_id": "cus_CalibreBuyer",
+  "publishable_key": "pk_test_rewound",
+  "customer_id": "cus_RewoundBuyer",
   "customer_session_client_secret": "cuss_secret_mobile_element",
   "breakdown": {
    "subtotal": "4400.00",

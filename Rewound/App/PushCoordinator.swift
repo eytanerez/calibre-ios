@@ -1,4 +1,4 @@
-import CalibreKit
+import RewoundKit
 import Observation
 import SwiftUI
 import UIKit
@@ -56,7 +56,7 @@ struct AlertItem: Identifiable, Hashable, Codable {
 final class AlertsInbox {
     private(set) var items: [AlertItem] = []
 
-    @ObservationIgnored private let key = "calibre.alerts.inbox"
+    @ObservationIgnored private let key = "rewound.alerts.inbox"
     @ObservationIgnored private let cap = 100
 
     /// What is left in the inbox — the same thing the signed-in badge counts.
@@ -149,7 +149,7 @@ final class PushCoordinator: NSObject {
     @ObservationIgnored private let auth: AuthSession
     @ObservationIgnored private let registration: PushDeviceRegistrar
     @ObservationIgnored private var signingOutUserID: String?
-    private static let tokenCacheKey = "calibre.push.latestDeviceToken"
+    private static let tokenCacheKey = "rewound.push.latestDeviceToken"
     private struct CachedToken: Codable { let token: String; let environment: String }
     @ObservationIgnored weak var router: AppRouter?
     @ObservationIgnored weak var alerts: AlertsInbox?
@@ -157,8 +157,8 @@ final class PushCoordinator: NSObject {
 
     /// Whether we've already asked (so we prompt at most once ourselves).
     var hasRequestedPermission: Bool {
-        get { UserDefaults.standard.bool(forKey: "calibre.push.requested") }
-        set { UserDefaults.standard.set(newValue, forKey: "calibre.push.requested") }
+        get { UserDefaults.standard.bool(forKey: "rewound.push.requested") }
+        set { UserDefaults.standard.set(newValue, forKey: "rewound.push.requested") }
     }
 
     /// A cold-start route parked until the tab shell is ready to receive it.
@@ -308,7 +308,7 @@ final class PushCoordinator: NSObject {
         else { return "production" }
 
         // The value is the first <string> after the key; anything else means a
-        // profile shape we do not recognise, and production is the safe read.
+        // profile shape we do not recognize, and production is the safe read.
         let tail = raw[range.upperBound...].prefix(200)
         return tail.contains("<string>development</string>") ? "sandbox" : "production"
     }
@@ -446,7 +446,7 @@ final class PushCoordinator: NSObject {
 
     /// Takes the cards off this phone that were cleared on another one.
     ///
-    /// Three places have to agree afterwards: the notification centre, the
+    /// Three places have to agree afterwards: the notification center, the
     /// inbox screen, and the number on the app icon.
     func applyCleared(_ sync: ClearedSync) async {
         await Self.removeDelivered(sync)
@@ -485,21 +485,21 @@ final class PushCoordinator: NSObject {
     /// are read back and matched on the `notification_id` their own payload
     /// carried, which is the id the server does know.
     private static func removeDelivered(_ sync: ClearedSync) async {
-        let centre = UNUserNotificationCenter.current()
+        let center = UNUserNotificationCenter.current()
         guard !sync.clearedAll else {
-            // Everything of Calibre's, because the payload cannot carry the
-            // list. This app's notification centre holds only Calibre's own.
-            centre.removeAllDeliveredNotifications()
+            // Everything of Rewound's, because the payload cannot carry the
+            // list. This app's notification center holds only Rewound's own.
+            center.removeAllDeliveredNotifications()
             return
         }
-        let delivered = await centre.deliveredNotifications()
+        let delivered = await center.deliveredNotifications()
         let requests = delivered.compactMap { notification -> String? in
             let carried = notification.request.content.userInfo["notification_id"] as? String
             guard let carried, sync.ids.contains(carried) else { return nil }
             return notification.request.identifier
         }
         guard !requests.isEmpty else { return }
-        centre.removeDeliveredNotifications(withIdentifiers: requests)
+        center.removeDeliveredNotifications(withIdentifiers: requests)
     }
 
     /// Extracts the Sendable fields we need from a raw APNs payload. Runs in
@@ -514,7 +514,7 @@ final class PushCoordinator: NSObject {
         let route = userInfo["route"] as? String
         let aps = userInfo["aps"] as? [AnyHashable: Any]
         let alert = aps?["alert"] as? [AnyHashable: Any]
-        let title = (alert?["title"] as? String) ?? "Calibre"
+        let title = (alert?["title"] as? String) ?? "Rewound"
         let body = (alert?["body"] as? String) ?? ""
         let category = (userInfo["category"] as? String) ?? unknownCategory
         return DecodedPush(

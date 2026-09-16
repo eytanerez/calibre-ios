@@ -42,7 +42,7 @@ private let returnAtTheBench: Set<String> = ["received", "verifying"]
 public enum OrderActor: String, Sendable, Equatable, CaseIterable {
     case you
     case seller
-    case calibre
+    case rewound
 
     /// How each actor is named on screen.
     ///
@@ -53,7 +53,7 @@ public enum OrderActor: String, Sendable, Equatable, CaseIterable {
         switch self {
         case .you: "Waiting on you"
         case .seller: "With the seller"
-        case .calibre: "With Calibre"
+        case .rewound: "With Rewound"
         }
     }
 }
@@ -99,7 +99,7 @@ public struct OrderNextStep: Sendable, Equatable {
 ///
 /// `to_auth` is a single order status covering three genuinely different
 /// situations, and before the record existed all three read as "on its way to
-/// our authentication centre" — including the days after it had already
+/// our authentication center" — including the days after it had already
 /// arrived. Only the record can tell the last of them apart: the carrier's
 /// delivered scan says a parcel reached a building, and `arrivedAt` says a
 /// watch reached a person who opened the box and photographed it.
@@ -153,7 +153,7 @@ public extension Order {
         }
     }
 
-    /// A person at Calibre is looking at this watch more closely.
+    /// A person at Rewound is looking at this watch more closely.
     ///
     /// A state of the RECORD, not of the order: the order sits at `to_auth`
     /// throughout, which is why nothing keyed to the status can see one.
@@ -183,7 +183,7 @@ enum OrderDay {
 }
 
 private extension Order {
-    /// When Calibre expects to be finished with the watch.
+    /// When Rewound expects to be finished with the watch.
     ///
     /// The server's own forecast first, the bench's expected-out date second.
     /// Nil when neither is known, which is the case a sentence must not paper
@@ -216,7 +216,7 @@ public extension Order {
     /// `status`, and each of them outranks whatever the status happens to say.
     func nextStep(now: Date = .now) -> OrderNextStep {
         // A return that was called off is not a live one. The web reads
-        // `order.return`'s presence alone; this app has carried a cancelled
+        // `order.return`'s presence alone; this app has carried a canceled
         // return on the payload since returns shipped, and `isCancelled` is
         // the predicate the return panel on this screen already gates on.
         if let activeReturn = returnSummary, !activeReturn.isCancelled, !activeReturn.isRefunded {
@@ -230,13 +230,13 @@ public extension Order {
                 let written = (activeReturn.failureReasons ?? "")
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 return OrderNextStep(
-                    actor: .calibre,
+                    actor: .rewound,
                     headline: "We could not accept this return",
                     body: "The watch we received back did not pass verification, so no refund has been "
                         + "issued. It is being held securely at our authentication center while we look "
                         + "into it.",
                     next: written.isEmpty
-                        ? "Someone from Calibre will contact you directly about what happens next."
+                        ? "Someone from Rewound will contact you directly about what happens next."
                         : written
                 )
             }
@@ -245,14 +245,14 @@ public extension Order {
             // for good, so the in-transit clause below never stopped matching.
             if let state = activeReturn.state, returnAtTheBench.contains(state) {
                 return OrderNextStep(
-                    actor: .calibre,
+                    actor: .rewound,
                     headline: "Your return is with our authentication center",
                     next: "We authenticate it again, then your refund is issued."
                 )
             }
             if activeReturn.isInTransit {
                 return OrderNextStep(
-                    actor: .calibre,
+                    actor: .rewound,
                     headline: "Your return is on its way to us",
                     next: "We authenticate it again when it lands, then your refund is issued."
                 )
@@ -280,7 +280,7 @@ public extension Order {
 
         if let record = authentication, record.isHeld {
             return OrderNextStep(
-                actor: .calibre,
+                actor: .rewound,
                 headline: record.holdTitle,
                 body: record.holdBody,
                 next: "Nothing is expected of you right now."
@@ -314,13 +314,13 @@ public extension Order {
                 )
             case .inTransit:
                 return OrderNextStep(
-                    actor: .calibre,
+                    actor: .rewound,
                     headline: headline,
                     next: "We check every watch in by hand when it arrives."
                 )
             case .deliveredUnconfirmed, .onTheBench:
                 return OrderNextStep(
-                    actor: .calibre,
+                    actor: .rewound,
                     headline: headline,
                     next: verdictExpectedBy.map { "We expect to finish authenticating it by \($0)." }
                         ?? "We will write to you as soon as it is authenticated."
@@ -329,12 +329,12 @@ public extension Order {
 
         case .authPass:
             return OrderNextStep(
-                actor: .calibre,
+                actor: .rewound,
                 // A pass is claimed only where the record says so. A payload
                 // can carry this status beside a verdict that turned the watch
                 // down, and the neutral sentence is true either way.
                 headline: authentication?.verdict == authenticatedVerdict
-                    ? "Authenticated by Calibre"
+                    ? "Authenticated by Rewound"
                     : "Authentication complete",
                 next: expectedDeliveryLabel.map { "We are preparing your shipment, due \($0)." }
                     ?? "We are preparing your shipment."
@@ -342,7 +342,7 @@ public extension Order {
 
         case .toBuyer:
             return OrderNextStep(
-                actor: .calibre,
+                actor: .rewound,
                 headline: "On its way to you",
                 next: expectedDeliveryLabel.map { "Expected \($0)." }
                     ?? "Your tracking number is below."
@@ -362,12 +362,12 @@ public extension Order {
 
         case .authFail:
             return OrderNextStep(
-                actor: .calibre,
+                actor: .rewound,
                 headline: "This watch did not pass",
                 body: "Our authentication center could not authenticate it, so the sale is off. You are being "
                     + "refunded in full, including the card processing fee, and you owe nothing.",
                 // What we found, here, rather than a promise to send it. This
-                // read "Your Calibre contact will write to you with what we
+                // read "Your Rewound contact will write to you with what we
                 // found" — the screen pointing at the letter while the letter
                 // carried the finding. Eytan turned that round, so the order
                 // is where the finding has to be.
@@ -375,7 +375,7 @@ public extension Order {
             )
 
         case .cancelled:
-            return OrderNextStep(actor: nil, headline: "This order was cancelled", next: nil)
+            return OrderNextStep(actor: nil, headline: "This order was canceled", next: nil)
 
         case .refunded:
             return OrderNextStep(actor: nil, headline: "This order was refunded", next: nil)
@@ -485,7 +485,7 @@ public extension Order {
     /// "Under review" is keyed to an open case rather than to a `disputed`
     /// order status: this backend's order statuses do not include one, so a
     /// clause reading for it would never fire. A case is the record saying a
-    /// person at Calibre is looking at this watch, which is the fact the word
+    /// person at Rewound is looking at this watch, which is the fact the word
     /// is for.
     private var authenticationLine: String? {
         guard let record = authentication else { return nil }
@@ -498,7 +498,7 @@ public extension Order {
 
     /// The journey, step by step, with what is known under each one.
     ///
-    /// Nil for an order that was cancelled or refunded: a column of steps
+    /// Nil for an order that was canceled or refunded: a column of steps
     /// nothing will ever reach is not a timeline, and the order says what
     /// happened to it in one line instead.
     func timeline() -> [OrderTimelineStep]? {

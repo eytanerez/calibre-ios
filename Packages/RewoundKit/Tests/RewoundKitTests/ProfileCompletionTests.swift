@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The completion gate rests on two things: that `CurrentUser` decodes from
 /// both the new payload and the old one, and that the patch sends only what

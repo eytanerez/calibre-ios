@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The wire path terminus — bank details with per-row copy, the reference
@@ -84,7 +84,7 @@ struct WireInstructionsScreen: View {
             .padding(.top, Space.m)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .tutorialOverlay(tutorial)
         .navigationTitle("Wire transfer")
         .navigationBarTitleDisplayMode(.inline)
@@ -106,11 +106,11 @@ struct WireInstructionsScreen: View {
                 } label: {
                     BusyLabel(title: "I've sent the wire", busy: model.sendingWireReservation)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(model.sendingWireReservation)
                 .padding(.horizontal, Space.margin)
                 .padding(.vertical, Space.m)
-                .background(Color.calibre.background.opacity(0.97))
+                .background(Color.rewound.background.opacity(0.97))
             }
         }
         .animation(Motion.easeFast, value: model.pricingError)
@@ -162,7 +162,7 @@ struct WireInstructionsScreen: View {
                     Haptics.shared.play(.press)
                     Task { await model.confirmWireHoldChallenge() }
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
             }
         }
         .animation(Motion.easeFast, value: model.wireHoldError)
@@ -174,8 +174,8 @@ struct WireInstructionsScreen: View {
             // for the whole purchase, never a per-watch figure.
             Eyebrow(model.isMultiItem ? "Send exactly, in one transfer" : "Send exactly")
             Text(PriceFormatter.format(breakdown.grandTotal.value, currency: breakdown.currency))
-                .font(CalibreType.priceLarge)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.priceLarge)
+                .foregroundStyle(Color.rewound.foreground)
 
             HStack(spacing: Space.m) {
                 CountdownChip(until: reservationDeadline(checkout))
@@ -184,8 +184,8 @@ struct WireInstructionsScreen: View {
                 Text(model.isMultiItem
                     ? "All \(model.itemCount) watches are held for \(reservationPhrase)."
                     : "Your watch is held for \(reservationPhrase).")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, 2)
@@ -249,16 +249,16 @@ struct WireInstructionsScreen: View {
                 }
                 if index < rows.count - 1 {
                     Rectangle()
-                        .fill(Color.calibre.border)
+                        .fill(Color.rewound.border)
                         .frame(height: 1)
                 }
             }
         }
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }
@@ -273,21 +273,21 @@ private struct CopyRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.l) {
             Text(label)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Spacer(minLength: Space.l)
             Text(value)
-                .font(emphasized ? CalibreType.bodySemiBold : CalibreType.bodyMedium)
-                .foregroundStyle(emphasized ? Color.calibre.primary : Color.calibre.foreground)
+                .font(emphasized ? RewoundType.bodySemiBold : RewoundType.bodyMedium)
+                .foregroundStyle(emphasized ? Color.rewound.primary : Color.rewound.foreground)
                 .multilineTextAlignment(.trailing)
                 .textSelection(.enabled)
 
             Button(action: onCopy) {
                 Image(systemName: "doc.on.doc")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .frame(width: 32, height: 32)
-                    .background(Color.calibre.secondary, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+                    .background(Color.rewound.secondary, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
             }
             .buttonStyle(PressableStyle())
             .accessibilityLabel("Copy \(label)")

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Where the watch is, step by step, with what is known under each one.
@@ -7,7 +7,7 @@ import SwiftUI
 /// What this replaces was a five-dot rail carrying a single index, and an index
 /// cannot say two of the things a buyer needs read off it: that a step was
 /// reached and did not complete, and what is known about a step that is done.
-/// The steps and their states are computed in `CalibreKit` (`Order.timeline()`)
+/// The steps and their states are computed in `RewoundKit` (`Order.timeline()`)
 /// where they can be tested without a screen; this draws them and decides
 /// nothing.
 ///
@@ -33,8 +33,8 @@ struct OrderTimelineView: View {
         VStack(alignment: .leading, spacing: Space.m) {
             HStack(spacing: Space.m) {
                 Text("Progress")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer(minLength: 0)
                 if let mark { mark }
             }
@@ -46,10 +46,10 @@ struct OrderTimelineView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.l)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
         .onAppear {
@@ -67,7 +67,7 @@ struct OrderTimelineView: View {
                 dot(step.state)
                 if !isLast {
                     Capsule()
-                        .fill(step.state == .done ? Color.calibre.primary : Color.calibre.border)
+                        .fill(step.state == .done ? Color.rewound.primary : Color.rewound.border)
                         .frame(width: 2)
                         .frame(maxHeight: .infinity)
                 }
@@ -76,14 +76,14 @@ struct OrderTimelineView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(step.name)
-                    .font(step.state == .now ? CalibreType.bodySemiBold : CalibreType.body)
+                    .font(step.state == .now ? RewoundType.bodySemiBold : RewoundType.body)
                     .foregroundStyle(nameColour(step.state))
                     .fixedSize(horizontal: false, vertical: true)
                 if let line = step.line {
                     Text(line)
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .foregroundStyle(
-                            step.state == .stopped ? Color.calibre.destructive : Color.calibre.mutedForeground
+                            step.state == .stopped ? Color.rewound.destructive : Color.rewound.mutedForeground
                         )
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -95,9 +95,9 @@ struct OrderTimelineView: View {
 
     private func nameColour(_ state: OrderTimelineState) -> Color {
         switch state {
-        case .done, .now: Color.calibre.foreground
-        case .stopped: Color.calibre.destructive
-        case .later: Color.calibre.mutedForeground
+        case .done, .now: Color.rewound.foreground
+        case .stopped: Color.rewound.destructive
+        case .later: Color.rewound.mutedForeground
         }
     }
 
@@ -106,7 +106,7 @@ struct OrderTimelineView: View {
         switch state {
         case .done:
             Circle()
-                .fill(Color.calibre.primary)
+                .fill(Color.rewound.primary)
                 .frame(width: dotSize, height: dotSize)
         case .now:
             // The pulse is the only thing separating the step in progress from
@@ -114,12 +114,12 @@ struct OrderTimelineView: View {
             // dot, so a ring says "here" while standing still.
             if reduceMotion {
                 Circle()
-                    .fill(Color.calibre.card)
-                    .strokeBorder(Color.calibre.primary, lineWidth: 3)
+                    .fill(Color.rewound.card)
+                    .strokeBorder(Color.rewound.primary, lineWidth: 3)
                     .frame(width: dotSize, height: dotSize)
             } else {
                 Circle()
-                    .fill(Color.calibre.primary)
+                    .fill(Color.rewound.primary)
                     .frame(width: dotSize, height: dotSize)
                     .opacity(pulsing ? 1 : 0.6)
             }
@@ -129,16 +129,16 @@ struct OrderTimelineView: View {
             // to decide whether their watch is still coming.
             ZStack {
                 Circle()
-                    .fill(Color.calibre.destructive)
+                    .fill(Color.rewound.destructive)
                     .frame(width: dotSize, height: dotSize)
                 Rectangle()
-                    .fill(Color.calibre.card)
+                    .fill(Color.rewound.card)
                     .frame(width: dotSize - 5, height: 2)
             }
         case .later:
             Circle()
-                .fill(Color.calibre.card)
-                .strokeBorder(Color.calibre.borderBright, lineWidth: 1.5)
+                .fill(Color.rewound.card)
+                .strokeBorder(Color.rewound.borderBright, lineWidth: 1.5)
                 .frame(width: dotSize, height: dotSize)
         }
     }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import NukeUI
 import SwiftUI
 
@@ -65,7 +65,7 @@ extension HomeFeedCard {
     ///
     /// `reservesReason` is the lane's answer, not this card's: the reason now
     /// sits above the price, so a card with nothing to say has to hold the
-    /// space anyway or its price climbs above its neighbours'. Only the lane
+    /// space anyway or its price climbs above its neighbors'. Only the lane
     /// can see all of its cards, so only the lane can decide.
     func cardModel(reservesReason: Bool = false, inCart: Bool = false) -> ListingCardModel {
         let base = listing.cardModel(inCart: inCart)
@@ -130,16 +130,16 @@ struct FeedSignalChip: View {
     let signal: HomeFeedSignal
 
     private var tint: Color {
-        signal.tone == "drop" ? Color.calibre.success : Color.calibre.primary
+        signal.tone == "drop" ? Color.rewound.success : Color.rewound.primary
     }
 
     var body: some View {
         Text(signal.label)
-            .font(CalibreType.label)
+            .font(RewoundType.label)
             .foregroundStyle(tint)
             .padding(.horizontal, Space.s)
             .padding(.vertical, 4)
-            .background(Color.calibre.background.opacity(0.95), in: Capsule())
+            .background(Color.rewound.background.opacity(0.95), in: Capsule())
     }
 }
 
@@ -186,32 +186,32 @@ struct FeedNextStepCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-                Eyebrow("Your next step", color: Color.calibre.primary)
+                Eyebrow("Your next step", color: Color.rewound.primary)
                 Spacer(minLength: 0)
                 if let label = step.referenceLabel {
                     Text(label)
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .monospacedDigit()
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
 
             Text(module.title)
-                .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.serif(.semiBold, 20, relativeTo: .title3))
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let subtitle = module.subtitle {
                 Text(subtitle)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             if let due = step.dueAt {
                 Text(Self.dueLine(due))
-                    .font(CalibreType.label)
-                    .foregroundStyle(due < .now ? Color.calibre.destructive : Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(due < .now ? Color.rewound.destructive : Color.rewound.mutedForeground)
             }
 
             if let action = module.action, let target = feedActionTarget(action.route) {
@@ -219,15 +219,15 @@ struct FeedNextStepCard: View {
                     Haptics.shared.play(.press)
                     onAction(target)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
             }
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.borderBright, lineWidth: 1)
+                .strokeBorder(Color.rewound.borderBright, lineWidth: 1)
         )
         .padding(.horizontal, Space.margin)
     }
@@ -298,16 +298,16 @@ private struct FeedCompactCardRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Eyebrow(card.cardModel.brand)
                     Text(card.cardModel.title)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .multilineTextAlignment(.leading)
                     Text(card.cardModel.priceText)
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.priceSmall)
+                        .foregroundStyle(Color.rewound.foreground)
                     if let reason = card.reasonLine {
                         Text(reason)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .multilineTextAlignment(.leading)
                     }
                 }
@@ -320,10 +320,10 @@ private struct FeedCompactCardRow: View {
             }
             .padding(Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
         .buttonStyle(PressableStyle())
@@ -349,7 +349,7 @@ private struct FeedCompactCardRow: View {
 /// now, and nothing about a card says which rank it holds.
 ///
 /// The title and the action are the server's, which is what fixed the shelf
-/// this replaced: it labelled itself personally while being filled from popular
+/// this replaced: it labeled itself personally while being filled from popular
 /// inventory, and its "View all" always asked for popular results. Home draws
 /// this one under its own greeting, so the heading it arrives with is the one
 /// thing the screen replaces.
@@ -388,12 +388,12 @@ private struct FeedCardLane: View {
     let zoomNamespace: Namespace.ID
 
     @ScaledMetric(relativeTo: .body) private var scaledCardWidth: CGFloat = 168
-    private var cardWidth: CGFloat { calibreLaneCardWidth(scaledCardWidth) }
+    private var cardWidth: CGFloat { rewoundLaneCardWidth(scaledCardWidth) }
 
     /// Whether anything in this lane was justified. If one card carries a
     /// reason then every card in the lane holds the space for one, because the
     /// reason sits above the price and an unheld slot lifts that card's price
-    /// clear of its neighbours'. A lane where the server justified nothing —
+    /// clear of its neighbors'. A lane where the server justified nothing —
     /// recently viewed, say — spends no space at all.
     private var reservesReason: Bool {
         cards.contains { $0.reasonLine != nil }
@@ -512,11 +512,11 @@ struct FeedBiteModule: View {
         } label: {
             VStack(alignment: .leading, spacing: Space.m) {
                 Rectangle()
-                    .fill(Color.calibre.border)
+                    .fill(Color.rewound.border)
                     .frame(height: 1)
 
                 HStack(spacing: Space.s) {
-                    Eyebrow(module.title, color: Color.calibre.primary)
+                    Eyebrow(module.title, color: Color.rewound.primary)
                     Spacer(minLength: Space.s)
                     if fromArchive {
                         FeedBiteArchiveChip()
@@ -532,11 +532,11 @@ struct FeedBiteModule: View {
 
                 HStack(spacing: Space.xs) {
                     Text(module.action?.label ?? "Read it")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.primary)
                     Image(systemName: "arrow.right")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.calibre.primary)
+                        .foregroundStyle(Color.rewound.primary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -568,11 +568,11 @@ struct FeedBiteModule: View {
                     }
                 } else {
                     ZStack(alignment: .bottomLeading) {
-                        Color.calibre.accent
+                        Color.rewound.accent
                         if state.error == nil {
-                            Rectangle().fill(Color.calibre.secondary).shimmer()
+                            Rectangle().fill(Color.rewound.secondary).shimmer()
                         }
-                        headline(color: Color.calibre.foreground)
+                        headline(color: Color.rewound.foreground)
                             .padding(Space.l)
                     }
                 }
@@ -581,16 +581,16 @@ struct FeedBiteModule: View {
             .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         } else {
-            headline(color: Color.calibre.foreground)
+            headline(color: Color.rewound.foreground)
         }
     }
 
     private func headline(color: Color) -> some View {
         Text(bite.title)
-            .font(CalibreType.sectionTitle)
+            .font(RewoundType.sectionTitle)
             .foregroundStyle(color)
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -619,11 +619,11 @@ struct FeedBiteModule: View {
 private struct FeedBiteArchiveChip: View {
     var body: some View {
         Text("From the archive")
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.accentForeground)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.accentForeground)
             .padding(.horizontal, Space.m)
             .padding(.vertical, 5)
-            .background(Color.calibre.accent.opacity(0.7), in: Capsule())
+            .background(Color.rewound.accent.opacity(0.7), in: Capsule())
     }
 }
 
@@ -671,10 +671,10 @@ struct FeedPollModule: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             VStack(alignment: .leading, spacing: Space.s) {
-                Eyebrow(module.title, color: Color.calibre.primary)
+                Eyebrow(module.title, color: Color.rewound.primary)
                 Text(prompt.question)
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -689,10 +689,10 @@ struct FeedPollModule: View {
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         .padding(.horizontal, Space.margin)
     }
@@ -704,8 +704,8 @@ struct FeedPollModule: View {
                     vote(option.key)
                 } label: {
                     Text(option.label)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .multilineTextAlignment(.leading)
                         .padding(.horizontal, Space.m)
                         .padding(.vertical, Space.s)
@@ -720,12 +720,12 @@ struct FeedPollModule: View {
                             alignment: .leading
                         )
                         .background(
-                            Color.calibre.background,
+                            Color.rewound.background,
                             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                                .strokeBorder(Color.rewound.border, lineWidth: 1)
                         )
                 }
                 .buttonStyle(PressableStyle())
@@ -746,8 +746,8 @@ struct FeedPollModule: View {
                 }
             }
             Text(totalLine(results))
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
     }
 
@@ -786,22 +786,22 @@ private struct FeedPollResultBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(option.label)
-                .font(mine ? CalibreType.bodyMedium : CalibreType.body)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(mine ? RewoundType.bodyMedium : RewoundType.body)
+                .foregroundStyle(Color.rewound.foreground)
                 .multilineTextAlignment(.leading)
             HStack(spacing: Space.xs) {
                 Text("\(option.percent)%")
-                    .font(CalibreType.bodyMedium)
+                    .font(RewoundType.bodyMedium)
                     .monospacedDigit()
-                    .foregroundStyle(Color.calibre.foreground)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text("\(option.votes)")
-                    .font(CalibreType.caption)
+                    .font(RewoundType.caption)
                     .monospacedDigit()
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 if mine {
                     Text("Your pick")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.primary)
                 }
             }
         }
@@ -819,14 +819,14 @@ private struct FeedPollResultBar: View {
         .background(alignment: .leading) {
             GeometryReader { proxy in
                 Rectangle()
-                    .fill(mine ? Color.calibre.primary.opacity(0.22) : Color.calibre.secondary)
+                    .fill(mine ? Color.rewound.primary.opacity(0.22) : Color.rewound.secondary)
                     .frame(width: proxy.size.width * CGFloat(option.percent) / 100)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                .strokeBorder(mine ? Color.calibre.primary : Color.calibre.border, lineWidth: 1)
+                .strokeBorder(mine ? Color.rewound.primary : Color.rewound.border, lineWidth: 1)
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
@@ -863,13 +863,13 @@ struct FeedCollectionModule: View {
                             if watch.authenticated {
                                 Image(systemName: "checkmark.seal.fill")
                                     .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(Color.calibre.primary)
+                                    .foregroundStyle(Color.rewound.primary)
                                     .padding(5)
                             }
                         }
                         Text(watch.displayTitle)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                             .frame(width: thumbSide, alignment: .leading)
                             .multilineTextAlignment(.leading)
                     }
@@ -884,8 +884,8 @@ struct FeedCollectionModule: View {
             }
 
             Text(summary)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, Space.margin)
@@ -958,13 +958,13 @@ struct FeedEndModule: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Rectangle()
-                .fill(Color.calibre.border)
+                .fill(Color.rewound.border)
                 .frame(height: 1)
 
             if degraded {
                 Text(module.title)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // A degraded feed carries no CTA of its own — the retry is the
@@ -973,13 +973,13 @@ struct FeedEndModule: View {
                     Haptics.shared.play(.press)
                     onRetry()
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
             } else {
                 Button("Browse all watches") {
                     Haptics.shared.play(.press)
                     onBrowse()
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
             }
         }
         .padding(.horizontal, Space.margin)
@@ -999,13 +999,13 @@ struct FeedModuleHeader: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(module.title)
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 if let subtitle = module.subtitle {
                     Text(subtitle)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1014,8 +1014,8 @@ struct FeedModuleHeader: View {
                 Button(action.label) {
                     onAction(target)
                 }
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.primary)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.primary)
                 .buttonStyle(PressableStyle())
                 .frame(minHeight: Space.touchTarget)
                 .accessibilityLabel(action.label)

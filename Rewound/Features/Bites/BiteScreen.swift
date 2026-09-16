@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One Bite: the claim, its date, its sources, and the way on.
@@ -46,7 +46,7 @@ struct BiteScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $nextBite) { route in
@@ -56,7 +56,7 @@ struct BiteScreen: View {
         .toolbar {
             if let bite {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: bite.webURL, message: Text("\(bite.title) — from Calibre.")) {
+                    ShareLink(item: bite.webURL, message: Text("\(bite.title) — from Rewound.")) {
                         Image(systemName: "square.and.arrow.up")
                     }
                     .accessibilityLabel("Share this bite")
@@ -89,11 +89,11 @@ struct BiteScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.m) {
-                    Eyebrow(bite.topic, color: Color.calibre.primary)
+                    Eyebrow(bite.topic, color: Color.rewound.primary)
 
                     Text(bite.title)
-                        .font(CalibreType.title)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.title)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
 
                     // The archive label and the piece's own date, together.
@@ -103,13 +103,13 @@ struct BiteScreen: View {
                     }
 
                     Text("\(bite.author) · \(bite.date)")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
 
                     if bite.archived {
                         Text("This bite has been retired. It stays here because the link was published.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -127,8 +127,8 @@ struct BiteScreen: View {
                 VStack(alignment: .leading, spacing: Space.m) {
                     ForEach(Self.paragraphs(bite.body), id: \.self) { paragraph in
                         Text(paragraph)
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                             .lineSpacing(7)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -155,20 +155,20 @@ struct BiteScreen: View {
         VStack(alignment: .leading, spacing: Space.s) {
             Eyebrow(day.map { "Corrected \($0)" } ?? "Corrected")
             Text(note)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.accentForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.accentForeground)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
         .background(
-            Color.calibre.accent.opacity(0.4),
+            Color.rewound.accent.opacity(0.4),
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -180,12 +180,12 @@ struct BiteScreen: View {
                     Link(destination: url) {
                         HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                             Text(source.label)
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.primary)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.primary)
                                 .multilineTextAlignment(.leading)
                             Image(systemName: "arrow.up.right")
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(Color.calibre.primary)
+                                .foregroundStyle(Color.rewound.primary)
                         }
                         .frame(minHeight: Space.touchTarget, alignment: .leading)
                     }
@@ -258,7 +258,7 @@ struct BiteScreen: View {
     private func openWeb(_ href: String) {
         let absolute = href.hasPrefix("http")
             ? href
-            : "https://buycalibre.com\(href.hasPrefix("/") ? "" : "/")\(href)"
+            : "https://shoprewound.com\(href.hasPrefix("/") ? "" : "/")\(href)"
         if let url = URL(string: absolute) {
             openURL(url)
         }
@@ -311,11 +311,11 @@ struct BiteArchiveLabel: View {
 
     var body: some View {
         Text("From the archive · \(date)")
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.accentForeground)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.accentForeground)
             .padding(.horizontal, Space.m)
             .padding(.vertical, 5)
-            .background(Color.calibre.accent.opacity(0.7), in: Capsule())
+            .background(Color.rewound.accent.opacity(0.7), in: Capsule())
             .accessibilityLabel("From the archive, \(date)")
     }
 }
@@ -329,25 +329,25 @@ struct BiteReadOnRow: View {
         HStack(spacing: Space.m) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .multilineTextAlignment(.leading)
                 Text(detail)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .multilineTextAlignment(.leading)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .padding(.horizontal, Space.l)
         .frame(maxWidth: .infinity, minHeight: Space.touchTarget + Space.m, alignment: .leading)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }

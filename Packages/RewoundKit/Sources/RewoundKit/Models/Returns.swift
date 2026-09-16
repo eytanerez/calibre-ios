@@ -173,7 +173,7 @@ public struct ReturnQuote: Decodable, Sendable {
     public let returnFee: Fee
     /// The original outbound label, deducted from the refund.
     public let outboundLabelDeduction: APIDecimal?
-    /// Calibre's return label — signature required, insured for the full sale
+    /// Rewound's return label — signature required, insured for the full sale
     /// price — whose cost is deducted from the refund. Nil on payloads that
     /// predate the field, in which case the row is simply not drawn.
     public let returnLabelDeduction: APIDecimal?
@@ -228,7 +228,7 @@ public struct ReturnQuote: Decodable, Sendable {
 public struct OrderReturn: Decodable, Sendable {
     public let id: String?
     public let orderId: String?
-    /// e.g. requested / in_transit / received / refunded / cancelled.
+    /// e.g. requested / in_transit / received / refunded / canceled.
     public let status: String?
     /// Why the buyer opened it. Required from the buyer, so it is only ever
     /// nil on a payload written before reasons existed.
@@ -282,7 +282,7 @@ public struct OrderReturn: Decodable, Sendable {
         relistDecision = try? container.decodeIfPresent(String.self, forKey: .relistDecision)
     }
 
-    /// True once the watch is on its way back — cancelling is no longer the
+    /// True once the watch is on its way back — canceling is no longer the
     /// buyer's to make (the server 409s `return_in_transit`).
     public var isInTransit: Bool {
         shippedDeclaredAt != nil || status == "in_transit"
@@ -293,7 +293,7 @@ public struct OrderReturn: Decodable, Sendable {
     }
 }
 
-/// Calibre's return label: signature required, insured for the full sale
+/// Rewound's return label: signature required, insured for the full sale
 /// price, and its cost deducted from the refund.
 public struct ReturnLabel: Decodable, Sendable {
     public let shipmentId: String?
@@ -368,7 +368,7 @@ public struct OrderPayout: Codable, Sendable {
     /// Set when a payout failed — the actual reason, to show as-is.
     public let failureReason: String?
     /// The four lines the transfer is built from — sale price, commission,
-    /// the label Calibre bought, payout. No client assembles these itself.
+    /// the label Rewound bought, payout. No client assembles these itself.
     public let breakdown: PayoutBreakdown?
 
     enum CodingKeys: String, CodingKey {
@@ -397,7 +397,7 @@ public struct OrderPayout: Codable, Sendable {
 public struct PayoutBreakdown: Codable, Sendable {
     public let salePrice: APIDecimal?
     public let commission: Commission?
-    /// The actual cost of the to-auth label Calibre bought.
+    /// The actual cost of the to-auth label Rewound bought.
     public let shippingLabel: APIDecimal?
     /// What the seller receives.
     public let amount: APIDecimal?
@@ -436,7 +436,7 @@ public struct PayoutBreakdown: Codable, Sendable {
 /// The `return` summary an order carries once a return exists. Distinct from
 /// `OrderReturnTerms`, which describes the policy; this describes the case.
 public struct OrderReturnSummary: Codable, Sendable {
-    /// e.g. requested / in_transit / received / refunded / cancelled.
+    /// e.g. requested / in_transit / received / refunded / canceled.
     public let state: String?
     /// Why the buyer opened it, in the marketplace's own vocabulary.
     public let reason: OrderReturnReason?
@@ -489,7 +489,7 @@ public struct OrderReturnSummary: Codable, Sendable {
     /// Verification refused this return: no refund, and the watch is held.
     public var isRefused: Bool { state == "rejected_failed_verification" }
 
-    /// The watch is on its way back; cancelling is no longer available.
+    /// The watch is on its way back; canceling is no longer available.
     public var isInTransit: Bool {
         state == "in_transit" || carrierFirstScanAt != nil
     }

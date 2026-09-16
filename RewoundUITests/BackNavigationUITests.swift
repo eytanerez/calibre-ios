@@ -33,10 +33,10 @@ final class BackNavigationUITests: XCTestCase {
         let identifier = app.textFields["you@example.com"]
         XCTAssertTrue(identifier.waitForExistence(timeout: 5))
         identifier.tap()
-        identifier.typeText("buyer@demo.calibre.local")
+        identifier.typeText("buyer@demo.rewound.local")
         let password = app.secureTextFields.firstMatch
         password.tap()
-        password.typeText("CalibreDemo123!")
+        password.typeText("RewoundDemo123!")
         app.buttons["Sign In"].tap()
 
         let notNow = app.buttons["Not Now"]

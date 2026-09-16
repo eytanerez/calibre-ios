@@ -114,7 +114,7 @@ public struct OrderAuthentication: Codable, Sendable, Hashable {
         authCase = try container.decodeIfPresent(OrderCaseRef.self, forKey: .authCase)
     }
 
-    /// A person at Calibre is looking at this watch more closely.
+    /// A person at Rewound is looking at this watch more closely.
     ///
     /// A state of the RECORD, not of the order: the order sits at `to_auth`
     /// throughout, which is why nothing before this could tell a hold from
@@ -131,16 +131,16 @@ public struct OrderAuthentication: Codable, Sendable, Hashable {
     /// The paragraph under it.
     ///
     /// The reason for the hold is not named. It is private to the two parties
-    /// while it is open, and naming it would be Calibre's finding announced
-    /// before Calibre has finished making it — which is why a service hold and
+    /// while it is open, and naming it would be Rewound's finding announced
+    /// before Rewound has finished making it — which is why a service hold and
     /// every other hold deliberately differ only in what they promise next.
     public var holdBody: String {
         if holdReason == "service" || serviceRecommended == true {
             return "Our authentication center found something worth a second opinion on how this watch is running. "
-                + "Nothing is decided and nothing has changed about your order. A person at Calibre is reviewing it "
+                + "Nothing is decided and nothing has changed about your order. A person at Rewound is reviewing it "
                 + "and will write to you with what we found and what we suggest."
         }
-        return "Your watch is with our authentication center and a person at Calibre is reviewing it before it goes "
+        return "Your watch is with our authentication center and a person at Rewound is reviewing it before it goes "
             + "any further. Nothing is decided yet. We will write to you with what we found, and you will be asked "
             + "before anything about your order changes."
     }
@@ -341,7 +341,7 @@ public struct AuthCaseService: Codable, Sendable {
 ///
 /// Both parties are shown both figures. That is the decision and it is the
 /// opposite of the obvious one: an asymmetric proposal collapses the moment
-/// either side screenshots it. Calibre's own remainder is not in this payload.
+/// either side screenshots it. Rewound's own remainder is not in this payload.
 public struct AuthCaseProposal: Codable, Sendable {
     public let id: String
     public let refundAmount: String?

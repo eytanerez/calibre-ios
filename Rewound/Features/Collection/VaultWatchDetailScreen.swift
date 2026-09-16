@@ -1,9 +1,9 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// One watch in the member's vault: their photograph of it, the records that
-/// belong to it, what Calibre knows about the reference, and what the owner
+/// belong to it, what Rewound knows about the reference, and what the owner
 /// recorded themselves.
 ///
 /// A pushed route rather than a sheet — it is a page about a thing, it can be
@@ -19,7 +19,7 @@ import SwiftUI
 ///     are worse than one absence;
 ///   • the reference isn't ours yet — the catalog-gap form.
 ///
-/// What Calibre thinks this particular watch is worth is not printed here in
+/// What Rewound thinks this particular watch is worth is not printed here in
 /// any state. `VaultEstimate.note` explains the two absences that have an
 /// explanation and stays quiet for the rest.
 struct VaultWatchDetailScreen: View {
@@ -72,7 +72,7 @@ struct VaultWatchDetailScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle(watch?.displayTitle ?? "Watch")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -140,12 +140,12 @@ struct VaultWatchDetailScreen: View {
         ScrollView {
             VStack(spacing: Space.l) {
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(Color.calibre.card)
+                    .fill(Color.rewound.card)
                     .aspectRatio(1, contentMode: .fit)
                     .shimmer()
                 ForEach(0..<2, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                        .fill(Color.calibre.card)
+                        .fill(Color.rewound.card)
                         .frame(height: 140)
                         .shimmer()
                 }
@@ -190,25 +190,25 @@ struct VaultWatchDetailScreen: View {
             Button(watch.gallery.isEmpty ? "Add your photographs" : "Your photographs") {
                 showPhotoSheet = true
             }
-            .buttonStyle(.calibre(.ghost))
+            .buttonStyle(.rewound(.ghost))
 
             if let brand = watch.brand {
                 Text(brand.uppercased())
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             // The owner's own name for it goes in their hand; the catalog's
             // name for it stays in the serif.
             Text(watch.displayTitle)
                 .font(
                     watch.isNicknamed
-                        ? CalibreType.hand
-                        : CalibreType.serif(.semiBold, 26, relativeTo: .title)
+                        ? RewoundType.hand
+                        : RewoundType.serif(.semiBold, 26, relativeTo: .title)
                 )
-                .foregroundStyle(Color.calibre.foreground)
+                .foregroundStyle(Color.rewound.foreground)
             Text(subtitle(watch))
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             if watch.authenticated {
                 HStack(spacing: Space.m) {
@@ -220,14 +220,14 @@ struct VaultWatchDetailScreen: View {
                 }
                 .padding(.top, Space.xs)
             } else {
-                // A watch somebody typed in is a watch nobody at Calibre has
+                // A watch somebody typed in is a watch nobody at Rewound has
                 // held, however handsome its card. The flag is the server's,
                 // not this screen's reading of `source`.
                 VStack(alignment: .leading, spacing: Space.xs) {
                     StatusBadge("Unverified", tone: .neutral)
-                    Text("Calibre hasn't inspected this watch. It's here because you said you own it.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                    Text("Rewound hasn't inspected this watch. It's here because you said you own it.")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.top, Space.xs)
@@ -243,8 +243,8 @@ struct VaultWatchDetailScreen: View {
             // read, however carefully the two are distinguished further down.
             if priceResolved, price == nil, let note = watch.estimate?.note {
                 Text(note)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, Space.xs)
             }
@@ -286,10 +286,10 @@ struct VaultWatchDetailScreen: View {
                             Text("View Passport")
                         }
                     }
-                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    .buttonStyle(.rewound(.secondary, fullWidth: true))
                 }
 
-                // Offered wherever Calibre stands behind the watch. The vault
+                // Offered wherever Rewound stands behind the watch. The vault
                 // payload carries nothing about the document, so nothing here
                 // claims one exists — the route answers for itself, and its
                 // not-found branch offers the way on rather than a dead end.
@@ -330,26 +330,26 @@ struct VaultWatchDetailScreen: View {
                 Button("Try again") {
                     Task { await loadPrice(for: detail.referenceRow) }
                 }
-                .buttonStyle(.calibre(.secondary))
+                .buttonStyle(.rewound(.secondary))
             }
         } else if detail.referenceRow != nil {
             note(
                 icon: "chart.line.uptrend.xyaxis",
                 title: "No published price yet",
-                message: "Calibre publishes a reference price once there's enough of its own trade behind it. This reference isn't there yet."
+                message: "Rewound publishes a reference price once there's enough of its own trade behind it. This reference isn't there yet."
             )
         }
     }
 
     private func priceHeader(_ price: MarketReferencePrice, _ series: MarketSeries) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
-            Text("CALIBRE REFERENCE PRICE")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.primary)
+            Text("REWOUND REFERENCE PRICE")
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.primary)
             HStack(alignment: .lastTextBaseline, spacing: Space.m) {
                 Text(MarketFormat.usdFull(price.currentValue))
-                    .font(CalibreType.serif(.semiBold, 32, relativeTo: .largeTitle))
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.serif(.semiBold, 32, relativeTo: .largeTitle))
+                    .foregroundStyle(Color.rewound.foreground)
                     .monospacedDigit()
                 if series.isDrawable {
                     ChangePillView(change: series.change)
@@ -357,8 +357,8 @@ struct VaultWatchDetailScreen: View {
             }
             if let set = MarketFormat.day(iso: price.setAt) {
                 Text("Set \(set) \u{00B7} what the reference trades at, not what yours is worth")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -370,15 +370,15 @@ struct VaultWatchDetailScreen: View {
                 VStack(spacing: Space.xs) {
                     Text(window.label.uppercased())
                         .font(.system(size: microSize, weight: .semibold))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                     ChangePillView(change: window.value)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
         .padding(.vertical, Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 
     /// Only the windows the published history reaches back over.
@@ -439,13 +439,13 @@ struct VaultWatchDetailScreen: View {
                 note(
                     icon: "questionmark.circle",
                     title: "We don't have this watch yet",
-                    message: "Calibre has nothing on file for this reference. Tell us what it is and we'll add it to the catalog \u{2014} it's how the catalog grows."
+                    message: "Rewound has nothing on file for this reference. Tell us what it is and we'll add it to the catalog \u{2014} it's how the catalog grows."
                 ) {
                     Button("Tell us about it") {
                         Haptics.shared.play(.press)
                         showGapSheet = true
                     }
-                    .buttonStyle(.calibre(.primary))
+                    .buttonStyle(.rewound(.primary))
                 }
             }
         }
@@ -462,8 +462,8 @@ struct VaultWatchDetailScreen: View {
                 SpecList(rows)
                 if watch.acquiredPrice != nil {
                     Text("Only you see what you paid.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
         }
@@ -491,13 +491,13 @@ struct VaultWatchDetailScreen: View {
                 VStack(spacing: 0) {
                     ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
                         if index > 0 {
-                            Rectangle().fill(Color.calibre.border).frame(height: 1)
+                            Rectangle().fill(Color.rewound.border).frame(height: 1)
                         }
                         serviceRow(record)
                     }
                 }
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
             }
         }
     }
@@ -506,24 +506,24 @@ struct VaultWatchDetailScreen: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             HStack(alignment: .firstTextBaseline) {
                 Text(record.provider ?? "Service")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer(minLength: Space.m)
                 if let serviced = record.servicedAt, let day = MarketSeries.day(from: serviced) {
                     Text(MarketFormat.day(day))
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
             if let details = record.details, !details.isEmpty {
                 Text(details)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             if let raw = record.cost, let value = Decimal(string: raw) {
                 Text(PriceFormatter.format(value))
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .monospacedDigit()
             }
         }
@@ -540,10 +540,10 @@ struct VaultWatchDetailScreen: View {
                 Haptics.shared.play(.press)
                 services.router.startListing(prefill: ListingPrefill(vaultWatch: watch))
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
             Text("Starts a listing with what we already know about this watch. You set the price.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
     }
 
@@ -551,8 +551,8 @@ struct VaultWatchDetailScreen: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.serif(.semiBold, 20, relativeTo: .title3))
+            .foregroundStyle(Color.rewound.foreground)
     }
 
     private func note(icon: String, title: String, message: String) -> some View {
@@ -570,22 +570,22 @@ struct VaultWatchDetailScreen: View {
             HStack(spacing: Space.s) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
             }
             Text(message)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             action()
                 .padding(.top, Space.xs)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 
     private enum Tone { case neutral, up, down }
@@ -594,16 +594,16 @@ struct VaultWatchDetailScreen: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased())
                 .font(.system(size: microSize, weight: .semibold))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Text(value)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(tone == .up ? Color.calibre.success : (tone == .down ? Color.calibre.destructive : Color.calibre.foreground))
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(tone == .up ? Color.rewound.success : (tone == .down ? Color.rewound.destructive : Color.rewound.foreground))
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.m)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 }
 
@@ -616,7 +616,7 @@ private struct VaultAuthenticationLogo: View {
     @State private var arrived = false
 
     var body: some View {
-        CalibreLogoMark(size: 28)
+        RewoundLogoMark(size: 28)
             .offset(y: reduceMotion || arrived ? 0 : -7)
             .opacity(reduceMotion || arrived ? 1 : 0.35)
             .accessibilityHidden(true)

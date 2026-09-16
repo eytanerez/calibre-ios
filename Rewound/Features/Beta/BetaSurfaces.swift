@@ -1,11 +1,11 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The three things a beta tester sees in the app: the welcome, the bar, and
 /// the demo card wherever a card is asked for.
 ///
-/// All three render nothing at all when the programme is off, so a build
+/// All three render nothing at all when the program is off, so a build
 /// shipped after the beta closes is identical to one built before it opened.
 ///
 /// **What TestFlight already does, and what it does not.** A tester on a
@@ -29,10 +29,10 @@ struct BetaTestCardPanel: View {
         VStack(alignment: .leading, spacing: Space.s) {
             HStack(spacing: Space.xs) {
                 Image(systemName: "creditcard")
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                 Text(card.caption)
-                    .font(CalibreType.bodySemiBold)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodySemiBold)
+                    .foregroundStyle(Color.rewound.foreground)
             }
 
             HStack(spacing: Space.s) {
@@ -42,16 +42,16 @@ struct BetaTestCardPanel: View {
             }
 
             Text(card.note)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.m)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: Radius.box))
+        .background(Color.rewound.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: Radius.box))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box)
-                .stroke(Color.calibre.primary.opacity(0.25), lineWidth: 1)
+                .stroke(Color.rewound.primary.opacity(0.25), lineWidth: 1)
         )
     }
 }
@@ -65,9 +65,9 @@ private struct CopyableValue: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label.uppercased())
-                .font(CalibreType.eyebrow)
-                .tracking(CalibreType.eyebrowTracking)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.eyebrow)
+                .tracking(RewoundType.eyebrowTracking)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
             Button {
                 UIPasteboard.general.string = value.replacingOccurrences(of: " ", with: "")
@@ -83,20 +83,20 @@ private struct CopyableValue: View {
                 HStack(spacing: Space.xs) {
                     Text(value)
                         .font(.system(.footnote, design: .monospaced))
-                        .foregroundStyle(Color.calibre.foreground)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     Image(systemName: copied ? "checkmark" : "doc.on.doc")
                         .font(.caption2)
-                        .foregroundStyle(copied ? Color.calibre.success : Color.calibre.mutedForeground)
+                        .foregroundStyle(copied ? Color.rewound.success : Color.rewound.mutedForeground)
                 }
                 .padding(.horizontal, Space.s)
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.calibre.background, in: RoundedRectangle(cornerRadius: Radius.control))
+                .background(Color.rewound.background, in: RoundedRectangle(cornerRadius: Radius.control))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radius.control)
-                        .stroke(Color.calibre.border, lineWidth: 1)
+                        .stroke(Color.rewound.border, lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
@@ -135,12 +135,12 @@ struct BetaBar: View {
                 Button(action: onTapWelcome) {
                     HStack(spacing: Space.xs) {
                         Text(bar.text)
-                            .font(CalibreType.caption)
+                            .font(RewoundType.caption)
                             .lineLimit(2)
                         Image(systemName: "info.circle")
                             .font(.caption2)
                     }
-                    .foregroundStyle(Color.calibre.background)
+                    .foregroundStyle(Color.rewound.background)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Beta: demo card and instructions")
@@ -149,12 +149,12 @@ struct BetaBar: View {
 
                 Button(action: onTapFeedback) {
                     Text(bar.action)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.foreground)
                         .padding(.horizontal, Space.m)
                         .padding(.vertical, 6)
                         .background(
-                            Capsule().fill(Color.calibre.background)
+                            Capsule().fill(Color.rewound.background)
                         )
                 }
                 .buttonStyle(.plain)
@@ -162,7 +162,7 @@ struct BetaBar: View {
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.s)
             .frame(maxWidth: .infinity)
-            .background(Color.calibre.foreground)
+            .background(Color.rewound.foreground)
         }
     }
 }
@@ -179,8 +179,8 @@ struct BetaWelcomeSheet: View {
                 VStack(alignment: .leading, spacing: Space.l) {
                     if let welcome = beta.config.welcome {
                         Text(welcome.title)
-                            .font(CalibreType.title)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.title)
+                            .foregroundStyle(Color.rewound.foreground)
                             .accessibilityAddTraits(.isHeader)
                             .fixedSize(horizontal: false, vertical: true)
 
@@ -191,8 +191,8 @@ struct BetaWelcomeSheet: View {
                             // collapse into one under a content-keyed ForEach.
                             ForEach(Array(welcome.body.enumerated()), id: \.offset) { _, paragraph in
                                 Text(paragraph)
-                                    .font(CalibreType.body)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.body)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -202,12 +202,12 @@ struct BetaWelcomeSheet: View {
                         }
 
                         Text(welcome.signoff)
-                            .font(CalibreType.hand)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.hand)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
 
                     Button("Start exploring") { dismiss() }
-                        .buttonStyle(.calibrePrimary)
+                        .buttonStyle(.rewoundPrimary)
                         .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, Space.margin)
@@ -261,16 +261,16 @@ struct BetaFillButton: View {
                         Image(systemName: "wand.and.stars")
                             .font(.caption)
                         Text(isLoading ? "Filling…" : label)
-                            .font(CalibreType.label)
+                            .font(RewoundType.label)
                     }
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                     .padding(.horizontal, Space.m)
                     .padding(.vertical, Space.s)
                     .background(
-                        Capsule().fill(Color.calibre.primary.opacity(0.08))
+                        Capsule().fill(Color.rewound.primary.opacity(0.08))
                     )
                     .overlay(
-                        Capsule().stroke(Color.calibre.primary.opacity(0.3), lineWidth: 1)
+                        Capsule().stroke(Color.rewound.primary.opacity(0.3), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -278,8 +278,8 @@ struct BetaFillButton: View {
 
                 if failed {
                     Text("That did not work — please type whatever you like instead.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

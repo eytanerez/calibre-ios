@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Mixed-type JSON payload value for auth endpoints whose bodies are not all
@@ -69,14 +69,14 @@ enum GoogleAuthError {
     }
 }
 
-/// The serif Calibre wordmark used on the login screen and intro.
-struct CalibreWordmark: View {
+/// The serif Rewound wordmark used on the login screen and intro.
+struct RewoundWordmark: View {
     var size: CGFloat = 34
 
     var body: some View {
-        Text("Calibre")
-            .font(CalibreType.serif(.semiBold, size, relativeTo: .largeTitle))
-            .foregroundStyle(Color.calibre.foreground)
+        Text("Rewound")
+            .font(RewoundType.serif(.semiBold, size, relativeTo: .largeTitle))
+            .foregroundStyle(Color.rewound.foreground)
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -85,11 +85,11 @@ struct CalibreWordmark: View {
 struct AuthDivider: View {
     var body: some View {
         HStack(spacing: Space.m) {
-            Rectangle().fill(Color.calibre.border).frame(height: 1)
+            Rectangle().fill(Color.rewound.border).frame(height: 1)
             Text("or")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
-            Rectangle().fill(Color.calibre.border).frame(height: 1)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
+            Rectangle().fill(Color.rewound.border).frame(height: 1)
         }
         .accessibilityHidden(true)
     }
@@ -101,8 +101,8 @@ struct AuthErrorLine: View {
 
     var body: some View {
         Text(message)
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.destructive)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.destructive)
             .frame(maxWidth: .infinity, alignment: .leading)
             .transition(.opacity.combined(with: .offset(y: -3)))
     }

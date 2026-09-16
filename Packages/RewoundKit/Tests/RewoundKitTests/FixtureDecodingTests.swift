@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `{ok, data}` success wrapper, mirroring what APIClient unwraps.
 struct Envelope<T: Decodable>: Decodable {
@@ -599,8 +599,8 @@ final class FixtureDecodingTests: XCTestCase {
             from: fixtureData("checkout-create-intent-card")
         )
         let intent = envelope.data
-        XCTAssertEqual(intent.paymentIntent.id, "pi_3PxCalibre001")
-        XCTAssertEqual(intent.publishableKey, "pk_test_calibre")
+        XCTAssertEqual(intent.paymentIntent.id, "pi_3PxRewound001")
+        XCTAssertEqual(intent.publishableKey, "pk_test_rewound")
 
         let breakdown = try XCTUnwrap(intent.breakdown, "a single-watch checkout keeps the legacy breakdown")
         XCTAssertEqual(breakdown.pricingMode, .surcharge)
@@ -644,7 +644,7 @@ final class FixtureDecodingTests: XCTestCase {
             from: fixtureData("checkout-payment-intent-group")
         )
         let intent = envelope.data
-        XCTAssertEqual(intent.paymentIntent.id, "pi_3PxCalibreGroup01")
+        XCTAssertEqual(intent.paymentIntent.id, "pi_3PxRewoundGroup01")
         XCTAssertNil(intent.breakdown, "a set carries breakdown_group only")
 
         let group = try XCTUnwrap(intent.breakdownGroup)
@@ -784,7 +784,7 @@ final class FixtureDecodingTests: XCTestCase {
         ).data
         XCTAssertTrue(confirmation.requiresAction)
         XCTAssertEqual(confirmation.status, "requires_action")
-        XCTAssertEqual(confirmation.clientSecret, "pi_3PxCalibre001_secret_abc")
+        XCTAssertEqual(confirmation.clientSecret, "pi_3PxRewound001_secret_abc")
     }
 
     // MARK: Returns
@@ -800,7 +800,7 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(quote.returnFee.minimum.value, Decimal(string: "250.00"))
         XCTAssertEqual(quote.returnFee.amount.value, Decimal(string: "700.00"))
         XCTAssertEqual(quote.outboundLabelDeduction?.value, Decimal(string: "150.00"))
-        // Calibre's own return label is deducted from the refund too, and the
+        // Rewound's own return label is deducted from the refund too, and the
         // client renders the server's figure rather than inferring one.
         XCTAssertEqual(quote.returnLabelDeduction?.value, Decimal(string: "35.00"))
         XCTAssertEqual(quote.processingWithholdingBasis, "card_fee_never_refunded")
@@ -987,14 +987,14 @@ final class FixtureDecodingTests: XCTestCase {
             from: fixtureData("support-thread-assigned")
         ).data
         let conversation = try XCTUnwrap(thread)
-        XCTAssertEqual(conversation.status, .waitingOnCalibre)
+        XCTAssertEqual(conversation.status, .waitingOnRewound)
         XCTAssertEqual(conversation.assignedContact?.displayName, "Amelia Hart")
         XCTAssertEqual(conversation.messages.count, 1)
     }
 
     func testSupportConversationStatusCoversTheNewStates() throws {
-        let wire = ["open", "waiting_on_calibre", "waiting_on_customer", "closed"]
-        let expected: [SupportConversationStatus] = [.open, .waitingOnCalibre, .waitingOnCustomer, .closed]
+        let wire = ["open", "waiting_on_rewound", "waiting_on_customer", "closed"]
+        let expected: [SupportConversationStatus] = [.open, .waitingOnRewound, .waitingOnCustomer, .closed]
         for (raw, status) in zip(wire, expected) {
             let decoded = try apiDecoder().decode(
                 SupportConversationStatus.self,
@@ -1139,7 +1139,7 @@ final class FixtureDecodingTests: XCTestCase {
         let json = """
         {
           "id": "3f1c9d20-1111-4a1e-9f0c-2c9c0c0c0c0c",
-          "source": "calibre_order",
+          "source": "rewound_order",
           "authenticated": true,
           "order_id": "o1",
           "listing_id": "l1",
@@ -1217,7 +1217,7 @@ final class FixtureDecodingTests: XCTestCase {
         // `source` would light this row up, and this test is what stops that
         // from being reintroduced quietly.
         let json = """
-        {"id": "bb22", "source": "calibre_order", "authenticated": false, "order_id": "o9",
+        {"id": "bb22", "source": "rewound_order", "authenticated": false, "order_id": "o9",
          "listing_id": null, "passport_code": null, "brand": "Rolex", "model": null,
          "reference": null, "production_year": null, "nickname": null, "notes": null,
          "photo_url": null, "acquired_price": null, "acquired_date": null,

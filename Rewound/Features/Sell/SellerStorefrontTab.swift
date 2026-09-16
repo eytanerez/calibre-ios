@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Who the seller is, to a buyer.
@@ -40,7 +40,7 @@ struct SellerStorefrontTab: View {
         .sellRow()
         .task {
             // The line sits beside a verified-business badge, so there is no
-            // version of it for a seller Calibre has not verified — and the
+            // version of it for a seller Rewound has not verified — and the
             // endpoint refuses them. Don't ask on their behalf.
             guard isVerifiedDealer, bio == nil else { return }
             await loadBio()
@@ -59,8 +59,8 @@ struct SellerStorefrontTab: View {
                         AvatarInitial(name: username, size: .m)
                         HStack(spacing: Space.s) {
                             Text("@\(username)")
-                                .font(CalibreType.sectionTitle)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.sectionTitle)
+                                .foregroundStyle(Color.rewound.foreground)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
                             if isVerifiedDealer {
@@ -79,7 +79,7 @@ struct SellerStorefrontTab: View {
             Button("View your storefront") {
                 actions.openStorefrontPage()
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
 
         }
     }
@@ -87,9 +87,9 @@ struct SellerStorefrontTab: View {
     /// What a buyer is reading right now — the last words that cleared
     /// review, never whatever the dealer has typed since. Set in the hand,
     /// the same way the storefront sets it, because this is the one place on
-    /// Calibre where a seller speaks in their own voice.
+    /// Rewound where a seller speaks in their own voice.
     ///
-    /// A verified dealer with nothing live gets Calibre describing an
+    /// A verified dealer with nothing live gets Rewound describing an
     /// absence, in the sans: putting that sentence in the hand would put
     /// words in their mouth. A seller who is not a dealer has no line to be
     /// missing.
@@ -97,8 +97,8 @@ struct SellerStorefrontTab: View {
     private var livePreviewLine: some View {
         if let live = bio?.live, !live.isEmpty {
             Text(live)
-                .font(CalibreType.hand)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.hand)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -185,17 +185,17 @@ struct SellerStorefrontTab: View {
                 Eyebrow("Dealer program")
 
                 Text("Apply as a dealer")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
 
                 // One line, and the button is the route. The EIN / Stripe /
-                // Calibre-never-sees-it story is told on the application
+                // Rewound-never-sees-it story is told on the application
                 // screen, beside the field that asks for it — a card whose
                 // whole job is "apply?" does not need to retell it before the
                 // seller has decided.
                 Text("A dealer is a verified business.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 VStack(alignment: .leading, spacing: Space.s) {
@@ -210,7 +210,7 @@ struct SellerStorefrontTab: View {
                 } label: {
                     Text("Apply as a dealer")
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .padding(.top, Space.xs)
             }
             .padding(Space.l)
@@ -228,18 +228,18 @@ struct SellerStorefrontTab: View {
 
                 if let name = application.companyName, InputValidation.isNonBlank(name) {
                     Text(name)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                 }
 
                 Text(verifiedDealerRateLine(application))
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text("Dealer status does not expire, and it isn't tied to how much you have listed.")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(Space.l)
@@ -262,14 +262,14 @@ struct SellerStorefrontTab: View {
                 }
 
                 Text(headline)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                     Text(line)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -282,10 +282,10 @@ struct SellerStorefrontTab: View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s) {
             Image(systemName: "checkmark")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
             Text(text)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }

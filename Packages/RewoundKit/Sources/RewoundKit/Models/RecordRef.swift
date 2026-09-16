@@ -8,9 +8,9 @@ import Foundation
 /// identically or a chip written on one client stops being a chip on the next.
 ///
 /// A support message is plain text. An order or a listing inside one is a
-/// markdown link whose target is a `calibre:` reference URI:
+/// markdown link whose target is a `rewound:` reference URI:
 ///
-///     Any update on [Order #13](calibre:order/9f3c…)?
+///     Any update on [Order #13](rewound:order/9f3c…)?
 ///
 /// **The label is authoritative.** It is the record's human name, and it is
 /// what a reader sees whatever their client does with the target. A client that
@@ -49,7 +49,7 @@ public struct RecordRef: Sendable, Hashable, Identifiable {
 
     /// Where this app opens it — the deep link `AppRouter.handle(url:)` already
     /// understands, so a chip needs no route table of its own.
-    public var route: URL? { URL(string: "calibre://\(kind.rawValue)/\(recordID)") }
+    public var route: URL? { URL(string: "rewound://\(kind.rawValue)/\(recordID)") }
 }
 
 /// One piece of a body as a renderer draws it.
@@ -76,14 +76,14 @@ public struct RecordRefOption: Sendable, Hashable, Identifiable {
 
 public enum RecordRefs {
     /// The scheme. A marker, not a URL scheme anybody registers.
-    public static let scheme = "calibre"
+    public static let scheme = "rewound"
 
     /// The target a composer writes for one record.
     public static func target(kind: String, recordID: String) -> String {
         "\(scheme):\(kind.lowercased())/\(recordID)"
     }
 
-    /// `(kind, id)` for a `calibre:` target, or nil for anything else.
+    /// `(kind, id)` for a `rewound:` target, or nil for anything else.
     public static func parseTarget(_ target: String) -> (kind: String, recordID: String)? {
         let trimmed = target.trimmingCharacters(in: .whitespaces)
         let prefix = "\(scheme):"
@@ -102,7 +102,7 @@ public enum RecordRefs {
     /// `[Order 13](/orders/…)` at a customer is the bug this format closes, and
     /// a body written before the format exists still contains one.
     private static let linkPattern = try? NSRegularExpression(
-        pattern: #"\[([^\]\n]+)\]\((calibre:[^)\s]+|/[^)\s]*|https?://[^)\s]+)\)"#
+        pattern: #"\[([^\]\n]+)\]\((rewound:[^)\s]+|/[^)\s]*|https?://[^)\s]+)\)"#
     )
 
     /// A body split into the pieces a renderer draws: prose, and references.

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Buyer↔seller conversations, anchored to a listing — served by
-/// `calibre-messaging`, a separate service from the main Backend (see
+/// `rewound-messaging`, a separate service from the main Backend (see
 /// `MessagingClient`). Not support chat: that is a different service
 /// (`SupportStore`) and a different conversation entirely.
 

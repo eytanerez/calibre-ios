@@ -4,10 +4,10 @@ import UIKit
 /// The card a seller keeps on file, drawn as the object it is.
 ///
 /// Stripe returns four facts about a saved card — brand, last four, expiry,
-/// funding — and no image, so the card is drawn here in Calibre's own stock.
+/// funding — and no image, so the card is drawn here in Rewound's own stock.
 /// It is drawn at all because a row of key-value text reads as a billing line,
 /// and this is not a billing line: it is what makes "we will make the buyer
-/// whole" something Calibre can do rather than something it hopes for. It is
+/// whole" something Rewound can do rather than something it hopes for. It is
 /// never charged for a normal sale.
 ///
 /// `last4` is the only number that exists on the client and the only one this
@@ -112,7 +112,7 @@ public struct GuaranteeCard: View {
         )
         // An object lying on the page, not a UI surface: the border-only rule
         // in `Elevation` is about panels, and a card casts a shadow.
-        .calibreShadow(.lifted)
+        .rewoundShadow(.lifted)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }
@@ -164,10 +164,10 @@ public struct GuaranteeCard: View {
     private func expiryBlock(_ expiry: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text("Expires")
-                .font(CalibreType.caption)
+                .font(RewoundType.caption)
                 .foregroundStyle(Stock.dim)
             Text(expiry)
-                .font(CalibreType.label)
+                .font(RewoundType.label)
                 // A card that is present and invalid is an expired one: the
                 // webhook refuses to store anything but a credit card, so the
                 // date is the only thing that can go wrong after saving.
@@ -308,10 +308,10 @@ public extension GuaranteeCard {
     }
 }
 
-// MARK: - The stock's own colours
+// MARK: - The stock's own colors
 
-/// The card's material. Deliberately not `Color.calibre` tokens: a physical
-/// card does not change colour with the room, so the stock darkens between
+/// The card's material. Deliberately not `Color.rewound` tokens: a physical
+/// card does not change color with the room, so the stock darkens between
 /// themes rather than inverting, and nothing else in the app is made of it.
 /// The seams take values that read on dark stock rather than the page's
 /// warning and destructive tokens, which are tuned for paper.
@@ -348,8 +348,8 @@ private enum Stock {
 /// Brand marks drawn locally, the way every checkout renders them: Stripe's
 /// API carries no imagery for payment cards. Each is the simplest drawing that
 /// is unmistakably the network — a wordmark, or the geometry where the mark
-/// *is* geometry — and each keeps the network's own colours, the one thing on
-/// this card that is not Calibre's to restyle.
+/// *is* geometry — and each keeps the network's own colors, the one thing on
+/// this card that is not Rewound's to restyle.
 ///
 /// The marks are printed at a fixed size. They do not answer to Dynamic Type,
 /// because the brand is also spoken in the card's accessibility label, where
@@ -357,14 +357,14 @@ private enum Stock {
 ///
 /// It is public, and it takes its ink, because two different cards draw it:
 /// this one on its own dark stock, and `WalletCardFace` on the page's surface.
-/// The network colours are the same on both — only the ink that stands for
+/// The network colors are the same on both — only the ink that stands for
 /// "printed here" changes with the material.
 public struct CardBrandMark: View {
     let brand: GuaranteeCard.Brand
     /// The printed height on the stock. Every measurement below is a fraction
     /// of it, so both card sizes carry the same mark rather than two drawings.
     let height: CGFloat
-    /// The colour a wordmark is struck in — the material's own ink.
+    /// The color a wordmark is struck in — the material's own ink.
     let ink: Color
     /// The quieter ink, for the device drawn when there is no mark to draw.
     let dim: Color
@@ -474,13 +474,13 @@ private struct MastercardLens: Shape {
 #Preview("Guarantee card — light", traits: .sizeThatFitsLayout) {
     GuaranteeCardPreviewRow()
         .padding(Space.margin)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
 }
 
 #Preview("Guarantee card — dark", traits: .sizeThatFitsLayout) {
     GuaranteeCardPreviewRow()
         .padding(Space.margin)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .preferredColorScheme(.dark)
 }
 

@@ -10,7 +10,7 @@ import SwiftUI
 /// than carved into this: a mark is not a control, and their grammar —
 /// anticipation, acceleration into contact, follow-through — lives in
 /// `MarkMotion` where it cannot leak onto anything you would tap. If you came
-/// here wondering why the stamp bounces, see `CALIBRE_BY_HAND_CONTRACTS.md`
+/// here wondering why the stamp bounces, see `REWOUND_BY_HAND_CONTRACTS.md`
 /// §1.2 and §5.
 public enum Motion {
     /// Hover/press feedback.

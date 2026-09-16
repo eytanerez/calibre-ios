@@ -5,7 +5,7 @@ import SwiftUI
 /// Core Text.
 /// Idempotent; call once at app launch. Token accessors also trigger it lazily
 /// so package previews work without app-side setup.
-public enum CalibreFonts {
+public enum RewoundFonts {
     /// PostScript names as they exist inside the bundled TTFs.
     enum Name {
         static let serifRegular = "PlayfairDisplay-Regular"
@@ -23,7 +23,7 @@ public enum CalibreFonts {
     private static let registration: Void = {
         guard let urls = Bundle.module.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts"),
               !urls.isEmpty else {
-            assertionFailure("CalibreDesign font resources missing from bundle")
+            assertionFailure("RewoundDesign font resources missing from bundle")
             return
         }
         // The callback used to throw its errors away. A face that fails to
@@ -36,7 +36,7 @@ public enum CalibreFonts {
         CTFontManagerRegisterFontURLs(urls as CFArray, .process, true) { errors, _ in
             let failures = errors as? [Error] ?? []
             if !failures.isEmpty {
-                assertionFailure("CalibreDesign font registration failed: \(failures)")
+                assertionFailure("RewoundDesign font registration failed: \(failures)")
             }
             return true
         }

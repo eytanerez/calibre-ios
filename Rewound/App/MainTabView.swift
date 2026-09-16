@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 import UIKit
 
@@ -79,7 +79,7 @@ struct MainTabView: View {
             }
             .tag(AppTab.you)
         }
-        .tint(Color.calibre.primary)
+        .tint(Color.rewound.primary)
         .task(id: notificationRefresh) {
             guard session.isAuthenticated, scenePhase == .active else { return }
             try? await services.serverAlerts.load()
@@ -120,7 +120,7 @@ struct MainTabView: View {
         //
         // `safeAreaInset` rather than a VStack around the TabView. Wrapping it
         // changed the accessibility hierarchy enough that `app.tabBars` began
-        // matching two "Me" buttons, and CalibreUITests could no longer tap the
+        // matching two "Me" buttons, and RewoundUITests could no longer tap the
         // tab at all — a real regression for anybody driving the app by
         // VoiceOver, not just for the test that caught it. An inset leaves
         // TabView as the root and simply reserves space at its top edge, and
@@ -151,14 +151,14 @@ struct MainTabView: View {
     /// does not replace it with its much larger red notification badge.
     private var meTabIcon: UIImage {
         let traits = UITraitCollection(userInterfaceStyle: colorScheme == .dark ? .dark : .light)
-        let tint = UIColor(router.selectedTab == .you ? Color.calibre.primary : Color.calibre.mutedForeground)
+        let tint = UIColor(router.selectedTab == .you ? Color.rewound.primary : Color.rewound.mutedForeground)
             .resolvedColor(with: traits)
         let person = UIImage(systemName: "person.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22))?
             .withTintColor(tint, renderingMode: .alwaysOriginal)
         return UIGraphicsImageRenderer(size: CGSize(width: 28, height: 28)).image { context in
             person?.draw(in: CGRect(x: 2, y: 3, width: 22, height: 23))
             if hasNotifications {
-                UIColor(Color.calibre.primary).resolvedColor(with: traits).setFill()
+                UIColor(Color.rewound.primary).resolvedColor(with: traits).setFill()
                 context.cgContext.fillEllipse(in: CGRect(x: 23, y: 1, width: 4, height: 4))
             }
         }
@@ -197,7 +197,7 @@ struct RouteDestinationView: View {
     var body: some View {
         destination
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .calibrePageBackground()
+            .rewoundPageBackground()
             // Anything reached this way is standing above something, so its own
             // pushes have to land above it rather than rewrite the tab's path.
             .routeStackNode()
@@ -260,7 +260,7 @@ private struct CheckoutRedirect: View {
     let offerID: String?
 
     var body: some View {
-        Color.calibre.background
+        Color.rewound.background
             .onAppear {
                 services.router.presentCheckout(listingID: listingID, offerID: offerID)
             }

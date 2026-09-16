@@ -58,7 +58,7 @@ public struct JournalArticle: Codable, Sendable, Identifiable, Hashable {
         category = try container.decodeIfPresent(String.self, forKey: .category) ?? ""
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
         excerpt = try container.decodeIfPresent(String.self, forKey: .excerpt) ?? ""
-        author = try container.decodeIfPresent(String.self, forKey: .author) ?? "Calibre Desk"
+        author = try container.decodeIfPresent(String.self, forKey: .author) ?? "Rewound Desk"
         date = try container.decodeIfPresent(String.self, forKey: .date) ?? ""
         datePublishedISO = try container.decodeIfPresent(String.self, forKey: .datePublishedISO)
         readTime = try container.decodeIfPresent(String.self, forKey: .readTime) ?? ""

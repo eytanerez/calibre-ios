@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `Order.passport_code` — the field the order detail's Passport row is
 /// gated on. The row appears exactly when this decodes to something, so a

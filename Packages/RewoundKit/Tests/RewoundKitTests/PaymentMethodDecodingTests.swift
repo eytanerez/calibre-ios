@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `POST /billing/setup-intent` — real shape confirmed against
 /// Backend/docs/mobile-api.md §"POST /billing/setup-intent (response

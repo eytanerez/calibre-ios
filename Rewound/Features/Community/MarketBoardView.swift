@@ -1,13 +1,13 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
-/// Reference-level market board: every reference Calibre publishes a price
+/// Reference-level market board: every reference Rewound publishes a price
 /// for, filterable and sortable, with a tap-through to the reference's own
 /// chart and spec sheet.
 ///
 /// The set is whatever `/market/reference-prices` says it is. A reference
-/// only publishes once there is enough of Calibre's own trade behind it, so
+/// only publishes once there is enough of Rewound's own trade behind it, so
 /// an empty board is a real answer — "nothing published yet" — and reads as
 /// one rather than as a screen that failed to load.
 struct MarketBoardView: View {
@@ -117,7 +117,7 @@ struct MarketBoardView: View {
                 EmptyState(
                     icon: "chart.line.uptrend.xyaxis",
                     title: "No prices published yet",
-                    message: "Calibre publishes a reference price once there's enough of its own trade behind it. Nothing is published today \u{2014} check back."
+                    message: "Rewound publishes a reference price once there's enough of its own trade behind it. Nothing is published today \u{2014} check back."
                 )
             } else {
                 board
@@ -159,10 +159,10 @@ struct MarketBoardView: View {
             // wheel is a stopped watch. The line beside it carries the
             // meaning — a wheel at rest is not self-evidently "loading".
             HStack(spacing: Space.m) {
-                CalibreMark.balanceWheel(size: 24)
+                RewoundMark.balanceWheel(size: 24)
                 Text("Reading the market")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
@@ -170,7 +170,7 @@ struct MarketBoardView: View {
 
             ForEach(0..<4, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .fill(Color.calibre.card)
+                    .fill(Color.rewound.card)
                     .frame(height: 140)
                     .shimmer()
             }
@@ -183,19 +183,19 @@ struct MarketBoardView: View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.m), GridItem(.flexible(), spacing: Space.m)], spacing: Space.m) {
             statTile(label: "Advancing", value: "\(advancingCount)", tone: .up) {
                 Text("since first published price")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             statTile(label: "Declining", value: "\(decliningCount)", tone: .down) {
                 Text("since first published price")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             if let updated = MarketFormat.day(iso: asOf) {
                 statTile(label: "Last updated", value: updated, tone: .neutral) {
-                    Text("Calibre's own trade")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                    Text("Rewound's own trade")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
         }
@@ -207,18 +207,18 @@ struct MarketBoardView: View {
     private func statTile<Sub: View>(label: String, value: String, tone: StatTone, @ViewBuilder sub: () -> Sub) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(label.uppercased())
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Text(value)
-                .font(CalibreType.serif(.semiBold, 22, relativeTo: .title2))
-                .foregroundStyle(tone == .up ? Color.calibre.success : (tone == .down ? Color.calibre.destructive : Color.calibre.foreground))
+                .font(RewoundType.serif(.semiBold, 22, relativeTo: .title2))
+                .foregroundStyle(tone == .up ? Color.rewound.success : (tone == .down ? Color.rewound.destructive : Color.rewound.foreground))
                 .monospacedDigit()
             sub()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 
     // MARK: - Watch board (filters + grid)
@@ -226,8 +226,8 @@ struct MarketBoardView: View {
     private var watchBoard: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             Text("Watch board")
-                .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.serif(.semiBold, 20, relativeTo: .title3))
+                .foregroundStyle(Color.rewound.foreground)
 
             searchField
 
@@ -260,25 +260,25 @@ struct MarketBoardView: View {
             if visibleRows.isEmpty {
                 VStack(spacing: Space.s) {
                     Text("No references match your filters.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                     if hasActiveFilters {
                         Button("Clear filters") {
                             selectedBrand = nil
                             trend = .all
                             searchText = ""
                         }
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.primary)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.xxl)
             }
 
-            Text("Reference-level estimates drawn from what watches actually sell for on Calibre.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+            Text("Reference-level estimates drawn from what watches actually sell for on Rewound.")
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .padding(.top, Space.s)
         }
     }
@@ -335,18 +335,18 @@ struct MarketBoardView: View {
         HStack(spacing: 6) {
             Image(systemName: icon).font(.system(size: 12, weight: .medium))
             Text(title)
-                .font(CalibreType.label)
+                .font(RewoundType.label)
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 2)
             Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
         }
-        .foregroundStyle(Color.calibre.foreground)
+        .foregroundStyle(Color.rewound.foreground)
         .padding(.horizontal, Space.m)
         .frame(maxWidth: .infinity)
         .frame(minHeight: Space.touchTarget)
-        .background(Color.calibre.card, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.rewound.border, lineWidth: 1))
         .contentShape(Capsule())
     }
 }
@@ -373,10 +373,10 @@ struct ChangePillView: View {
                 .font(.system(size: valueSize, weight: .semibold))
                 .monospacedDigit()
         }
-        .foregroundStyle(positive ? Color.calibre.success : Color.calibre.destructive)
+        .foregroundStyle(positive ? Color.rewound.success : Color.rewound.destructive)
         .padding(.horizontal, Space.s)
         .padding(.vertical, 3)
-        .background((positive ? Color.calibre.success : Color.calibre.destructive).opacity(0.1), in: Capsule())
+        .background((positive ? Color.rewound.success : Color.rewound.destructive).opacity(0.1), in: Capsule())
     }
 }
 
@@ -400,14 +400,14 @@ private struct TickerCard: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(price.brand.uppercased())
                             .font(.system(size: brandSize, weight: .semibold))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                         Text(price.model ?? price.reference)
-                            .font(CalibreType.serif(.semiBold, 15, relativeTo: .subheadline))
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.serif(.semiBold, 15, relativeTo: .subheadline))
+                            .foregroundStyle(Color.rewound.foreground)
                             .lineLimit(1)
                         Text("Ref. \(price.reference)")
                             .font(.system(size: referenceSize))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             // One line at every normal size — the second line
                             // only exists at accessibility sizes, where a
                             // reference truncated to "Ref. 126…" identifies
@@ -427,8 +427,8 @@ private struct TickerCard: View {
                     // what it knows and leaves the chart's height alone, so a
                     // grid of cards still lines up.
                     Text("First published price")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         // 44 is the sparkline's height, so the grid still lines
                         // up — but as a floor, not a ceiling: at large text
                         // sizes the caption wraps out of a fixed 44 and gets
@@ -437,14 +437,14 @@ private struct TickerCard: View {
                 }
 
                 Text(MarketFormat.usdFull(price.currentValue))
-                    .font(CalibreType.serif(.semiBold, 17, relativeTo: .headline))
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.serif(.semiBold, 17, relativeTo: .headline))
+                    .foregroundStyle(Color.rewound.foreground)
                     .monospacedDigit()
             }
             .padding(Space.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
         }
         .buttonStyle(PressableStyle())
     }

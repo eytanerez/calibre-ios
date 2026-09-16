@@ -6,7 +6,7 @@ import Foundation
 /// the two can never share a screen.
 ///
 /// Lives in the domain package rather than the view so the gate can be tested
-/// without a screen; `CalibreDesign` is what draws it.
+/// without a screen; `RewoundDesign` is what draws it.
 public extension Offer {
     /// How much of the seller's first-round window is still ahead, 0 (spent)
     /// to 1 (the whole window), or nil when there is no such window to read.

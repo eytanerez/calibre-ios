@@ -2,35 +2,35 @@ import Foundation
 import Observation
 
 extension APIConfiguration {
-    /// Resolves calibre-messaging's own base URL from Info.plist
-    /// (`CalibreMessagingBaseURL`) — a separate service from the main
+    /// Resolves rewound-messaging's own base URL from Info.plist
+    /// (`RewoundMessagingBaseURL`) — a separate service from the main
     /// Backend, on its own host/port (dev: `http://localhost:8020`), so it
     /// needs a configuration `fromInfoPlist()` doesn't provide.
     public static func fromMessagingInfoPlist() -> APIConfiguration {
         #if DEBUG
         // Same UI-test/physical-device override seam as `fromInfoPlist()`.
-        if let override = ProcessInfo.processInfo.environment["CALIBRE_MESSAGING_BASE_URL"],
+        if let override = ProcessInfo.processInfo.environment["REWOUND_MESSAGING_BASE_URL"],
            !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let raw = override.trimmingCharacters(in: .whitespacesAndNewlines)
             guard let url = URL(string: raw),
                   ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
                   url.host != nil else {
-                preconditionFailure("CALIBRE_MESSAGING_BASE_URL must be an absolute HTTP(S) URL")
+                preconditionFailure("REWOUND_MESSAGING_BASE_URL must be an absolute HTTP(S) URL")
             }
             return APIConfiguration(baseURL: url)
         }
         #endif
 
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "CalibreMessagingBaseURL") as? String,
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: "RewoundMessagingBaseURL") as? String,
               let url = URL(string: raw) else {
-            preconditionFailure("CalibreMessagingBaseURL missing from Info.plist")
+            preconditionFailure("RewoundMessagingBaseURL missing from Info.plist")
         }
         return APIConfiguration(baseURL: url)
     }
 }
 
 /// Buyer↔seller messaging — threads, messages, and the send path's three
-/// delivery states. Talks to `calibre-messaging` through `MessagingClient`,
+/// delivery states. Talks to `rewound-messaging` through `MessagingClient`,
 /// not `APIClient`: see that file for why the two services need different
 /// transports even though they share the one signed-in session.
 @MainActor
@@ -136,7 +136,7 @@ public final class MessagingStore {
     ///
     /// Yields only ever-delivered messages: the fanout this stream carries is
     /// published solely for `allow`, after commit (`app/services/fanout.py`
-    /// in calibre-messaging), so nothing held or denied can arrive this way.
+    /// in rewound-messaging), so nothing held or denied can arrive this way.
     public func messageStream(threadID: String) -> AsyncStream<ThreadMessage> {
         AsyncStream { continuation in
             let task = Task {

@@ -15,7 +15,7 @@ import SwiftUI
 /// the parcel stays square and the world it leaves through does the moving.
 /// Squashing the object itself is the thing that reads as a toy.
 ///
-/// See `CALIBRE_BY_HAND_CONTRACTS.md` §1.2 for the carve-out and §5 for the
+/// See `REWOUND_BY_HAND_CONTRACTS.md` §1.2 for the carve-out and §5 for the
 /// grammar these numbers come from.
 enum MarkMotion {
     // MARK: - Curves

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The sign-in screen: a modal reached from the Me tab once a guest wants in.
@@ -46,7 +46,7 @@ struct LoginScreen: View {
                     .padding(.bottom, Space.s)
 
                 VStack(spacing: Space.l) {
-                    CalibreTextField(
+                    RewoundTextField(
                         "Email or username",
                         text: $identifier,
                         placeholder: "you@example.com",
@@ -56,7 +56,7 @@ struct LoginScreen: View {
                     .submitLabel(.next)
                     .onSubmit { focusedField = .password }
 
-                    CalibreTextField(
+                    RewoundTextField(
                         "Password",
                         text: $password,
                         kind: .password
@@ -75,15 +75,15 @@ struct LoginScreen: View {
                         Haptics.shared.play(.press)
                         Task { await signIn() }
                     } label: {
-                        CalibreBusyLabel("Sign In", busy: busy)
+                        RewoundBusyLabel("Sign In", busy: busy)
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(!canSubmit)
 
                     NavigationLink("Forgot password?") {
                         ForgotPasswordScreen()
                     }
-                    .buttonStyle(.calibreGhost)
+                    .buttonStyle(.rewoundGhost)
                 }
 
                 AuthDivider()
@@ -100,7 +100,7 @@ struct LoginScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -108,7 +108,7 @@ struct LoginScreen: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(width: Space.touchTarget, height: Space.touchTarget)
                 }
                 .buttonStyle(PressableStyle())
@@ -126,16 +126,16 @@ struct LoginScreen: View {
     private var header: some View {
         VStack(spacing: Space.m) {
             SigningInMark(turning: busy)
-            CalibreWordmark()
+            RewoundWordmark()
             Text("Welcome back. Sign in to pick up where you left off.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
     }
 
-    /// "New to Calibre?" and the way in. One line while the two fit side by
+    /// "New to Rewound?" and the way in. One line while the two fit side by
     /// side — which is every normal text size — and stacked once they don't,
     /// rather than the link running off the right edge of the screen.
     private var signUpPrompt: some View {
@@ -152,17 +152,17 @@ struct LoginScreen: View {
     }
 
     private var signUpLead: some View {
-        Text("New to Calibre?")
-            .font(CalibreType.body)
-            .foregroundStyle(Color.calibre.mutedForeground)
+        Text("New to Rewound?")
+            .font(RewoundType.body)
+            .foregroundStyle(Color.rewound.mutedForeground)
     }
 
     private var signUpLink: some View {
         NavigationLink("Create an account") {
             RegisterScreen()
         }
-        .font(CalibreType.bodySemiBold)
-        .tint(Color.calibre.primary)
+        .font(RewoundType.bodySemiBold)
+        .tint(Color.rewound.primary)
     }
 
     private func signIn() async {
@@ -192,7 +192,7 @@ struct LoginScreen: View {
     }
 }
 
-/// The Calibre mark above the wordmark, turning while the sign-in request is
+/// The Rewound mark above the wordmark, turning while the sign-in request is
 /// in flight: a slow, continuous turn that runs down onto upright once the
 /// response lands.
 ///
@@ -233,7 +233,7 @@ private struct SigningInMark: View {
     }
 
     var body: some View {
-        CalibreLogoMark(size: 48)
+        RewoundLogoMark(size: 48)
             .rotationEffect(.degrees(turn.angle))
             .task(id: turning) { await run() }
             .onChange(of: motionIsUnwelcome) { _, unwelcome in

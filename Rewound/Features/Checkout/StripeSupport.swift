@@ -1,4 +1,4 @@
-import CalibreDesign
+import RewoundDesign
 import PassKit
 import StripePayments
 // sheetCornerRadius is SPI-gated at the pinned stripe-ios 26.2.0 — the plain
@@ -8,7 +8,7 @@ import StripePayments
 import SwiftUI
 import UIKit
 
-/// One place that shapes Stripe PaymentSheet like Calibre: warm cream/ink
+/// One place that shapes Stripe PaymentSheet like Rewound: warm cream/ink
 /// (or their dark equivalents), Radius.control corners, Geist type.
 ///
 /// PaymentSheet still drives offer holds and seller label purchases. Buyer
@@ -17,10 +17,10 @@ import UIKit
 /// hand-rolled path needs (the frontmost presenter, an authentication
 /// context, the Apple Pay request) live here too, beside the merchant id and
 /// the entitlement gate they share.
-enum CalibreStripe {
-    static let merchantDisplayName = "Calibre"
-    static let returnURL = "calibre://stripe-redirect"
-    static let applePayMerchantID = "merchant.com.buycalibre.calibre"
+enum RewoundStripe {
+    static let merchantDisplayName = "Rewound"
+    static let returnURL = "rewound://stripe-redirect"
+    static let applePayMerchantID = "merchant.com.shoprewound.rewound"
 
     /// Whether this build carries the Apple Pay entitlement, set by
     /// `APPLE_PAY_ENABLED` in the build config alongside the entitlement itself.
@@ -33,7 +33,7 @@ enum CalibreStripe {
     /// in the same configuration that adds the entitlement and registers the
     /// merchant id. Every other build is cards only.
     static let hasApplePayEntitlement: Bool = {
-        let flag = Bundle.main.object(forInfoDictionaryKey: "CalibreApplePayEnabled")
+        let flag = Bundle.main.object(forInfoDictionaryKey: "RewoundApplePayEnabled")
         if let enabled = flag as? Bool { return enabled }
         // xcconfig substitution lands as a string.
         guard let text = flag as? String else { return false }
@@ -122,7 +122,7 @@ enum CalibreStripe {
         return configuration
     }
 
-    /// Maps the Calibre tokens onto PaymentSheet. Colors come straight from
+    /// Maps the Rewound tokens onto PaymentSheet. Colors come straight from
     /// the palette (each already adapts light/dark); type is Geist via UIFont.
     private static func appearance() -> PaymentSheet.Appearance {
         var appearance = PaymentSheet.Appearance()
@@ -131,27 +131,27 @@ enum CalibreStripe {
         appearance.sheetCornerRadius = Radius.panel
         appearance.borderWidth = 1
 
-        appearance.colors.primary = UIColor(Color.calibre.primary)
-        appearance.colors.background = UIColor(Color.calibre.background)
-        appearance.colors.componentBackground = UIColor(Color.calibre.card)
-        appearance.colors.componentBorder = UIColor(Color.calibre.border)
-        appearance.colors.componentDivider = UIColor(Color.calibre.border)
-        appearance.colors.text = UIColor(Color.calibre.foreground)
-        appearance.colors.textSecondary = UIColor(Color.calibre.mutedForeground)
-        appearance.colors.componentText = UIColor(Color.calibre.foreground)
-        appearance.colors.componentPlaceholderText = UIColor(Color.calibre.placeholder)
-        appearance.colors.icon = UIColor(Color.calibre.mutedForeground)
-        appearance.colors.danger = UIColor(Color.calibre.destructive)
+        appearance.colors.primary = UIColor(Color.rewound.primary)
+        appearance.colors.background = UIColor(Color.rewound.background)
+        appearance.colors.componentBackground = UIColor(Color.rewound.card)
+        appearance.colors.componentBorder = UIColor(Color.rewound.border)
+        appearance.colors.componentDivider = UIColor(Color.rewound.border)
+        appearance.colors.text = UIColor(Color.rewound.foreground)
+        appearance.colors.textSecondary = UIColor(Color.rewound.mutedForeground)
+        appearance.colors.componentText = UIColor(Color.rewound.foreground)
+        appearance.colors.componentPlaceholderText = UIColor(Color.rewound.placeholder)
+        appearance.colors.icon = UIColor(Color.rewound.mutedForeground)
+        appearance.colors.danger = UIColor(Color.rewound.destructive)
 
         if let base = UIFont(name: "Geist-Regular", size: UIFont.labelFontSize) {
             appearance.font.base = base
         }
 
-        appearance.primaryButton.backgroundColor = UIColor(Color.calibre.primary)
-        appearance.primaryButton.textColor = UIColor(Color.calibre.primaryForeground)
+        appearance.primaryButton.backgroundColor = UIColor(Color.rewound.primary)
+        appearance.primaryButton.textColor = UIColor(Color.rewound.primaryForeground)
         appearance.primaryButton.cornerRadius = Radius.control
-        appearance.primaryButton.borderColor = UIColor(Color.calibre.border)
-        appearance.primaryButton.successBackgroundColor = UIColor(Color.calibre.success)
+        appearance.primaryButton.borderColor = UIColor(Color.rewound.border)
+        appearance.primaryButton.successBackgroundColor = UIColor(Color.rewound.success)
         if let buttonFont = UIFont(name: "Geist-SemiBold", size: 15) {
             appearance.primaryButton.font = buttonFont
         }
@@ -298,7 +298,7 @@ enum CalibreStripe {
 @MainActor
 final class CheckoutAuthenticationContext: NSObject, STPAuthenticationContext {
     func authenticationPresentingViewController() -> UIViewController {
-        CalibreStripe.frontmostViewController() ?? UIViewController()
+        RewoundStripe.frontmostViewController() ?? UIViewController()
     }
 }
 

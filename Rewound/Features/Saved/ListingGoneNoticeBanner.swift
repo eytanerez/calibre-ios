@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// "This one sold." — the notice a member gets when a watch they had saved or
@@ -71,16 +71,16 @@ struct ListingGoneNoticeBanner: View {
             HStack(alignment: .top, spacing: Space.m) {
                 Image(systemName: "checkmark.seal")
                     .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(headline)
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(subline)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -96,7 +96,7 @@ struct ListingGoneNoticeBanner: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(width: Space.touchTarget, height: Space.touchTarget)
                         .contentShape(Rectangle())
                 }
@@ -110,11 +110,11 @@ struct ListingGoneNoticeBanner: View {
                 } label: {
                     HStack(spacing: Space.xs) {
                         Text(expanded ? "Hide them" : "Show them")
-                            .font(CalibreType.label)
+                            .font(RewoundType.label)
                         Image(systemName: expanded ? "chevron.up" : "chevron.down")
                             .font(.system(size: 10, weight: .semibold))
                     }
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel(expanded ? "Hide the watches that sold" : "Show the watches that sold")
@@ -130,10 +130,10 @@ struct ListingGoneNoticeBanner: View {
         }
         .padding(Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         // The margin belongs to the card and not to the caller: this view
         // draws nothing at all when there is nothing pending, and padding
@@ -153,14 +153,14 @@ struct ListingGoneNoticeBanner: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(notice.title ?? "A watch you were following")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 if let value = notice.priceValue {
                     Text(PriceFormatter.format(value, currency: notice.currency))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.priceSmall)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
 
@@ -195,7 +195,7 @@ struct ListingGoneNoticeBanner: View {
     /// check keeps a background refresh from counting as having been read.
     ///
     /// Refusing on an inactive scene defers the adoption rather than
-    /// cancelling it, which is why the scene becoming active is a trigger of
+    /// canceling it, which is why the scene becoming active is a trigger of
     /// its own above.
     private func adopt() {
         guard scenePhase == .active else { return }

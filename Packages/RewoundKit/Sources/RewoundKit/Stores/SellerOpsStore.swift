@@ -169,8 +169,8 @@ public final class SellerOpsStore {
     }
 
     /// `POST /orders/{id}/fulfillment/shipping-details` — the seller confirms
-    /// the box, Calibre buys the label, and the order moves to authentication.
-    /// `confirm` is explicit because pressing this spends Calibre's money and
+    /// the box, Rewound buys the label, and the order moves to authentication.
+    /// `confirm` is explicit because pressing this spends Rewound's money and
     /// takes the payout down by whatever the carrier charged.
     @discardableResult
     public func submitShippingDetails(

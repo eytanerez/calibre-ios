@@ -118,7 +118,7 @@ public struct HomeFeedAction: Decodable, Sendable, Hashable {
 ///
 /// `init?` returning nil is the whole point: a route this build cannot place
 /// makes its module render **without a CTA**. The shared notification
-/// vocabulary falls back to the notification centre, which is right for a
+/// vocabulary falls back to the notification center, which is right for a
 /// notification and absurd for "Browse all inventory" — so an unrecognised
 /// route gets no button rather than a button that goes somewhere else. A route
 /// added on the server therefore costs an installed app one missing CTA, never

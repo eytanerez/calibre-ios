@@ -2,14 +2,14 @@
 
 First read Docs/specs/shared-rules.md. Your simulator: **iPhone 17 Pro**. Derived data: /tmp/dd-p3. Screenshots: scratchpad/p3/.
 
-You own: Calibre/Features/Home/, Browse/, ListingDetail/, Journal/, Cart/, Saved/, SellerStorefront/ (create dirs as needed). Replace P2's placeholder roots for Home in place.
+You own: Rewound/Features/Home/, Browse/, ListingDetail/, Journal/, Cart/, Saved/, SellerStorefront/ (create dirs as needed). Replace P2's placeholder roots for Home in place.
 
 Kit surface: CatalogStore (browse/metadata/home/detail/storefront/similar), CommerceStore (cart, watchlist, addresses), LocalSignals (recently viewed), AuthSession.require. Fixtures show exact shapes (Tests/Fixtures/*.json).
 
 ## Screens
 
 1. **HomeScreen** (tab root) — the listings-first home the user demanded (never a pitch):
-   - Header row: serif "Calibre" wordmark small + bag (cart) button with count badge → CartSheet; search field (tap → SearchScreen push).
+   - Header row: serif "Rewound" wordmark small + bag (cart) button with count badge → CartSheet; search field (tap → SearchScreen push).
    - Signed-in greeting line when authed ("Good evening, {firstName}." — time-aware, quiet).
    - Content rows, each horizontally scrolling ListingCards (LazyImage): "For you" (home feed recommended lane; fall back to popular for guests), "Fresh arrivals" (fresh lane), "Popular right now" (popular), "Recently viewed" (LocalSignals ids → fetch, only when non-empty). Brand chip rail (ChipRail from metadata top brands) → BrandScreen. One quiet Journal teaser card (latest article, editorial styling) → JournalArticleScreen.
    - Staggered fade-up on first load; ListingCardSkeleton rows while loading; pull-to-refresh.
@@ -26,7 +26,7 @@ Kit surface: CatalogStore (browse/metadata/home/detail/storefront/similar), Comm
 7. **SellerStorefrontScreen** — header (avatar, @username, member-since, sales count, rating), reviews list (paginated, StarRating + comment + relative date), inventory grid of active listings.
 8. **CartSheet** (from bag icon; also full CartScreen route if cleaner) — the single cart item card (image/title/price, Checkout primary, Save for later, Remove w/ confirm), one-watch explainer caption, Saved-for-later section below (Move to bag w/ swap dialog, View, Remove), unavailable states (Sold/Reserved badges, disabled checkout).
 9. **SavedScreen** (You-tab route or Home entry; wire internally from your own screens) — grid of watchlist items; swipe-to-remove on rows... use grid cells with context menu Remove + an Edit mode; price-drop StatusBadge when listing price < saved-at price if detectable (skip if not in API — note it).
-10. **JournalScreen + JournalArticleScreen** — index of bundled articles (Calibre/Resources/Journal/articles.json + images/): editorial cards (image, category eyebrow, serif title, excerpt, read time). Reader: large serif title, hero image, takeaways as a quiet accent card, sections with serif h2s, sources as links, generous line-height, no chrome. Load via a small JournalStore you create IN YOUR feature dir (Bundle decode).
+10. **JournalScreen + JournalArticleScreen** — index of bundled articles (Rewound/Resources/Journal/articles.json + images/): editorial cards (image, category eyebrow, serif title, excerpt, read time). Reader: large serif title, hero image, takeaways as a quiet accent card, sections with serif h2s, sources as links, generous line-height, no chrome. Load via a small JournalStore you create IN YOUR feature dir (Bundle decode).
 
 ## Notes
 - Buy Now / Make Offer: those flows are another track's — your buttons must route via AppRouter routes (.checkout, .makeOffer(listingID)) if present in Route enum; if a case is missing, call a stub `router.open(...)` equivalent and note it for the orchestrator. NEVER build checkout/offer UI yourself.

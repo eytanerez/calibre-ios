@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 /// The five moments were approved running in a browser, as CSS keyframes. What
 /// is portable about that is arithmetic — where a curve is at a given fraction,
@@ -88,18 +88,18 @@ final class MomentTests: XCTestCase {
     /// shorter than the last beat cuts that beat off mid-air. These are the
     /// approved run lengths.
     func testEachFilmRunsAsLongAsItWasApproved() {
-        XCTAssertEqual(CalibreMoment.orderPlaced.duration, 2.45, accuracy: 0.0001)
-        XCTAssertEqual(CalibreMoment.listingSubmitted.duration, 2.4, accuracy: 0.0001)
-        XCTAssertEqual(CalibreMoment.reportOpened.duration, 2.55, accuracy: 0.0001)
-        XCTAssertEqual(CalibreMoment.vaultWatchOpened.duration, 1.12, accuracy: 0.0001)
-        XCTAssertEqual(CalibreMoment.offerAccepted.duration, 2.08, accuracy: 0.0001)
+        XCTAssertEqual(RewoundMoment.orderPlaced.duration, 2.45, accuracy: 0.0001)
+        XCTAssertEqual(RewoundMoment.listingSubmitted.duration, 2.4, accuracy: 0.0001)
+        XCTAssertEqual(RewoundMoment.reportOpened.duration, 2.55, accuracy: 0.0001)
+        XCTAssertEqual(RewoundMoment.vaultWatchOpened.duration, 1.12, accuracy: 0.0001)
+        XCTAssertEqual(RewoundMoment.offerAccepted.duration, 2.08, accuracy: 0.0001)
     }
 
     /// Only the two films that swallow the screen you were on ask for a
     /// picture of it. Asking for one anywhere else costs a full-screen render
     /// on the main thread for an image nothing draws.
     func testOnlyTheFilmsThatSwallowAScreenAskForOne() {
-        for moment in CalibreMoment.allCases {
+        for moment in RewoundMoment.allCases {
             let swallows = moment == .orderPlaced || moment == .listingSubmitted
             XCTAssertEqual(moment.collapsesTheOutgoingScreen, swallows, "\(moment.rawValue)")
         }
@@ -112,7 +112,7 @@ final class MomentTests: XCTestCase {
     func testTheReportEndsAsTheWholeScreen() {
         let stage = CGSize(width: 393, height: 759)
         let opening = ReportOpenedFilm.contentEffect(at: 0.9, stage: stage)
-        let landed = ReportOpenedFilm.contentEffect(at: CalibreMoment.reportOpened.duration, stage: stage)
+        let landed = ReportOpenedFilm.contentEffect(at: RewoundMoment.reportOpened.duration, stage: stage)
 
         let crop = try? XCTUnwrap(opening.window)
         XCTAssertNotNil(crop)
@@ -169,7 +169,7 @@ final class MomentTests: XCTestCase {
     }
 
     /// The offset that carries it there, read the way SwiftUI reads it: a
-    /// centre-anchored `scaleEffect` has already moved the page half of what
+    /// center-anchored `scaleEffect` has already moved the page half of what
     /// it shrank by, and the offset makes up the rest.
     func testTheOrderPagesOffsetPutsItsTopEdgeWhereItBelongs() {
         let stage = CGSize(width: 402, height: 874)
@@ -218,7 +218,7 @@ final class MomentTests: XCTestCase {
         let waiting = OfferAcceptedFilm.contentEffect(at: 0, stage: stage)
         XCTAssertGreaterThanOrEqual(waiting.offset.height, stage.height)
 
-        let arrived = OfferAcceptedFilm.contentEffect(at: CalibreMoment.offerAccepted.duration, stage: stage)
+        let arrived = OfferAcceptedFilm.contentEffect(at: RewoundMoment.offerAccepted.duration, stage: stage)
         XCTAssertEqual(arrived.offset.height, 0, accuracy: 0.0001)
     }
 
@@ -233,7 +233,7 @@ final class MomentTests: XCTestCase {
         let struck = VaultStampFilm.contentEffect(at: 0.71, stage: stage)
         XCTAssertGreaterThan(struck.offset.height, 0, "the screen gives under the stamp")
 
-        let settled = VaultStampFilm.contentEffect(at: CalibreMoment.vaultWatchOpened.duration, stage: stage)
+        let settled = VaultStampFilm.contentEffect(at: RewoundMoment.vaultWatchOpened.duration, stage: stage)
         XCTAssertEqual(settled.offset.height, 0, accuracy: 0.0001)
         XCTAssertEqual(settled.scale, 1, accuracy: 0.0001)
     }
@@ -252,7 +252,7 @@ final class MomentTests: XCTestCase {
         XCTAssertEqual(outline.maxY, 100, accuracy: 0.01)
 
         // Mirrored, it is the same hand on the other side of the field, so the
-        // two meet on the centreline rather than overlapping or missing.
+        // two meet on the centerline rather than overlapping or missing.
         let mirrored = FistBumpDrawing.fist.applying(FistBumpDrawing.mirror).boundingRect
         XCTAssertEqual(mirrored.maxX, FistBumpDrawing.field.width, accuracy: 0.01)
         XCTAssertEqual(mirrored.minX, FistBumpDrawing.field.width - outline.maxX, accuracy: 0.2)

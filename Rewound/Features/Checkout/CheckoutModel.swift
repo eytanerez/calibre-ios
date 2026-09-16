@@ -1,4 +1,4 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 import Observation
 import PassKit
@@ -454,8 +454,8 @@ final class CheckoutModel {
             // promise the SDK cannot keep if the server named no account.
             // Failing here puts the reason on screen; keeping the intent
             // would put a card form on screen that silently 401s at the tap.
-            guard CalibreStripe.useKey(intent.publishableKey) else {
-                recordPricingFailure(CalibreStripe.unkeyedFailure)
+            guard RewoundStripe.useKey(intent.publishableKey) else {
+                recordPricingFailure(RewoundStripe.unkeyedFailure)
                 return
             }
             cardIntent = intent
@@ -620,8 +620,8 @@ final class CheckoutModel {
         // either — and it is fatal, because `handleNextAction` against an
         // unkeyed client fails with Stripe's own wording, which reads to a
         // buyer as their bank refusing them.
-        if !CalibreStripe.useKey(wireHold?.publishableKey), !CalibreStripe.isKeyed {
-            wireHoldError = CalibreStripe.unkeyedFailure.message
+        if !RewoundStripe.useKey(wireHold?.publishableKey), !RewoundStripe.isKeyed {
+            wireHoldError = RewoundStripe.unkeyedFailure.message
             return
         }
         do {
@@ -993,7 +993,7 @@ final class CheckoutModel {
             STPPaymentHandler.shared().handleNextAction(
                 forPayment: clientSecret,
                 with: authenticationContext,
-                returnURL: CalibreStripe.returnURL
+                returnURL: RewoundStripe.returnURL
             ) { status, _, error in
                 switch status {
                 case .succeeded:
@@ -1003,7 +1003,7 @@ final class CheckoutModel {
                 case .failed:
                     continuation.resume(
                         returning: .failed(
-                            error.map { CalibreStripe.failureMessage(for: $0) }
+                            error.map { RewoundStripe.failureMessage(for: $0) }
                                 ?? "Your bank didn't approve this payment. Please try again."
                         )
                     )
@@ -1018,7 +1018,7 @@ final class CheckoutModel {
             return
         case .canceled:
             throw CheckoutMessageError(
-                message: "You cancelled the check with your bank, so nothing was charged."
+                message: "You canceled the check with your bank, so nothing was charged."
             )
         case .failed(let message):
             throw CheckoutMessageError(message: message)
@@ -1053,7 +1053,7 @@ final class CheckoutModel {
     // MARK: - Apple Pay
 
     var canOfferApplePay: Bool {
-        CalibreStripe.canOfferApplePay && cardIntent != nil
+        RewoundStripe.canOfferApplePay && cardIntent != nil
     }
 
     /// Raises the wallet. Everything after the buyer authorizes runs through
@@ -1069,7 +1069,7 @@ final class CheckoutModel {
         cardRefusal = nil
         paymentProblem = nil
 
-        let request = CalibreStripe.applePayRequest(
+        let request = RewoundStripe.applePayRequest(
             currency: breakdown.currency,
             summaryItems: applePaySummaryItems(breakdown)
         )
@@ -1166,7 +1166,7 @@ final class CheckoutModel {
         }
         items.append(
             PKPaymentSummaryItem(
-                label: CalibreStripe.merchantDisplayName,
+                label: RewoundStripe.merchantDisplayName,
                 amount: NSDecimalNumber(decimal: breakdown.grandTotal.value)
             )
         )
@@ -1203,7 +1203,7 @@ final class CheckoutModel {
         // The sheet did open, so whatever the watchdog wrote while it was up
         // described a failure that did not happen. Anything real about this
         // attempt is written below. The latch clears with the message for the
-        // same reason: a buyer who cancelled a sheet that worked must still be
+        // same reason: a buyer who canceled a sheet that worked must still be
         // able to tap Apple Pay again.
         applePayRefusedToOpen = false
         paymentProblem = nil

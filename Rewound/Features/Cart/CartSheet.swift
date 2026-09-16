@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The bag, with a saved-for-later shelf underneath. Presented from the home
@@ -150,20 +150,20 @@ struct CartSheet: View {
                     Haptics.shared.play(.press)
                     checkoutSelected()
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(selectedCount == 0 || isOverLimit)
 
                 if isOverLimit {
                     Text("One purchase can cover up to \(maximumPerCheckout) watches. Deselect \(selectedCount - maximumPerCheckout) to continue.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.destructive)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 // The warm one-liner: the bag never insists on all of it.
                 Text("Check out with as many or as few as you like — one payment, one order per watch.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -173,8 +173,8 @@ struct CartSheet: View {
     private var selectionHeader: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(selectionSummary)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Spacer()
             Button(allSelected ? "Deselect all" : "Select all") {
                 Haptics.shared.play(.selection)
@@ -186,8 +186,8 @@ struct CartSheet: View {
                     }
                 }
             }
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.primary)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.primary)
             .buttonStyle(PressableStyle())
         }
         .accessibilityElement(children: .combine)
@@ -246,14 +246,14 @@ struct CartSheet: View {
             }
         }
         .padding(Space.m)
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
                 .strokeBorder(
                     selected && checkoutableItems.count > 1
-                        ? Color.calibre.primary.opacity(0.45)
-                        : Color.calibre.border,
+                        ? Color.rewound.primary.opacity(0.45)
+                        : Color.rewound.border,
                     lineWidth: 1
                 )
         )
@@ -274,7 +274,7 @@ struct CartSheet: View {
         } label: {
             Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 22))
-                .foregroundStyle(selected ? Color.calibre.primary : Color.calibre.borderBright)
+                .foregroundStyle(selected ? Color.rewound.primary : Color.rewound.borderBright)
                 .frame(width: Space.touchTarget, height: Space.touchTarget)
                 .contentShape(Rectangle())
         }
@@ -317,21 +317,21 @@ struct CartSheet: View {
     private func bagImageWell(_ item: CartItem) -> some View {
         ListingImageWell(url: item.listing?.image?.url, targetWidth: 180)
             .frame(width: 72, height: 72)
-            .background(Color.calibre.secondary.opacity(0.5))
+            .background(Color.rewound.secondary.opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 
     private func bagDetails(_ item: CartItem) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(item.listing?.title ?? "Listing")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
             if let listing = item.listing {
                 Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
-                    .font(CalibreType.priceSmall)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.priceSmall)
+                    .foregroundStyle(Color.rewound.foreground)
                 if let badge = listing.unavailableBadge {
                     StatusBadge(badge.text, tone: badge.tone)
                 }
@@ -354,7 +354,7 @@ struct CartSheet: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(width: Space.touchTarget, height: Space.touchTarget)
                 .contentShape(Rectangle())
         }
@@ -379,8 +379,8 @@ struct CartSheet: View {
                 dismiss()
                 openSaved()
             }
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.primary)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.primary)
             .buttonStyle(PressableStyle())
         }
     }
@@ -413,11 +413,11 @@ struct CartSheet: View {
             }
         }
         .padding(Space.m)
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -455,23 +455,23 @@ struct CartSheet: View {
     private func savedImageWell(_ item: WatchlistItem) -> some View {
         ListingImageWell(url: item.listing?.image?.url, targetWidth: 120)
             .frame(width: 56, height: 56)
-            .background(Color.calibre.secondary.opacity(0.5))
+            .background(Color.rewound.secondary.opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 
     private func savedDetails(_ item: WatchlistItem, stacked: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(item.listing?.title ?? "Listing")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 // Stacked, the title has the row's full width, so it wraps the
                 // way `bagCard`'s does instead of clipping a long name.
                 .lineLimit(stacked ? 2 : 1)
             HStack(spacing: Space.s) {
                 if let listing = item.listing {
                     Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.priceSmall)
+                        .foregroundStyle(Color.rewound.foreground)
                     if let badge = listing.unavailableBadge {
                         StatusBadge(badge.text, tone: badge.tone)
                     }
@@ -497,7 +497,7 @@ struct CartSheet: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .frame(width: Space.touchTarget, height: Space.touchTarget)
                 .contentShape(Rectangle())
         }
@@ -515,7 +515,7 @@ struct CartSheet: View {
             } label: {
                 Label("Add to cart", systemImage: "bag")
             }
-            .tint(Color.calibre.primary)
+            .tint(Color.rewound.primary)
         }
         Button(role: .destructive) {
             Task { await removeSaved(item) }

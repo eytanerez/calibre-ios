@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// "We don't have this watch yet — tell us what it is."
@@ -51,17 +51,17 @@ struct CatalogGapSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
                     Text("Fill in what you know \u{2014} blanks are fine. Someone on our team checks it before it joins the catalog.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
 
-                    CalibreTextField("Brand (required)", text: $brand, kind: .sentence)
-                    CalibreTextField("Model", text: $model, kind: .sentence)
-                    CalibreTextField("Reference (required)", text: $reference, kind: .reference)
-                    CalibreTextField("Year", text: $year, error: yearError, kind: .integer)
+                    RewoundTextField("Brand (required)", text: $brand, kind: .sentence)
+                    RewoundTextField("Model", text: $model, kind: .sentence)
+                    RewoundTextField("Reference (required)", text: $reference, kind: .reference)
+                    RewoundTextField("Year", text: $year, error: yearError, kind: .integer)
 
                     Text("The spec sheet")
-                        .font(CalibreType.serif(.semiBold, 20, relativeTo: .title3))
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.serif(.semiBold, 20, relativeTo: .title3))
+                        .foregroundStyle(Color.rewound.foreground)
                         .padding(.top, Space.s)
 
                     specField("Material", $specs.material, placeholder: "Stainless steel")
@@ -69,7 +69,7 @@ struct CatalogGapSheet: View {
                     specField("Glass", $specs.glass, placeholder: "Sapphire")
                     specField("Back", $specs.back, placeholder: "Solid screw-down")
                     specField("Shape", $specs.shape, placeholder: "Round")
-                    CalibreTextField(
+                    RewoundTextField(
                         "Diameter (mm)",
                         text: $specs.diameterMm,
                         placeholder: "41",
@@ -81,15 +81,15 @@ struct CatalogGapSheet: View {
                     specField("Indexes", $specs.indexes, placeholder: "Applied baton")
                     specField("Hands", $specs.hands, placeholder: "Mercedes")
 
-                    CalibreTextField("Anything else", text: $notes, kind: .sentence)
+                    RewoundTextField("Anything else", text: $notes, kind: .sentence)
                         .onChange(of: notes) { _, value in
                             if value.count > 2_000 { notes = String(value.prefix(2_000)) }
                         }
 
-                    Button(saving ? "Sending\u{2026}" : "Send to Calibre") {
+                    Button(saving ? "Sending\u{2026}" : "Send to Rewound") {
                         Task { await submit() }
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(!canSubmit)
                 }
                 .padding(Space.margin)
@@ -99,7 +99,7 @@ struct CatalogGapSheet: View {
     }
 
     private func specField(_ label: String, _ text: Binding<String>, placeholder: String) -> some View {
-        CalibreTextField(label, text: text, placeholder: placeholder, kind: .sentence)
+        RewoundTextField(label, text: text, placeholder: placeholder, kind: .sentence)
             .onChange(of: text.wrappedValue) { _, value in
                 if value.count > specLimit { text.wrappedValue = String(value.prefix(specLimit)) }
             }
@@ -144,7 +144,7 @@ struct CatalogGapSheet: View {
             onSubmit()
             Haptics.shared.play(.success)
             toasts.show(
-                title: "Sent to Calibre",
+                title: "Sent to Rewound",
                 message: "We'll take a look and add it to the catalog.",
                 tone: .success
             )

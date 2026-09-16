@@ -45,7 +45,7 @@ public struct RowActionsMenu: View {
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .frame(width: Space.touchTarget, height: Space.touchTarget)
                     .contentShape(Rectangle())
             }
@@ -88,7 +88,7 @@ public struct RowActionSwipeButtons: View {
             } label: {
                 Label(action.title, systemImage: action.systemImage)
             }
-            .tint(action.tint ?? (action.isDestructive ? Color.calibre.destructive : Color.calibre.primary))
+            .tint(action.tint ?? (action.isDestructive ? Color.rewound.destructive : Color.rewound.primary))
         }
     }
 }

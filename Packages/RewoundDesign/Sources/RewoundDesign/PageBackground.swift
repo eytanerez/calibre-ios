@@ -2,7 +2,7 @@ import SwiftUI
 
 public extension View {
     /// The sanctioned page ground: the background token, edge to edge. Use
-    /// this on a screen's root instead of `.background(Color.calibre.background)`;
+    /// this on a screen's root instead of `.background(Color.rewound.background)`;
     /// anything smaller than a screen takes the plain token.
     ///
     /// It laid a paper-grain tile over that token at 0.035 opacity until
@@ -14,9 +14,9 @@ public extension View {
     /// reach for, and the tile that view loaded, are gone from the package —
     /// `DesignSystemContractTests.testPaperGrainIsNotBundled` is what keeps
     /// the tile from coming quietly back in a resource declaration.
-    func calibrePageBackground() -> some View {
+    func rewoundPageBackground() -> some View {
         background {
-            Color.calibre.background
+            Color.rewound.background
                 .ignoresSafeArea()
         }
     }
@@ -24,28 +24,28 @@ public extension View {
 
 #Preview("Page ground — light") {
     VStack(alignment: .leading, spacing: Space.l) {
-        Text("Submariner Date").font(CalibreType.title)
+        Text("Submariner Date").font(RewoundType.title)
         Text("The card sits on the page.")
-            .font(CalibreType.body)
+            .font(RewoundType.body)
         Text("Wore it every day for six years.")
-            .font(CalibreType.hand)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.hand)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .padding(Space.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
     }
     .padding(Space.margin)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .calibrePageBackground()
+    .rewoundPageBackground()
 }
 
 #Preview("Page ground — dark") {
     Color.clear
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .preferredColorScheme(.dark)
 }

@@ -7,16 +7,16 @@ import UIKit
 /// never raw hex values.
 ///
 /// The dark ramp is the admin console's, ported value for value by
-/// CALIBRE_FINAL_PUSH_CONTRACTS.md §3. It used to be a warm-brown ramp
+/// REWOUND_FINAL_PUSH_CONTRACTS.md §3. It used to be a warm-brown ramp
 /// mirroring this file, and it read brown: at near-black luminance a warm
 /// tint has nothing to be warm *against*, so the whole page took the hue
 /// instead of the copper doing it alone. Copper, wax and waxHighlight keep
-/// their own colour and are not swept into the neutral ramp.
+/// their own color and are not swept into the neutral ramp.
 public extension Color {
-    static let calibre = CalibrePalette()
+    static let rewound = RewoundPalette()
 }
 
-public struct CalibrePalette: Sendable {
+public struct RewoundPalette: Sendable {
     /// Page background — warm cream / neutral near-black (`--bg`).
     public let background = dynamic(light: 0xFBFAF7, dark: 0x0E0D0B)
     /// Primary text — warm ink / off-white (`--ink`). 14.96:1 on the dark card.
@@ -81,9 +81,9 @@ public struct CalibrePalette: Sendable {
 
     /// Sealing wax, and the lit edge where it stands proud of the paper. The
     /// wax seal is the one mark that does not take the page's ink, because wax
-    /// arrives with a colour of its own — struck in chocolate it reads as a
+    /// arrives with a color of its own — struck in chocolate it reads as a
     /// coin. Nothing outside that mark may use these: see
-    /// CALIBRE_BY_HAND_CONTRACTS.md §17.
+    /// REWOUND_BY_HAND_CONTRACTS.md §17.
     public let wax = dynamic(light: 0x9E3B32, dark: 0xB4483D)
     public let waxHighlight = dynamic(light: 0xC0554A, dark: 0xD0655A)
 

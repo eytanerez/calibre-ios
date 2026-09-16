@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Watch sourcing requests — "tell us what you're hunting." Buyers post wanted
@@ -54,7 +54,7 @@ struct RequestsScreen: View {
                 }
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Requests")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -138,8 +138,8 @@ private struct RequestRow: View {
         VStack(alignment: .leading, spacing: Space.s) {
             HStack {
                 Text([request.brand, request.model].compactMap { $0 }.joined(separator: " "))
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer()
                 StatusBadge(
                     request.status == .fulfilled ? "Sourced" : "Active",
@@ -158,12 +158,12 @@ private struct RequestRow: View {
                 }
             }
             if let notes = request.notes, !notes.isEmpty {
-                Text(notes).font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground).lineLimit(2)
+                Text(notes).font(RewoundType.caption).foregroundStyle(Color.rewound.mutedForeground).lineLimit(2)
             }
             HStack(spacing: Space.m) {
                 if let match = actions.first, request.status == .fulfilled {
                     Button(match.title) { match.action() }
-                        .buttonStyle(.calibre(.secondary))
+                        .buttonStyle(.rewound(.secondary))
                 }
                 Spacer()
                 RowActionsMenu(
@@ -173,14 +173,14 @@ private struct RequestRow: View {
             }
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 
     private func detail(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(label).font(CalibreType.caption).foregroundStyle(Color.calibre.placeholder)
-            Text(value).font(CalibreType.label).foregroundStyle(Color.calibre.foreground)
+            Text(label).font(RewoundType.caption).foregroundStyle(Color.rewound.placeholder)
+            Text(value).font(RewoundType.label).foregroundStyle(Color.rewound.foreground)
         }
     }
 }
@@ -204,31 +204,31 @@ private struct NewRequestSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
                     Text("Tell us what you're hunting. Sellers see open requests and list against them.")
-                        .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
-                    CalibreTextField("Brand (required)", text: $brand, kind: .sentence)
-                    CalibreTextField("Model", text: $model, kind: .sentence)
-                    CalibreTextField("Reference", text: $reference, kind: .reference)
-                    CalibreTextField(
+                        .font(RewoundType.body).foregroundStyle(Color.rewound.mutedForeground)
+                    RewoundTextField("Brand (required)", text: $brand, kind: .sentence)
+                    RewoundTextField("Model", text: $model, kind: .sentence)
+                    RewoundTextField("Reference", text: $reference, kind: .reference)
+                    RewoundTextField(
                         "Year",
                         text: $year,
                         error: yearError,
                         kind: .integer
                     )
-                    CalibreTextField(
+                    RewoundTextField(
                         "Max budget (USD)",
                         text: $budget,
                         error: budgetError,
                         kind: .money
                     )
                     .moneyFormatted($budget)
-                    CalibreTextField("Notes", text: $notes, kind: .sentence)
+                    RewoundTextField("Notes", text: $notes, kind: .sentence)
                         .onChange(of: notes) { _, value in
                             if value.count > 2_000 { notes = String(value.prefix(2_000)) }
                         }
                     Button(saving ? "Posting…" : "Post request") {
                         Task { await submit() }
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(!canSubmit)
                 }
                 .padding(Space.margin)
@@ -270,7 +270,7 @@ private struct NewRequestSheet: View {
             )
             onCreate(created)
             // `watch_reference_id` has no client-side equivalent — the request
-            // carries a free-text reference, never a catalogue match — so it
+            // carries a free-text reference, never a catalog match — so it
             // is omitted rather than invented.
             Analytics.watchRequestSubmitted(
                 brand: created.brand,

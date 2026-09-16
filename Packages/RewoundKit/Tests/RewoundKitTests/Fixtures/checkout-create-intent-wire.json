@@ -26,7 +26,7 @@
               "bank_name": "Test Bank",
               "routing_number": "110000000",
               "account_number": "000123456789",
-              "account_holder_name": "Calibre",
+              "account_holder_name": "Rewound",
               "account_type": "checking"
             }
           }
@@ -40,7 +40,7 @@
       "payment_intent_id": "pi_3PxWireHold001",
       "disclosure_key": "wire_hold_disclosure",
       "client_secret": "pi_3PxWireHold001_secret_zzz",
-      "publishable_key": "pk_test_calibre"
+      "publishable_key": "pk_test_rewound"
     },
     "breakdown_group": {
       "items": [],

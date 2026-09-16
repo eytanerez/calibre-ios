@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// What `POST /listings/<id>/offers` is actually sent, and what comes back
 /// when the card behind the $250 deposit is refused.

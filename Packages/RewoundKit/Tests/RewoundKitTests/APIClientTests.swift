@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 // MARK: - URLProtocol mock
 
@@ -87,7 +87,7 @@ private final class MockProtocolResponder: @unchecked Sendable {
 // byte-for-byte, into six other test files.
 func mockConfiguration() -> APIConfiguration {
     APIConfiguration(
-        baseURL: URL(string: "https://mock.calibre.test")!,
+        baseURL: URL(string: "https://mock.rewound.test")!,
         protocolClasses: [MockURLProtocol.self]
     )
 }

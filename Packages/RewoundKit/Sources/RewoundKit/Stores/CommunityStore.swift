@@ -76,7 +76,7 @@ public final class CommunityStore {
     ///
     /// Most references in the catalog have no published price, so the 404 is
     /// an ordinary answer here rather than a failure — it is the difference
-    /// between "we don't price this" and "we couldn't reach Calibre", and the
+    /// between "we don't price this" and "we couldn't reach Rewound", and the
     /// screen says something different for each.
     public func referencePrice(slug: String) async throws -> MarketReferencePrice? {
         let endpoint = Endpoint<MarketReferencePrice>(

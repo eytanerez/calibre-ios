@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The You tab — account header plus the sections list. Most rows are quiet
@@ -81,7 +81,7 @@ struct YouScreen: View {
                     }.buttonStyle(PressableStyle())
                     divider
                     NavigationLink { MarketplaceGuideScreen() } label: {
-                        rowLabel(icon: "map", label: "How Calibre works")
+                        rowLabel(icon: "map", label: "How Rewound works")
                     }.buttonStyle(PressableStyle())
                     divider
                     NavigationLink { FeeBreakdownScreen() } label: {
@@ -95,13 +95,13 @@ struct YouScreen: View {
                     }.buttonStyle(PressableStyle())
                     divider
                     NavigationLink { AboutScreen() } label: {
-                        rowLabel(icon: "info.circle", label: "About Calibre")
+                        rowLabel(icon: "info.circle", label: "About Rewound")
                     }.buttonStyle(PressableStyle())
                 }
 
                 if session.isAuthenticated {
                     linkedSection(title: nil) {
-                        row(icon: "trash", label: "Delete account", destination: .deleteAccount, tint: Color.calibre.destructive)
+                        row(icon: "trash", label: "Delete account", destination: .deleteAccount, tint: Color.rewound.destructive)
                     }
                     signOutSection
                 }
@@ -114,7 +114,7 @@ struct YouScreen: View {
             .padding(.top, Space.l)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("You")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: ProfileDestination.self) { destination in
@@ -133,7 +133,7 @@ struct YouScreen: View {
             }
         }
         .alert(
-            "Sign out of Calibre?",
+            "Sign out of Rewound?",
             isPresented: $confirmSignOut
         ) {
             Button("Sign Out", role: .destructive) {
@@ -154,11 +154,11 @@ struct YouScreen: View {
                 AvatarInitial(name: user.username, size: .l)
                 VStack(alignment: .leading, spacing: Space.xs) {
                     Text(user.username)
-                        .font(CalibreType.sectionTitle)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.sectionTitle)
+                        .foregroundStyle(Color.rewound.foreground)
                     Text(user.email)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
             .padding(.vertical, Space.s)
@@ -167,11 +167,11 @@ struct YouScreen: View {
             VStack(alignment: .leading, spacing: Space.l) {
                 VStack(alignment: .leading, spacing: Space.s) {
                     Text("You're browsing as a guest")
-                        .font(CalibreType.sectionTitle)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.sectionTitle)
+                        .foregroundStyle(Color.rewound.foreground)
                     Text("Sign in to save watches, make offers, and sell from your Vault.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
 
                 Button {
@@ -181,7 +181,7 @@ struct YouScreen: View {
                     Text("Sign in or create account")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
             }
             .padding(.vertical, Space.s)
         }
@@ -189,7 +189,7 @@ struct YouScreen: View {
 
     // MARK: - Sections
 
-    private var divider: some View { Divider().overlay(Color.calibre.border) }
+    private var divider: some View { Divider().overlay(Color.rewound.border) }
 
     /// System / Light / Dark — a device preference, so it lives inline
     /// rather than behind its own screen; changes apply immediately via the
@@ -199,11 +199,11 @@ struct YouScreen: View {
             HStack(spacing: Space.m) {
                 Image(systemName: "circle.lefthalf.filled")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .frame(width: 24)
                 Text("Appearance")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer(minLength: 0)
             }
             SegmentedTabs(
@@ -221,10 +221,10 @@ struct YouScreen: View {
         VStack(alignment: .leading, spacing: Space.m) {
             if let title { Eyebrow(title) }
             VStack(spacing: 0) { content() }
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                        .strokeBorder(Color.calibre.border, lineWidth: 1)
+                        .strokeBorder(Color.rewound.border, lineWidth: 1)
                 )
         }
     }
@@ -240,22 +240,22 @@ struct YouScreen: View {
         HStack(spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(tint ?? Color.calibre.secondaryForeground)
+                .foregroundStyle(tint ?? Color.rewound.secondaryForeground)
                 .frame(width: 24)
             Text(label)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(tint ?? Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(tint ?? Color.rewound.foreground)
             if let count {
                 Text(count.formatted())
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                     .monospacedDigit()
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                     .accessibilityLabel("\(count) notifications")
             }
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .padding(.horizontal, Space.l)
         .frame(minHeight: Space.touchTarget + 8)
@@ -271,16 +271,16 @@ struct YouScreen: View {
                     .font(.system(size: 16, weight: .medium))
                     .frame(width: 24)
                 Text("Sign out")
-                    .font(CalibreType.bodyMedium)
+                    .font(RewoundType.bodyMedium)
                 Spacer()
             }
-            .foregroundStyle(Color.calibre.foreground)
+            .foregroundStyle(Color.rewound.foreground)
             .padding(.horizontal, Space.l)
             .frame(minHeight: Space.touchTarget + 8)
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
             .contentShape(Rectangle())
         }
@@ -317,7 +317,7 @@ struct YouScreen: View {
                 }
                 .buttonStyle(PressableStyle())
 
-                Divider().overlay(Color.calibre.border)
+                Divider().overlay(Color.rewound.border)
 
                 NavigationLink {
                     DebugConsoleView(catalog: services.catalog)
@@ -326,7 +326,7 @@ struct YouScreen: View {
                 }
                 .buttonStyle(PressableStyle())
 
-                Divider().overlay(Color.calibre.border)
+                Divider().overlay(Color.rewound.border)
 
                 // The seller shop's tab strip at the phone widths it has to
                 // hold four whole words in. The dashboard it ships on is
@@ -339,7 +339,7 @@ struct YouScreen: View {
                 }
                 .buttonStyle(PressableStyle())
 
-                Divider().overlay(Color.calibre.border)
+                Divider().overlay(Color.rewound.border)
 
                 // The ledger has always documented a "Replay tips" control;
                 // until now there wasn't one, so replaying meant a launch
@@ -359,10 +359,10 @@ struct YouScreen: View {
                 .buttonStyle(PressableStyle())
                 .disabled(tutorialsReplayed)
             }
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
     }
@@ -371,16 +371,16 @@ struct YouScreen: View {
         HStack(spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .frame(width: 24)
             Text(label)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
             Spacer()
             if showsChevron {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
         }
         .padding(.horizontal, Space.l)

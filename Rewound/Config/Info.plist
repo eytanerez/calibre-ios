@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Calibre</string>
+	<string>Rewound</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -23,28 +23,28 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>calibre</string>
+				<string>rewound</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>CalibreAPIBaseURL</key>
+	<key>RewoundAPIBaseURL</key>
 	<string>$(API_BASE_URL)</string>
-	<key>CalibreApplePayEnabled</key>
+	<key>RewoundApplePayEnabled</key>
 	<string>$(APPLE_PAY_ENABLED)</string>
-	<key>CalibreBetterStackHost</key>
-	<string>$(CALIBRE_BETTERSTACK_HOST)</string>
-	<key>CalibreBetterStackToken</key>
-	<string>$(CALIBRE_BETTERSTACK_TOKEN)</string>
-	<key>CalibreMessagingBaseURL</key>
+	<key>RewoundBetterStackHost</key>
+	<string>$(REWOUND_BETTERSTACK_HOST)</string>
+	<key>RewoundBetterStackToken</key>
+	<string>$(REWOUND_BETTERSTACK_TOKEN)</string>
+	<key>RewoundMessagingBaseURL</key>
 	<string>$(MESSAGING_API_BASE_URL)</string>
-	<key>CalibrePostHogHost</key>
-	<string>$(CALIBRE_POSTHOG_HOST)</string>
-	<key>CalibrePostHogKey</key>
-	<string>$(CALIBRE_POSTHOG_KEY)</string>
-	<key>CalibreSentryDSN</key>
-	<string>$(CALIBRE_SENTRY_DSN)</string>
+	<key>RewoundPostHogHost</key>
+	<string>$(REWOUND_POSTHOG_HOST)</string>
+	<key>RewoundPostHogKey</key>
+	<string>$(REWOUND_POSTHOG_KEY)</string>
+	<key>RewoundSentryDSN</key>
+	<string>$(REWOUND_SENTRY_DSN)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>
@@ -53,11 +53,11 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Calibre uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.</string>
+	<string>Rewound uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Calibre uses Face ID to keep your vault private, so only you can see the watches you own.</string>
+	<string>Rewound uses Face ID to keep your vault private, so only you can see the watches you own.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Calibre lets you choose existing photos of your watch when creating a listing.</string>
+	<string>Rewound lets you choose existing photos of your watch when creating a listing.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

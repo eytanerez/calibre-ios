@@ -61,7 +61,7 @@ struct OfferAcceptedFilm: View {
             ZStack {
                 // The ground checkout rises off. Without it the screen below
                 // the fists is whatever the app was showing, sitting still.
-                Color.calibre.background
+                Color.rewound.background
                     .ignoresSafeArea()
                 fists
                     .frame(width: width, height: height)
@@ -85,19 +85,19 @@ struct OfferAcceptedFilm: View {
 
             var left = context
             left.translateBy(x: travel, y: 0)
-            left.stroke(FistBumpDrawing.fist, with: .color(Color.calibre.primary), style: MarkGrid.style)
-            left.stroke(FistBumpDrawing.creases, with: .color(Color.calibre.primary), style: MarkGrid.style)
+            left.stroke(FistBumpDrawing.fist, with: .color(Color.rewound.primary), style: MarkGrid.style)
+            left.stroke(FistBumpDrawing.creases, with: .color(Color.rewound.primary), style: MarkGrid.style)
 
             var right = context
             right.translateBy(x: -travel, y: 0)
             right.stroke(
                 FistBumpDrawing.fist.applying(FistBumpDrawing.mirror),
-                with: .color(Color.calibre.primary),
+                with: .color(Color.rewound.primary),
                 style: MarkGrid.style
             )
             right.stroke(
                 FistBumpDrawing.creases.applying(FistBumpDrawing.mirror),
-                with: .color(Color.calibre.primary),
+                with: .color(Color.rewound.primary),
                 style: MarkGrid.style
             )
 
@@ -106,17 +106,17 @@ struct OfferAcceptedFilm: View {
             var struck = context
             struck.opacity = tickInk
             let grown = CGFloat(Self.tickSize.value(at: tickProgress))
-            let centre = CGPoint(
+            let center = CGPoint(
                 x: FistBumpDrawing.field.width / 2,
                 y: FistBumpDrawing.field.height / 2
             )
             struck.stroke(
                 FistBumpDrawing.ticks.applying(
-                    CGAffineTransform(translationX: centre.x, y: centre.y)
+                    CGAffineTransform(translationX: center.x, y: center.y)
                         .scaledBy(x: grown, y: grown)
-                        .translatedBy(x: -centre.x, y: -centre.y)
+                        .translatedBy(x: -center.x, y: -center.y)
                 ),
-                with: .color(Color.calibre.primary),
+                with: .color(Color.rewound.primary),
                 style: StrokeStyle(
                     lineWidth: FistBumpDrawing.tickStroke,
                     lineCap: .round,

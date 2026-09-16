@@ -1,7 +1,7 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 import XCTest
-@testable import Calibre
+@testable import Rewound
 
 /// The all-in toggle is the buyer's, not the listing's.
 ///
@@ -33,7 +33,7 @@ final class ListingAllInPreferenceTests: XCTestCase {
         // No request is made here — every one of these reads the preference
         // and nothing else — so the client only has to exist.
         let client = APIClient(
-            configuration: APIConfiguration(baseURL: URL(string: "https://mock.calibre.test")!),
+            configuration: APIConfiguration(baseURL: URL(string: "https://mock.rewound.test")!),
             auth: nil
         )
         return ListingPricingModel(

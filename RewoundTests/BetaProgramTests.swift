@@ -1,8 +1,8 @@
-import CalibreKit
+import RewoundKit
 import XCTest
-@testable import Calibre
+@testable import Rewound
 
-/// The beta programme, on the app's side.
+/// The beta program, on the app's side.
 ///
 /// Two things carry the weight here.
 ///
@@ -11,7 +11,7 @@ import XCTest
 /// nothing goes red when it happens — the tester simply gets a 400 after
 /// fifteen minutes of work.
 ///
-/// And the survey has to survive being older than the catalogue. This app ships
+/// And the survey has to survive being older than the catalog. This app ships
 /// through TestFlight, which means a build from three weeks ago is still in
 /// somebody's hands while the questions move underneath it.
 final class BetaProgramTests: XCTestCase {
@@ -60,7 +60,7 @@ final class BetaProgramTests: XCTestCase {
 
     func testAQuestionTypeThisBuildHasNeverHeardOfDoesNotBreakDecoding() throws {
         // The whole reason `BetaQuestion.type` is a String rather than an enum.
-        // A question type added to the catalogue after this build shipped must
+        // A question type added to the catalog after this build shipped must
         // leave the other thirty-nine questions renderable — a throwing decode
         // here would empty the entire survey for every tester on an older
         // TestFlight build, silently.
@@ -210,7 +210,7 @@ final class BetaProgramTests: XCTestCase {
         // offered. The tester's first action produced an error.
         XCTAssertFalse(BetaStore.hasAnyAnswer([
             "bug_device": .text("iphone"),
-            "bug_browser": .text("calibre_ios_app"),
+            "bug_browser": .text("rewound_ios_app"),
         ]))
         // Beside one real sentence the whole thing counts, as it should.
         XCTAssertTrue(BetaStore.hasAnyAnswer([

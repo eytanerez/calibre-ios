@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import NukeUI
 import SwiftUI
 
@@ -59,7 +59,7 @@ struct SaleDetailScreen: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle("Your sale")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -69,7 +69,7 @@ struct SaleDetailScreen: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.calibre.foreground)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     .accessibilityLabel("Close")
                 }
@@ -161,8 +161,8 @@ struct SaleDetailScreen: View {
                 if let deadline = order.fulfillmentDeadlineAt, awaitingLabel {
                     HStack(spacing: Space.m) {
                         Text("Ship by")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                         CountdownChip(until: deadline)
                     }
                 }
@@ -180,10 +180,10 @@ struct SaleDetailScreen: View {
                         Button("Add your shipping details") {
                             path.append(.shippingDetails)
                         }
-                        .buttonStyle(.calibre(.primary, fullWidth: true))
-                        Text("Tell us the box you are sending and Calibre buys the label \u{2014} prepaid, insured for the full sale price, to our authentication center. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                        .buttonStyle(.rewound(.primary, fullWidth: true))
+                        Text("Tell us the box you are sending and Rewound buys the label \u{2014} prepaid, insured for the full sale price, to our authentication center. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -191,7 +191,7 @@ struct SaleDetailScreen: View {
                     Button("View shipping label") {
                         path.append(.labelReady)
                     }
-                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    .buttonStyle(.rewound(.secondary, fullWidth: true))
 
                     outboundHandover(order)
                 }
@@ -209,20 +209,20 @@ struct SaleDetailScreen: View {
                 SellThumb(url: order.listing?.image?.url, size: 64)
                 VStack(alignment: .leading, spacing: Space.xs) {
                     Text(order.listing?.title ?? "Sold watch")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(2)
                     // The number a person says out loud, and the one support
                     // will ask for.
                     Text(order.displayNumber)
-                        .font(CalibreType.caption)
+                        .font(RewoundType.caption)
                         .monospacedDigit()
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                     StatusBadge(badge.text, tone: badge.tone)
                     if let buyer = order.shippingAddress?.fullName, !buyer.isEmpty {
                         Text("Sold to \(buyer)")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                 }
                 Spacer(minLength: 0)
@@ -233,7 +233,7 @@ struct SaleDetailScreen: View {
 
     /// The payout ledger, from the order's own `payout.breakdown`: sale
     /// price, commission (with its rate and whether the minimum applied), the
-    /// label Calibre bought, and the payout. Not one figure is arithmetic done
+    /// label Rewound bought, and the payout. Not one figure is arithmetic done
     /// here, and no money figure is ever shortened to fit.
     ///
     /// When the payload predates the breakdown the legacy rows stand in, and
@@ -241,8 +241,8 @@ struct SaleDetailScreen: View {
     private func financials(_ order: Order) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Your payout")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             if let breakdown = order.payoutBlock?.breakdown {
                 PayoutLedger(breakdown: breakdown, currency: order.currency)
@@ -297,27 +297,27 @@ struct SaleDetailScreen: View {
                 if let grace = outboundDeclaration?.autoCancelGraceUntil {
                     HStack(spacing: Space.m) {
                         Text("Scan expected by")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                         CountdownChip(until: grace)
                         Spacer(minLength: 0)
                     }
                     .accessibilityElement(children: .combine)
-                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Calibre contact takes it from there.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Rewound contact takes it from there.")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if outboundDeclaration != nil {
-                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Calibre contact takes it from there.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Rewound contact takes it from there.")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     // Written here or not at all: the declaration is the one
                     // moment the seller is holding the parcel, and only the
                     // first one records a note. It travels with the watch and
                     // the buyer reads it when the box arrives.
-                    CalibreTextField(
+                    RewoundTextField(
                         "A line for the buyer (optional)",
                         text: $packingNote,
                         placeholder: "Set it running before I boxed it \u{2014} enjoy.",
@@ -335,12 +335,12 @@ struct SaleDetailScreen: View {
                     } label: {
                         BusyLabel(title: "I shipped it", busy: declaringShipped)
                     }
-                    .buttonStyle(.calibre(.secondary, fullWidth: true))
+                    .buttonStyle(.rewound(.secondary, fullWidth: true))
                     .disabled(declaringShipped)
 
                     Text("Tap this once you've handed the parcel over. Telling us buys a short grace period for the carrier's first scan.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -350,11 +350,11 @@ struct SaleDetailScreen: View {
                 if let note = outboundDeclaration?.packingNote, !note.isEmpty {
                     VStack(alignment: .leading, spacing: Space.xs) {
                         Text("Going with the watch")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.secondaryForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.secondaryForeground)
                         Text(note)
-                            .font(CalibreType.hand)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.hand)
+                            .foregroundStyle(Color.rewound.foreground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, Space.xs)
@@ -401,19 +401,19 @@ struct SaleDetailScreen: View {
         let payout = order.payoutBlock
         VStack(alignment: .leading, spacing: Space.m) {
             Text("When you get paid")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             VStack(alignment: .leading, spacing: Space.s) {
                 Text(payoutTriggerSentence(order))
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.foreground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if payout?.firstPayoutHold == true {
                     Text("This is one of your first sales, so this payout may take about two weeks to arrive. After that, payouts settle on the normal schedule.")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -436,8 +436,8 @@ struct SaleDetailScreen: View {
                     // session into an account no set of details can revive —
                     // so the recovery here is a person, not a form.
                     Text("Stripe wasn't able to approve payouts for this account. Correcting your bank details won't release this payout.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Button {
@@ -446,18 +446,18 @@ struct SaleDetailScreen: View {
                     } label: {
                         Text("Talk to us about this").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
 
                     Text("Someone from our team may already be reaching out about it.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     // The reason alone isn't guidance. This says what to do
                     // about it, and the button opens the place to do it.
                     Text(payoutFixSentence(failure))
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Button {
@@ -466,7 +466,7 @@ struct SaleDetailScreen: View {
                     } label: {
                         BusyLabel(title: "Update payout details", busy: openingPayoutDetails)
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(openingPayoutDetails)
 
                     if let payoutDetailsError {
@@ -474,15 +474,15 @@ struct SaleDetailScreen: View {
                     }
 
                     Text("Changing your bank details never affects a payout already on its way — new payouts use the new account.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
             Text("If a buyer disputes a sale after you've been paid, that's ours to handle. You keep your money.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -572,12 +572,12 @@ struct SaleDetailScreen: View {
     private func returnSection(_ order: Order, _ summary: OrderReturnSummary) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("This sale was returned")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
-            Text("You pay nothing on a return, and the watch comes back to you. Calibre's label is insured for the full sale price on every leg.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+            Text("You pay nothing on a return, and the watch comes back to you. Rewound's label is insured for the full sale price on every leg.")
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let tracking = summary.label?.trackingNumber, !tracking.isEmpty {
@@ -592,8 +592,8 @@ struct SaleDetailScreen: View {
                         ? "It's back on the market."
                         : "It's been taken off the market and is yours to keep."
                 )
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
             }
 
             if let error = relistError {
@@ -605,8 +605,8 @@ struct SaleDetailScreen: View {
     private func relistPrompt(_ order: Order) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Would you like to list it again?")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
 
             HStack(spacing: Space.m) {
                 Button {
@@ -614,7 +614,7 @@ struct SaleDetailScreen: View {
                 } label: {
                     BusyLabel(title: "List it again", busy: decidingRelist)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(decidingRelist)
 
                 Button {
@@ -622,7 +622,7 @@ struct SaleDetailScreen: View {
                 } label: {
                     Text("Take it off the market").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
                 .disabled(decidingRelist)
             }
         }

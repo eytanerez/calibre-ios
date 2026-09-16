@@ -110,7 +110,7 @@ public final class CommerceStore {
 
     // MARK: - Cart
     //
-    // The backend allows multiple cart rows; Calibre's one-watch cart swap
+    // The backend allows multiple cart rows; Rewound's one-watch cart swap
     // ("replace what's in your cart?") is a UI decision layered on top.
 
     @discardableResult
@@ -297,7 +297,7 @@ public final class CommerceStore {
     }
 
     /// Replaces the deposit standing behind a live offer: the old
-    /// authorization is cancelled and a new one created, which the client
+    /// authorization is canceled and a new one created, which the client
     /// confirms with the returned `hold.clientSecret`.
     ///
     /// Card authorizations do not last forever and a negotiation can outlive

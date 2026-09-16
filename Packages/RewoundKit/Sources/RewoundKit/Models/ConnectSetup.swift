@@ -288,7 +288,7 @@ extension ConnectStatus {
         PayoutSetupStep(
             status: status,
             title: nil,
-            body: "Verify your details once with Stripe. Calibre never sees your banking information.",
+            body: "Verify your details once with Stripe. Rewound never sees your banking information.",
             tone: .calm,
             itemsTitle: nil,
             items: [],

@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 @MainActor
 final class TutorialEngineTests: XCTestCase {

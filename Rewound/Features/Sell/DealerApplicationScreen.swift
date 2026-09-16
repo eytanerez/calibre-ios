@@ -1,16 +1,16 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The dealer application. Two fields here — the legal name the business is
 /// registered under and its country — then the embedded verification step,
 /// which collects the EIN on Stripe's own form. If Stripe confirms a
 /// registered company, dealer status is granted straight away; if it cannot,
-/// a person at Calibre reviews the application and decides.
+/// a person at Rewound reviews the application and decides.
 ///
 /// This is the one seller-facing screen that names Stripe, because naming the
 /// verifier is the honest way to say where the business details go and why
-/// Calibre never sees the banking side of them.
+/// Rewound never sees the banking side of them.
 struct DealerApplicationScreen: View {
     let application: DealerApplication?
     /// Called once the seller has finished (or left) the verification step, so
@@ -101,8 +101,8 @@ struct DealerApplicationScreen: View {
     private var explainer: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             Text("A dealer is a verified business. Verifying takes two pieces of information, and Stripe's verdict decides what happens next.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: Space.m) {
@@ -114,19 +114,19 @@ struct DealerApplicationScreen: View {
                 collected(
                     icon: "number",
                     title: "Your EIN",
-                    detail: "Entered on the next step, on Stripe's own secure form. Stripe verifies it — Calibre never sees your banking details, they stay with Stripe."
+                    detail: "Entered on the next step, on Stripe's own secure form. Stripe verifies it — Rewound never sees your banking details, they stay with Stripe."
                 )
             }
 
             CalloutBand(
                 icon: "checkmark.seal",
-                message: "If Stripe confirms a registered company, dealer status is granted straight away; if it cannot, someone at Calibre reviews the application and decides."
+                message: "If Stripe confirms a registered company, dealer status is granted straight away; if it cannot, someone at Rewound reviews the application and decides."
             )
 
             if let benefits = benefitsLine {
                 Text(benefits)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -148,11 +148,11 @@ struct DealerApplicationScreen: View {
             IconTile(systemName: icon)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(detail)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -164,7 +164,7 @@ struct DealerApplicationScreen: View {
 
     private var form: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            CalibreTextField(
+            RewoundTextField(
                 "Business legal name",
                 text: $companyName,
                 placeholder: "Acme Watch Company LLC",
@@ -176,7 +176,7 @@ struct DealerApplicationScreen: View {
                 if nameError != nil { nameError = nil }
             }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Country",
                 text: $country,
                 placeholder: "US",
@@ -194,7 +194,7 @@ struct DealerApplicationScreen: View {
             } label: {
                 BusyLabel(title: "Continue to verification", busy: busy)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(busy)
         }
     }
@@ -214,12 +214,12 @@ struct DealerApplicationScreen: View {
             } label: {
                 BusyLabel(title: "Set up payouts", busy: busy)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(busy)
 
             Text("Once payouts are ready, come back here and the business step takes a minute.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import StripePaymentSheet
 import SwiftUI
 
@@ -17,7 +17,7 @@ enum ProfileDestination: Hashable {
 
 // MARK: - About
 
-/// About Calibre — the quiet footer: what the marketplace is, version, and
+/// About Rewound — the quiet footer: what the marketplace is, version, and
 /// links to the web legal pages.
 struct AboutScreen: View {
     private var version: String {
@@ -30,10 +30,10 @@ struct AboutScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.s) {
-                    CalibreWordmark(size: 32)
+                    RewoundWordmark(size: 32)
                     Text("A marketplace for authenticated luxury watches. Every watch is inspected by our watchmakers before it reaches you.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
 
                 VStack(spacing: 0) {
@@ -43,35 +43,35 @@ struct AboutScreen: View {
                         aboutRow("How it works")
                     }
                     .buttonStyle(PressableStyle())
-                    Divider().overlay(Color.calibre.border)
-                    Link(destination: URL(string: "https://buycalibre.com/terms")!) {
+                    Divider().overlay(Color.rewound.border)
+                    Link(destination: URL(string: "https://shoprewound.com/terms")!) {
                         aboutRow("Terms of Service")
                     }
-                    Divider().overlay(Color.calibre.border)
-                    Link(destination: URL(string: "https://buycalibre.com/privacy")!) {
+                    Divider().overlay(Color.rewound.border)
+                    Link(destination: URL(string: "https://shoprewound.com/privacy")!) {
                         aboutRow("Privacy Policy")
                     }
                 }
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
 
                 Text("Version \(version)")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.placeholder)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.placeholder)
             }
             .padding(Space.margin)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func aboutRow(_ title: String) -> some View {
         HStack {
-            Text(title).font(CalibreType.bodyMedium).foregroundStyle(Color.calibre.foreground)
+            Text(title).font(RewoundType.bodyMedium).foregroundStyle(Color.rewound.foreground)
             Spacer()
             Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .padding(.horizontal, Space.l)
         .frame(minHeight: Space.touchTarget + 8)
@@ -109,12 +109,12 @@ struct ProfileScreen: View {
                     ) { Task { await load() } }
                     .padding(.top, Space.xxl)
                 } else {
-                    CalibreLoadingView("Opening your profile")
+                    RewoundLoadingView("Opening your profile")
                 }
             }
             .padding(Space.margin)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
@@ -133,8 +133,8 @@ struct ProfileScreen: View {
         HStack(spacing: Space.l) {
             AvatarInitial(name: profile.username, size: .l)
             VStack(alignment: .leading, spacing: 2) {
-                Text("@\(profile.username)").font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
-                Text(profile.email).font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
+                Text("@\(profile.username)").font(RewoundType.sectionTitle).foregroundStyle(Color.rewound.foreground)
+                Text(profile.email).font(RewoundType.body).foregroundStyle(Color.rewound.mutedForeground)
             }
         }
     }
@@ -173,7 +173,7 @@ struct AddressesScreen: View {
                 }
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Addresses")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -203,18 +203,18 @@ private struct AddressCard: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
                 Text(address.fullName ?? [address.firstName, address.lastName].compactMap { $0 }.joined(separator: " "))
-                    .font(CalibreType.bodyMedium).foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium).foregroundStyle(Color.rewound.foreground)
                 Spacer()
                 if address.isDefaultShipping { StatusBadge("Default", tone: .info) }
             }
-            Text(address.line1).font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
+            Text(address.line1).font(RewoundType.body).foregroundStyle(Color.rewound.mutedForeground)
             Text([address.city, address.region, address.postalCode].compactMap { $0 }.joined(separator: ", "))
-                .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body).foregroundStyle(Color.rewound.mutedForeground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 }
 
@@ -241,22 +241,22 @@ private struct AddressForm: View {
         SheetScaffold(title: existing == nil ? "Add address" : "Edit address", detents: [.large]) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    CalibreTextField("Full name", text: $fullName, kind: .fullName)
-                    CalibreTextField("Street", text: $line1, kind: .addressLine1)
-                    CalibreTextField("Apt, suite (optional)", text: $line2, kind: .addressLine2)
-                    CalibreTextField("City", text: $city, kind: .city)
+                    RewoundTextField("Full name", text: $fullName, kind: .fullName)
+                    RewoundTextField("Street", text: $line1, kind: .addressLine1)
+                    RewoundTextField("Apt, suite (optional)", text: $line2, kind: .addressLine2)
+                    RewoundTextField("City", text: $city, kind: .city)
                     HStack(spacing: Space.m) {
-                        CalibreTextField("State", text: $region, kind: .state)
-                        CalibreTextField("ZIP", text: $postalCode, kind: .postalCode)
+                        RewoundTextField("State", text: $region, kind: .state)
+                        RewoundTextField("ZIP", text: $postalCode, kind: .postalCode)
                     }
-                    CalibreTextField(
+                    RewoundTextField(
                         "Country code",
                         text: $country,
                         placeholder: "2-letter, e.g. US",
                         error: InputValidation.isISO2CountryCode(country) || country.isEmpty ? nil : "Use a 2-letter code like US or CA",
                         kind: .country
                     )
-                    CalibreTextField(
+                    RewoundTextField(
                         "Phone",
                         text: $phone,
                         placeholder: "(415) 555-0134",
@@ -267,16 +267,16 @@ private struct AddressForm: View {
                     )
                     .phoneFormatted($phone)
                     Toggle("Set as default shipping address", isOn: $makeDefault)
-                        .font(CalibreType.body).tint(Color.calibre.primary)
+                        .font(RewoundType.body).tint(Color.rewound.primary)
                     Button(saving ? "Saving…" : "Save address") { Task { await save() } }
-                        .buttonStyle(.calibre(.primary, fullWidth: true))
+                        .buttonStyle(.rewound(.primary, fullWidth: true))
                         .disabled(!isValid || saving)
                     if let existing {
                         Button(role: .destructive) { confirmingDelete = true } label: {
                             Text("Delete address").frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.calibre(.ghost, fullWidth: true))
-                        .foregroundStyle(Color.calibre.destructive)
+                        .buttonStyle(.rewound(.ghost, fullWidth: true))
+                        .foregroundStyle(Color.rewound.destructive)
                         .disabled(saving)
                         .alert(
                             "Delete this address?",
@@ -413,24 +413,24 @@ struct PaymentMethodScreen: View {
                         Button {
                             Task { await startAddOrReplaceCard() }
                         } label: {
-                            CalibreBusyLabel(
+                            RewoundBusyLabel(
                                 "Add another card",
                                 busy: isPreparingSetup || isSyncingAfterSetup,
-                                tint: Color.calibre.foreground
+                                tint: Color.rewound.foreground
                             )
                         }
-                        .buttonStyle(.calibre(.secondary, fullWidth: true))
+                        .buttonStyle(.rewound(.secondary, fullWidth: true))
                         .disabled(isPreparingSetup || isSyncingAfterSetup)
 
                         if let removeBlockedReason, !canRemove {
                             Text(removeBlockedReason)
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
 
                         Text("Pick any saved card when you check out. Offer holds use your default.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                 } else if loadFailed {
                     // Distinct from "no card on file" — a failed fetch used to
@@ -456,7 +456,7 @@ struct PaymentMethodScreen: View {
                 }
                 CalloutBand(
                     icon: "lock.shield",
-                    message: "Your card details are handled by Stripe. Calibre never sees your full card number."
+                    message: "Your card details are handled by Stripe. Rewound never sees your full card number."
                 )
             }
             .padding(Space.margin)
@@ -473,7 +473,7 @@ struct PaymentMethodScreen: View {
             guard !isSyncingAfterSetup else { return }
             await loadMethod()
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Payment methods")
         .navigationBarTitleDisplayMode(.inline)
         .alert(
@@ -523,16 +523,16 @@ struct PaymentMethodScreen: View {
                     Button("Make default") {
                         Task { await makeDefault(card) }
                     }
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.primary)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.primary)
                     .frame(minHeight: Space.touchTarget)
                 }
                 if canRemove || card.id != defaultCardID {
                     Button("Remove") {
                         confirmRemove = card
                     }
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.destructive)
                     .frame(minHeight: Space.touchTarget)
                     .accessibilityLabel("Remove \(card.displayName)")
                 }
@@ -587,7 +587,7 @@ struct PaymentMethodScreen: View {
         do {
             let intent = try await services.commerce.setupIntent()
             STPAPIClient.shared.publishableKey = intent.publishableKey
-            let configuration = CalibreStripe.configuration(
+            let configuration = RewoundStripe.configuration(
                 customerID: intent.customerId,
                 customerSessionClientSecret: intent.customerSessionMobile?.clientSecret
             )
@@ -596,7 +596,7 @@ struct PaymentMethodScreen: View {
                 configuration: configuration
             )
             paymentSheet = sheet
-            CalibreStripe.present(sheet) { result in
+            RewoundStripe.present(sheet) { result in
                 handleSetupResult(result)
             }
         } catch {
@@ -613,7 +613,7 @@ struct PaymentMethodScreen: View {
             break
         case .failed(let error):
             Haptics.shared.play(.error)
-            toasts.show(title: "Couldn't add card", message: CalibreStripe.failureMessage(for: error), tone: .error)
+            toasts.show(title: "Couldn't add card", message: RewoundStripe.failureMessage(for: error), tone: .error)
         }
     }
 
@@ -698,7 +698,7 @@ struct NotificationSettingsScreen: View {
                     toggle("Tracking", "Shipping and delivery updates", prefs.trackingUpdates) {
                         NotificationPreferencesPatch(trackingUpdates: $0)
                     }
-                    toggle("Support", "Replies from Calibre support", prefs.messageUpdates) {
+                    toggle("Support", "Replies from Rewound support", prefs.messageUpdates) {
                         NotificationPreferencesPatch(messageUpdates: $0)
                     }
                     toggle("Saved watches", "Price drops on watches you've saved", prefs.watchlistAlerts) {
@@ -711,17 +711,17 @@ struct NotificationSettingsScreen: View {
                         NotificationPreferencesPatch(securityAlerts: $0)
                     }
                     Text("These control push notifications only. Whatever you switch off still lands in Alerts, so nothing goes missing.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Space.s)
                 } else {
-                    CalibreLoadingView("Reading your notification settings")
+                    RewoundLoadingView("Reading your notification settings")
                 }
             }
             .padding(Space.margin)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -735,21 +735,21 @@ struct NotificationSettingsScreen: View {
     private var pushPrimer: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(pushDenied ? "Notifications are off" : "Turn on notifications")
-                .font(CalibreType.bodySemiBold)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodySemiBold)
+                .foregroundStyle(Color.rewound.foreground)
             Text(pushDenied
-                 ? "Enable notifications for Calibre in Settings to know the moment a seller responds or an order moves."
+                 ? "Enable notifications for Rewound in Settings to know the moment a seller responds or an order moves."
                  : "Know the second a seller responds, an order ships, or a saved watch drops in price.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Button(pushDenied ? "Open Settings" : "Enable notifications") {
                 Task { await enablePush() }
             }
-            .buttonStyle(.calibre(.primary))
+            .buttonStyle(.rewound(.primary))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.l)
-        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
     }
 
     private func refreshPushStatus() async {
@@ -776,13 +776,13 @@ struct NotificationSettingsScreen: View {
             set: { newValue in Task { await update(patch(newValue)) } }
         )) {
             VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(CalibreType.bodyMedium).foregroundStyle(Color.calibre.foreground)
-                Text(subtitle).font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                Text(title).font(RewoundType.bodyMedium).foregroundStyle(Color.rewound.foreground)
+                Text(subtitle).font(RewoundType.caption).foregroundStyle(Color.rewound.mutedForeground)
             }
         }
-        .tint(Color.calibre.primary)
+        .tint(Color.rewound.primary)
         .padding(.vertical, Space.s)
-        Divider().overlay(Color.calibre.border)
+        Divider().overlay(Color.rewound.border)
     }
 
     private func update(_ patch: NotificationPreferencesPatch) async {
@@ -816,8 +816,8 @@ struct ChangePasswordScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
-                CalibreTextField("Current password", text: $current, kind: .password)
-                CalibreTextField(
+                RewoundTextField("Current password", text: $current, kind: .password)
+                RewoundTextField(
                     "New password",
                     text: $newPassword,
                     error: newPassword.isEmpty || InputValidation.passwordMeetsRules(newPassword)
@@ -825,22 +825,22 @@ struct ChangePasswordScreen: View {
                         : "Use 8+ characters with a capital letter and a number.",
                     kind: .newPassword
                 )
-                CalibreTextField(
+                RewoundTextField(
                     "Confirm new password",
                     text: $confirm,
                     error: mismatch ? "Passwords don't match" : nil,
                     kind: .newPassword
                 )
                 if let errorText {
-                    Text(errorText).font(CalibreType.caption).foregroundStyle(Color.calibre.destructive)
+                    Text(errorText).font(RewoundType.caption).foregroundStyle(Color.rewound.destructive)
                 }
                 Button(saving ? "Saving…" : "Update password") { Task { await save() } }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
                     .disabled(!isValid || saving)
             }
             .padding(Space.margin)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Change password")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -891,13 +891,13 @@ struct DeleteAccountScreen: View {
             }
             .padding(Space.margin)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Delete account")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadState() }
         .animation(Motion.easeFast, value: state?.isPending)
         .animation(Motion.easeFast, value: state?.obligations.count)
-        .alert("Delete your Calibre account?", isPresented: $confirming) {
+        .alert("Delete your Rewound account?", isPresented: $confirming) {
             Button("Delete my account", role: .destructive) { Task { await requestDeletion() } }
             Button("Keep my account", role: .cancel) {}
         } message: {
@@ -909,9 +909,9 @@ struct DeleteAccountScreen: View {
     @ViewBuilder
     private var request: some View {
         Text("Delete your account")
-            .font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.sectionTitle).foregroundStyle(Color.rewound.foreground)
         Text("Your account is scheduled for deletion after a 30-day grace period. Sign in any time within those 30 days to cancel and keep your account.")
-            .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.body).foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
 
         if let state, !state.obligations.isEmpty {
@@ -923,20 +923,20 @@ struct DeleteAccountScreen: View {
             )
         }
 
-        CalibreTextField(
+        RewoundTextField(
             "Current password",
             text: $currentPassword,
             kind: .password
         )
         Text("Password accounts must confirm before deletion. Apple and Google accounts can leave this blank after a recent sign-in.")
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
 
         Button(role: .destructive) { confirming = true } label: {
             Text(working ? "Working…" : "Request account deletion").frame(maxWidth: .infinity)
         }
-        .buttonStyle(.calibre(.destructive, fullWidth: true))
+        .buttonStyle(.rewound(.destructive, fullWidth: true))
         .disabled(working)
     }
 
@@ -947,7 +947,7 @@ struct DeleteAccountScreen: View {
     @ViewBuilder
     private func scheduled(_ state: AccountDeletionState) -> some View {
         Text("Deletion scheduled")
-            .font(CalibreType.sectionTitle).foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.sectionTitle).foregroundStyle(Color.rewound.foreground)
         // The date is the honest version and the one the backend nearly always
         // sends; the grace window is what is left to say when it doesn't.
         let removal = if let date = state.scheduledDate {
@@ -956,7 +956,7 @@ struct DeleteAccountScreen: View {
             "once the 30-day grace period is up"
         }
         Text("Your account is due to be removed \(removal). Cancel any time before then to keep it.")
-            .font(CalibreType.body).foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.body).foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
 
         // A request can be accepted and still be waiting on something. Saying
@@ -969,7 +969,7 @@ struct DeleteAccountScreen: View {
         Button { Task { await cancelDeletion() } } label: {
             Text(working ? "Working…" : "Cancel deletion").frame(maxWidth: .infinity)
         }
-        .buttonStyle(.calibre(.primary, fullWidth: true))
+        .buttonStyle(.rewound(.primary, fullWidth: true))
         .disabled(working)
     }
 
@@ -979,24 +979,24 @@ struct DeleteAccountScreen: View {
     private func obligations(_ state: AccountDeletionState) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Still to finish first")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
 
             VStack(spacing: 0) {
                 ForEach(Array(state.obligations.enumerated()), id: \.element.id) { index, obligation in
                     HStack(alignment: .top, spacing: Space.m) {
                         Image(systemName: "clock")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .frame(width: 18)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(obligationTitle(obligation))
-                                .font(CalibreType.bodyMedium)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.bodyMedium)
+                                .foregroundStyle(Color.rewound.foreground)
                             if let detail = obligation.detail, !detail.isEmpty {
                                 Text(detail)
-                                    .font(CalibreType.label)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.label)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -1006,19 +1006,19 @@ struct DeleteAccountScreen: View {
                     .accessibilityElement(children: .combine)
 
                     if index < state.obligations.count - 1 {
-                        Rectangle().fill(Color.calibre.border).frame(height: 1)
+                        Rectangle().fill(Color.rewound.border).frame(height: 1)
                     }
                 }
             }
-            .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
 
             Text("You don't have to ask again. Once these are settled your deletion completes on its own.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -1080,6 +1080,6 @@ struct DeleteAccountScreen: View {
         // deletion that is still scheduled.
         await loadState()
         Haptics.shared.play(.success)
-        toasts.show(title: "Deletion cancelled", message: "Welcome back — your account stays put.", tone: .success)
+        toasts.show(title: "Deletion canceled", message: "Welcome back — your account stays put.", tone: .success)
     }
 }

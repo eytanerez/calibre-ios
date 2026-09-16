@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 /// A mark announces a fact once per app session and then stands as it.
 ///

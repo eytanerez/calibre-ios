@@ -221,7 +221,7 @@ private extension Decimal {
 }
 
 /// Money as it should look *while it is being typed* — grouping separators
-/// appear under the caret, the way CALIBRE_FINAL_PUSH_CONTRACTS.md §6 asks
+/// appear under the caret, the way REWOUND_FINAL_PUSH_CONTRACTS.md §6 asks
 /// for across the site, the admin and both apps.
 ///
 /// This is deliberately not `PriceFormatter`. `PriceFormatter.format` renders
@@ -290,7 +290,7 @@ public enum MoneyInputFormatter {
 
 /// US phone numbers as they are typed: `(415) 555-0134`.
 ///
-/// US only, per CALIBRE_FINAL_PUSH_CONTRACTS.md §6 and §7. A leading `+1` or a
+/// US only, per REWOUND_FINAL_PUSH_CONTRACTS.md §6 and §7. A leading `+1` or a
 /// bare leading `1` on an 11-digit string is the country code and is dropped —
 /// a person typing their own number often starts with it, and `(1) 415-555-01`
 /// is not a phone number anyone recognises.

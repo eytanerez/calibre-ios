@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 // MARK: - Paging model
@@ -129,7 +129,7 @@ struct ResultsScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
@@ -149,7 +149,7 @@ struct ResultsScreen: View {
 struct ResultsContent: View {
     @Environment(AppServices.self) private var services
     /// The buy grid collapses to one column once the reader has asked for
-    /// accessibility text sizes — see `calibreGridColumns`. Two cards side by
+    /// accessibility text sizes — see `rewoundGridColumns`. Two cards side by
     /// side leave roughly 160pt of text, which at AX5 truncates the reference
     /// to "Ref. RO30…", breaks the price across two lines and squeezes the
     /// brand out of the eyebrow row entirely. Every other listing grid in the
@@ -214,8 +214,8 @@ struct ResultsContent: View {
     private var controls: some View {
         HStack(spacing: Space.s) {
             Text(countLine)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .contentTransition(.numericText())
                 .animation(Motion.easeMedium, value: model.total)
 
@@ -229,20 +229,20 @@ struct ResultsContent: View {
                     Image(systemName: "line.3.horizontal.decrease")
                         .font(.system(size: 13, weight: .medium))
                     Text("Filter")
-                        .font(CalibreType.label)
+                        .font(RewoundType.label)
                     if badgeCount > 0 {
                         Text("\(badgeCount)")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.primaryForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.primaryForeground)
                             .frame(minWidth: 18, minHeight: 18)
-                            .background(Color.calibre.primary, in: Circle())
+                            .background(Color.rewound.primary, in: Circle())
                     }
                 }
-                .foregroundStyle(Color.calibre.foreground)
+                .foregroundStyle(Color.rewound.foreground)
                 .padding(.horizontal, Space.m)
                 .frame(minHeight: 36)
-                .background(Color.calibre.card, in: Capsule())
-                .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+                .background(Color.rewound.card, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.rewound.border, lineWidth: 1))
                 // A button is only tappable where its label is, so the 44pt
                 // frame outside it padded the row without widening the target:
                 // the capsule still drew at 36 and the top and bottom 4pt of
@@ -272,13 +272,13 @@ struct ResultsContent: View {
                 Image(systemName: "arrow.up.arrow.down")
                     .font(.system(size: 13, weight: .medium))
                 Text("Sort")
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
             }
-            .foregroundStyle(Color.calibre.foreground)
+            .foregroundStyle(Color.rewound.foreground)
             .padding(.horizontal, Space.m)
             .frame(minHeight: 36)
-            .background(Color.calibre.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.calibre.border, lineWidth: 1))
+            .background(Color.rewound.card, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.rewound.border, lineWidth: 1))
             // Same as Filter: the menu opens only from the label's own 36pt
             // capsule, so the target is grown here rather than around it.
             .frame(minHeight: Space.touchTarget)
@@ -326,7 +326,7 @@ struct ResultsContent: View {
             }
         } else {
             LazyVGrid(
-                columns: calibreGridColumns(typeSize, spacing: Space.l),
+                columns: rewoundGridColumns(typeSize, spacing: Space.l),
                 alignment: .leading,
                 spacing: Space.xl
             ) {
@@ -347,7 +347,7 @@ struct ResultsContent: View {
                 // Same column count as the grid it is extending, so the
                 // next-page placeholder lands where the next cards will.
                 LazyVGrid(
-                    columns: calibreGridColumns(typeSize, spacing: Space.l),
+                    columns: rewoundGridColumns(typeSize, spacing: Space.l),
                     spacing: Space.xl
                 ) {
                     ListingCardSkeleton()
@@ -361,7 +361,7 @@ struct ResultsContent: View {
 
     private var gridSkeleton: some View {
         LazyVGrid(
-            columns: calibreGridColumns(typeSize, spacing: Space.l),
+            columns: rewoundGridColumns(typeSize, spacing: Space.l),
             spacing: Space.xl
         ) {
             ForEach(0..<6, id: \.self) { _ in
@@ -379,7 +379,7 @@ struct ResultsGridSkeleton: View {
     var body: some View {
         ScrollView {
             LazyVGrid(
-                columns: calibreGridColumns(typeSize, spacing: Space.l),
+                columns: rewoundGridColumns(typeSize, spacing: Space.l),
                 spacing: Space.xl
             ) {
                 ForEach(0..<6, id: \.self) { _ in

@@ -64,7 +64,7 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
     private func ringStack(showsPercent: Bool) -> some View {
         ZStack {
             Circle()
-                .fill(Color.calibre.secondary.opacity(0.5))
+                .fill(Color.rewound.secondary.opacity(0.5))
 
             thumbnail
                 .frame(width: size - 10, height: size - 10)
@@ -76,7 +76,7 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
             if case .empty = phase {
                 Image(systemName: "plus")
                     .font(.system(size: size * 0.28, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
 
             if showsPercent, case .uploading(let progress) = phase {
@@ -89,12 +89,12 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
 
     private func percentLabel(_ progress: Double) -> some View {
         Text("\(Int((progress * 100).rounded()))%")
-            .font(CalibreType.caption)
+            .font(RewoundType.caption)
             .monospacedDigit()
-            .foregroundStyle(Color.calibre.foreground)
+            .foregroundStyle(Color.rewound.foreground)
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
-            .background(Color.calibre.background.opacity(0.8), in: Capsule())
+            .background(Color.rewound.background.opacity(0.8), in: Capsule())
     }
 
     @ViewBuilder
@@ -103,23 +103,23 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
         case .empty:
             Circle()
                 .strokeBorder(
-                    Color.calibre.borderBright,
+                    Color.rewound.borderBright,
                     style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])
                 )
         case .uploading(let progress):
             Circle()
-                .strokeBorder(Color.calibre.border, lineWidth: ringWidth)
+                .strokeBorder(Color.rewound.border, lineWidth: ringWidth)
             Circle()
                 .inset(by: ringWidth / 2)
                 .trim(from: 0, to: min(max(progress, 0), 1))
                 .stroke(
-                    Color.calibre.primary,
+                    Color.rewound.primary,
                     style: StrokeStyle(lineWidth: ringWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
         case .done, .failed:
             Circle()
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         }
     }
 
@@ -127,9 +127,9 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
     private var badge: some View {
         switch phase {
         case .done:
-            badgeCircle(icon: "checkmark", tint: Color.calibre.success)
+            badgeCircle(icon: "checkmark", tint: Color.rewound.success)
         case .failed:
-            badgeCircle(icon: "arrow.clockwise", tint: Color.calibre.destructive)
+            badgeCircle(icon: "arrow.clockwise", tint: Color.rewound.destructive)
         case .empty, .uploading:
             EmptyView()
         }
@@ -141,7 +141,7 @@ public struct PhotoSlotRing<Thumbnail: View>: View {
             .foregroundStyle(Color(white: 1))
             .frame(width: 18, height: 18)
             .background(tint, in: Circle())
-            .overlay(Circle().strokeBorder(Color.calibre.card, lineWidth: 2))
+            .overlay(Circle().strokeBorder(Color.rewound.card, lineWidth: 2))
     }
 
     private var isUploading: Bool {
@@ -170,9 +170,9 @@ public extension PhotoSlotRing where Thumbnail == EmptyView {
 private func demoThumbnail(_ icon: String) -> some View {
     Image(systemName: icon)
         .font(.system(size: 20))
-        .foregroundStyle(Color.calibre.placeholder)
+        .foregroundStyle(Color.rewound.placeholder)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.secondary)
+        .background(Color.rewound.secondary)
 }
 
 @MainActor
@@ -186,7 +186,7 @@ private var demoRail: some View {
         PhotoSlotRing(phase: .empty)
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }
 
 #Preview("Photo slots — light", traits: .sizeThatFitsLayout) {

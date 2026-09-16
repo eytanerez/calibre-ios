@@ -6,14 +6,14 @@ import SwiftUI
 /// that oscillates while a movement runs, and the only mark allowed to loop,
 /// because looping is the thing it is saying. Everywhere this app used to
 /// raise a system `ProgressView` it was borrowing Apple's vocabulary for a
-/// sentence Calibre already had a word for.
+/// sentence Rewound already had a word for.
 ///
 /// Three shapes, and no fourth:
 ///
-/// - `CalibreLoadingView` — a screen or a section with nothing in it yet.
-/// - `CalibreInlineLoading` — a small wheel where a control's own content will
+/// - `RewoundLoadingView` — a screen or a section with nothing in it yet.
+/// - `RewoundInlineLoading` — a small wheel where a control's own content will
 ///   go, on a surface the app paints.
-/// - `CalibreBusyLabel` — a pending button. The label keeps its words; the
+/// - `RewoundBusyLabel` — a pending button. The label keeps its words; the
 ///   wheel joins them.
 ///
 /// A content-shaped skeleton still beats all three where the shape of what is
@@ -25,7 +25,7 @@ import SwiftUI
 /// A whole screen, or a whole section, still loading. One mark and one line
 /// about what is being waited on — a mark with no words is a spinner with
 /// extra steps.
-public struct CalibreLoadingView: View {
+public struct RewoundLoadingView: View {
     private let label: String?
     private let size: CGFloat
 
@@ -39,11 +39,11 @@ public struct CalibreLoadingView: View {
 
     public var body: some View {
         VStack(spacing: Space.m) {
-            CalibreMark.balanceWheel(size: size)
+            RewoundMark.balanceWheel(size: size)
             if let label {
                 Text(label)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -60,7 +60,7 @@ public struct CalibreLoadingView: View {
 
 /// A small wheel standing in for a control's content while the control works,
 /// on a surface the app paints itself.
-public struct CalibreInlineLoading: View {
+public struct RewoundInlineLoading: View {
     private let size: CGFloat
     private let tint: Color?
 
@@ -70,7 +70,7 @@ public struct CalibreInlineLoading: View {
     }
 
     public var body: some View {
-        CalibreMark.balanceWheel(size: size, tint: tint)
+        RewoundMark.balanceWheel(size: size, tint: tint)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Working")
     }
@@ -86,7 +86,7 @@ public struct CalibreInlineLoading: View {
 /// `tint` defaults to the primary foreground because the pending button this
 /// was built for is the filled one, where the mark's own copper would be
 /// copper on copper. A ghost or secondary button passes its own foreground.
-public struct CalibreBusyLabel: View {
+public struct RewoundBusyLabel: View {
     private let title: String
     private let busy: Bool
     private let tint: Color
@@ -95,7 +95,7 @@ public struct CalibreBusyLabel: View {
     public init(
         _ title: String,
         busy: Bool,
-        tint: Color = Color.calibre.primaryForeground,
+        tint: Color = Color.rewound.primaryForeground,
         fullWidth: Bool = true
     ) {
         self.title = title
@@ -107,7 +107,7 @@ public struct CalibreBusyLabel: View {
     public var body: some View {
         HStack(spacing: Space.s) {
             if busy {
-                CalibreMark.balanceWheel(size: 20, tint: tint)
+                RewoundMark.balanceWheel(size: 20, tint: tint)
             }
             Text(title)
         }
@@ -122,13 +122,13 @@ public struct CalibreBusyLabel: View {
 
 #Preview("Loading", traits: .sizeThatFitsLayout) {
     VStack(spacing: Space.xl) {
-        CalibreLoadingView("Working out your exact refund.")
-        CalibreInlineLoading()
-        CalibreBusyLabel("Place order", busy: true)
+        RewoundLoadingView("Working out your exact refund.")
+        RewoundInlineLoading()
+        RewoundBusyLabel("Place order", busy: true)
             .padding(.vertical, Space.m)
-            .background(Color.calibre.primary, in: RoundedRectangle(cornerRadius: Radius.control))
-            .foregroundStyle(Color.calibre.primaryForeground)
+            .background(Color.rewound.primary, in: RoundedRectangle(cornerRadius: Radius.control))
+            .foregroundStyle(Color.rewound.primaryForeground)
     }
     .padding(Space.xl)
-    .calibrePageBackground()
+    .rewoundPageBackground()
 }

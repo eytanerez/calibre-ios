@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Bulk-import jobs: status, live row progress while processing, results
@@ -46,7 +46,7 @@ struct BulkImportStatusScreen: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .calibrePageBackground()
+            .rewoundPageBackground()
             .navigationTitle("Bulk imports")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -56,7 +56,7 @@ struct BulkImportStatusScreen: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.calibre.foreground)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     .accessibilityLabel("Close")
                 }
@@ -147,8 +147,8 @@ struct BulkImportStatusScreen: View {
     /// Said once, plainly, and left at that.
     private var approvalNote: some View {
         Text("Bulk-imported listings can take a little longer to approve.")
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -186,8 +186,8 @@ struct BulkImportStatusScreen: View {
                 VStack(alignment: .leading, spacing: Space.m) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(job.originalFilename ?? "Inventory import")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                             .lineLimit(1)
                         Spacer()
                         statusBadge(job)
@@ -197,14 +197,14 @@ struct BulkImportStatusScreen: View {
                         processingProgress(job)
                     } else {
                         Text(resultSummary(job))
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
 
                     if let message = job.errorMessage, !message.isEmpty {
                         Text(message)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.destructive)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.destructive)
                             .lineLimit(3)
                     }
 
@@ -213,14 +213,14 @@ struct BulkImportStatusScreen: View {
                         VStack(alignment: .leading, spacing: Space.xs) {
                             ForEach(errors.prefix(3)) { error in
                                 Text("Row \(error.rowNumber): \(error.errorMessage)")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.destructive)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(Color.rewound.destructive)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             if let count = job.errorCount, count > shownErrorCount {
                                 Text("And \(count - shownErrorCount) more row\(count - shownErrorCount == 1 ? "" : "s") to fix.")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                             }
                         }
                         .accessibilityElement(children: .combine)
@@ -228,8 +228,8 @@ struct BulkImportStatusScreen: View {
 
                     if let created = job.createdAt {
                         Text(created.formatted(date: .abbreviated, time: .shortened))
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
 
                     handoff(job)
@@ -254,30 +254,30 @@ struct BulkImportStatusScreen: View {
                 IconTile(systemName: "camera")
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Continue bulk import \u{2014} \(finished) of \(total) finished")
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("A spreadsheet can't carry pictures. We'll take you through one watch at a time.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
             }
             .padding(Space.m)
             .background(
-                Color.calibre.accent.opacity(0.6),
+                Color.rewound.accent.opacity(0.6),
                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
             )
             .accessibilityElement(children: .combine)
         } else if job.draftsRemaining == 0, (job.draftsTotal ?? 0) > 0 {
             Text("Every draft from this import has been finished.")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
         } else {
             handoffLink("Finish drafts")
         }
@@ -287,11 +287,11 @@ struct BulkImportStatusScreen: View {
         HStack(spacing: Space.xs) {
             Spacer(minLength: 0)
             Text(title)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.primary)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.primary)
             Image(systemName: "chevron.right")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
         }
     }
 
@@ -311,14 +311,14 @@ struct BulkImportStatusScreen: View {
         let total = max(job.totalRows ?? 0, 1)
         return VStack(alignment: .leading, spacing: Space.s) {
             Text("Row \(processed) of \(total)")
-                .font(CalibreType.label)
+                .font(RewoundType.label)
                 .monospacedDigit()
-                .foregroundStyle(Color.calibre.foreground)
+                .foregroundStyle(Color.rewound.foreground)
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.calibre.border)
+                    Capsule().fill(Color.rewound.border)
                     Capsule()
-                        .fill(Color.calibre.primary)
+                        .fill(Color.rewound.primary)
                         .frame(width: proxy.size.width * CGFloat(processed) / CGFloat(total))
                         .animation(Motion.easeMedium, value: processed)
                 }

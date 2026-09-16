@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 final class MediaURLTests: XCTestCase {
     func testRelativePathResolvesAgainstOrigin() throws {
@@ -20,35 +20,35 @@ final class MediaURLTests: XCTestCase {
     }
 
     func testLaptopMediaURLRebasesToDeviceReachableAPIOrigin() throws {
-        let media = try apiDecoder(origin: "https://dev.api.buycalibre.com").decode(
+        let media = try apiDecoder(origin: "https://dev.api.shoprewound.com").decode(
             MediaURL.self,
             from: Data("\"http://localhost:5173/media/listing_images/watch/photo.jpg?version=2\"".utf8)
         )
         XCTAssertEqual(
             media.url?.absoluteString,
-            "https://dev.api.buycalibre.com/media/listing_images/watch/photo.jpg?version=2"
+            "https://dev.api.shoprewound.com/media/listing_images/watch/photo.jpg?version=2"
         )
     }
 
     func testInternalHTTPSMediaURLRebasesToAPIOrigin() throws {
-        let media = try apiDecoder(origin: "https://dev.api.buycalibre.com").decode(
+        let media = try apiDecoder(origin: "https://dev.api.shoprewound.com").decode(
             MediaURL.self,
             from: Data("\"https://backend.internal/media/listing_images/watch/photo.jpg\"".utf8)
         )
         XCTAssertEqual(
             media.url?.absoluteString,
-            "https://dev.api.buycalibre.com/media/listing_images/watch/photo.jpg"
+            "https://dev.api.shoprewound.com/media/listing_images/watch/photo.jpg"
         )
     }
 
     func testPublicHTTPSMediaURLPassesThroughUntouched() throws {
-        let media = try apiDecoder(origin: "https://dev.api.buycalibre.com").decode(
+        let media = try apiDecoder(origin: "https://dev.api.shoprewound.com").decode(
             MediaURL.self,
-            from: Data("\"https://images.buycalibre.com/media/listing_images/watch/photo.jpg\"".utf8)
+            from: Data("\"https://images.shoprewound.com/media/listing_images/watch/photo.jpg\"".utf8)
         )
         XCTAssertEqual(
             media.url?.absoluteString,
-            "https://images.buycalibre.com/media/listing_images/watch/photo.jpg"
+            "https://images.shoprewound.com/media/listing_images/watch/photo.jpg"
         )
     }
 
@@ -127,7 +127,7 @@ final class InputValidationTests: XCTestCase {
         XCTAssertTrue(InputValidation.isValidPhone("+1 (202) 555-0143"))
         XCTAssertTrue(InputValidation.isValidPhone(String(repeating: "1", count: 15)))
         XCTAssertFalse(InputValidation.isValidPhone(String(repeating: "1", count: 16)))
-        XCTAssertFalse(InputValidation.isValidPhone("202-CALIBRE"))
+        XCTAssertFalse(InputValidation.isValidPhone("202-REWOUND"))
         XCTAssertTrue(InputValidation.isValidPhone(" ", required: false))
     }
 
@@ -156,9 +156,9 @@ final class InputValidationTests: XCTestCase {
     }
 
     func testPasswordRulesMatchRegistrationAndReset() {
-        XCTAssertTrue(InputValidation.passwordMeetsRules("Calibre1"))
-        XCTAssertFalse(InputValidation.passwordMeetsRules("calibre1"))
-        XCTAssertFalse(InputValidation.passwordMeetsRules("Calibree"))
+        XCTAssertTrue(InputValidation.passwordMeetsRules("Rewound1"))
+        XCTAssertFalse(InputValidation.passwordMeetsRules("rewound1"))
+        XCTAssertFalse(InputValidation.passwordMeetsRules("Rewounde"))
         XCTAssertFalse(InputValidation.passwordMeetsRules("Cal1"))
     }
 }

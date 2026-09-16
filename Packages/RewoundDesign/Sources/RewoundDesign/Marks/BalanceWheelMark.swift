@@ -8,7 +8,7 @@ struct BalanceWheelMark: View {
     @State private var swing: Double = 0
 
     let size: CGFloat
-    /// The ink. Copper is the mark's own colour and stays the default, but a
+    /// The ink. Copper is the mark's own color and stays the default, but a
     /// wheel spinning inside a filled button has to be that button's
     /// foreground or it is copper on copper and cannot be seen at all — which
     /// is the whole reason this parameter exists.
@@ -28,7 +28,7 @@ struct BalanceWheelMark: View {
     }
 
     private var wheel: some View {
-        Self.rim.stroke(tint ?? Color.calibre.primary, style: MarkGrid.style)
+        Self.rim.stroke(tint ?? Color.rewound.primary, style: MarkGrid.style)
     }
 
     static var rim: Path {
@@ -41,8 +41,8 @@ struct BalanceWheelMark: View {
             // than running through it: crossing diameters make a crosshair,
             // and a balance is not built that way.
             for angle in arms {
-                path.move(to: markPoint(MarkGrid.centre, 10, angle))
-                path.addLine(to: markPoint(MarkGrid.centre, 44, angle))
+                path.move(to: markPoint(MarkGrid.center, 10, angle))
+                path.addLine(to: markPoint(MarkGrid.center, 44, angle))
             }
         }
     }
@@ -66,9 +66,9 @@ struct BalanceWheelMark: View {
 
 #Preview("balanceWheel", traits: .sizeThatFitsLayout) {
     HStack(spacing: Space.xl) {
-        CalibreMark.balanceWheel()
-        CalibreMark.balanceWheel(size: 44)
+        RewoundMark.balanceWheel()
+        RewoundMark.balanceWheel(size: 44)
     }
     .padding(Space.xl)
-    .calibrePageBackground()
+    .rewoundPageBackground()
 }

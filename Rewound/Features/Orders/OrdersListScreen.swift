@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The buyer's orders — searchable, filterable, paginated. Guests get a warm
@@ -32,7 +32,7 @@ struct OrdersListScreen: View {
                 content
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .task(id: session.isAuthenticated) {
             if session.isAuthenticated, phase == .idle { await load() }
         }
@@ -149,8 +149,8 @@ struct OrdersListScreen: View {
         if !sections.isEmpty {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text(title)
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 VStack(spacing: Space.l) {
                     ForEach(sections) { section in
                         if section.isPurchase {
@@ -181,8 +181,8 @@ struct OrdersListScreen: View {
                 Eyebrow("One purchase")
                 Spacer()
                 Text(section.headline)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("One purchase, \(section.headline)")
@@ -194,7 +194,7 @@ struct OrdersListScreen: View {
             }
             .padding(Space.s)
             .background(
-                Color.calibre.secondary.opacity(0.35),
+                Color.rewound.secondary.opacity(0.35),
                 in: RoundedRectangle(cornerRadius: Radius.box + Space.s, style: .continuous)
             )
         }
@@ -254,21 +254,21 @@ struct OrderRow: View {
                 // word, so a row and the screen behind it could — and did —
                 // describe the same order differently.
                 Text(step.sentence)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
                 totalText
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.calibre.placeholder)
+                .foregroundStyle(Color.rewound.placeholder)
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -293,23 +293,23 @@ struct OrderRow: View {
 
     private var titleText: some View {
         Text(order.listing?.title ?? "Your watch")
-            .font(CalibreType.bodyMedium)
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.bodyMedium)
+            .foregroundStyle(Color.rewound.foreground)
             .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
     }
 
     private var numberText: some View {
         Text(order.displayNumber)
-            .font(CalibreType.caption)
+            .font(RewoundType.caption)
             .monospacedDigit()
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .layoutPriority(1)
     }
 
     private var totalText: some View {
         Text(PriceFormatter.format(order.grandTotal.value, currency: order.currency))
-            .font(CalibreType.priceSmall)
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.priceSmall)
+            .foregroundStyle(Color.rewound.foreground)
     }
 }
 
@@ -334,8 +334,8 @@ private struct OrderRowSkeleton: View {
             Spacer()
         }
         .padding(Space.l)
-        .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.calibre.border, lineWidth: 1))
+        .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewound.border, lineWidth: 1))
     }
 }
 
@@ -357,7 +357,7 @@ extension Order {
         case .authFail: "Authentication issue"
         case .toBuyer: "On its way"
         case .delivered: "Delivered"
-        case .cancelled: "Cancelled"
+        case .cancelled: "Canceled"
         case .refunded: "Refunded"
         case .unknown: "Processing"
         }
@@ -372,7 +372,7 @@ extension Order {
         case .authFail: "We found an issue during authentication. Our team will follow up by email."
         case .toBuyer: "Shipped to you and on the way."
         case .delivered: "Delivered. We hope you love it."
-        case .cancelled: "This order was cancelled."
+        case .cancelled: "This order was canceled."
         case .refunded: "This order was refunded."
         case .unknown: "We're processing your order."
         }

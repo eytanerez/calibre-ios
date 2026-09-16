@@ -95,7 +95,7 @@ public struct DealerApplicationResult: Decodable, Sendable {
     public let application: DealerApplication
     public let stripe: StripeSession?
 
-    /// The embedded-component client secret. Calibre never sees the banking
+    /// The embedded-component client secret. Rewound never sees the banking
     /// details behind it; they stay with the processor.
     public struct StripeSession: Decodable, Sendable {
         public let clientSecret: String

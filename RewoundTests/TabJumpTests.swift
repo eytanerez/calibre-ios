@@ -1,5 +1,5 @@
 import XCTest
-@testable import Calibre
+@testable import Rewound
 
 /// Going somewhere that is a whole tab rather than a screen.
 ///

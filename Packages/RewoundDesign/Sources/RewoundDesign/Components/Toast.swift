@@ -14,9 +14,9 @@ public final class ToastCenter {
 
         var tint: Color {
             switch self {
-            case .neutral: Color.calibre.borderBright
-            case .success: Color.calibre.success
-            case .error: Color.calibre.destructive
+            case .neutral: Color.rewound.borderBright
+            case .success: Color.rewound.success
+            case .error: Color.rewound.destructive
             }
         }
     }
@@ -159,12 +159,12 @@ private struct ToastCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(toast.title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 if let message = toast.message {
                     Text(message)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -175,8 +175,8 @@ private struct ToastCard: View {
                     center.dismiss()
                 } label: {
                     Text(action.label)
-                        .font(CalibreType.bodySemiBold)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.bodySemiBold)
+                        .foregroundStyle(Color.rewound.primary)
                 }
                 .buttonStyle(PressableStyle())
             }
@@ -184,13 +184,13 @@ private struct ToastCard: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, Space.m)
         .padding(.horizontal, Space.l)
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
-        .calibreShadow(.menu)
+        .rewoundShadow(.menu)
         .accessibilityElement(children: .combine)
     }
 }
@@ -201,7 +201,7 @@ private struct ToastPreviewHost: View {
     var body: some View {
         VStack(spacing: Space.m) {
             Button("Neutral") { center.show(title: "Link copied") }
-                .buttonStyle(.calibreSecondary)
+                .buttonStyle(.rewoundSecondary)
             Button("Success") {
                 center.show(
                     title: "Offer sent",
@@ -209,7 +209,7 @@ private struct ToastPreviewHost: View {
                     tone: .success
                 )
             }
-            .buttonStyle(.calibreSecondary)
+            .buttonStyle(.rewoundSecondary)
             Button("Error") {
                 center.show(
                     title: "Payment failed",
@@ -218,10 +218,10 @@ private struct ToastPreviewHost: View {
                     action: .init(label: "Retry") {}
                 )
             }
-            .buttonStyle(.calibreSecondary)
+            .buttonStyle(.rewoundSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .toastHost(center)
     }
 }

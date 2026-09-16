@@ -1,6 +1,6 @@
 import Foundation
 
-/// The Market Data page payload — everything computed from Calibre's own
+/// The Market Data page payload — everything computed from Rewound's own
 /// listings and completed sales (no external data).
 public struct MarketOverview: Decodable, Equatable, Sendable {
     public struct TrendPoint: Decodable, Equatable, Sendable {
@@ -44,7 +44,7 @@ public struct MarketOverview: Decodable, Equatable, Sendable {
     public let totals: Totals
 }
 
-/// Sell-flow pricing guidance computed from Calibre's own listings and sales.
+/// Sell-flow pricing guidance computed from Rewound's own listings and sales.
 /// `available == false` means the sample was too thin to be worth showing.
 public struct PricingGuidance: Decodable, Equatable, Sendable {
     public let available: Bool

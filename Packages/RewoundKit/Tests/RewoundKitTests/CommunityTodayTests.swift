@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `GET /community/today` — the shape after the lanes split, confirmed against
 /// Backend/app/api/views/community.py's `CommunityTodayView`.

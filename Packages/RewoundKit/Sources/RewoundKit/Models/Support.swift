@@ -2,9 +2,9 @@ import Foundation
 
 public enum SupportConversationStatus: String, Codable, Sendable {
     case open
-    /// The customer wrote last; their Calibre contact owes a reply.
-    case waitingOnCalibre = "waiting_on_calibre"
-    /// Calibre wrote last.
+    /// The customer wrote last; their Rewound contact owes a reply.
+    case waitingOnRewound = "waiting_on_rewound"
+    /// Rewound wrote last.
     case waitingOnCustomer = "waiting_on_customer"
     case closed
     case unknown
@@ -14,8 +14,8 @@ public enum SupportConversationStatus: String, Codable, Sendable {
     }
 }
 
-/// The named person on the Calibre side of this conversation. Messages come
-/// personally from them, and writing to support@buycalibre.com lands in the
+/// The named person on the Rewound side of this conversation. Messages come
+/// personally from them, and writing to support@shoprewound.com lands in the
 /// same thread.
 public struct SupportContact: Codable, Sendable, Equatable {
     public let key: String?
@@ -198,11 +198,11 @@ public struct SupportPostResult: Codable, Sendable {
     public let guestToken: String?
 }
 
-/// Who opened the conversation. Calibre writes first when it is reaching out
+/// Who opened the conversation. Rewound writes first when it is reaching out
 /// about an order rather than answering a question.
 public enum SupportThreadOrigin: String, Codable, Sendable {
     case customer
-    case calibre
+    case rewound
     case unknown
 
     public init(from decoder: Decoder) throws {
@@ -211,7 +211,7 @@ public enum SupportThreadOrigin: String, Codable, Sendable {
 }
 
 /// One row of `GET /support/threads` — the customer's list of their own
-/// conversations with Calibre.
+/// conversations with Rewound.
 public struct SupportThreadSummary: Codable, Sendable, Identifiable {
     public let id: String
     public let status: SupportConversationStatus

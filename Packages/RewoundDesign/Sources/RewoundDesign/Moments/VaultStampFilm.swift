@@ -6,7 +6,7 @@ import SwiftUI
 ///
 /// It lands **where the small verification mark already sits** — clear of the
 /// photograph and clear of the watch's name. That placement is read off the
-/// screen rather than guessed at, which is what `calibreMomentAnchor` on the
+/// screen rather than guessed at, which is what `rewoundMomentAnchor` on the
 /// small mark is for; the reference's own corner placement is the fallback for
 /// a screen that never registered one.
 ///
@@ -83,7 +83,7 @@ struct VaultStampFilm: View {
     /// Where it lands: the small verification mark if the Vault screen said
     /// where that ended up, otherwise the reference's own placement.
     private var target: CGPoint {
-        if let frame = CalibreMoments.shared.anchors[.vaultVerification], frame.width > 0 {
+        if let frame = RewoundMoments.shared.anchors[.vaultVerification], frame.width > 0 {
             return CGPoint(x: frame.midX, y: frame.midY)
         }
         return CGPoint(x: stage.width * 0.81 - side78 / 2, y: stage.height * 0.78 - side78 / 2)
@@ -97,12 +97,12 @@ struct VaultStampFilm: View {
                 context.scaleBy(x: scale, y: scale)
                 context.stroke(
                     StampMark.head,
-                    with: .color(Color.calibre.primary),
+                    with: .color(Color.rewound.primary),
                     style: MarkGrid.style
                 )
                 context.fill(
-                    CalibreLogoMark.jewelCentre.applying(StampMark.die),
-                    with: .color(Color.calibre.primary)
+                    RewoundLogoMark.jewelCentre.applying(StampMark.die),
+                    with: .color(Color.rewound.primary)
                 )
                 drawFlecks(into: &context)
             }
@@ -138,22 +138,22 @@ struct VaultStampFilm: View {
         context.opacity = opacity
         for fleck in flecks {
             let arc = Self.arc(from: fleck.from, to: fleck.to, radius: fleck.radius, sweep: fleck.sweep)
-            let centre = CGPoint(x: (fleck.from.x + fleck.to.x) / 2, y: (fleck.from.y + fleck.to.y) / 2)
+            let center = CGPoint(x: (fleck.from.x + fleck.to.x) / 2, y: (fleck.from.y + fleck.to.y) / 2)
             let moved = arc.applying(
                 CGAffineTransform(
-                    translationX: centre.x + fleck.away.width * CGFloat(thrown),
-                    y: centre.y + fleck.away.height * CGFloat(thrown)
+                    translationX: center.x + fleck.away.width * CGFloat(thrown),
+                    y: center.y + fleck.away.height * CGFloat(thrown)
                 )
                 .scaledBy(x: CGFloat(grown), y: CGFloat(grown))
-                .translatedBy(x: -centre.x, y: -centre.y)
+                .translatedBy(x: -center.x, y: -center.y)
             )
-            context.stroke(moved, with: .color(Color.calibre.primary), style: MarkGrid.style)
+            context.stroke(moved, with: .color(Color.rewound.primary), style: MarkGrid.style)
         }
     }
 
     /// The reference draws each fleck as an SVG endpoint arc — two points, a
     /// radius and a sweep flag. This is the standard conversion of that form
-    /// to the centre-and-sweep one `Path.addCircularArc` takes, for the case
+    /// to the center-and-sweep one `Path.addCircularArc` takes, for the case
     /// the drawing uses: equal radii, no rotation, short way round.
     private static func arc(from: CGPoint, to: CGPoint, radius: CGFloat, sweep: Bool) -> Path {
         let span = CGPoint(x: to.x - from.x, y: to.y - from.y)
@@ -168,19 +168,19 @@ struct VaultStampFilm: View {
         let offset = (radius * radius - half * half).squareRoot()
         let perpendicular = CGPoint(x: -span.y / chord, y: span.x / chord)
         let direction: CGFloat = sweep ? 1 : -1
-        let centre = CGPoint(
+        let center = CGPoint(
             x: (from.x + to.x) / 2 + direction * offset * perpendicular.x,
             y: (from.y + to.y) / 2 + direction * offset * perpendicular.y
         )
-        let start = atan2(from.y - centre.y, from.x - centre.x)
-        let end = atan2(to.y - centre.y, to.x - centre.x)
+        let start = atan2(from.y - center.y, from.x - center.x)
+        let end = atan2(to.y - center.y, to.x - center.x)
         var delta = end - start
         if sweep, delta < 0 { delta += 2 * .pi }
         if !sweep, delta > 0 { delta -= 2 * .pi }
 
         var path = Path()
         path.addCircularArc(
-            centre: centre,
+            center: center,
             radius: radius,
             start: .radians(start),
             delta: .radians(delta)

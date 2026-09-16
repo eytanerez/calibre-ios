@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 /// The logo turns while a sign-in is in flight, and when the answer lands it
 /// comes to rest upright — not wherever its speed happened to run out.

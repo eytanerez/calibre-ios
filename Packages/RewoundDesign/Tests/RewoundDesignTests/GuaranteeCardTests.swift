@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 /// The guarantee card draws every brand mark locally, because Stripe's API
 /// carries no imagery for payment cards. That makes the brand string the only

@@ -18,7 +18,7 @@ struct TutorialHintView: View {
             case .tap, .longPress:
                 pulseRing
             case .swipe(let edge), .drag(let edge):
-                travellingFinger(edge: edge)
+                travelingFinger(edge: edge)
             case .type:
                 caret
             }
@@ -39,12 +39,12 @@ struct TutorialHintView: View {
     private var pulseRing: some View {
         ZStack {
             Circle()
-                .stroke(Color.calibre.primaryForeground.opacity(0.9), lineWidth: 2)
+                .stroke(Color.rewound.primaryForeground.opacity(0.9), lineWidth: 2)
                 .frame(width: 30, height: 30)
                 .scaleEffect(animate ? 1.9 : 0.9)
                 .opacity(animate ? 0 : 0.9)
             Circle()
-                .fill(Color.calibre.primaryForeground.opacity(0.9))
+                .fill(Color.rewound.primaryForeground.opacity(0.9))
                 .frame(width: 16, height: 16)
                 .scaleEffect(animate ? 0.85 : 1)
         }
@@ -53,8 +53,8 @@ struct TutorialHintView: View {
 
     // MARK: - Swipe / drag
 
-    private func travellingFinger(edge: TutorialEdge) -> some View {
-        // Travel a short distance from centre toward the edge, fading out,
+    private func travelingFinger(edge: TutorialEdge) -> some View {
+        // Travel a short distance from center toward the edge, fading out,
         // looping — reads as "push this way".
         let travel: CGFloat = 34
         let offset = CGSize(
@@ -63,11 +63,11 @@ struct TutorialHintView: View {
         )
         return ZStack {
             Circle()
-                .fill(Color.calibre.primaryForeground.opacity(0.92))
+                .fill(Color.rewound.primaryForeground.opacity(0.92))
                 .frame(width: 20, height: 20)
             Image(systemName: edge.arrowSymbol)
                 .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
         }
         .offset(
             x: animate ? offset.width : 0,
@@ -81,7 +81,7 @@ struct TutorialHintView: View {
 
     private var caret: some View {
         RoundedRectangle(cornerRadius: 1)
-            .fill(Color.calibre.primaryForeground.opacity(0.9))
+            .fill(Color.rewound.primaryForeground.opacity(0.9))
             .frame(width: 2, height: min(rect.height * 0.5, 22))
             .opacity(animate ? 0.15 : 1)
             .position(x: rect.minX + 10, y: rect.midY)
@@ -98,7 +98,7 @@ struct TutorialSpotlightRing: View {
 
     var body: some View {
         shape
-            .stroke(Color.calibre.primaryForeground.opacity(reduceMotion ? 0.55 : 0.7), lineWidth: 2)
+            .stroke(Color.rewound.primaryForeground.opacity(reduceMotion ? 0.55 : 0.7), lineWidth: 2)
             .frame(width: rect.width, height: rect.height)
             .scaleEffect(pulse ? 1.04 : 1)
             .opacity(pulse ? 0.35 : 0.85)

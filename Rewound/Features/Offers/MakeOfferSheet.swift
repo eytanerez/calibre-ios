@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import StripePaymentSheet
 import SwiftUI
 
@@ -94,13 +94,13 @@ struct MakeOfferSheet: View {
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button("Done") { dismiss() }
-                                .font(CalibreType.bodySemiBold)
-                                .tint(Color.calibre.primary)
+                                .font(RewoundType.bodySemiBold)
+                                .tint(Color.rewound.primary)
                         }
                     }
             }
             .presentationDetents([.large])
-            .presentationBackground(Color.calibre.background)
+            .presentationBackground(Color.rewound.background)
             .presentationCornerRadius(Radius.panel)
         default:
             SheetScaffold(title: scaffoldTitle(model), detents: [.large]) {
@@ -163,12 +163,12 @@ struct MakeOfferSheet: View {
             VStack(alignment: .leading, spacing: Space.s) {
                 Eyebrow("Your offer")
                 Text(model.displayAmountText)
-                    .font(CalibreType.priceLarge)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.priceLarge)
+                    .foregroundStyle(Color.rewound.foreground)
                     .contentTransition(.numericText())
                     .animation(Motion.easeMedium, value: model.displayAmountText)
 
-                CalibreTextField(
+                RewoundTextField(
                     "Amount",
                     text: $model.amountText,
                     placeholder: "0",
@@ -176,13 +176,13 @@ struct MakeOfferSheet: View {
                     kind: .money
                 ) {
                     Text("USD")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 .moneyFormatted($model.amountText)
             }
 
-            CalibreTextEditor(
+            RewoundTextEditor(
                 "Message to the seller (optional)",
                 text: $model.message,
                 placeholder: "Anything they should know?",
@@ -219,7 +219,7 @@ struct MakeOfferSheet: View {
             } label: {
                 BusyLabel(title: continueTitle, busy: model.creating)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(!model.canSubmit || model.creating)
         }
         .animation(Motion.easeFast, value: model.error)
@@ -245,22 +245,22 @@ struct MakeOfferSheet: View {
 
         return VStack(alignment: .leading, spacing: Space.m) {
             Text("Before you place this offer")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
 
             Text(disclosure)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             Rectangle()
-                .fill(Color.calibre.border)
+                .fill(Color.rewound.border)
                 .frame(height: 1)
 
             HStack(alignment: .center, spacing: Space.m) {
                 Text("I authorize the \(offerHoldNoun(holdText)) and understand it is kept only if the seller accepts and I then walk away.")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
                     // The sentence is the switch's label, so it should behave
                     // like one: three lines of text beside a 51pt switch is a
@@ -272,7 +272,7 @@ struct MakeOfferSheet: View {
 
                 Toggle("", isOn: $model.consented)
                     .labelsHidden()
-                    .tint(Color.calibre.primary)
+                    .tint(Color.rewound.primary)
             }
             .frame(minHeight: Space.touchTarget)
             // `.combine` rather than `.contain`/`.ignore`: the switch has no
@@ -283,10 +283,10 @@ struct MakeOfferSheet: View {
         }
         .multilineTextAlignment(.leading)
         .padding(Space.l)
-        .background(Color.calibre.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .background(Color.rewound.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -317,12 +317,12 @@ struct MakeOfferSheet: View {
 
             VStack(alignment: .leading, spacing: Space.s) {
                 Text("Your offer isn't sent yet")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 // The offer exists by now, so its own hold is the figure.
                 Text("The \(offerHoldNoun(offerHoldText(model.offer, config: services.config))) wasn't completed, so the seller hasn't seen your offer. You can finish the hold or withdraw the offer.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -337,7 +337,7 @@ struct MakeOfferSheet: View {
                 Text("Try the hold again")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
 
             Button {
                 Task {
@@ -347,11 +347,11 @@ struct MakeOfferSheet: View {
                     }
                 }
             } label: {
-                BusyLabel(title: "Cancel offer", busy: model.cancelling)
-                    .foregroundStyle(Color.calibre.destructive)
+                BusyLabel(title: "Cancel offer", busy: model.canceling)
+                    .foregroundStyle(Color.rewound.destructive)
             }
-            .buttonStyle(.calibreGhost)
-            .disabled(model.cancelling)
+            .buttonStyle(.rewoundGhost)
+            .disabled(model.canceling)
         }
     }
 
@@ -363,20 +363,20 @@ struct MakeOfferSheet: View {
             IconTile(systemName: "paperplane")
             VStack(spacing: Space.s) {
                 Text("Offer sent.")
-                    .font(CalibreType.display)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.display)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(responseWindowLine(model.sellerName))
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .multilineTextAlignment(.center)
             }
             HStack(spacing: Space.s) {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 12, weight: .medium))
                 Text(holdAuthorizedCaption(offer))
-                    .font(CalibreType.caption)
+                    .font(RewoundType.caption)
             }
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .foregroundStyle(Color.rewound.mutedForeground)
 
             Spacer(minLength: Space.xxl)
 
@@ -386,7 +386,7 @@ struct MakeOfferSheet: View {
                 Text("Done")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
         }
         .frame(maxWidth: .infinity)
         .onAppear {
@@ -438,7 +438,7 @@ final class MakeOfferModel {
     var consented = false
     var error: String?
     private(set) var creating = false
-    private(set) var cancelling = false
+    private(set) var canceling = false
 
     private(set) var offer: Offer?
     private(set) var paymentSheet: PaymentSheet?
@@ -572,13 +572,13 @@ final class MakeOfferModel {
                 return try await self.holdClientSecret(for: paymentMethod, amount: amount)
             }
         )
-        let configuration = CalibreStripe.configuration(
+        let configuration = RewoundStripe.configuration(
             customerID: nil,
             customerSessionClientSecret: nil
         )
         let sheet = PaymentSheet(intentConfiguration: intentConfiguration, configuration: configuration)
         paymentSheet = sheet
-        CalibreStripe.present(sheet) { [weak self] result in
+        RewoundStripe.present(sheet) { [weak self] result in
             self?.handleHoldResult(result)
         }
     }
@@ -687,13 +687,13 @@ final class MakeOfferModel {
         // Stripe customer id, which PaymentSheet's customer configuration
         // requires — so the hold sheet runs customer-less (cards + Apple Pay
         // still work; saved cards just don't redisplay).
-        let configuration = CalibreStripe.configuration(
+        let configuration = RewoundStripe.configuration(
             customerID: nil,
             customerSessionClientSecret: nil
         )
         let sheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
         paymentSheet = sheet
-        CalibreStripe.present(sheet) { [weak self] result in
+        RewoundStripe.present(sheet) { [weak self] result in
             self?.handleHoldResult(result)
         }
     }
@@ -710,7 +710,7 @@ final class MakeOfferModel {
         case .canceled:
             settleClosedSheet(message: nil)
         case .failed(let failure):
-            settleClosedSheet(message: CalibreStripe.failureMessage(for: failure))
+            settleClosedSheet(message: RewoundStripe.failureMessage(for: failure))
         }
     }
 
@@ -775,9 +775,9 @@ final class MakeOfferModel {
     }
 
     func cancelOffer() async -> Bool {
-        guard let offer, !cancelling else { return false }
-        cancelling = true
-        defer { cancelling = false }
+        guard let offer, !canceling else { return false }
+        canceling = true
+        defer { canceling = false }
         do {
             _ = try await commerce.cancelOffer(offerID: offer.id)
             return true

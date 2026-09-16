@@ -21,27 +21,27 @@ public struct APIConfiguration: Sendable {
         self.protocolClasses = protocolClasses
     }
 
-    /// Resolves the app's configured backend from Info.plist (CalibreAPIBaseURL).
+    /// Resolves the app's configured backend from Info.plist (RewoundAPIBaseURL).
     public static func fromInfoPlist() -> APIConfiguration {
         #if DEBUG
         // UI tests and physical-device development can point at a fixture
         // server or current tunnel without editing a tracked xcconfig. XCUITest
         // forwards `launchEnvironment` into ProcessInfo for this purpose.
-        if let override = ProcessInfo.processInfo.environment["CALIBRE_API_BASE_URL"],
+        if let override = ProcessInfo.processInfo.environment["REWOUND_API_BASE_URL"],
            !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let raw = override.trimmingCharacters(in: .whitespacesAndNewlines)
             guard let url = URL(string: raw),
                   ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
                   url.host != nil else {
-                preconditionFailure("CALIBRE_API_BASE_URL must be an absolute HTTP(S) URL")
+                preconditionFailure("REWOUND_API_BASE_URL must be an absolute HTTP(S) URL")
             }
             return APIConfiguration(baseURL: url)
         }
         #endif
 
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "CalibreAPIBaseURL") as? String,
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: "RewoundAPIBaseURL") as? String,
               let url = URL(string: raw) else {
-            preconditionFailure("CalibreAPIBaseURL missing from Info.plist")
+            preconditionFailure("RewoundAPIBaseURL missing from Info.plist")
         }
         return APIConfiguration(baseURL: url)
     }
@@ -49,7 +49,7 @@ public struct APIConfiguration: Sendable {
 
 extension CodingUserInfoKey {
     /// Origin used to absolutize relative /media/... URLs at decode time.
-    static let apiOrigin = CodingUserInfoKey(rawValue: "calibre.apiOrigin")!
+    static let apiOrigin = CodingUserInfoKey(rawValue: "rewound.apiOrigin")!
 }
 
 /// The one HTTP transport. Cookie handling is disabled on purpose — auth is

@@ -1,4 +1,4 @@
-import CalibreDesign
+import RewoundDesign
 import SwiftUI
 
 /// First-launch introduction — three quiet panels of serif and cream, no
@@ -38,13 +38,13 @@ struct IntroPager: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Eyebrow("Calibre", color: Color.calibre.mutedForeground)
+                Eyebrow("Rewound", color: Color.rewound.mutedForeground)
                 Spacer()
                 Button("Skip") {
                     finish()
                 }
-                .buttonStyle(.calibreGhost)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .buttonStyle(.rewoundGhost)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .accessibilityHint("Skips the introduction")
             }
             .padding(.horizontal, Space.margin)
@@ -80,12 +80,12 @@ struct IntroPager: View {
                 Text(isLastPage ? "Browse the market" : "Continue")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .padding(.horizontal, Space.margin)
             .padding(.bottom, Space.l)
             .animation(nil, value: page)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
     }
 
     private func finish() {
@@ -97,7 +97,7 @@ struct IntroPager: View {
         HStack(spacing: Space.s) {
             ForEach(panels.indices, id: \.self) { index in
                 Capsule()
-                    .fill(index == page ? Color.calibre.primary : Color.calibre.borderBright)
+                    .fill(index == page ? Color.rewound.primary : Color.rewound.borderBright)
                     .frame(width: index == page ? 18 : 6, height: 6)
                     .animation(reduceMotion ? nil : Motion.easeMedium, value: page)
             }
@@ -128,14 +128,14 @@ private struct IntroPanelView: View {
             .introFadeUp(index: 0)
 
             Text(headline)
-                .font(CalibreType.display)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.display)
+                .foregroundStyle(Color.rewound.foreground)
                 .multilineTextAlignment(.center)
                 .introFadeUp(index: 1)
 
             Text(line)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 300)
                 .introFadeUp(index: 2)

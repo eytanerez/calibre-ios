@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import Foundation
 import Observation
 import SwiftUI
@@ -325,8 +325,8 @@ struct ListingPriceControls: View {
                 // it is the server's wherever the server sent one.
                 if let note = model.taxUnavailableNote {
                     Text(note)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.secondaryForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.secondaryForeground)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .transition(.opacity)
@@ -364,25 +364,25 @@ struct ListingPriceControls: View {
         Toggle(isOn: isOn) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(detail)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .multilineTextAlignment(.leading)
         }
-        .tint(Color.calibre.primary)
+        .tint(Color.rewound.primary)
         .frame(minHeight: Space.touchTarget)
         .padding(Space.l)
         .background(
-            Color.calibre.card,
+            Color.rewound.card,
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
         // Keep the switch trait — VoiceOver should announce this as a switch
         // with a plain name, not as a merged paragraph.

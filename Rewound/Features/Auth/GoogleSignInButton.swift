@@ -1,6 +1,6 @@
 import AuthenticationServices
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// "Continue with Google" — runs the backend's native-handoff OAuth flow in
@@ -23,13 +23,13 @@ struct GoogleSignInButton: View {
             Haptics.shared.play(.press)
             Task { await run() }
         } label: {
-            CalibreBusyLabel(
+            RewoundBusyLabel(
                 "Continue with Google",
                 busy: busy,
-                tint: Color.calibre.mutedForeground
+                tint: Color.rewound.mutedForeground
             )
         }
-        .buttonStyle(.calibre(.secondary, fullWidth: true))
+        .buttonStyle(.rewound(.secondary, fullWidth: true))
         .disabled(busy)
     }
 
@@ -51,7 +51,7 @@ struct GoogleSignInButton: View {
         do {
             callbackURL = try await webAuthenticationSession.authenticate(
                 using: startURL,
-                callback: .customScheme("calibre"),
+                callback: .customScheme("rewound"),
                 additionalHeaderFields: [:]
             )
         } catch {

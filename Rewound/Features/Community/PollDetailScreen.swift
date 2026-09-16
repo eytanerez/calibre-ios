@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// A single question on its own page: what everyone answered, what *you*
@@ -23,12 +23,12 @@ struct PollDetailScreen: View {
                 VStack(alignment: .leading, spacing: Space.s) {
                     Eyebrow(prompt.closed ? prompt.voice.closedEyebrow : prompt.voice.eyebrow)
                     Text(prompt.question)
-                        .font(CalibreType.title)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.title)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(voteSummary)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
 
                 if let results = prompt.results, !results.options.isEmpty {
@@ -39,20 +39,20 @@ struct PollDetailScreen: View {
                     }
                 } else {
                     Text("No votes were cast on this one.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
 
                 ShareLink(item: prompt.shareURL, message: Text(prompt.shareText)) {
                     Label("Share this question", systemImage: "square.and.arrow.up")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
             }
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Question")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -68,34 +68,34 @@ struct PollDetailScreen: View {
         return VStack(alignment: .leading, spacing: Space.xs) {
             HStack(alignment: .firstTextBaseline) {
                 Text(option.label)
-                    .font(isMine ? CalibreType.bodySemiBold : CalibreType.body)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(isMine ? RewoundType.bodySemiBold : RewoundType.body)
+                    .foregroundStyle(Color.rewound.foreground)
                 if isMine {
                     Text("YOUR ANSWER")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.primary)
                 }
                 Spacer()
                 Text("\(option.percent)%")
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                     .monospacedDigit()
             }
 
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.calibre.secondary)
+                        .fill(Color.rewound.secondary)
                     Capsule()
-                        .fill(isMine ? Color.calibre.primary : Color.calibre.primary.opacity(0.35))
+                        .fill(isMine ? Color.rewound.primary : Color.rewound.primary.opacity(0.35))
                         .frame(width: max(proxy.size.width * CGFloat(option.percent) / 100, 2))
                 }
             }
             .frame(height: 8)
 
             Text(option.votes == 1 ? "1 vote" : "\(option.votes) votes")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
     }
 }

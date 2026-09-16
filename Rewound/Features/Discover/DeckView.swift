@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// What a committed swipe means. Right is save, left is pass.
@@ -72,7 +72,7 @@ struct DeckView: View {
                 if let departing {
                     DeckCard(listing: departing.listing)
                         .frame(width: cardSize.width, height: cardSize.height)
-                        .calibreShadow(.lifted)
+                        .rewoundShadow(.lifted)
                         .rotationEffect(.degrees(rotation(for: departingOffset)), anchor: .bottom)
                         .offset(departingOffset)
                         .opacity(departingOpacity)
@@ -108,7 +108,7 @@ struct DeckView: View {
             .frame(width: cardSize.width, height: cardSize.height)
             .overlay(alignment: .top) { affordances(commitDistance: commitDistance) }
             .matchedTransitionSource(id: listing.id, in: namespace)
-            .calibreShadow(translation == .zero ? .resting : .lifted)
+            .rewoundShadow(translation == .zero ? .resting : .lifted)
             .rotationEffect(.degrees(rotation(for: translation)), anchor: .bottom)
             .offset(translation)
             .onTapGesture {
@@ -129,7 +129,7 @@ struct DeckView: View {
             .overlay(
                 // A whisper of warm-ink dimming that lifts as the card rises.
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(Color.calibre.shadowTint.opacity(0.06 * depthProgress))
+                    .fill(Color.rewound.shadowTint.opacity(0.06 * depthProgress))
             )
             // Anchored at the bottom so the 10/20pt offsets read as visible
             // peek bands under the top card.
@@ -275,13 +275,13 @@ struct DeckView: View {
     }
 
     private func affordanceTag(_ text: String, isSave: Bool) -> some View {
-        Eyebrow(text, color: isSave ? Color.calibre.success : Color.calibre.mutedForeground)
+        Eyebrow(text, color: isSave ? Color.rewound.success : Color.rewound.mutedForeground)
             .padding(.horizontal, Space.l)
             .padding(.vertical, Space.s)
-            .background(Color.calibre.background.opacity(0.92), in: Capsule())
+            .background(Color.rewound.background.opacity(0.92), in: Capsule())
             .overlay(
                 Capsule().strokeBorder(
-                    isSave ? Color.calibre.success.opacity(0.5) : Color.calibre.borderBright,
+                    isSave ? Color.rewound.success.opacity(0.5) : Color.rewound.borderBright,
                     lineWidth: 1
                 )
             )

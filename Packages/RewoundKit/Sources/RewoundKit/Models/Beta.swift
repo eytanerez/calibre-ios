@@ -1,6 +1,6 @@
 import Foundation
 
-/// The beta programme, as the app receives it.
+/// The beta program, as the app receives it.
 ///
 /// Nothing here is a copy of the survey. The questions, their options, the
 /// branching and the welcome letter are defined once, in
@@ -28,7 +28,7 @@ public struct BetaConfig: Decodable, Sendable {
         case testCard = "test_card"
     }
 
-    /// What the app shows when the programme is off, and when the config could
+    /// What the app shows when the program is off, and when the config could
     /// not be fetched at all. Both are "there is no beta here", which is the
     /// only safe reading of "we do not know".
     public static let off = BetaConfig(enabled: false, welcome: nil, bar: nil, testCard: nil, form: nil)
@@ -116,9 +116,9 @@ public struct BetaQuestion: Decodable, Sendable, Identifiable {
     public let id: String
     /// `single`, `multi`, `scale`, `text`, `longtext`, `email`, `matrix`,
     /// `files`. A plain String rather than an enum on purpose: a build shipped
-    /// today must not crash on a question type added to the catalogue next
+    /// today must not crash on a question type added to the catalog next
     /// month. `BetaAnswerKind` below does the interpreting, and answers
-    /// `unsupported` for anything it does not recognise.
+    /// `unsupported` for anything it does not recognize.
     public let type: String
     public let prompt: String
     public let help: String?

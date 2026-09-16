@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// A title/message pair, stacked. Shared by `FeeBreakdownScreen` and
@@ -8,12 +8,12 @@ import SwiftUI
 private func detailRow(title: String, message: String) -> some View {
     VStack(alignment: .leading, spacing: 3) {
         Text(title)
-            .font(CalibreType.bodyMedium)
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.bodyMedium)
+            .foregroundStyle(Color.rewound.foreground)
             .fixedSize(horizontal: false, vertical: true)
         Text(message)
-            .font(CalibreType.label)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.label)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -35,20 +35,20 @@ struct MarketplaceGuideScreen: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("How it works")
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            Text("How Calibre works")
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+            Text("How Rewound works")
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             Text("A clear path from a watch you love to a watch you can trust.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -76,7 +76,7 @@ struct MarketplaceGuideScreen: View {
             guideRow(
                 icon: "shippingbox",
                 title: "It ships insured, on every leg",
-                message: "Every label requires a direct signature and is insured for the full sale price. Calibre buys the inbound label to the authentication center once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
+                message: "Every label requires a direct signature and is insured for the full sale price. Rewound buys the inbound label to the authentication center once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
             )
         }
         .infoCard()
@@ -86,15 +86,15 @@ struct MarketplaceGuideScreen: View {
         CalloutBand(
             icon: "person.crop.circle",
             title: "One person, start to finish",
-            message: "Every customer has one named Calibre contact, and messages come personally from them at support@buycalibre.com. Email there or write to us in the app — it is the same conversation either way."
+            message: "Every customer has one named Rewound contact, and messages come personally from them at support@shoprewound.com. Email there or write to us in the app — it is the same conversation either way."
         )
     }
 
     private var details: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("The details")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             NavigationLink {
                 FeeBreakdownScreen()
@@ -154,7 +154,7 @@ struct MarketplaceGuideScreen: View {
     }
 
     private var divider: some View {
-        Divider().overlay(Color.calibre.border).padding(.leading, Space.touchTarget + Space.m)
+        Divider().overlay(Color.rewound.border).padding(.leading, Space.touchTarget + Space.m)
     }
 
     private func guideRow(icon: String, title: String, message: String) -> some View {
@@ -162,11 +162,11 @@ struct MarketplaceGuideScreen: View {
             IconTile(systemName: icon)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(message)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -178,25 +178,25 @@ struct MarketplaceGuideScreen: View {
         HStack(alignment: .top, spacing: Space.m) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Color.calibre.primary)
+                .foregroundStyle(Color.rewound.primary)
                 .frame(width: 36, height: 36)
                 .background(
-                    Color.calibre.accent.opacity(0.6),
+                    Color.rewound.accent.opacity(0.6),
                     in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                 )
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(message)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: Space.s)
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .padding(.top, Space.m)
         }
         .padding(Space.l)
@@ -231,7 +231,7 @@ struct FeeBreakdownScreen: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Fees and payments")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { services?.config.warm() }
@@ -240,19 +240,19 @@ struct FeeBreakdownScreen: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text("Fees, without surprises")
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Calibre shows the final dollar breakdown before you list and before you pay. These are the rules behind those numbers.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+            Text("Rewound shows the final dollar breakdown before you list and before you pay. These are the rules behind those numbers.")
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var sellerRates: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            feeSection("Selling on Calibre") {
+            feeSection("Selling on Rewound") {
                 feeRateRow(
                     title: "Private seller",
                     rate: "\(PolicyCopy.sellerRate(config, dealer: false)) seller fee",
@@ -306,7 +306,7 @@ struct FeeBreakdownScreen: View {
             divider
             detailRow(
                 title: "Which cards work",
-                message: "Prepaid cards are not accepted anywhere on Calibre. Debit cards are accepted only where the discount presentation applies. The card form tells you at card entry, while you can still choose wire."
+                message: "Prepaid cards are not accepted anywhere on Rewound. Debit cards are accepted only where the discount presentation applies. The card form tells you at card entry, while you can still choose wire."
             )
         }
     }
@@ -342,18 +342,18 @@ struct FeeBreakdownScreen: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             Text("Seller fees are calculated on the final agreed watch price, and an accepted offer is the agreed price. Completed sales keep the rate recorded when the order was placed.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Link("Read the Terms of Service", destination: URL(string: "https://buycalibre.com/terms")!)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.primary)
+            Link("Read the Terms of Service", destination: URL(string: "https://shoprewound.com/terms")!)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.primary)
         }
     }
 
     private var divider: some View {
-        Divider().overlay(Color.calibre.border)
+        Divider().overlay(Color.rewound.border)
     }
 
     private func feeSection<Content: View>(
@@ -362,8 +362,8 @@ struct FeeBreakdownScreen: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(title)
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             VStack(spacing: 0) { content() }
                 .infoCard()
         }
@@ -377,16 +377,16 @@ struct FeeBreakdownScreen: View {
         VStack(alignment: .leading, spacing: Space.s) {
             HStack(alignment: .firstTextBaseline) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer(minLength: Space.m)
                 Text(rate)
-                    .font(CalibreType.bodySemiBold)
-                    .foregroundStyle(Color.calibre.primary)
+                    .font(RewoundType.bodySemiBold)
+                    .foregroundStyle(Color.rewound.primary)
             }
             Text(detail)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.l)
@@ -406,7 +406,7 @@ struct AuthenticationGuideScreen: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Authentication")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -414,12 +414,12 @@ struct AuthenticationGuideScreen: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text("Inspected before it ships")
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Every watch sold on Calibre travels to the authentication center before it travels to the buyer. The inspection is carried out by a third-party partner, not by us.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+            Text("Every watch sold on Rewound travels to the authentication center before it travels to the buyer. The inspection is carried out by a third-party partner, not by us.")
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -441,7 +441,7 @@ struct AuthenticationGuideScreen: View {
             checkRow(
                 icon: "wrench.and.screwdriver",
                 title: "1-year mechanical warranty",
-                message: "Every watch that passes authentication includes a one-year mechanical warranty in Calibre's name."
+                message: "Every watch that passes authentication includes a one-year mechanical warranty in Rewound's name."
             )
             divider
             checkRow(
@@ -457,7 +457,7 @@ struct AuthenticationGuideScreen: View {
         CalloutBand(
             icon: "clock",
             title: "72 hours, committed",
-            message: "Authentication runs on a 72-hour commitment from arrival to verdict. If it runs long, the buyer hears from their Calibre contact before having to ask."
+            message: "Authentication runs on a 72-hour commitment from arrival to verdict. If it runs long, the buyer hears from their Rewound contact before having to ask."
         )
     }
 
@@ -485,11 +485,11 @@ struct AuthenticationGuideScreen: View {
     }
 
     private var divider: some View {
-        Divider().overlay(Color.calibre.border).padding(.leading, Space.touchTarget + Space.m)
+        Divider().overlay(Color.rewound.border).padding(.leading, Space.touchTarget + Space.m)
     }
 
     private var plainDivider: some View {
-        Divider().overlay(Color.calibre.border)
+        Divider().overlay(Color.rewound.border)
     }
 
     private func section<Content: View>(
@@ -498,8 +498,8 @@ struct AuthenticationGuideScreen: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(title)
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             VStack(spacing: 0) { content() }
                 .infoCard()
         }
@@ -510,11 +510,11 @@ struct AuthenticationGuideScreen: View {
             IconTile(systemName: icon)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(message)
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -574,7 +574,7 @@ struct ReturnsPolicyScreen: View {
             )
             PolicyDivider()
             PolicyRow(
-                "Calibre generates the label",
+                "Rewound generates the label",
                 "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to the authentication center and is re-authenticated before anything is refunded."
             )
         }
@@ -617,20 +617,20 @@ struct ReturnsPolicyScreen: View {
             PolicyDivider()
             PolicyRow(
                 "If the returned watch fails re-authentication",
-                "If the wrong watch comes back, or it is damaged, or it turns out to be counterfeit: there is no refund, the seller is paid as though the sale completed, the watch is held, and the buyer's Calibre contact takes the case over urgently."
+                "If the wrong watch comes back, or it is damaged, or it turns out to be counterfeit: there is no refund, the seller is paid as though the sale completed, the watch is held, and the buyer's Rewound contact takes the case over urgently."
             )
             PolicyDivider()
             PolicyRow(
                 "If a watch is lost on the way back",
-                "A watch lost or damaged on the return leg is Calibre's to claim and settle on both sides. Neither customer deals with a carrier."
+                "A watch lost or damaged on the return leg is Rewound's to claim and settle on both sides. Neither customer deals with a carrier."
             )
         }
     }
 
     private var footnote: some View {
         Text("Returns apply identically to an accepted offer. An accepted offer is a sale, with the same fees and the same return terms as any other purchase.")
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -698,7 +698,7 @@ struct SellerPayoutsGuideScreen: View {
         CalloutBand(
             icon: "checkmark.shield",
             title: "A dispute after payout is ours",
-            message: "If a buyer disputes a sale after you have been paid, that is Calibre's problem to work through, not yours. You keep your money."
+            message: "If a buyer disputes a sale after you have been paid, that is Rewound's problem to work through, not yours. You keep your money."
         )
     }
 }
@@ -714,7 +714,7 @@ struct DealerProgramGuideScreen: View {
     var body: some View {
         PolicyScaffold(
             title: "The dealer program",
-            intro: "A dealer on Calibre is a verified business. You apply with your business details, Stripe collects and verifies your EIN and entity type — Calibre never sees them, and your banking stays with Stripe too — and if it confirms a registered company your dealer status is granted straight away. If it cannot, someone here reads the application and decides. You hear either way.",
+            intro: "A dealer on Rewound is a verified business. You apply with your business details, Stripe collects and verifies your EIN and entity type — Rewound never sees them, and your banking stays with Stripe too — and if it confirms a registered company your dealer status is granted straight away. If it cannot, someone here reads the application and decides. You hear either way.",
             navigationTitle: "Dealer program"
         ) {
             howToApply
@@ -728,7 +728,7 @@ struct DealerProgramGuideScreen: View {
     /// How it is applied for, once.
     ///
     /// A "What we collect, and why" row stood under this one and told the same
-    /// EIN / Stripe / Calibre-never-sees-it story a second time, on the same
+    /// EIN / Stripe / Rewound-never-sees-it story a second time, on the same
     /// screen. The intro above tells it, and the application screen itself
     /// tells it beside the field that asks — which is the one place a reader
     /// is actually about to act on it. Saying it a third time here taught
@@ -777,9 +777,9 @@ struct DealerProgramGuideScreen: View {
     }
 
     private var footnote: some View {
-        Text("Nothing else about how you sell on Calibre changes with dealer status.")
-            .font(CalibreType.caption)
-            .foregroundStyle(Color.calibre.mutedForeground)
+        Text("Nothing else about how you sell on Rewound changes with dealer status.")
+            .font(RewoundType.caption)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -811,12 +811,12 @@ private struct PolicyScaffold<Content: View>: View {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.s) {
                     Text(title)
-                        .font(CalibreType.title)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.title)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(intro)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 content
@@ -824,7 +824,7 @@ private struct PolicyScaffold<Content: View>: View {
             .padding(Space.margin)
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -843,8 +843,8 @@ private struct PolicySection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(title)
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(spacing: 0) { content }
                 .infoCard()
@@ -852,7 +852,7 @@ private struct PolicySection<Content: View>: View {
     }
 }
 
-/// One labelled paragraph inside a `PolicySection` — the same shape as
+/// One labeled paragraph inside a `PolicySection` — the same shape as
 /// `detailRow`, read as a single element by VoiceOver.
 private struct PolicyRow: View {
     private let title: String
@@ -866,12 +866,12 @@ private struct PolicyRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             Text(message)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -882,7 +882,7 @@ private struct PolicyRow: View {
 
 private struct PolicyDivider: View {
     var body: some View {
-        Divider().overlay(Color.calibre.border)
+        Divider().overlay(Color.rewound.border)
     }
 }
 
@@ -978,12 +978,12 @@ private enum PolicyCopy {
 private extension View {
     func infoCard() -> some View {
         background(
-            Color.calibre.card,
+            Color.rewound.card,
             in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }

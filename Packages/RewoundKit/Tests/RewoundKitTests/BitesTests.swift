@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `GET /content/bites/today`, `/content/bites` and `/content/bites/{slug}`,
 /// recorded from the running API.
@@ -15,7 +15,7 @@ final class BitesTests: XCTestCase {
     ///
     /// This app reads today's Bite off the Home feed's own `todays_bite`
     /// module, which carries the same two keys, so the standalone endpoint's
-    /// envelope is asserted here rather than modelled in the client.
+    /// envelope is asserted here rather than modeled in the client.
     private struct TodaysSlot: Decodable {
         let slot: String
         let bite: Bite?
@@ -66,9 +66,9 @@ final class BitesTests: XCTestCase {
          "bite": {"id": "papers-prove-less-than-you-think",
            "title": "A warranty card proves a sale happened.",
            "topic": "provenance", "body": "Box and papers reliably raise what a watch sells for.",
-           "author": "Calibre Desk", "date": "June 18, 2026", "datePublishedISO": "2026-06-18",
+           "author": "Rewound Desk", "date": "June 18, 2026", "datePublishedISO": "2026-06-18",
            "isArchive": true, "archived": false, "image": null, "imageAlt": null,
-           "sources": [{"href": "https://buycalibre.com/journal", "label": "The Calibre Journal"}],
+           "sources": [{"href": "https://shoprewound.com/journal", "label": "The Rewound Journal"}],
            "article": null, "next": null, "correctedOn": null, "correctionNote": null}}
         """
         let today = try apiDecoder().decode(TodaysSlot.self, from: Data(json.utf8))
@@ -85,7 +85,7 @@ final class BitesTests: XCTestCase {
         {"id": "s", "title": "T", "topic": "market", "body": "B", "author": "A",
          "date": "June 18, 2026", "datePublishedISO": "2026-06-18", "isArchive": false,
          "archived": false, "image": null, "imageAlt": null,
-         "sources": [{"href": "https://buycalibre.com/market", "label": "Calibre completed sales"}],
+         "sources": [{"href": "https://shoprewound.com/market", "label": "Rewound completed sales"}],
          "article": {"id": "a", "title": "The long version"},
          "next": {"label": "See the market data", "href": "/market"},
          "correctedOn": "2026-06-20", "correctionNote": "The figure was for August, not July."}

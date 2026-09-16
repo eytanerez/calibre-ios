@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `Order.nextStep()` and `Order.timeline()` — the two readings both buyer
 /// screens now take their words from.
@@ -83,7 +83,7 @@ final class OrderStateTests: XCTestCase {
         XCTAssertEqual(try step(labelOnly, "Shipped to authentication").state, .now)
         XCTAssertEqual(try step(labelOnly, "Order placed").state, .done)
 
-        // And the actor: it is the seller's move, not Calibre's.
+        // And the actor: it is the seller's move, not Rewound's.
         XCTAssertEqual(labelOnly.nextStep().actor, .seller)
         XCTAssertEqual(labelOnly.nextStep().actor?.label, "With the seller")
 
@@ -94,7 +94,7 @@ final class OrderStateTests: XCTestCase {
         )
         XCTAssertEqual(inTransit.arrivalPhase, .inTransit)
         XCTAssertEqual(try step(inTransit, "Shipped to authentication").state, .done)
-        XCTAssertEqual(inTransit.nextStep().actor, .calibre)
+        XCTAssertEqual(inTransit.nextStep().actor, .rewound)
     }
 
     // MARK: - Wrong reading two: a pass the record did not give
@@ -126,7 +126,7 @@ final class OrderStateTests: XCTestCase {
         XCTAssertFalse(passed.authenticationFailed)
         XCTAssertEqual(try step(passed, "Authentication").state, .done)
         XCTAssertEqual(try step(passed, "Authentication").line, "Passed")
-        XCTAssertEqual(passed.nextStep().headline, "Authenticated by Calibre")
+        XCTAssertEqual(passed.nextStep().headline, "Authenticated by Rewound")
 
         // A missing record is not a negative one. Every order served by a
         // deployment predating the record has none, and none of them failed.
@@ -157,10 +157,10 @@ final class OrderStateTests: XCTestCase {
         XCTAssertTrue(after.allSatisfy { $0.state == .later }, "nothing after a refusal is on its way")
         XCTAssertFalse(steps.contains { $0.state == .now })
 
-        // Cancelled and refunded are the two that genuinely have no journey.
+        // Canceled and refunded are the two that genuinely have no journey.
         XCTAssertNil(try order(status: "cancelled").timeline())
         XCTAssertNil(try order(status: "refunded").timeline())
-        XCTAssertEqual(try order(status: "cancelled").nextStep().headline, "This order was cancelled")
+        XCTAssertEqual(try order(status: "cancelled").nextStep().headline, "This order was canceled")
     }
 
     // MARK: - A date nobody promised
@@ -169,7 +169,7 @@ final class OrderStateTests: XCTestCase {
     ///
     /// The rule this protects is the whole reason `next` is optional: a client
     /// that fills the gap with a sentence of its own has made a promise on
-    /// Calibre's behalf that nobody at Calibre made.
+    /// Rewound's behalf that nobody at Rewound made.
     func testNextIsNilWhereNothingHonestCanBeSaid() throws {
         // Delivered, with no return window open: there is nothing left to say.
         let delivered = try order(status: "delivered")
@@ -189,7 +189,7 @@ final class OrderStateTests: XCTestCase {
         )
         XCTAssertNil(closed.nextStep(now: Date(timeIntervalSince1970: 1_790_000_000)).next)
 
-        // Cancelled and refunded say what happened and stop.
+        // Canceled and refunded say what happened and stop.
         XCTAssertNil(try order(status: "cancelled").nextStep().next)
         XCTAssertNil(try order(status: "refunded").nextStep().next)
 
@@ -286,7 +286,7 @@ final class OrderStateTests: XCTestCase {
     func testTheActorIsNamedByOneTable() {
         XCTAssertEqual(OrderActor.you.label, "Waiting on you")
         XCTAssertEqual(OrderActor.seller.label, "With the seller")
-        XCTAssertEqual(OrderActor.calibre.label, "With Calibre")
+        XCTAssertEqual(OrderActor.rewound.label, "With Rewound")
     }
 
     /// The clauses above the status switch outrank whatever the status says.
@@ -297,7 +297,7 @@ final class OrderStateTests: XCTestCase {
             authentication: record(step: "on_hold", arrivedAt: "\"2026-08-04T18:00:00Z\"")
         )
         XCTAssertTrue(held.isHeld)
-        XCTAssertEqual(held.nextStep().actor, .calibre)
+        XCTAssertEqual(held.nextStep().actor, .rewound)
         XCTAssertNotNil(held.nextStep().body, "a hold is one of the two moments that earns a paragraph")
         XCTAssertEqual(try step(held, "Authentication").line, "On hold")
 
@@ -339,7 +339,7 @@ final class OrderStateTests: XCTestCase {
             for scanned in [true, false] {
                 let arrived = try withReturn(state, scanned: scanned)
                 let reading = arrived.nextStep()
-                XCTAssertEqual(reading.actor, .calibre, state)
+                XCTAssertEqual(reading.actor, .rewound, state)
                 XCTAssertEqual(reading.headline, "Your return is with our authentication center", state)
                 XCTAssertEqual(reading.next, "We authenticate it again, then your refund is issued.", state)
             }
@@ -365,7 +365,7 @@ final class OrderStateTests: XCTestCase {
     ///
     /// Not a `disputed` order status: there is no such status on this backend,
     /// so a clause reading for one could never fire and the word would never
-    /// appear. A case is the record saying a person at Calibre is looking at
+    /// appear. A case is the record saying a person at Rewound is looking at
     /// this watch, which is the fact the word is for.
     func testUnderReviewComesFromAnOpenCaseAndNotFromAStatus() throws {
         let reviewed = try order(
@@ -424,6 +424,6 @@ final class OrderStateTests: XCTestCase {
         XCTAssertFalse(onTheBench.nextStep().sentence.contains(".."))
 
         // Nothing to add is nothing appended.
-        XCTAssertEqual(try order(status: "cancelled").nextStep().sentence, "This order was cancelled.")
+        XCTAssertEqual(try order(status: "cancelled").nextStep().sentence, "This order was canceled.")
     }
 }

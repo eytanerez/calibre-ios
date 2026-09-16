@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The seller's shop — the tab root a seller reaches once they have a shop to
@@ -132,10 +132,10 @@ struct SellerDashboardScreen: View {
                 }
             }
         }
-        .calibrePageSwipe(selection: $tab, values: SellerTab.allCases)
+        .rewoundPageSwipe(selection: $tab, values: SellerTab.allCases)
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .tutorialOverlay(tutorial)
         .environment(\.defaultMinListRowHeight, 1)
         .refreshable {
@@ -292,7 +292,7 @@ struct SellerDashboardScreen: View {
         SellerTabBar(selection: $tab, badges: tabBadges)
             .padding(.horizontal, Space.xs)
             .padding(.vertical, Space.s)
-            .background(Color.calibre.background)
+            .background(Color.rewound.background)
             .listRowInsets(EdgeInsets())
     }
 
@@ -527,8 +527,8 @@ struct SellerDashboardScreen: View {
         VStack(alignment: .leading, spacing: Space.l) {
             HStack(alignment: .firstTextBaseline) {
                 Text(dashboardTitle)
-                    .font(CalibreType.title)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.title)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer()
                 // Bulk import is dealer-only, so the entry to it isn't
                 // offered to a seller who would only be refused behind it.
@@ -542,7 +542,7 @@ struct SellerDashboardScreen: View {
                     } label: {
                         Image(systemName: "ellipsis.circle")
                             .font(.system(size: 20, weight: .regular))
-                            .foregroundStyle(Color.calibre.foreground)
+                            .foregroundStyle(Color.rewound.foreground)
                             .frame(width: Space.touchTarget, height: Space.touchTarget, alignment: .trailing)
                     }
                     .accessibilityLabel("More options")
@@ -569,7 +569,7 @@ struct SellerDashboardScreen: View {
     /// payload's call and nothing on this screen overrides it. What changed is
     /// that a seller who already has inventory, offers, sales and a storefront
     /// keeps all of it in front of them while they finish, rather than being
-    /// handed a page headed "Start selling on Calibre" that reads as having
+    /// handed a page headed "Start selling on Rewound" that reads as having
     /// lost the account.
     ///
     /// Both lines are the payout step's own words, so this notice cannot
@@ -612,7 +612,7 @@ struct SellerDashboardScreen: View {
 
     private func sellerCardBannerMessage(_ card: SellerCardState) -> String {
         if !card.present {
-            return "Selling on Calibre needs a credit card on file. It takes a minute, and nothing is charged to it now."
+            return "Selling on Rewound needs a credit card on file. It takes a minute, and nothing is charged to it now."
         }
         if card.valid == false {
             return "\(card.displayName) isn't working any more. Replace it so nothing interrupts a sale."
@@ -642,7 +642,7 @@ struct SellerDashboardScreen: View {
                     .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                            .strokeBorder(Color.calibre.border, lineWidth: 1)
+                            .strokeBorder(Color.rewound.border, lineWidth: 1)
                     )
                     .sellRow(bottom: index == shown.count - 1 ? Space.l : Space.s)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -661,11 +661,11 @@ struct SellerDashboardScreen: View {
         } label: {
             HStack(spacing: Space.s) {
                 Text(showAllQueue ? "Show less" : "Show all \(total)")
-                    .font(CalibreType.label)
+                    .font(RewoundType.label)
                 Image(systemName: showAllQueue ? "chevron.up" : "chevron.down")
                     .font(.system(size: 11, weight: .semibold))
             }
-            .foregroundStyle(Color.calibre.primary)
+            .foregroundStyle(Color.rewound.primary)
             .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
             .contentShape(Rectangle())
         }
@@ -679,33 +679,33 @@ struct SellerDashboardScreen: View {
             HStack(spacing: Space.m) {
                 Image(systemName: actionIcon(action.kind))
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.calibre.primary)
+                    .foregroundStyle(Color.rewound.primary)
                     .frame(width: 32, height: 32)
                     .background(
-                        Color.calibre.accent.opacity(0.6),
+                        Color.rewound.accent.opacity(0.6),
                         in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                     )
                 VStack(alignment: .leading, spacing: 2) {
                     Text(actionTitle(action))
-                        .font(CalibreType.bodyMedium)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
                         .lineLimit(1)
                     Text(actionSubtitle(action))
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .lineLimit(2)
                 }
                 Spacer(minLength: Space.s)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .padding(.horizontal, Space.l)
             .padding(.vertical, Space.m)
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
     }
 
     /// A draft queue row can be deleted with the same swipe, confirmation
@@ -719,7 +719,7 @@ struct SellerDashboardScreen: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-            .tint(Color.calibre.destructive)
+            .tint(Color.rewound.destructive)
         }
     }
 

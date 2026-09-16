@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import NukeUI
 import SwiftUI
 
@@ -57,7 +57,7 @@ struct DetailsStep: View {
                     .onChange(of: model.model) { _, _ in model.modelChanged() }
                 ListingCatalogField("Reference", text: $model.reference, level: .references, brand: model.brand, model: model.model)
                     .onChange(of: model.reference) { _, _ in model.referenceChanged() }
-                CalibreTextField(
+                RewoundTextField(
                     "Seller SKU (optional)",
                     text: $model.sellerSku,
                     placeholder: "CAL-001",
@@ -68,18 +68,18 @@ struct DetailsStep: View {
                     model.fieldChanged()
                 }
                 Text("Your own shelf label, if you keep one. It has to be unique to this watch \u{2014} a bulk import matches on the SKU and nothing else. Buyers never see it.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Unusual brands still go to review.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
 
             VaultMatchAsk(model: model)
 
             VStack(alignment: .leading, spacing: Space.m) {
-                CalibreTextField(
+                RewoundTextField(
                     "Year",
                     text: $model.yearText,
                     placeholder: "2019",
@@ -98,24 +98,24 @@ struct DetailsStep: View {
                     }
                 Toggle(isOn: $model.yearUnknown) {
                     Text("Year unknown")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.foreground)
                 }
-                .tint(Color.calibre.primary)
+                .tint(Color.rewound.primary)
                 .onChange(of: model.yearUnknown) { _, _ in model.fieldChanged() }
             }
 
             VStack(alignment: .leading, spacing: Space.m) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Condition")
-                        .font(CalibreType.sectionTitle)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.sectionTitle)
+                        .foregroundStyle(Color.rewound.foreground)
                     Spacer()
                     Button("How we grade") {
                         showGradeGuide = true
                     }
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.primary)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.primary)
                     .buttonStyle(PressableStyle())
                 }
 
@@ -125,7 +125,7 @@ struct DetailsStep: View {
                             conditionRow(part)
                                 .id(WizardField.condition(part))
                             if index < ConditionPart.allCases.count - 1 {
-                                Rectangle().fill(Color.calibre.border).frame(height: 1)
+                                Rectangle().fill(Color.rewound.border).frame(height: 1)
                             }
                         }
                     }
@@ -164,8 +164,8 @@ struct DetailsStep: View {
 
             if let error {
                 Text(error)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
                     .padding(.bottom, Space.s)
                     .transition(.opacity)
             }
@@ -176,8 +176,8 @@ struct DetailsStep: View {
 
     private func partLabel(_ part: ConditionPart, error: String?) -> some View {
         Text(part.label)
-            .font(CalibreType.body)
-            .foregroundStyle(error == nil ? Color.calibre.mutedForeground : Color.calibre.destructive)
+            .font(RewoundType.body)
+            .foregroundStyle(error == nil ? Color.rewound.mutedForeground : Color.rewound.destructive)
     }
 
     private func gradeMenu(_ part: ConditionPart) -> some View {
@@ -192,11 +192,11 @@ struct DetailsStep: View {
         } label: {
             HStack(spacing: Space.s) {
                 Text(model.conditions[part] ?? "Select")
-                    .font(CalibreType.bodyMedium)
+                    .font(RewoundType.bodyMedium)
                     .foregroundStyle(
                         model.conditions[part] == nil
-                            ? Color.calibre.placeholder
-                            : Color.calibre.foreground
+                            ? Color.rewound.placeholder
+                            : Color.rewound.foreground
                     )
                     // The reservation below only works while the grade fits on
                     // one line; at an accessibility size it has to be allowed
@@ -213,7 +213,7 @@ struct DetailsStep: View {
                     )
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .frame(minHeight: Space.touchTarget)
             .contentShape(Rectangle())
@@ -227,7 +227,7 @@ struct DetailsStep: View {
 /// "How we grade" — the five grades, in plain words.
 private struct GradeGuideSheet: View {
     @Environment(\.dynamicTypeSize) private var typeSize
-    /// Width of the grade column. `StatusBadge` draws in `CalibreType.label`
+    /// Width of the grade column. `StatusBadge` draws in `RewoundType.label`
     /// (13pt relative to .footnote), so the reservation tracks the text it is
     /// holding room for instead of staying 92pt while the badge triples.
     @ScaledMetric(relativeTo: .footnote) private var badgeColumnWidth: CGFloat = 92
@@ -245,8 +245,8 @@ private struct GradeGuideSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
                     Text("Grade each part on its own — buyers trust listings that read honestly, and our watchmakers verify every grade at authentication.")
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                     ForEach(grades, id: \.0) { grade, meaning in
                         // Side by side until the grade column would take most
                         // of the sheet and leave its meaning a word a line —
@@ -272,8 +272,8 @@ private struct GradeGuideSheet: View {
 
     private func meaningLine(_ meaning: String) -> some View {
         Text(meaning)
-            .font(CalibreType.body)
-            .foregroundStyle(Color.calibre.foreground)
+            .font(RewoundType.body)
+            .foregroundStyle(Color.rewound.foreground)
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -323,11 +323,11 @@ private struct VaultMatchAsk: View {
                 VStack(alignment: .leading, spacing: Space.l) {
                     VStack(alignment: .leading, spacing: Space.s) {
                         Text("Is this one you already own?")
-                            .font(CalibreType.sectionTitle)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.sectionTitle)
+                            .foregroundStyle(Color.rewound.foreground)
                         Text("That reference matches a watch in your Vault. If it's the same watch, this listing carries on its Passport rather than starting a second one for it.")
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -335,7 +335,7 @@ private struct VaultMatchAsk: View {
                         ForEach(Array(model.vaultMatches.enumerated()), id: \.element.id) { index, match in
                             if index > 0 {
                                 Rectangle()
-                                    .fill(Color.calibre.border)
+                                    .fill(Color.rewound.border)
                                     .frame(height: 1)
                                     .padding(.vertical, Space.m)
                             }
@@ -348,12 +348,12 @@ private struct VaultMatchAsk: View {
 
                 // The decline runs the width of the card, under a rule: it
                 // answers the whole question rather than any one watch on it.
-                Rectangle().fill(Color.calibre.border).frame(height: 1)
+                Rectangle().fill(Color.rewound.border).frame(height: 1)
                 Button("No, this is a different watch") {
                     Haptics.shared.play(.selection)
                     model.declineVaultMatch()
                 }
-                .buttonStyle(.calibre(.ghost, fullWidth: true))
+                .buttonStyle(.rewound(.ghost, fullWidth: true))
             }
         }
     }
@@ -361,14 +361,14 @@ private struct VaultMatchAsk: View {
     private func matchRow(_ match: VaultMatch) -> some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text(match.displayTitle)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let provenance = provenance(match) {
                 Text(provenance)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -376,13 +376,13 @@ private struct VaultMatchAsk: View {
                 Haptics.shared.play(.selection)
                 Task { await model.linkVaultWatch(match) }
             }
-            .buttonStyle(.calibre(.secondary))
+            .buttonStyle(.rewound(.secondary))
             .padding(.top, Space.xs)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Everything the seller needs to recognise their own watch, and nothing
+    /// Everything the seller needs to recognize their own watch, and nothing
     /// invented: a date that doesn't parse is left out rather than guessed at,
     /// and a reference is skipped when it is already the watch's whole name.
     private func provenance(_ match: VaultMatch) -> String? {
@@ -440,11 +440,11 @@ struct PhotosStep: View {
         VStack(alignment: .leading, spacing: Space.xl) {
             VStack(alignment: .leading, spacing: Space.s) {
                 Text("Six shots, one story")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text("Each photo uploads the moment you take it. Natural light, plain background — the watch does the talking.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .tutorialAnchor("wizard.photos.header")
@@ -468,7 +468,7 @@ struct PhotosStep: View {
                     }
                 }
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
             #endif
         }
         .tutorialOverlay(tutorial)
@@ -507,11 +507,11 @@ struct PhotosStep: View {
         VStack(alignment: .leading, spacing: Space.m) {
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text("What comes with it")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text("Our authentication center checks each of these against what actually arrives.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -519,9 +519,9 @@ struct PhotosStep: View {
             Toggle("Papers", isOn: $model.papersIncluded)
             Toggle("Booklets", isOn: $model.bookletsIncluded)
         }
-        .font(CalibreType.bodyMedium)
-        .foregroundStyle(Color.calibre.foreground)
-        .tint(Color.calibre.primary)
+        .font(RewoundType.bodyMedium)
+        .foregroundStyle(Color.rewound.foreground)
+        .tint(Color.rewound.primary)
         .onChange(of: model.boxIncluded) { _, _ in model.fieldChanged() }
         .onChange(of: model.papersIncluded) { _, _ in model.fieldChanged() }
         .onChange(of: model.bookletsIncluded) { _, _ in model.fieldChanged() }
@@ -560,8 +560,8 @@ struct PhotosStep: View {
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(Color(white: 1))
                             .frame(width: 20, height: 20)
-                            .background(Color.calibre.destructive, in: Circle())
-                            .overlay(Circle().strokeBorder(Color.calibre.card, lineWidth: 2))
+                            .background(Color.rewound.destructive, in: Circle())
+                            .overlay(Circle().strokeBorder(Color.rewound.card, lineWidth: 2))
                             .frame(width: Space.touchTarget, height: Space.touchTarget)
                             .contentShape(Rectangle())
                     }
@@ -574,8 +574,8 @@ struct PhotosStep: View {
             }
 
             Text(category.label)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
@@ -584,11 +584,11 @@ struct PhotosStep: View {
                     Task { await model.retryUpload(category: category) }
                 } label: {
                     Text("Try again")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.destructive)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.destructive)
                         .padding(.horizontal, Space.s)
                         .padding(.vertical, 2)
-                        .background(Color.calibre.destructive.opacity(0.12), in: Capsule())
+                        .background(Color.rewound.destructive.opacity(0.12), in: Capsule())
                 }
                 .buttonStyle(PressableStyle())
             }
@@ -614,7 +614,7 @@ struct PhotosStep: View {
                     if let image = state.image {
                         image.resizable().scaledToFill()
                     } else {
-                        Color.calibre.secondary
+                        Color.rewound.secondary
                     }
                 }
             } else {
@@ -628,8 +628,8 @@ struct PhotosStep: View {
     private var morePhotos: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("More photos")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.secondaryForeground)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.m) {
                     ForEach(model.extraPhotos.indices, id: \.self) { index in
@@ -665,18 +665,18 @@ struct PriceStep: View {
         VStack(alignment: .leading, spacing: Space.xl) {
             VStack(alignment: .leading, spacing: Space.s) {
                 Text(model.price.map { PriceFormatter.listing($0) } ?? "$—")
-                    .font(CalibreType.serif(.semiBold, 40, relativeTo: .largeTitle))
+                    .font(RewoundType.serif(.semiBold, 40, relativeTo: .largeTitle))
                     .foregroundStyle(
-                        model.price == nil ? Color.calibre.placeholder : Color.calibre.foreground
+                        model.price == nil ? Color.rewound.placeholder : Color.rewound.foreground
                     )
                     .contentTransition(.numericText())
                     .animation(Motion.easeFast, value: model.priceText)
                 Text("Your asking price")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Asking price",
                 text: $model.priceText,
                 placeholder: "12,400",
@@ -684,8 +684,8 @@ struct PriceStep: View {
                 kind: .money
             ) {
                 Text("USD")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
             }
             .id(WizardField.price)
             .moneyFormatted($model.priceText)
@@ -699,14 +699,14 @@ struct PriceStep: View {
                 returnsSection
             }
 
-            CalibreTextEditor(
+            RewoundTextEditor(
                 "Notes for buyers (optional)",
                 text: $model.notes,
                 // The deviation prompt. A watch that differs from its catalog
                 // row — a replacement bracelet, a refinished dial — is a fact
                 // only the seller can state, and an admin turns what they write
                 // here into a per-listing spec override at review.
-                placeholder: "Service history, how it wears, and anything not as the catalogue describes…",
+                placeholder: "Service history, how it wears, and anything not as the catalog describes…",
                 characterLimit: 2000
             )
             .onChange(of: model.notes) { _, newValue in
@@ -754,8 +754,8 @@ struct PriceStep: View {
                 VStack(alignment: .leading, spacing: Space.s) {
                     ForEach(payoutNotes, id: \.self) { note in
                         Text(note)
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -769,18 +769,18 @@ struct PriceStep: View {
     private var netRow: some View {
         HStack(alignment: .firstTextBaseline) {
             Text("You'll receive")
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
             Spacer()
             if model.previewing {
                 // Stays a system spinner on purpose. The marks vocabulary
                 // forbids a mark on a price, and this stands exactly where
                 // the figure is about to be.
-                ProgressView().controlSize(.small).tint(Color.calibre.primary)
+                ProgressView().controlSize(.small).tint(Color.rewound.primary)
             } else {
                 Text(netText)
-                    .font(CalibreType.price)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.price)
+                    .foregroundStyle(Color.rewound.foreground)
                     .contentTransition(.numericText())
                     .animation(Motion.easeFast, value: netText)
             }
@@ -791,7 +791,7 @@ struct PriceStep: View {
     }
 
     private var rowDivider: some View {
-        Rectangle().fill(Color.calibre.border).frame(height: 1)
+        Rectangle().fill(Color.rewound.border).frame(height: 1)
     }
 
     private var yourPriceText: String {
@@ -800,8 +800,8 @@ struct PriceStep: View {
     }
 
     private var commissionLabel: String {
-        guard let preview = model.preview else { return "Calibre commission" }
-        return "Calibre commission (\(percentText(preview.commission.percent.value))%)"
+        guard let preview = model.preview else { return "Rewound commission" }
+        return "Rewound commission (\(percentText(preview.commission.percent.value))%)"
     }
 
     private var commissionText: String {
@@ -836,10 +836,10 @@ struct PriceStep: View {
     private var payoutNotes: [String] {
         guard let preview = model.preview else { return [] }
         // The shipping figure is priced from a standard box nobody has
-        // measured yet, and it binds nothing: Calibre buys the real label
+        // measured yet, and it binds nothing: Rewound buys the real label
         // after the sale and the actual cost is what comes off the payout.
         var notes: [String] = [
-            "The shipping figure is an estimate, priced from a standard box. It commits you to nothing \u{2014} after the sale you give us the real dimensions, Calibre buys the label, and what it actually costs is what comes off your payout."
+            "The shipping figure is an estimate, priced from a standard box. It commits you to nothing \u{2014} after the sale you give us the real dimensions, Rewound buys the label, and what it actually costs is what comes off your payout."
         ]
         if preview.commission.minimumApplied {
             let minimum = PriceFormatter.format(preview.commission.minimum.value, currency: preview.currency)
@@ -881,18 +881,18 @@ struct PriceStep: View {
     private func payoutRow(_ label: String, value: String, busy: Bool = false) -> some View {
         HStack {
             Text(label)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
             Spacer()
             if busy {
                 // A system spinner, for the same reason as the net-proceeds
                 // row above: this is the slot a figure lands in, and no mark
                 // goes on a price.
-                ProgressView().controlSize(.small).tint(Color.calibre.primary)
+                ProgressView().controlSize(.small).tint(Color.rewound.primary)
             } else {
                 Text(value)
-                    .font(CalibreType.bodyMedium)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(Color.rewound.foreground)
             }
         }
         .padding(.horizontal, Space.l)
@@ -907,17 +907,17 @@ struct PriceStep: View {
     private var returnsSection: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Returns")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             SellCard {
                 VStack(alignment: .leading, spacing: Space.l) {
                     Toggle(isOn: $model.returnsAccepted) {
                         Text("Accept returns")
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
-                    .tint(Color.calibre.primary)
+                    .tint(Color.rewound.primary)
                     .frame(minHeight: Space.touchTarget)
                     .onChange(of: model.returnsAccepted) { _, _ in
                         model.returnsChanged()
@@ -926,30 +926,30 @@ struct PriceStep: View {
                     if model.returnsAccepted {
                         VStack(alignment: .leading, spacing: Space.s) {
                             Text("Return window")
-                                .font(CalibreType.label)
-                                .foregroundStyle(Color.calibre.secondaryForeground)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.secondaryForeground)
                             SegmentedTabs(
                                 selection: windowBinding,
                                 items: model.returnWindowChoices.map { ($0, "\($0) hours") }
                             )
                         }
                         Text("The window starts when the buyer signs for the watch, or two business days after the first delivery attempt, whichever comes first.")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
                     VStack(alignment: .leading, spacing: Space.s) {
                         Text("A listing without returns pays out when authentication passes. A listing that accepts them pays out when the return window closes.")
-                            .font(CalibreType.body)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.body)
+                            .foregroundStyle(Color.rewound.foreground)
                             .fixedSize(horizontal: false, vertical: true)
                         StatusBadge(payoutTimingText, tone: .neutral)
                     }
 
                     Text("Return terms are locked onto the order at purchase. Changing them on a listing that hasn't sold sends it back through review.")
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1004,21 +1004,21 @@ private struct ListingCatalogField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            Text(label).font(CalibreType.label).foregroundStyle(Color.calibre.secondaryForeground)
+            Text(label).font(RewoundType.label).foregroundStyle(Color.rewound.secondaryForeground)
                 .accessibilityHidden(true)
             TextField(label, text: $text)
-                .font(CalibreType.body)
+                .font(RewoundType.body)
                 .textInputAutocapitalization(level == .references ? .characters : .words)
                 .autocorrectionDisabled()
                 .focused($focused)
                 .padding(.horizontal, Space.m)
                 .frame(minHeight: Space.touchTarget)
-                .background(Color.calibre.card, in: RoundedRectangle(cornerRadius: Radius.control))
+                .background(Color.rewound.card, in: RoundedRectangle(cornerRadius: Radius.control))
                 .overlay(RoundedRectangle(cornerRadius: Radius.control)
-                    .stroke(error != nil ? Color.calibre.destructive : focused ? Color.calibre.primary : Color.calibre.border))
+                    .stroke(error != nil ? Color.rewound.destructive : focused ? Color.rewound.primary : Color.rewound.border))
                 .accessibilityIdentifier("listing.\(label.lowercased())")
             if let error {
-                Text(error).font(CalibreType.caption).foregroundStyle(Color.calibre.destructive)
+                Text(error).font(RewoundType.caption).foregroundStyle(Color.rewound.destructive)
             }
             if focused {
                 if let response {
@@ -1029,7 +1029,7 @@ private struct ListingCatalogField: View {
                                 focused = false
                             } label: {
                                 Text(suggestion.value)
-                                    .font(CalibreType.body)
+                                    .font(RewoundType.body)
                                     .frame(maxWidth: .infinity, minHeight: Space.touchTarget, alignment: .leading)
                                     .contentShape(Rectangle())
                             }
@@ -1037,15 +1037,15 @@ private struct ListingCatalogField: View {
                         }
                         if response.total > 6 || response.truncated {
                             Text("\(response.total) matches — keep typing to narrow them.")
-                                .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption).foregroundStyle(Color.rewound.mutedForeground)
                         } else if response.values.isEmpty {
                             Text("No catalog match. You can keep your own entry.")
-                                .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption).foregroundStyle(Color.rewound.mutedForeground)
                         }
                     }
                 } else if failed {
                     Text("Suggestions unavailable. You can still enter the watch details.")
-                        .font(CalibreType.caption).foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption).foregroundStyle(Color.rewound.mutedForeground)
                 }
             }
         }

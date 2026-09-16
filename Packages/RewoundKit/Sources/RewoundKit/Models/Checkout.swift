@@ -350,7 +350,7 @@ public struct WireCheckout: Decodable, Sendable {
     public let wire: WireIntent
     /// The refundable $250 placed on the buyer's credit card *before* the
     /// bank details are shown. Null when an accepted offer's own deposit is
-    /// already standing behind this wire — Calibre never stacks two.
+    /// already standing behind this wire — Rewound never stacks two.
     public let wireHold: WireHold?
     /// As on the card path: the single-watch breakdown when the checkout
     /// covers one watch, and nothing when it covers a set.

@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 final class LocalSignalsDiscoverTests: XCTestCase {
     private var directory: URL!

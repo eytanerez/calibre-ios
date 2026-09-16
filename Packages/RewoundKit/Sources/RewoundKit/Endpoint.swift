@@ -102,7 +102,7 @@ public struct MultipartForm: Sendable {
     }
 
     public private(set) var parts: [Part] = []
-    public let boundary = "calibre-\(UUID().uuidString)"
+    public let boundary = "rewound-\(UUID().uuidString)"
 
     public init() {}
 

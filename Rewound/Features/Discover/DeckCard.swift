@@ -1,12 +1,12 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import NukeUI
 import SwiftUI
 
 /// One deck card: image-forward — the watch photo fills the top ~70%, and a
 /// quiet identity panel sits below.
 ///
-/// The panel follows CALIBRE_FINAL_PUSH_CONTRACTS.md §4's element order, the
+/// The panel follows REWOUND_FINAL_PUSH_CONTRACTS.md §4's element order, the
 /// same one `ListingCard` uses, because §4 fixes that order across the whole
 /// product and the deck is the second listing-card shape:
 ///
@@ -33,11 +33,11 @@ struct DeckCard: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 
@@ -46,7 +46,7 @@ struct DeckCard: View {
     private func photo(width: CGFloat, height: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             ZStack {
-                Color.calibre.secondary.opacity(0.5)
+                Color.rewound.secondary.opacity(0.5)
                 if let url = listing.images.first?.url {
                     LazyImage(request: DeckImage.request(for: url)) { state in
                         if let image = state.image {
@@ -85,7 +85,7 @@ struct DeckCard: View {
     private var fallbackGlyph: some View {
         Image(systemName: "clock")
             .font(.system(size: 44, weight: .light))
-            .foregroundStyle(Color.calibre.placeholder)
+            .foregroundStyle(Color.rewound.placeholder)
     }
 
     // MARK: - Panel
@@ -111,15 +111,15 @@ struct DeckCard: View {
             }
 
             Text(listing.model ?? listing.title)
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
                 .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
                 .minimumScaleFactor(0.75)
 
             if let reference = listing.referenceNumber {
                 Text("Ref. \(reference)")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                     .minimumScaleFactor(0.8)
             }
@@ -132,8 +132,8 @@ struct DeckCard: View {
             Spacer(minLength: Space.s)
 
             Text(PriceFormatter.listing(listing.price.value, currency: listing.currency))
-                .font(CalibreType.price)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.price)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.l)
@@ -159,11 +159,11 @@ struct DeckCardSkeleton: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
-        .background(Color.calibre.card)
+        .background(Color.rewound.card)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.border, lineWidth: 1)
         )
     }
 }
@@ -187,10 +187,10 @@ struct DeckSkeleton: View {
 
     private var underPlate: some View {
         RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-            .fill(Color.calibre.card)
+            .fill(Color.rewound.card)
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 // The seller's part of fulfillment, start to finish. The seller no longer
-// buys their own label: they say how big the box is, Calibre buys the label,
+// buys their own label: they say how big the box is, Rewound buys the label,
 // and what it actually cost comes off their payout. The four label-checkout
 // endpoints this replaced are gone from the API.
 
@@ -66,9 +66,9 @@ public struct FulfillmentShippingQuote: Decodable, Sendable {
 // MARK: - Submit
 
 /// `POST /orders/{id}/fulfillment/shipping-details` — the form, submitted.
-/// Calibre buys the label immediately and the order starts moving to
+/// Rewound buys the label immediately and the order starts moving to
 /// authentication. Idempotent: an order that already has a to-auth label
-/// answers with that label and `alreadyCreated: true`, and Calibre never buys
+/// answers with that label and `alreadyCreated: true`, and Rewound never buys
 /// a second one.
 public struct FulfillmentShippingDetails: Decodable, Sendable {
     public struct Label: Decodable, Sendable {

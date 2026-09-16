@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The consumer Journal is retired — Bites replaced it.
@@ -38,7 +38,7 @@ struct JournalArticleScreen: View {
                 // worse than one that waits.
                 Color.clear
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .calibrePageBackground()
+                    .rewoundPageBackground()
                     .navigationTitle("Bites")
                     .navigationBarTitleDisplayMode(.inline)
             }

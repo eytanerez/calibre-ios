@@ -1,4 +1,4 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 import PostHog
 
@@ -20,7 +20,7 @@ import PostHog
 ///   start-up, not as an argument threaded through each call — see
 ///   `environment` below.
 ///
-/// Emission must never break the product: an empty `CALIBRE_POSTHOG_KEY`
+/// Emission must never break the product: an empty `REWOUND_POSTHOG_KEY`
 /// disables the whole thing (the SDK is never even configured) and every entry
 /// point is a silent no-op when disabled.
 @MainActor
@@ -133,15 +133,15 @@ enum Analytics {
 
     // MARK: - Lifecycle
 
-    /// Configures the SDK once at launch. With an empty `CALIBRE_POSTHOG_KEY`
+    /// Configures the SDK once at launch. With an empty `REWOUND_POSTHOG_KEY`
     /// this returns without calling `setup`, leaving analytics fully off — no
     /// network, no storage, no swizzling.
     static func start() {
         guard !isStarted else { return }
         isStarted = true
 
-        guard let token = infoValue("CalibrePostHogKey"), !token.isEmpty else { return }
-        let host = infoValue("CalibrePostHogHost") ?? defaultHost
+        guard let token = infoValue("RewoundPostHogKey"), !token.isEmpty else { return }
+        let host = infoValue("RewoundPostHogHost") ?? defaultHost
 
         let configuration = PostHogConfig(projectToken: token, host: host)
         // Only the schema's events may be emitted. PostHog's automatic capture
@@ -151,7 +151,7 @@ enum Analytics {
         configuration.captureApplicationLifecycleEvents = false
         configuration.captureElementInteractions = false
         configuration.sessionReplay = false
-        // Calibre owns APNs registration and push-open tracking. PostHog's
+        // Rewound owns APNs registration and push-open tracking. PostHog's
         // automatic delegate swizzle can replace SwiftUI's forwarding path.
         configuration.capturePushNotificationSubscriptions = false
         configuration.capturePushNotificationOpened = false
@@ -305,7 +305,7 @@ enum Analytics {
             "side": "buyer",
         ]
         // Absent, not empty, when the request names no reference / matched no
-        // catalogue entry.
+        // catalog entry.
         if let reference, !reference.isEmpty { properties["reference"] = reference }
         if let watchReferenceID, !watchReferenceID.isEmpty {
             properties["watch_reference_id"] = watchReferenceID

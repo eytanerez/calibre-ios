@@ -3,7 +3,7 @@ import SwiftUI
 /// Brand type scale. Playfair Display carries identity moments — titles and
 /// prices, always normal case (never uppercase serif). Geist carries the
 /// working UI. All styles scale with Dynamic Type via `relativeTo`.
-public enum CalibreType {
+public enum RewoundType {
     /// Hero moments — success screens, intro. Playfair 34.
     public static var display: Font { serif(.semiBold, 34, relativeTo: .largeTitle) }
     /// Page titles. Playfair 28.
@@ -17,7 +17,7 @@ public enum CalibreType {
     /// Inline/compact price. Playfair 17.
     public static var priceSmall: Font { serif(.semiBold, 17, relativeTo: .body) }
     /// Editorial serif body (Journal pull quotes). Playfair italic 19.
-    public static var editorialQuote: Font { custom(CalibreFonts.Name.serifItalic, 19, relativeTo: .title3) }
+    public static var editorialQuote: Font { custom(RewoundFonts.Name.serifItalic, 19, relativeTo: .title3) }
 
     /// Default body. Geist 15.
     public static var body: Font { sans(.regular, 15, relativeTo: .body) }
@@ -33,10 +33,10 @@ public enum CalibreType {
     /// aside. Caveat 17. The size runs above the Geist body on purpose: Caveat
     /// draws small for its point size, and this is already the compensated
     /// figure. Never on a price, a control, a label, or anything transactional.
-    public static var hand: Font { custom(CalibreFonts.Name.hand, 17, relativeTo: .body) }
+    public static var hand: Font { custom(RewoundFonts.Name.hand, 17, relativeTo: .body) }
     /// The hand at the smaller register — an annotation caption under a photo.
     /// Caveat 15, compensated the same way.
-    public static var handSmall: Font { custom(CalibreFonts.Name.hand, 15, relativeTo: .subheadline) }
+    public static var handSmall: Font { custom(RewoundFonts.Name.hand, 15, relativeTo: .subheadline) }
 
     /// The single sanctioned uppercase style — apply via `Eyebrow`, not directly.
     public static var eyebrow: Font { sans(.medium, 11, relativeTo: .caption2) }
@@ -48,25 +48,25 @@ public enum CalibreType {
 
     public static func serif(_ weight: SerifWeight, _ size: CGFloat, relativeTo style: Font.TextStyle = .body) -> Font {
         let name = switch weight {
-        case .regular: CalibreFonts.Name.serifRegular
-        case .medium: CalibreFonts.Name.serifMedium
-        case .semiBold: CalibreFonts.Name.serifSemiBold
-        case .bold: CalibreFonts.Name.serifBold
+        case .regular: RewoundFonts.Name.serifRegular
+        case .medium: RewoundFonts.Name.serifMedium
+        case .semiBold: RewoundFonts.Name.serifSemiBold
+        case .bold: RewoundFonts.Name.serifBold
         }
         return custom(name, size, relativeTo: style)
     }
 
     public static func sans(_ weight: SansWeight, _ size: CGFloat, relativeTo style: Font.TextStyle = .body) -> Font {
         let name = switch weight {
-        case .regular: CalibreFonts.Name.sansRegular
-        case .medium: CalibreFonts.Name.sansMedium
-        case .semiBold: CalibreFonts.Name.sansSemiBold
+        case .regular: RewoundFonts.Name.sansRegular
+        case .medium: RewoundFonts.Name.sansMedium
+        case .semiBold: RewoundFonts.Name.sansSemiBold
         }
         return custom(name, size, relativeTo: style)
     }
 
     private static func custom(_ name: String, _ size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
-        CalibreFonts.register()
+        RewoundFonts.register()
         return .custom(name, size: size, relativeTo: style)
     }
 }

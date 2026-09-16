@@ -2,7 +2,7 @@
 
 First read Docs/specs/shared-rules.md AND mobile-api.md (devices, push payload contract, support chat, watch requests, notification preferences, orders). Your simulator: **iPhone 16e**. Derived data: /tmp/dd-p7. Screenshots: scratchpad/p7/.
 
-You own: Calibre/Features/Activity/, Orders/, Support/, Requests/, Profile/ + the push plumbing files in Calibre/App/ (PushCoordinator.swift, AppDelegate additions — coordinate: these are shared-adjacent; you are the ONLY track allowed to touch Calibre/App/ and ONLY for push registration/routing + replacing the Activity/You placeholder roots' wiring if needed). Test account: iosbuyer.calibre@gmail.com / CalibreiOS123!.
+You own: Rewound/Features/Activity/, Orders/, Support/, Requests/, Profile/ + the push plumbing files in Rewound/App/ (PushCoordinator.swift, AppDelegate additions — coordinate: these are shared-adjacent; you are the ONLY track allowed to touch Rewound/App/ and ONLY for push registration/routing + replacing the Activity/You placeholder roots' wiring if needed). Test account: iosbuyer.rewound@gmail.com / RewoundiOS123!.
 
 ## Build
 
@@ -19,10 +19,10 @@ Local inbox of received push payloads (persist last 100 in a small store in your
 ### 4. Push plumbing
 - AppDelegate adapter (UIApplicationDelegateAdaptor): registerForRemoteNotifications flow; UNUserNotificationCenter delegate: foreground pushes → ToastCenter toast with tap-through (never system banner in-app); background tap → route.
 - **PushCoordinator**: pre-permission moment — a SheetScaffold shown at the first high-signal event (first save, offer sent, or listing submitted; NOT at launch): "Know the second the seller responds." + Enable / Not now (remember). On grant → device token → POST /account/devices {token, platform: "ios", environment: "sandbox"}; DELETE on logout. Payload contract: route string per mobile-api.md → parse to Route → AppRouter.open (cold-start stash until root ready).
-- **Verify with simulated pushes**: xcrun simctl push <sim> com.buycalibre.calibre payload.json for each route type (offer/{id}, order/{id}, listing/{id}, support, alerts) — cold, background, foreground; confirm routing + inbox capture.
+- **Verify with simulated pushes**: xcrun simctl push <sim> com.shoprewound.rewound payload.json for each route type (offer/{id}, order/{id}, listing/{id}, support, alerts) — cold, background, foreground; confirm routing + inbox capture.
 
 ### 5. Support chat
-**SupportChatScreen** (route .supportChat; entries: You tab row + "Contact us" spots): bubble thread (customer trailing/primary-tint, Calibre leading/card + "Calibre · {time}" caption), composer (TextField ≤4000, send button, Enter sends), poll every 20s while visible; **guest support works**: email capture field on first message ("So we can reply"), persist guest token (UserDefaults) per contract; signed-in uses the user thread. Header: "Message Calibre — we typically reply within a day."
+**SupportChatScreen** (route .supportChat; entries: You tab row + "Contact us" spots): bubble thread (customer trailing/primary-tint, Rewound leading/card + "Rewound · {time}" caption), composer (TextField ≤4000, send button, Enter sends), poll every 20s while visible; **guest support works**: email capture field on first message ("So we can reply"), persist guest token (UserDefaults) per contract; signed-in uses the user thread. Header: "Message Rewound — we typically reply within a day."
 
 ### 6. Watch sourcing requests (buyer side)
 **RequestsScreen** (You tab row): list (brand/model/ref/year/budget, Active/Sourced StatusBadge, "View match" when fulfilled → listing route, delete w/ confirm) + **New request** sheet (Brand required, Model, Reference, Year, Max budget, Notes → POST) with warm intro line ("Tell us what you're hunting. Sellers see open requests and list against them.").

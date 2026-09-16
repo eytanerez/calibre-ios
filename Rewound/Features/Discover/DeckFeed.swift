@@ -1,4 +1,4 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 import Nuke
 import Observation
@@ -259,7 +259,7 @@ final class DeckFeed {
 
     #if DEBUG
     /// Using the production `Listing` decoder keeps this fixture aligned with
-    /// the card model without adding test-only initializers to CalibreKit.
+    /// the card model without adding test-only initializers to RewoundKit.
     private static var uiTestCards: [Listing] {
         let json = """
         [

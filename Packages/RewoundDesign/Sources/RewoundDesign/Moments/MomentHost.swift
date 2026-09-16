@@ -74,13 +74,13 @@ public extension View {
     /// outlives the navigation that happens underneath it, and — for two of
     /// the five — moves the app's own screen, which nothing below the root can
     /// do.
-    func calibreMomentHost() -> some View {
+    func rewoundMomentHost() -> some View {
         modifier(MomentHost())
     }
 }
 
 struct MomentHost: ViewModifier {
-    private var moments = CalibreMoments.shared
+    private var moments = RewoundMoments.shared
     /// The screen a frozen film collapses, grabbed once before the freeze is
     /// allowed to draw anything — a capture taken with the film already on
     /// screen would photograph the film's own ground.
@@ -91,7 +91,7 @@ struct MomentHost: ViewModifier {
     /// of any beat gets looked at. A screenshot taken while a film runs
     /// catches whichever frame the shutter fell on, and a screenshot taken
     /// after it catches only the end.
-    private var showing: (moment: CalibreMoment, time: TimeInterval, outgoing: UIImage?)? {
+    private var showing: (moment: RewoundMoment, time: TimeInterval, outgoing: UIImage?)? {
         if let frozen = Self.frozenByLaunchArgument {
             if frozen.moment.collapsesTheOutgoingScreen, frozenOutgoing == nil { return nil }
             return (frozen.moment, frozen.time, frozenOutgoing)
@@ -107,11 +107,11 @@ struct MomentHost: ViewModifier {
                 guard let frozen = Self.frozenByLaunchArgument,
                       frozen.moment.collapsesTheOutgoingScreen else { return }
                 try? await Task.sleep(for: .seconds(3))
-                frozenOutgoing = CalibreMoments.screenAsItStands()
+                frozenOutgoing = RewoundMoments.screenAsItStands()
             }
     }
 
-    /// `-calibreMoment orderPlaced -calibreMomentAt 1.3` freezes that film at
+    /// `-rewoundMoment orderPlaced -rewoundMomentAt 1.3` freezes that film at
     /// that second, over whatever the app is showing, so a still of any beat
     /// can be captured and looked at — a screenshot of a film that is running
     /// catches whichever frame the shutter fell on.
@@ -119,12 +119,12 @@ struct MomentHost: ViewModifier {
     /// Gated on two launch arguments rather than on a build configuration: an
     /// installed iOS app has no way of being handed either of them, so the
     /// hook is unreachable off a developer's machine.
-    static var frozenByLaunchArgument: (moment: CalibreMoment, time: TimeInterval)? {
+    static var frozenByLaunchArgument: (moment: RewoundMoment, time: TimeInterval)? {
         let arguments = ProcessInfo.processInfo.arguments
-        guard let nameIndex = arguments.firstIndex(of: "-calibreMoment"),
+        guard let nameIndex = arguments.firstIndex(of: "-rewoundMoment"),
               nameIndex + 1 < arguments.count,
-              let moment = CalibreMoment(rawValue: arguments[nameIndex + 1]),
-              let timeIndex = arguments.firstIndex(of: "-calibreMomentAt"),
+              let moment = RewoundMoment(rawValue: arguments[nameIndex + 1]),
+              let timeIndex = arguments.firstIndex(of: "-rewoundMomentAt"),
               timeIndex + 1 < arguments.count,
               let time = TimeInterval(arguments[timeIndex + 1])
         else { return nil }
@@ -142,7 +142,7 @@ struct MomentHost: ViewModifier {
 /// Everything that lives in that tree rather than in a store went with it: a
 /// `NavigationStack`'s pushes, every screen's `@State`.
 ///
-/// It surfaced in the Vault. Opening a watch Calibre authenticated plays a
+/// It surfaced in the Vault. Opening a watch Rewound authenticated plays a
 /// film on arrival, the film re-parented the app, the pushed screen was gone
 /// before it had drawn — and the Passport, which is a button on that screen,
 /// could not be reached at all. It read as the tap doing nothing.
@@ -152,9 +152,9 @@ struct MomentHost: ViewModifier {
 /// and go, and each of them lives in a `background`, an `overlay` or a value,
 /// none of which moves `content`.
 private struct MomentPlayer: ViewModifier {
-    let showing: (moment: CalibreMoment, time: TimeInterval, outgoing: UIImage?)?
+    let showing: (moment: RewoundMoment, time: TimeInterval, outgoing: UIImage?)?
 
-    private var moments = CalibreMoments.shared
+    private var moments = RewoundMoments.shared
 
     /// The screen's own size, read from the view the transform is applied to
     /// so the layers and that transform cannot be given different answers. It
@@ -164,7 +164,7 @@ private struct MomentPlayer: ViewModifier {
     /// Seconds into the film that is running. Driven below.
     @State private var elapsed: TimeInterval = 0
 
-    init(showing: (moment: CalibreMoment, time: TimeInterval, outgoing: UIImage?)?) {
+    init(showing: (moment: RewoundMoment, time: TimeInterval, outgoing: UIImage?)?) {
         self.showing = showing
     }
 
@@ -186,14 +186,14 @@ private struct MomentPlayer: ViewModifier {
             .task(id: moments.running?.id) { await runClock() }
     }
 
-    /// Everything behind the app's screen: the page's own colour in the
+    /// Everything behind the app's screen: the page's own color in the
     /// safe-area strips the layers do not reach, and the films that put
     /// something under the screen rather than over it.
     @ViewBuilder
     private var ground: some View {
         if let showing {
             ZStack {
-                Color.calibre.background.ignoresSafeArea()
+                Color.rewound.background.ignoresSafeArea()
                 GeometryReader { proxy in
                     layer(showing.moment, .under, at: time, stage: proxy.size, outgoing: showing.outgoing)
                 }
@@ -216,7 +216,7 @@ private struct MomentPlayer: ViewModifier {
                 Color.clear.contentShape(Rectangle())
             }
             .accessibilityHidden(true)
-            .onTapGesture { CalibreMoments.cut() }
+            .onTapGesture { RewoundMoments.cut() }
         }
     }
 
@@ -244,7 +244,7 @@ private struct MomentPlayer: ViewModifier {
     }
 
     private func effect(
-        _ moment: CalibreMoment,
+        _ moment: RewoundMoment,
         at time: TimeInterval,
         stage: CGSize
     ) -> MomentContentEffect {
@@ -259,7 +259,7 @@ private struct MomentPlayer: ViewModifier {
 
     @ViewBuilder
     private func layer(
-        _ moment: CalibreMoment,
+        _ moment: RewoundMoment,
         _ side: MomentLayer,
         at time: TimeInterval,
         stage: CGSize,

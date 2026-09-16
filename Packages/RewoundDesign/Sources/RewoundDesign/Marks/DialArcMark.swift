@@ -51,24 +51,24 @@ struct DialArcMark: View {
 
     private func render(_ reading: Double) -> some View {
         ZStack {
-            track.stroke(Color.calibre.primary.opacity(0.22), style: MarkGrid.style)
-            filled(reading).stroke(Color.calibre.primary, style: MarkGrid.style)
-            needle(reading).stroke(Color.calibre.primary, style: MarkGrid.style)
+            track.stroke(Color.rewound.primary.opacity(0.22), style: MarkGrid.style)
+            filled(reading).stroke(Color.rewound.primary, style: MarkGrid.style)
+            needle(reading).stroke(Color.rewound.primary, style: MarkGrid.style)
             // Stroked, not filled: web and Android both draw this jewel as a
             // ring, and a fill here would be a fifth mark carrying one.
             Path(ellipseIn: CGRect(x: 55, y: 73, width: 10, height: 10))
-                .stroke(Color.calibre.primary, style: MarkGrid.style)
+                .stroke(Color.rewound.primary, style: MarkGrid.style)
         }
     }
 
     private var track: Path {
-        Path { $0.addCircularArc(centre: Self.pivot, radius: 44, start: Self.start, delta: Self.span) }
+        Path { $0.addCircularArc(center: Self.pivot, radius: 44, start: Self.start, delta: Self.span) }
     }
 
     private func filled(_ reading: Double) -> Path {
         Path {
             $0.addCircularArc(
-                centre: Self.pivot,
+                center: Self.pivot,
                 radius: 44,
                 start: Self.start,
                 delta: .degrees(Self.span.degrees * reading)
@@ -77,7 +77,7 @@ struct DialArcMark: View {
     }
 
     /// The needle stops short of the pivot rather than running out of its
-    /// centre: a round cap sitting in the eye of the jewel fills it, and this
+    /// center: a round cap sitting in the eye of the jewel fills it, and this
     /// is not one of the marks a fill belongs to.
     private func needle(_ reading: Double) -> Path {
         Path { path in
@@ -95,9 +95,9 @@ struct DialArcMark: View {
 
 #Preview("dialArc", traits: .sizeThatFitsLayout) {
     HStack(spacing: Space.l) {
-        CalibreMark.dialArc(0.28, size: 96)
-        CalibreMark.dialArc(0.72, size: 96)
+        RewoundMark.dialArc(0.28, size: 96)
+        RewoundMark.dialArc(0.72, size: 96)
     }
     .padding(Space.xl)
-    .calibrePageBackground()
+    .rewoundPageBackground()
 }

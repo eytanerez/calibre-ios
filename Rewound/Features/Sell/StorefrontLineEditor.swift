@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Where a verified dealer writes the one line that sits on their storefront.
@@ -42,7 +42,7 @@ struct StorefrontLineEditor: View {
         VStack(alignment: .leading, spacing: Space.l) {
             reviewState
 
-            CalibreTextEditor(
+            RewoundTextEditor(
                 "Your line",
                 text: $draft,
                 placeholder: "Vintage Seiko out of a workshop in Osaka, since 1998.",
@@ -70,7 +70,7 @@ struct StorefrontLineEditor: View {
             } label: {
                 BusyLabel(title: submitTitle, busy: saving)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(!canSubmit)
         }
         // An inline error appears beside a field VoiceOver focus is not on,
@@ -147,8 +147,8 @@ struct StorefrontLineEditor: View {
                 StatusBadge(badge, tone: tone)
                 ForEach(lines, id: \.self) { line in
                     Text(line)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.secondaryForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.secondaryForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

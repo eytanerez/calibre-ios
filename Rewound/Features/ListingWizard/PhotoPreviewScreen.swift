@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import NukeUI
 import PhotosUI
 import SwiftUI
@@ -76,7 +76,7 @@ struct PhotoPreviewScreen: View {
                     Button("Take a new photo") {
                         replace(with: .camera)
                     }
-                    .buttonStyle(.calibre(.primary, fullWidth: true))
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
 
                     // A button rather than a `PhotosPicker` label: the picker
                     // opens the instant its label is tapped, and the question
@@ -85,7 +85,7 @@ struct PhotoPreviewScreen: View {
                         replace(with: .library)
                     } label: {
                         Text("Choose from library")
-                            .font(CalibreType.bodyMedium)
+                            .font(RewoundType.bodyMedium)
                             .foregroundStyle(Color(white: 1))
                             .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
                             .background(
@@ -116,7 +116,7 @@ struct PhotoPreviewScreen: View {
                     Spacer()
 
                     Text(target.category.label)
-                        .font(CalibreType.bodyMedium)
+                        .font(RewoundType.bodyMedium)
                         .foregroundStyle(Color(white: 1))
                         .padding(.horizontal, Space.l)
                         .padding(.vertical, Space.s)
@@ -149,7 +149,7 @@ struct PhotoPreviewScreen: View {
                     // over an arbitrary picture, and the one it does have for
                     // light ink flips dark in dark mode — which is exactly
                     // wrong here.
-                    CalibreInlineLoading(size: 28, tint: Color(white: 1))
+                    RewoundInlineLoading(size: 28, tint: Color(white: 1))
                 }
             }
         } else {

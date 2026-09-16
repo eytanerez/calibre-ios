@@ -1,15 +1,15 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import Nuke
 import StripePaymentSheet
 import SwiftUI
 
 @main
-struct CalibreApp: App {
+struct RewoundApp: App {
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var appDelegate
 
     init() {
-        CalibreFonts.register()
+        RewoundFonts.register()
 
         // Analytics, crash reporting and log shipping, once. Each service is
         // started only if its key is built in; with none set this is a no-op
@@ -31,7 +31,7 @@ struct CalibreApp: App {
         // arrives; background preparation keeps final display off the main
         // thread. LazyImage still owns visibility-based request cancellation.
         var imageConfiguration = ImagePipeline.Configuration.withDataCache(
-            name: "com.buycalibre.calibre.images",
+            name: "com.shoprewound.rewound.images",
             sizeLimit: 250 * 1_024 * 1_024
         )
         imageConfiguration.isProgressiveDecodingEnabled = true
@@ -145,7 +145,7 @@ struct RootView: View {
         let sheet = activeSheet
 
         ZStack {
-            Color.calibre.background.ignoresSafeArea()
+            Color.rewound.background.ignoresSafeArea()
 
             switch phase {
             case .booting:
@@ -179,8 +179,8 @@ struct RootView: View {
         .dismissesKeyboardOnBackgroundTap()
         // The five moments play over everything, from the root, because a film
         // outlives the navigation it introduces and two of them move the app's
-        // own screen. See CalibreMoments.
-        .calibreMomentHost()
+        // own screen. See RewoundMoments.
+        .rewoundMomentHost()
         // Applied once at the root — sheets and every tab inherit it via the
         // environment, same as the rest of SwiftUI's environment propagation.
         .preferredColorScheme(appearancePreference.colorScheme)
@@ -218,9 +218,9 @@ struct RootView: View {
         }
         .onOpenURL { url in
             // Stripe gets first refusal. Redirect-based methods (Cash App Pay,
-            // Klarna, bank redirects) return through `calibre://stripe-redirect`,
+            // Klarna, bank redirects) return through `rewound://stripe-redirect`,
             // and if the SDK never sees that callback the payment hangs on a
-            // spinner forever. Everything it doesn't claim is a Calibre link.
+            // spinner forever. Everything it doesn't claim is a Rewound link.
             guard !StripeAPI.handleURLCallback(with: url) else { return }
             services.router.handle(url: url)
         }
@@ -334,9 +334,9 @@ private enum RootSheet: Identifiable, Equatable {
 /// Shown only for the breath it takes `bootstrap()` to restore a session.
 private struct BootSplash: View {
     var body: some View {
-        CalibreWordmark(size: 40)
+        RewoundWordmark(size: 40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .calibrePageBackground()
+            .rewoundPageBackground()
     }
 }
 
@@ -356,7 +356,7 @@ final class AppServices {
     let content: ContentStore
     let config: ConfigStore
     let vault: VaultStore
-    /// The bytes behind Calibre's own private objects — today, the owner's
+    /// The bytes behind Rewound's own private objects — today, the owner's
     /// photographs of the watches in their Vault. Those are served behind the
     /// member's session rather than as public files, so a plain image loader
     /// gets a 401 and draws nothing; this is what holds the credential.
@@ -382,7 +382,7 @@ final class AppServices {
         let account = AccountStore(client: client, auth: auth)
         self.account = account
         self.support = SupportStore(client: client)
-        // calibre-messaging is a separate service (own base URL, own wire
+        // rewound-messaging is a separate service (own base URL, own wire
         // contract) — see `MessagingClient` — but the same signed-in
         // session, so it reuses `auth` as its bearer-token provider exactly
         // as `client` above does.

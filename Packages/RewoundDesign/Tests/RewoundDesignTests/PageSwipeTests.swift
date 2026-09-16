@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 final class PageSwipeTests: XCTestCase {
     func testDiagonalHorizontalIntentLocksWhileVerticalMotionDoesNot() {

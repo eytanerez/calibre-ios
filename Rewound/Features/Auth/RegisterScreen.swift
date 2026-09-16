@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Two-step account creation. Step one is who you are — with a live username
@@ -95,7 +95,7 @@ struct RegisterScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Create account")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -106,7 +106,7 @@ struct RegisterScreen: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                             .frame(width: Space.touchTarget, height: Space.touchTarget)
                     }
                     .buttonStyle(PressableStyle())
@@ -128,15 +128,15 @@ struct RegisterScreen: View {
             Eyebrow("Step \(step) of 2")
             HStack(spacing: Space.xs) {
                 Capsule()
-                    .fill(Color.calibre.primary)
+                    .fill(Color.rewound.primary)
                     .frame(height: 3)
                 Capsule()
-                    .fill(step == 2 ? Color.calibre.primary : Color.calibre.border)
+                    .fill(step == 2 ? Color.rewound.primary : Color.rewound.border)
                     .frame(height: 3)
             }
             Text(step == 1 ? "Tell us who you are." : "Where should watches ship?")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
         }
         .accessibilityElement(children: .combine)
     }
@@ -146,18 +146,18 @@ struct RegisterScreen: View {
     private var stepOne: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             HStack(alignment: .top, spacing: Space.m) {
-                CalibreTextField("First name", text: $firstName, kind: .givenName)
-                CalibreTextField("Last name", text: $lastName, kind: .familyName)
+                RewoundTextField("First name", text: $firstName, kind: .givenName)
+                RewoundTextField("Last name", text: $lastName, kind: .familyName)
             }
 
-            CalibreTextField(
+            RewoundTextField(
                 "Email",
                 text: $email,
                 placeholder: "you@example.com",
                 kind: .email
             )
 
-            CalibreTextField(
+            RewoundTextField(
                 "Phone",
                 text: $phone,
                 placeholder: "(415) 555-0134",
@@ -168,7 +168,7 @@ struct RegisterScreen: View {
             usernameField
 
             VStack(alignment: .leading, spacing: Space.m) {
-                CalibreTextField("Password", text: $password, kind: .newPassword)
+                RewoundTextField("Password", text: $password, kind: .newPassword)
                 passwordChecklist
             }
 
@@ -178,7 +178,7 @@ struct RegisterScreen: View {
 
     private var usernameField: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            CalibreTextField(
+            RewoundTextField(
                 "Username",
                 text: $username,
                 placeholder: "e.g. dialside",
@@ -189,8 +189,8 @@ struct RegisterScreen: View {
 
             if let caption = usernameState.caption {
                 Text(caption.text)
-                    .font(CalibreType.caption)
-                    .foregroundStyle(caption.positive ? Color.calibre.success : Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(caption.positive ? Color.rewound.success : Color.rewound.destructive)
                     .transition(.opacity)
             }
         }
@@ -203,21 +203,21 @@ struct RegisterScreen: View {
         case .idle:
             EmptyView()
         case .checking:
-            CalibreInlineLoading(size: 16, tint: Color.calibre.mutedForeground)
+            RewoundInlineLoading(size: 16, tint: Color.rewound.mutedForeground)
         case .available:
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 15))
-                .foregroundStyle(Color.calibre.success)
+                .foregroundStyle(Color.rewound.success)
                 .accessibilityLabel("Username is available")
         case .unavailable, .invalid:
             Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 15))
-                .foregroundStyle(Color.calibre.destructive)
+                .foregroundStyle(Color.rewound.destructive)
                 .accessibilityLabel("Username is not available")
         case .unverified:
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 15))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .accessibilityLabel("Username availability not checked")
         }
     }
@@ -235,10 +235,10 @@ struct RegisterScreen: View {
         HStack(spacing: Space.s) {
             Image(systemName: satisfied ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 13))
-                .foregroundStyle(satisfied ? Color.calibre.success : Color.calibre.mutedForeground)
+                .foregroundStyle(satisfied ? Color.rewound.success : Color.rewound.mutedForeground)
             Text(text)
-                .font(CalibreType.caption)
-                .foregroundStyle(satisfied ? Color.calibre.foreground : Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(satisfied ? Color.rewound.foreground : Color.rewound.mutedForeground)
         }
         .accessibilityElement(children: .combine)
         .accessibilityValue(satisfied ? "met" : "not met")
@@ -246,19 +246,19 @@ struct RegisterScreen: View {
 
     private var confirmPasswordField: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            CalibreTextField("Confirm password", text: $confirmPassword, kind: .newPassword) {
+            RewoundTextField("Confirm password", text: $confirmPassword, kind: .newPassword) {
                 if !confirmPassword.isEmpty {
                     Image(systemName: passwordsMatch ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .font(.system(size: 15))
-                        .foregroundStyle(passwordsMatch ? Color.calibre.success : Color.calibre.destructive)
+                        .foregroundStyle(passwordsMatch ? Color.rewound.success : Color.rewound.destructive)
                         .accessibilityLabel(passwordsMatch ? "Passwords match" : "Passwords don't match")
                 }
             }
 
             if !confirmPassword.isEmpty && !passwordsMatch {
                 Text("These passwords don't match yet.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.destructive)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
                     .transition(.opacity)
             }
         }
@@ -269,27 +269,27 @@ struct RegisterScreen: View {
 
     private var stepTwo: some View {
         VStack(alignment: .leading, spacing: Space.l) {
-            CalibreTextField("Full name", text: $addressFullName, kind: .fullName)
+            RewoundTextField("Full name", text: $addressFullName, kind: .fullName)
 
-            CalibreTextField(
+            RewoundTextField(
                 "Street address",
                 text: $street,
                 placeholder: "123 Meridian Ave",
                 kind: .addressLine1
             )
 
-            CalibreTextField("Apartment, suite (optional)", text: $apartment, kind: .addressLine2)
+            RewoundTextField("Apartment, suite (optional)", text: $apartment, kind: .addressLine2)
 
-            CalibreTextField("City", text: $city, kind: .city)
+            RewoundTextField("City", text: $city, kind: .city)
 
             HStack(alignment: .top, spacing: Space.m) {
-                CalibreTextField("ZIP", text: $zip, kind: .postalCode)
-                CalibreTextField("State", text: $state, placeholder: "NY", kind: .state)
+                RewoundTextField("ZIP", text: $zip, kind: .postalCode)
+                RewoundTextField("State", text: $state, placeholder: "NY", kind: .state)
             }
 
-            CalibreTextField("Country", text: $country, placeholder: "US", kind: .country)
+            RewoundTextField("Country", text: $country, placeholder: "US", kind: .country)
 
-            CalibreTextField("Phone", text: $phone, placeholder: "(415) 555-0134", kind: .phone)
+            RewoundTextField("Phone", text: $phone, placeholder: "(415) 555-0134", kind: .phone)
                 .phoneFormatted($phone)
 
             termsAcceptance
@@ -301,8 +301,8 @@ struct RegisterScreen: View {
     /// The same two site pages the About screen links to, opened the same way
     /// — one set of URLs, so what you accept here and what you can read there
     /// cannot drift apart.
-    private static let termsURL = URL(string: "https://buycalibre.com/terms")!
-    private static let privacyURL = URL(string: "https://buycalibre.com/privacy")!
+    private static let termsURL = URL(string: "https://shoprewound.com/terms")!
+    private static let privacyURL = URL(string: "https://shoprewound.com/privacy")!
 
     /// The acceptance `POST /auth/register` now requires. The client sends the
     /// boolean and nothing else: the server stamps the version it actually
@@ -318,7 +318,7 @@ struct RegisterScreen: View {
                 // size you can hit rather than one you can only read.
                 Image(systemName: acceptedTerms ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
-                    .foregroundStyle(acceptedTerms ? Color.calibre.primary : Color.calibre.borderBright)
+                    .foregroundStyle(acceptedTerms ? Color.rewound.primary : Color.rewound.borderBright)
                     .frame(width: Space.touchTarget, height: Space.touchTarget)
                     .contentShape(Rectangle())
             }
@@ -332,8 +332,8 @@ struct RegisterScreen: View {
 
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text("I accept the Terms of Service and the Privacy Policy.")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
                     // Word for word the box's own label, so leaving it in the
                     // tree only makes VoiceOver say the sentence twice before
@@ -366,14 +366,14 @@ struct RegisterScreen: View {
 
     private var termsLink: some View {
         Link("Read the Terms of Service", destination: Self.termsURL)
-            .font(CalibreType.label)
-            .tint(Color.calibre.primary)
+            .font(RewoundType.label)
+            .tint(Color.rewound.primary)
     }
 
     private var privacyLink: some View {
         Link("Read the Privacy Policy", destination: Self.privacyURL)
-            .font(CalibreType.label)
-            .tint(Color.calibre.primary)
+            .font(RewoundType.label)
+            .tint(Color.rewound.primary)
     }
 
     // MARK: - Footer
@@ -388,7 +388,7 @@ struct RegisterScreen: View {
                 Text("Continue")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(!stepOneComplete)
         } else {
             VStack(spacing: Space.m) {
@@ -396,16 +396,16 @@ struct RegisterScreen: View {
                     Haptics.shared.play(.press)
                     Task { await submit() }
                 } label: {
-                    CalibreBusyLabel("Create account", busy: busy)
+                    RewoundBusyLabel("Create account", busy: busy)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(!stepTwoComplete || busy)
 
                 Button("Back to your details") {
                     errorMessage = nil
                     step = 1
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
                 .disabled(busy)
             }
         }
@@ -548,7 +548,7 @@ struct RegisterScreen: View {
             }
             Haptics.shared.play(.success)
             toasts.show(
-                title: "Welcome to Calibre",
+                title: "Welcome to Rewound",
                 message: "Your account is ready.",
                 tone: .success
             )

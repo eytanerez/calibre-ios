@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The checkout cover — three unhurried steps (Shipping → Payment → Review,
@@ -35,7 +35,7 @@ struct CheckoutFlow: View {
             } else if let model {
                 CheckoutStack(model: model)
             } else {
-                Color.calibre.background.ignoresSafeArea()
+                Color.rewound.background.ignoresSafeArea()
             }
         }
         .task {
@@ -80,7 +80,7 @@ struct CheckoutFlow: View {
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
     }
 }
 
@@ -105,7 +105,7 @@ private struct CheckoutStack: View {
                         case .wire:
                             WireInstructionsScreen(model: model) { orders in
                                 if let first = orders.first {
-                                    CalibreMoments.play(.orderPlaced)
+                                    RewoundMoments.play(.orderPlaced)
                                     router.open(.order(first.id))
                                 }
                                 dismiss()
@@ -113,7 +113,7 @@ private struct CheckoutStack: View {
                         }
                     }
             }
-            .tint(Color.calibre.primary)
+            .tint(Color.rewound.primary)
             // Inside pushed steps `\.dismiss` pops the stack; the cover's own
             // dismissal travels via this environment closure instead.
             .environment(\.checkoutClose, { dismiss() })
@@ -132,7 +132,7 @@ private struct CheckoutStack: View {
                         // The page you were on collapses into the box, so the
                         // film is this order's own screen rather than a
                         // drawing of one.
-                        CalibreMoments.play(.orderPlaced)
+                        RewoundMoments.play(.orderPlaced)
                         router.open(.order(order.id))
                         dismiss()
                     },
@@ -189,9 +189,9 @@ struct CheckoutCloseButton: View {
         } label: {
             Image(systemName: "xmark")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .frame(width: 34, height: 34)
-                .background(Color.calibre.secondary, in: Circle())
+                .background(Color.rewound.secondary, in: Circle())
                 // 34pt drawn, 44pt grabbable. The 5pt of growth spills into
                 // the header's padding, which nothing else answers, so the
                 // circle still draws and still measures 34.

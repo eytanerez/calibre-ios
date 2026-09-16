@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// One tab treatment for the whole product — this is the same rule the site
 /// header, the sell tab bar and the seller shop's four sub-tabs draw
-/// (CALIBRE_FINAL_PUSH_CONTRACTS.md §5, as amended by the round-2 review):
+/// (REWOUND_FINAL_PUSH_CONTRACTS.md §5, as amended by the round-2 review):
 ///
 /// - **Every label reads at full strength.** Dimming the inactive ones made
 ///   the whole bar look disabled rather than making one of them look current,
@@ -53,7 +53,7 @@ public struct SegmentedTabs<Selection: Hashable>: View {
         }
         .background(alignment: .bottom) {
             Rectangle()
-                .fill(Color.calibre.border)
+                .fill(Color.rewound.border)
                 .frame(height: 1)
         }
     }
@@ -72,8 +72,8 @@ public struct SegmentedTabs<Selection: Hashable>: View {
             }
         } label: {
             Text(label)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 // The overlay hangs off the Text, so the rule measures the
                 // word. Hung off the frame below it would measure the segment.
                 .overlay(alignment: .bottom) {
@@ -114,7 +114,7 @@ public struct TabUnderline: View {
 
     public var body: some View {
         Capsule()
-            .fill(Color.calibre.primary)
+            .fill(Color.rewound.primary)
             .frame(height: 2)
             .scaleEffect(x: isSelected ? 1 : 0, anchor: .leading)
             // 2pt of thickness plus 2pt of air: the rule's top edge lands 2pt
@@ -141,7 +141,7 @@ public struct TabLeadingRule: View {
 
     public var body: some View {
         Capsule()
-            .fill(Color.calibre.primary)
+            .fill(Color.rewound.primary)
             .frame(width: 2)
             .scaleEffect(y: isSelected ? 1 : 0, anchor: .top)
             .animation(reduceMotion ? nil : Motion.easeMedium, value: isSelected)
@@ -159,11 +159,11 @@ private struct SegmentedTabsPreviewHost: View {
                 items: [("Offers", "Offers"), ("Orders", "Orders"), ("Saved", "Saved")]
             )
             Text(tab)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .padding()
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
     }
 }
 

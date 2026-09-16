@@ -156,7 +156,7 @@ struct ReportOpenedFilm: View {
                 if side == .under {
                     // The ground the report is cut out of. Outside its window
                     // the page is clipped away, and this is what is there.
-                    Color.calibre.background
+                    Color.rewound.background
                         .ignoresSafeArea()
                 }
                 // The envelope crosses behind the report as it rises: over the
@@ -185,7 +185,7 @@ struct ReportOpenedFilm: View {
                 style: .continuous
             )
         )
-        .stroke(Color.calibre.borderBright, lineWidth: 1)
+        .stroke(Color.rewound.borderBright, lineWidth: 1)
         .opacity((1 - grown) * Self.reportInk.value(at: Self.slideOut.progress(time)))
     }
 
@@ -208,10 +208,10 @@ struct ReportOpenedFilm: View {
 
     private func pocket(_ shape: Envelope) -> some View {
         RoundedRectangle(cornerRadius: 8 * shape.scale, style: .continuous)
-            .fill(Color.calibre.secondary)
+            .fill(Color.rewound.secondary)
             .overlay {
                 RoundedRectangle(cornerRadius: 8 * shape.scale, style: .continuous)
-                    .stroke(Color.calibre.borderBright, lineWidth: 1)
+                    .stroke(Color.rewound.borderBright, lineWidth: 1)
             }
             .frame(width: shape.rect.width, height: shape.rect.height)
             .position(x: shape.rect.midX, y: shape.rect.midY)
@@ -225,8 +225,8 @@ struct ReportOpenedFilm: View {
             triangle.addLine(to: CGPoint(x: size.width / 2, y: size.height * 60 / 66))
             triangle.addLine(to: CGPoint(x: size.width, y: 0))
             triangle.closeSubpath()
-            context.fill(triangle, with: .color(Color.calibre.accent))
-            context.stroke(triangle, with: .color(Color.calibre.borderBright), lineWidth: 2 * shape.scale)
+            context.fill(triangle, with: .color(Color.rewound.accent))
+            context.stroke(triangle, with: .color(Color.rewound.borderBright), lineWidth: 2 * shape.scale)
         }
         .frame(width: shape.rect.width, height: height)
         .rotation3DEffect(
@@ -247,10 +247,10 @@ struct ReportOpenedFilm: View {
         let side = 54 * shape.scale
         return Canvas { context, _ in
             context.scaleBy(x: side / MarkGrid.side, y: side / MarkGrid.side)
-            context.fill(WaxSealMark.wax, with: .color(Color.calibre.wax))
+            context.fill(WaxSealMark.wax, with: .color(Color.rewound.wax))
             context.stroke(
                 WaxSealMark.wax,
-                with: .color(Color.calibre.waxHighlight),
+                with: .color(Color.rewound.waxHighlight),
                 style: MarkGrid.style
             )
         }
@@ -272,10 +272,10 @@ struct ReportOpenedFilm: View {
         let scale = side / MarkGrid.side
         return Canvas { context, _ in
             context.scaleBy(x: scale, y: scale)
-            context.stroke(StampMark.head, with: .color(Color.calibre.primary), style: MarkGrid.style)
+            context.stroke(StampMark.head, with: .color(Color.rewound.primary), style: MarkGrid.style)
             context.fill(
-                CalibreLogoMark.jewelCentre.applying(StampMark.die),
-                with: .color(Color.calibre.primary)
+                RewoundLogoMark.jewelCentre.applying(StampMark.die),
+                with: .color(Color.rewound.primary)
             )
         }
         .frame(width: side, height: side)

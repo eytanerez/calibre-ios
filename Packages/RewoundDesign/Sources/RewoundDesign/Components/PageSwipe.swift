@@ -5,7 +5,7 @@ public extension View {
     /// Switch sibling pages with a direction-locked swipe. Horizontal rails,
     /// text selection, native row actions and the leading back edge keep their
     /// own gestures. A selection haptic fires only when the page changes.
-    func calibrePageSwipe<Selection: Hashable>(
+    func rewoundPageSwipe<Selection: Hashable>(
         selection: Binding<Selection>, values: [Selection]
     ) -> some View {
         modifier(PageSwipeModifier(selection: selection, values: values))

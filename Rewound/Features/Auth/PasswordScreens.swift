@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// "Forgot password" — takes an email and always answers with the same calm
@@ -32,7 +32,7 @@ struct ForgotPasswordScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("Reset password")
         .navigationBarTitleDisplayMode(.inline)
         .animation(Motion.easeMedium, value: sent)
@@ -42,10 +42,10 @@ struct ForgotPasswordScreen: View {
     private var form: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             Text("Tell us the email on your account and we'll send a link to set a new password.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
 
-            CalibreTextField(
+            RewoundTextField(
                 "Email",
                 text: $email,
                 placeholder: "you@example.com",
@@ -60,9 +60,9 @@ struct ForgotPasswordScreen: View {
                 Haptics.shared.play(.press)
                 Task { await submit() }
             } label: {
-                CalibreBusyLabel("Send reset link", busy: busy)
+                RewoundBusyLabel("Send reset link", busy: busy)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(!canSubmit)
         }
     }
@@ -103,7 +103,7 @@ struct ForgotPasswordScreen: View {
 }
 
 /// Sets a new password from a reset link — reached via
-/// calibre://auth/reset?token=… (and the web's /auth/reset-password URL).
+/// rewound://auth/reset?token=… (and the web's /auth/reset-password URL).
 struct ResetPasswordScreen: View {
     let token: String
 
@@ -132,11 +132,11 @@ struct ResetPasswordScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
                 Text("Choose a new password for your account.")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
 
                 VStack(alignment: .leading, spacing: Space.m) {
-                    CalibreTextField("New password", text: $password, kind: .newPassword)
+                    RewoundTextField("New password", text: $password, kind: .newPassword)
 
                     VStack(alignment: .leading, spacing: Space.xs) {
                         rule("At least 8 characters", satisfied: password.count >= 8)
@@ -146,11 +146,11 @@ struct ResetPasswordScreen: View {
                     .animation(Motion.easeFast, value: password)
                 }
 
-                CalibreTextField("Confirm password", text: $confirmPassword, kind: .newPassword) {
+                RewoundTextField("Confirm password", text: $confirmPassword, kind: .newPassword) {
                     if !confirmPassword.isEmpty {
                         Image(systemName: passwordsMatch ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .font(.system(size: 15))
-                            .foregroundStyle(passwordsMatch ? Color.calibre.success : Color.calibre.destructive)
+                            .foregroundStyle(passwordsMatch ? Color.rewound.success : Color.rewound.destructive)
                     }
                 }
 
@@ -162,9 +162,9 @@ struct ResetPasswordScreen: View {
                     Haptics.shared.play(.press)
                     Task { await submit() }
                 } label: {
-                    CalibreBusyLabel("Set new password", busy: busy)
+                    RewoundBusyLabel("Set new password", busy: busy)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(!canSubmit)
             }
             .padding(.horizontal, Space.margin)
@@ -172,7 +172,7 @@ struct ResetPasswordScreen: View {
             .padding(.bottom, Space.xxl)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("New password")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -182,7 +182,7 @@ struct ResetPasswordScreen: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .frame(width: Space.touchTarget, height: Space.touchTarget)
                 }
                 .buttonStyle(PressableStyle())
@@ -196,10 +196,10 @@ struct ResetPasswordScreen: View {
         HStack(spacing: Space.s) {
             Image(systemName: satisfied ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 13))
-                .foregroundStyle(satisfied ? Color.calibre.success : Color.calibre.mutedForeground)
+                .foregroundStyle(satisfied ? Color.rewound.success : Color.rewound.mutedForeground)
             Text(text)
-                .font(CalibreType.caption)
-                .foregroundStyle(satisfied ? Color.calibre.foreground : Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(satisfied ? Color.rewound.foreground : Color.rewound.mutedForeground)
         }
     }
 

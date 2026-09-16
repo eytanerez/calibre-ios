@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// Synthetic wire samples for the checkout models, hand-built from
 /// `CheckoutPaymentIntentView` / `CheckoutIntentView` in
@@ -79,7 +79,7 @@ final class CheckoutDecodingTests: XCTestCase {
             "status": "requires_action",
             "instructions": {
               "type": "us_bank_transfer",
-              "reference": "CALIBRE-3099",
+              "reference": "REWOUND-3099",
               "amount_remaining": "4532.00",
               "currency": "USD",
               "hosted_instructions_url": "https://payments.stripe.com/instructions/x",
@@ -121,7 +121,7 @@ final class CheckoutDecodingTests: XCTestCase {
         XCTAssertNotNil(checkout.session?.expiresAtDate)
 
         let instructions = try XCTUnwrap(checkout.wire.instructions)
-        XCTAssertEqual(instructions.reference, "CALIBRE-3099")
+        XCTAssertEqual(instructions.reference, "REWOUND-3099")
         XCTAssertEqual(instructions.amountRemaining?.value, Decimal(4532))
         XCTAssertEqual(instructions.financialAddresses.count, 2)
 
@@ -167,7 +167,7 @@ final class CheckoutDecodingTests: XCTestCase {
             "status": "requires_action",
             "instructions": {
               "type": "us_bank_transfer",
-              "reference": "CALIBRE-8801",
+              "reference": "REWOUND-8801",
               "amount_remaining": "12262.85",
               "currency": "USD",
               "financial_addresses": []

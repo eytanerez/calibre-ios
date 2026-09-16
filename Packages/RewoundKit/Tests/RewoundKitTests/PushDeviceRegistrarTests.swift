@@ -1,5 +1,5 @@
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 @MainActor
 final class PushDeviceRegistrarTests: XCTestCase {

@@ -34,8 +34,8 @@ public struct PriceRangeSlider: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text(rangeText)
-                .font(CalibreType.priceSmall)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.priceSmall)
+                .foregroundStyle(Color.rewound.foreground)
                 .monospacedDigit()
 
             GeometryReader { geometry in
@@ -45,12 +45,12 @@ public struct PriceRangeSlider: View {
 
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.calibre.border)
+                        .fill(Color.rewound.border)
                         .frame(height: trackHeight)
                         .padding(.horizontal, thumbSize / 2 - 2)
 
                     Capsule()
-                        .fill(Color.calibre.primary)
+                        .fill(Color.rewound.primary)
                         .frame(width: max(0, upperX - lowerX), height: trackHeight)
                         .offset(x: lowerX)
 
@@ -111,7 +111,7 @@ public struct PriceRangeSlider: View {
     /// precisely what was not happening.
     ///
     /// The test has to be about pixels, not values: at that price step the
-    /// two values differ by $100 and their centres by about a third of a
+    /// two values differ by $100 and their centers by about a third of a
     /// point, so a rule keyed on `lower >= upper` never fires on the state
     /// that actually traps people.
     ///
@@ -142,7 +142,7 @@ public struct PriceRangeSlider: View {
         in bounds: ClosedRange<Double>
     ) -> Bool {
         // Far enough apart that the maximum's grab region does not reach the
-        // minimum's centre: nothing is covered, and the shipped order stands.
+        // minimum's center: nothing is covered, and the shipped order stands.
         guard upperX - lowerX < grabRadius else { return false }
         let roomBelow = lower - bounds.lowerBound
         let roomAbove = bounds.upperBound - upper
@@ -151,13 +151,13 @@ public struct PriceRangeSlider: View {
 
     private func thumb(active: Bool) -> some View {
         Circle()
-            .fill(Color.calibre.card)
-            .strokeBorder(Color.calibre.borderBright, lineWidth: 1)
+            .fill(Color.rewound.card)
+            .strokeBorder(Color.rewound.borderBright, lineWidth: 1)
             .frame(width: thumbSize, height: thumbSize)
-            .calibreShadow(.resting)
+            .rewoundShadow(.resting)
             .scaleEffect(active ? Motion.pressScale : 1)
             .animation(Motion.easeFast, value: active)
-            // 28pt drawn, 44pt grabbable. `.position` places by centre and the
+            // 28pt drawn, 44pt grabbable. `.position` places by center and the
             // negative padding hands the size back, so the thumb does not move.
             .a11yExpandTarget(currentSize: thumbSize)
     }
@@ -235,7 +235,7 @@ private struct PriceRangeSliderPreviewHost: View {
     var body: some View {
         PriceRangeSlider(lowerValue: $lower, upperValue: $upper, in: 0...50_000, step: 100)
             .padding()
-            .background(Color.calibre.background)
+            .background(Color.rewound.background)
     }
 }
 

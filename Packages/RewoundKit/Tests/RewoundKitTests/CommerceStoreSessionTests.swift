@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// `CommerceStore.reset()` and the `sessionGeneration` guard it bumps —
 /// cross-account/session isolation for cart/watchlist/addresses. A

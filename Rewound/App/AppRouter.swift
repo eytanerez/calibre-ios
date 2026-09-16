@@ -1,4 +1,4 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 import Observation
 import SwiftUI
@@ -22,7 +22,7 @@ enum AppTab: Hashable {
 }
 
 /// Everything the app can navigate to from anywhere — pushes, push
-/// notifications, and calibre:// / universal links all funnel through here.
+/// notifications, and rewound:// / universal links all funnel through here.
 enum Route: Hashable {
     case listing(String)
     case seller(String)
@@ -37,7 +37,7 @@ enum Route: Hashable {
     /// One support conversation, by id. A reply push names its own thread.
     case supportThread(String)
     case messages
-    /// One buyer↔seller conversation, by its calibre-messaging thread id.
+    /// One buyer↔seller conversation, by its rewound-messaging thread id.
     case messageThread(String)
     case accountSettings
     case alerts
@@ -134,7 +134,7 @@ final class AppRouter {
     /// watch, which carries the photograph's frame into the screen it opens),
     /// and a homogeneous `[Route]` can hold only one of the two.
     ///
-    /// It is also what keeps a watch open. A watch that Calibre authenticated
+    /// It is also what keeps a watch open. A watch that Rewound authenticated
     /// plays a film on arrival; the moment host used to re-parent the whole app
     /// to do that, every `NavigationStack` in it was rebuilt, and a push that
     /// was not IN the path is state a rebuild does not carry — the detail
@@ -156,7 +156,7 @@ final class AppRouter {
     /// The deck cover's own navigation stack (listing detail from a card).
     var deckPath: [Route] = []
 
-    /// Set when a calibre://auth/reset?token= link arrives; the root view
+    /// Set when a rewound://auth/reset?token= link arrives; the root view
     /// presents the reset-password screen.
     var passwordResetToken: String?
 
@@ -299,21 +299,21 @@ final class AppRouter {
         case passwordReset(String)
     }
 
-    /// Decodes calibre:// scheme links and https://buycalibre.com universal
+    /// Decodes rewound:// scheme links and https://shoprewound.com universal
     /// links without navigating. Nil when the URL is not one of ours.
     func target(for url: URL) -> LinkTarget? {
-        if url.scheme?.lowercased() == "calibre" {
-            return calibreSchemeTarget(url)
+        if url.scheme?.lowercased() == "rewound" {
+            return rewoundSchemeTarget(url)
         }
         if let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http",
            let host = url.host()?.lowercased(),
-           host == "buycalibre.com" || host == "www.buycalibre.com" {
+           host == "shoprewound.com" || host == "www.shoprewound.com" {
             return universalLinkTarget(url)
         }
         return nil
     }
 
-    /// Handles calibre:// scheme links and https://buycalibre.com universal
+    /// Handles rewound:// scheme links and https://shoprewound.com universal
     /// links. Returns true when the URL was recognized.
     @discardableResult
     func handle(url: URL) -> Bool {
@@ -329,11 +329,11 @@ final class AppRouter {
         }
     }
 
-    /// calibre://listing/<id>, calibre://order/<id>, calibre://offer/<id>,
-    /// calibre://support, calibre://alerts, calibre://auth/reset?token=…
-    /// (Google's calibre://auth?code= callback is consumed by the web-auth
+    /// rewound://listing/<id>, rewound://order/<id>, rewound://offer/<id>,
+    /// rewound://support, rewound://alerts, rewound://auth/reset?token=…
+    /// (Google's rewound://auth?code= callback is consumed by the web-auth
     /// session, never here.)
-    private func calibreSchemeTarget(_ url: URL) -> LinkTarget? {
+    private func rewoundSchemeTarget(_ url: URL) -> LinkTarget? {
         guard let host = url.host()?.lowercased() else { return nil }
         let segments = url.pathComponents.filter { $0 != "/" }
 
@@ -383,7 +383,7 @@ final class AppRouter {
         }
     }
 
-    /// https://buycalibre.com/listing/:id and friends — the web app's paths.
+    /// https://shoprewound.com/listing/:id and friends — the web app's paths.
     private func universalLinkTarget(_ url: URL) -> LinkTarget? {
         let segments = url.pathComponents.filter { $0 != "/" }
         guard let first = segments.first?.lowercased() else { return nil }

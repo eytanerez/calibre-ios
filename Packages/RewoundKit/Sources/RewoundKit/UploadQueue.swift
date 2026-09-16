@@ -126,7 +126,7 @@ public actor UploadQueue {
         let base = persistenceDirectory
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        let folder = base.appending(path: "CalibreKit", directoryHint: .isDirectory)
+        let folder = base.appending(path: "RewoundKit", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         self.persistenceURL = folder.appending(path: "pending-uploads.json")
     }

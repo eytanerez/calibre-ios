@@ -1,7 +1,7 @@
-import CalibreKit
+import RewoundKit
 import Foundation
 import XCTest
-@testable import Calibre
+@testable import Rewound
 
 /// "Go on without it" — the button a buyer gets when the server refuses to
 /// reserve one watch of several.
@@ -66,7 +66,7 @@ final class CheckoutRecoveryTests: XCTestCase {
         return Data("""
         {"ok": true, "data": {
           "payment_intent": {"id": "pi_test", "client_secret": "pi_test_secret"},
-          "publishable_key": "pk_test_calibre",
+          "publishable_key": "pk_test_rewound",
           "customer_id": "cus_test",
           "breakdown_group": {
             "items": [\(items.joined(separator: ","))],
@@ -188,7 +188,7 @@ final class CheckoutMockURLProtocol: URLProtocol, @unchecked Sendable {
 
     static func configuration() -> APIConfiguration {
         APIConfiguration(
-            baseURL: URL(string: "https://mock.calibre.test")!,
+            baseURL: URL(string: "https://mock.rewound.test")!,
             protocolClasses: [CheckoutMockURLProtocol.self]
         )
     }

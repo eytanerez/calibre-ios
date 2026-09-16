@@ -13,7 +13,7 @@ import UIKit
 /// **They play every time.** These are not a tutorial somebody graduates from:
 /// buying a watch is rare and expensive, and the moment should land on the
 /// fifth order as much as on the first. There is no ledger here on purpose.
-public enum CalibreMoment: String, Sendable, CaseIterable {
+public enum RewoundMoment: String, Sendable, CaseIterable {
     /// After paying, on both order landings.
     case orderPlaced
     /// When a listing is sent for review.
@@ -60,13 +60,13 @@ public enum MomentAnchor: String, Sendable {
 /// Starts a moment and holds the one that is running.
 ///
 /// A film is started from the surface that caused it, immediately before the
-/// navigation it introduces: `CalibreMoments.play(.orderPlaced)` grabs the
+/// navigation it introduces: `RewoundMoments.play(.orderPlaced)` grabs the
 /// screen as it stands, and the app then routes underneath the film so the
 /// destination is already there when the film clears.
 @MainActor
 @Observable
-public final class CalibreMoments {
-    public static let shared = CalibreMoments()
+public final class RewoundMoments {
+    public static let shared = RewoundMoments()
 
     /// The running film, or nil.
     private(set) var running: Running?
@@ -76,7 +76,7 @@ public final class CalibreMoments {
 
     struct Running: Identifiable {
         let id = UUID()
-        let moment: CalibreMoment
+        let moment: RewoundMoment
         /// The screen as it stood when the film started — the page that
         /// collapses. Nil for the films that do not collapse one.
         let outgoing: UIImage?
@@ -93,7 +93,7 @@ public final class CalibreMoments {
     /// end state: every one of the five ends on the destination screen with
     /// the film gone, so declining the motion means arriving there directly.
     /// Never a blank frame and never a frozen middle.
-    public static func play(_ moment: CalibreMoment) {
+    public static func play(_ moment: RewoundMoment) {
         shared.start(moment)
     }
 
@@ -108,7 +108,7 @@ public final class CalibreMoments {
         shared.anchors[anchor] = frame
     }
 
-    func start(_ moment: CalibreMoment) {
+    func start(_ moment: RewoundMoment) {
         guard !UIAccessibility.isReduceMotionEnabled else { return }
         endTask?.cancel()
         running = Running(
@@ -153,11 +153,11 @@ public final class CalibreMoments {
 
 public extension View {
     /// Marks this view as the thing a film lands on.
-    func calibreMomentAnchor(_ anchor: MomentAnchor) -> some View {
+    func rewoundMomentAnchor(_ anchor: MomentAnchor) -> some View {
         onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .global)
         } action: { frame in
-            CalibreMoments.setAnchor(anchor, frame: frame)
+            RewoundMoments.setAnchor(anchor, frame: frame)
         }
     }
 }

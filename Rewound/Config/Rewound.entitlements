@@ -17,7 +17,7 @@
 	     ASAuthorizationError.unknown purely because this entitlement was absent
 	     — the file used to say "no paid team", which stopped being true when
 	     the app moved onto team KVXR84LZH3. The matching capability is enabled
-	     on the com.buycalibre.calibre App ID as a primary App ID. -->
+	     on the com.shoprewound.rewound App ID as a primary App ID. -->
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>
@@ -31,14 +31,14 @@
 	     This entitlement can only be signed by a paid team, which is why the
 	     file used to omit it — that reasoning died with the move to team
 	     KVXR84LZH3. The merchant id must be created on that team and enabled as
-	     a capability on the com.buycalibre.calibre App ID, and the same
+	     a capability on the com.shoprewound.rewound App ID, and the same
 	     merchant id must be paired with a payment-processing certificate in
 	     Stripe, before a real payment can complete. Without the portal half the
 	     sheet still will not open; with it, StripeSupport's
 	     applePayMerchantID is the string that has to match. -->
 	<key>com.apple.developer.in-app-payments</key>
 	<array>
-		<string>merchant.com.buycalibre.calibre</string>
+		<string>merchant.com.shoprewound.rewound</string>
 	</array>
 </dict>
 </plist>

@@ -1,7 +1,7 @@
-import CalibreKit
+import RewoundKit
 import SwiftUI
 
-/// Dev-only smoke screen: proves the CalibreKit pipeline (client → envelope →
+/// Dev-only smoke screen: proves the RewoundKit pipeline (client → envelope →
 /// models → store) against the configured backend by listing page 1.
 struct DebugConsoleView: View {
     let catalog: CatalogStore

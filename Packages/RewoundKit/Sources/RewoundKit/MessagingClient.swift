@@ -1,12 +1,12 @@
 import Foundation
 
-/// Transport for `calibre-messaging` — a separate service from the main
-/// Calibre Backend, so it earns its own client rather than overloading
+/// Transport for `rewound-messaging` — a separate service from the main
+/// Rewound Backend, so it earns its own client rather than overloading
 /// `APIClient`.
 ///
 /// The difference is the wire contract, not the domain. `APIClient` decodes
 /// every response as Backend's `{ok, data}` envelope and every refusal as
-/// `{"error": ...}`; calibre-messaging is a plain FastAPI service that
+/// `{"error": ...}`; rewound-messaging is a plain FastAPI service that
 /// answers each endpoint's own `response_model` directly and refuses with
 /// FastAPI's default `{"detail": ...}`. Reusing `APIClient.send` against that
 /// shape would fail to decode *every* response, success or failure. This

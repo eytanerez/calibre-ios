@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// A seller's public storefront: header with reputation, recent reviews, and
@@ -34,7 +34,7 @@ struct SellerStorefrontScreen: View {
                 skeleton
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .navigationTitle("@\(username)")
         .navigationBarTitleDisplayMode(.inline)
         .browseStackNode()
@@ -75,16 +75,16 @@ struct SellerStorefrontScreen: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: Space.s) {
                         Text("@\(storefront.username)")
-                            .font(CalibreType.sectionTitle)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.sectionTitle)
+                            .foregroundStyle(Color.rewound.foreground)
                         if storefront.isVerifiedDealer {
                             StatusBadge("Dealer", tone: .info)
                         }
                     }
                     if let since = storefront.memberSince {
                         Text("Member since \(since.formatted(.dateTime.month(.wide).year()))")
-                            .font(CalibreType.caption)
-                            .foregroundStyle(Color.calibre.mutedForeground)
+                            .font(RewoundType.caption)
+                            .foregroundStyle(Color.rewound.mutedForeground)
                     }
                 }
             }
@@ -108,7 +108,7 @@ struct SellerStorefrontScreen: View {
         }
     }
 
-    /// The one place on Calibre where a seller speaks in their own voice
+    /// The one place on Rewound where a seller speaks in their own voice
     /// rather than through a listing form, so it is set in their hand.
     ///
     /// The server sends the line a buyer is allowed to read — the last words
@@ -116,15 +116,15 @@ struct SellerStorefrontScreen: View {
     /// renders what arrives and never reasons about approval itself.
     ///
     /// A verified dealer who has not written one gets a plain sentence in the
-    /// sans instead: that is Calibre describing an absence, not the dealer
+    /// sans instead: that is Rewound describing an absence, not the dealer
     /// talking, and putting it in the hand would put words in their mouth.
     /// A seller who is not a dealer has no line to be missing.
     @ViewBuilder
     private func storefrontLine(_ storefront: SellerStorefront) -> some View {
         if let bio = storefront.bio, !bio.isEmpty {
             Text(bio)
-                .font(CalibreType.hand)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.hand)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -151,15 +151,15 @@ struct SellerStorefrontScreen: View {
                 HStack(spacing: Space.xs) {
                     StarRating(rating: average)
                     Text(average.formatted(.number.precision(.fractionLength(1))))
-                        .font(CalibreType.priceSmall)
-                        .foregroundStyle(Color.calibre.primary)
+                        .font(RewoundType.priceSmall)
+                        .foregroundStyle(Color.rewound.primary)
                         .monospacedDigit()
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                 }
                 Text(storefront.reputation.ratingCount == 1 ? "1 review" : "\(storefront.reputation.ratingCount) reviews")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
             }
@@ -169,14 +169,14 @@ struct SellerStorefrontScreen: View {
     private func stat(value: String, label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(CalibreType.priceSmall)
-                .foregroundStyle(Color.calibre.primary)
+                .font(RewoundType.priceSmall)
+                .foregroundStyle(Color.rewound.primary)
                 .monospacedDigit()
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
             Text(label)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
         }
@@ -187,8 +187,8 @@ struct SellerStorefrontScreen: View {
     private func reviews(_ storefront: SellerStorefront) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("What buyers say")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
 
             VStack(spacing: 0) {
                 ForEach(Array(storefront.reviews.enumerated()), id: \.element.id) { index, review in
@@ -197,20 +197,20 @@ struct SellerStorefrontScreen: View {
                             StarRating(rating: Double(review.rating))
                             if review.verifiedPurchase == true {
                                 Text("Verified purchase")
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.success)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(Color.rewound.success)
                             }
                             Spacer()
                             if let date = review.createdAt {
                                 Text(date.formatted(.relative(presentation: .named)))
-                                    .font(CalibreType.caption)
-                                    .foregroundStyle(Color.calibre.mutedForeground)
+                                    .font(RewoundType.caption)
+                                    .foregroundStyle(Color.rewound.mutedForeground)
                             }
                         }
                         if let comment = review.comment, !comment.isEmpty {
                             Text(comment)
-                                .font(CalibreType.body)
-                                .foregroundStyle(Color.calibre.secondaryForeground)
+                                .font(RewoundType.body)
+                                .foregroundStyle(Color.rewound.secondaryForeground)
                                 .lineSpacing(4)
                         }
                     }
@@ -218,16 +218,16 @@ struct SellerStorefrontScreen: View {
 
                     if index < storefront.reviews.count - 1 {
                         Rectangle()
-                            .fill(Color.calibre.border)
+                            .fill(Color.rewound.border)
                             .frame(height: 1)
                     }
                 }
             }
-            .background(Color.calibre.card)
+            .background(Color.rewound.card)
             .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
     }
@@ -238,8 +238,8 @@ struct SellerStorefrontScreen: View {
     private func inventorySection(_ storefront: SellerStorefront) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("In the window")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
                 .padding(.horizontal, Space.margin)
 
             if let inventory {
@@ -253,7 +253,7 @@ struct SellerStorefrontScreen: View {
                     )
                 } else {
                     LazyVGrid(
-                        columns: calibreGridColumns(typeSize, spacing: Space.l),
+                        columns: rewoundGridColumns(typeSize, spacing: Space.l),
                         alignment: .leading,
                         spacing: Space.xl
                     ) {
@@ -286,7 +286,7 @@ struct SellerStorefrontScreen: View {
 
     private var inventorySkeleton: some View {
         LazyVGrid(
-            columns: calibreGridColumns(typeSize, spacing: Space.l),
+            columns: rewoundGridColumns(typeSize, spacing: Space.l),
             spacing: Space.xl
         ) {
             ForEach(0..<4, id: \.self) { _ in

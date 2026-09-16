@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import StripePaymentSheet
 import SwiftUI
 
@@ -24,7 +24,7 @@ struct SellerCardScreen: View {
                 if let model {
                     content(model)
                 } else {
-                    CalibreLoadingView("Reading your card on file")
+                    RewoundLoadingView("Reading your card on file")
                         .frame(maxWidth: .infinity, minHeight: 240)
                 }
             }
@@ -89,19 +89,19 @@ struct SellerCardScreen: View {
         VStack(alignment: .leading, spacing: Space.m) {
             Eyebrow("Why we ask")
             Text("Almost every sale ends without this card being touched. It is here for the rare case where a watch turns out to be counterfeit or is not as described.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
             // FIXTURE-PENDING: the counterfeit charge is a percentage of the
             // sale price, but no payload or config field carries it yet — so
             // the sentence runs without the number rather than hardcoding one.
             Text("If a watch is found to be counterfeit, the buyer is refunded in full and a percentage of the sale price is charged to this card. If a watch is genuine but not as described, the case is settled individually and may be charged here too, along with the return label.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.secondaryForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.secondaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Text("Nothing else is charged to it. Listing is free, and an ordinary sale never touches it.")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -124,14 +124,14 @@ struct SellerCardScreen: View {
                     StatusBadge(badge.text, tone: badge.tone)
                 }
                 Text(standingTitle(card))
-                    .font(CalibreType.bodyMedium)
+                    .font(RewoundType.bodyMedium)
                     .foregroundStyle(
-                        card.valid == false ? Color.calibre.destructive : Color.calibre.foreground
+                        card.valid == false ? Color.rewound.destructive : Color.rewound.foreground
                     )
                     .fixedSize(horizontal: false, vertical: true)
                 Text(standingBody(card))
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine)
@@ -184,22 +184,22 @@ struct SellerCardScreen: View {
         return VStack(alignment: .leading, spacing: Space.m) {
             if !settled {
                 Text(present ? "Replace it" : "Add your card")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
             }
 
             if settled {
                 Button {
                     model.save()
                 } label: {
-                    CalibreBusyLabel(
+                    RewoundBusyLabel(
                         "Replace card",
                         busy: model.busy,
-                        tint: Color.calibre.primary,
+                        tint: Color.rewound.primary,
                         fullWidth: false
                     )
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.primary)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.primary)
                     .frame(minHeight: Space.touchTarget, alignment: .leading)
                 }
                 .buttonStyle(PressableStyle())
@@ -210,20 +210,20 @@ struct SellerCardScreen: View {
                 } label: {
                     BusyLabel(title: present ? "Replace card" : "Add card", busy: model.busy)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
                 .disabled(model.busy)
             }
 
             if settled {
                 Text("A replacement has to be a credit card too — debit and prepaid can't be used.")
-                    .font(CalibreType.caption)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("Your card details go straight to our payments partner. Calibre stores the brand, the last four digits and the expiry date, and nothing more.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+            Text("Your card details go straight to our payments partner. Rewound stores the brand, the last four digits and the expiry date, and nothing more.")
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -275,7 +275,7 @@ final class SellerCardModel {
                 )
                 paymentSheet = sheet
                 let result: PaymentSheetResult = await withCheckedContinuation { continuation in
-                    CalibreStripe.present(sheet) { continuation.resume(returning: $0) }
+                    RewoundStripe.present(sheet) { continuation.resume(returning: $0) }
                 }
                 await finish(result)
             } catch {
@@ -293,7 +293,7 @@ final class SellerCardModel {
     /// endpoint sends no Stripe customer id or customer-session secret — which
     /// suits a screen whose whole purpose is entering a new card.
     private func sheetConfiguration() -> PaymentSheet.Configuration {
-        var configuration = CalibreStripe.configuration(
+        var configuration = RewoundStripe.configuration(
             customerID: nil,
             customerSessionClientSecret: nil
         )
@@ -307,7 +307,7 @@ final class SellerCardModel {
         case .canceled:
             return
         case .failed(let failure):
-            // Not `CalibreStripe.failureMessage`: its fallback talks about a
+            // Not `RewoundStripe.failureMessage`: its fallback talks about a
             // payment that didn't go through, and nothing is being paid here.
             let text = failure.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             error = text.isEmpty ? "That card couldn't be saved. Please try again." : text
@@ -352,7 +352,7 @@ final class SellerCardModel {
             } else {
                 // The server detached it. Say why plainly and leave the screen
                 // ready for another card.
-                error = "That wasn't a credit card, so it wasn't kept. Calibre needs a credit card on file — debit and prepaid cards can't be used. Please try another card."
+                error = "That wasn't a credit card, so it wasn't kept. Rewound needs a credit card on file — debit and prepaid cards can't be used. Please try another card."
                 Haptics.shared.play(.warning)
             }
         } catch {

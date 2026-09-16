@@ -29,7 +29,7 @@ public struct AvatarInitial: View {
     let initials: String
     let size: Size
     private let accessibilityName: String?
-    /// The monogram already grows with Dynamic Type — `CalibreType.serif` is
+    /// The monogram already grows with Dynamic Type — `RewoundType.serif` is
     /// declared `relativeTo: .body` — but the circle around it did not, so the
     /// letters ran into their own edge and clipped. Identical at the default
     /// size, where `ScaledMetric` hands back the value it was given; the same
@@ -56,10 +56,10 @@ public struct AvatarInitial: View {
 
     public var body: some View {
         Text(initials)
-            .font(CalibreType.serif(.medium, size.fontSize))
-            .foregroundStyle(Color.calibre.accentForeground)
+            .font(RewoundType.serif(.medium, size.fontSize))
+            .foregroundStyle(Color.rewound.accentForeground)
             .frame(width: diameter, height: diameter)
-            .background(Color.calibre.accent, in: Circle())
+            .background(Color.rewound.accent, in: Circle())
             .accessibilityLabel(accessibilityName ?? initials)
     }
 }
@@ -71,7 +71,7 @@ public struct AvatarInitial: View {
         AvatarInitial(name: "Eytan Erez", size: .l)
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }
 
 #Preview("Avatars — dark", traits: .sizeThatFitsLayout) {
@@ -81,6 +81,6 @@ public struct AvatarInitial: View {
         AvatarInitial(name: "Eytan Erez", size: .l)
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
     .preferredColorScheme(.dark)
 }

@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import XCTest
 
-@testable import CalibreDesign
+@testable import RewoundDesign
 
 /// Eytan, looking at a shelf of cards in the app:
 ///
@@ -69,13 +69,13 @@ final class ListingCardAlignmentTests: XCTestCase {
         let row = HStack(alignment: .top, spacing: 12) {
             ForEach(Array(Variant.allCases.enumerated()), id: \.offset) { _, variant in
                 ListingCard(model: variant.model) { _ in
-                    Rectangle().fill(Color.calibre.secondary)
+                    Rectangle().fill(Color.rewound.secondary)
                 }
                 .frame(width: Self.cardWidth)
             }
         }
         .padding(20)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .environment(\.colorScheme, scheme)
 
         let renderer = ImageRenderer(content: row)
@@ -88,11 +88,11 @@ final class ListingCardAlignmentTests: XCTestCase {
     @MainActor
     private func cardImage(_ variant: Variant) -> UIImage? {
         let card = ListingCard(model: variant.model) { _ in
-            Rectangle().fill(Color.calibre.secondary)
+            Rectangle().fill(Color.rewound.secondary)
         }
         .frame(width: Self.cardWidth)
         .frame(width: Self.cardWidth, height: 320, alignment: .top)
-        .background(Color.calibre.background)
+        .background(Color.rewound.background)
         .environment(\.colorScheme, .light)
 
         let renderer = ImageRenderer(content: card)
@@ -139,7 +139,7 @@ final class ListingCardAlignmentTests: XCTestCase {
     /// price; one price, painted at one height.
     @MainActor
     func testThePriceLandsAtTheSameHeightOnCardsThatDiffer() {
-        CalibreFonts.register()
+        RewoundFonts.register()
         let scale = Int(Self.pixelScale)
         // Below the square photo, and only the leading half of the card: the
         // price lives at the leading edge and the dealer mark at the trailing
@@ -185,10 +185,10 @@ final class ListingCardAlignmentTests: XCTestCase {
     /// staircase. Cross-checks the measurement above from the other side.
     @MainActor
     func testCardsThatDifferAreTheSameHeight() {
-        CalibreFonts.register()
+        RewoundFonts.register()
         let heights = Variant.allCases.map { variant -> CGFloat in
             let host = UIHostingController(rootView: ListingCard(model: variant.model) { _ in
-                Rectangle().fill(Color.calibre.secondary)
+                Rectangle().fill(Color.rewound.secondary)
             })
             return host.sizeThatFits(in: CGSize(width: Self.cardWidth, height: .greatestFiniteMagnitude)).height
         }
@@ -208,11 +208,11 @@ final class ListingCardAlignmentTests: XCTestCase {
     /// same height, to the half point.
     @MainActor
     func testTheInCartPillDoesNotMoveAnything() {
-        CalibreFonts.register()
+        RewoundFonts.register()
 
         func height(_ model: ListingCardModel) -> CGFloat {
             let host = UIHostingController(rootView: ListingCard(model: model) { _ in
-                Rectangle().fill(Color.calibre.secondary)
+                Rectangle().fill(Color.rewound.secondary)
             })
             return host.sizeThatFits(
                 in: CGSize(width: Self.cardWidth, height: .greatestFiniteMagnitude)
@@ -246,7 +246,7 @@ final class ListingCardAlignmentTests: XCTestCase {
     /// row that changes between the two renders is the pill.
     @MainActor
     func testTheInCartPillIsActuallyPainted() {
-        CalibreFonts.register()
+        RewoundFonts.register()
         let scale = Int(Self.pixelScale)
 
         func image(_ inCart: Bool) -> UIImage? {
@@ -260,11 +260,11 @@ final class ListingCardAlignmentTests: XCTestCase {
                 reservesReasonLine: base.reservesReasonLine
             )
             let card = ListingCard(model: model) { _ in
-                Rectangle().fill(Color.calibre.background)
+                Rectangle().fill(Color.rewound.background)
             }
             .frame(width: Self.cardWidth)
             .frame(width: Self.cardWidth, height: 320, alignment: .top)
-            .background(Color.calibre.background)
+            .background(Color.rewound.background)
             .environment(\.colorScheme, .light)
             let renderer = ImageRenderer(content: card)
             renderer.scale = Self.pixelScale
@@ -296,11 +296,11 @@ final class ListingCardAlignmentTests: XCTestCase {
     /// gives them, at the two-up grid size.
     @MainActor
     func testTheWorstBrandsFitOnOneLineWithoutClipping() {
-        CalibreFonts.register()
-        guard let eyebrow = UIFont(name: CalibreFonts.Name.sansMedium, size: 11) else {
+        RewoundFonts.register()
+        guard let eyebrow = UIFont(name: RewoundFonts.Name.sansMedium, size: 11) else {
             return XCTFail("Geist-Medium missing — the measurement below would be against the system font")
         }
-        let tracking = CalibreType.eyebrowTracking
+        let tracking = RewoundType.eyebrowTracking
 
         func width(_ text: String) -> CGFloat {
             (text.uppercased() as NSString)
@@ -335,7 +335,7 @@ final class ListingCardAlignmentTests: XCTestCase {
     /// the simulator's temp directory.
     @MainActor
     func testWriteFourCardSnapshot() {
-        CalibreFonts.register()
+        RewoundFonts.register()
         for (scheme, name) in [(ColorScheme.light, "listing-cards-light.png"), (.dark, "listing-cards-dark.png")] {
             guard let image = rowImage(scheme), let data = image.pngData() else {
                 return XCTFail("the row did not render")

@@ -8,7 +8,7 @@
 API_BASE_URL[sdk=iphonesimulator*] = http:/$()/127.0.0.1:8010
 API_BASE_URL[sdk=iphoneos*] = http:/$()/192.168.86.50:8010
 
-// calibre-messaging — a separate service (buyer↔seller messaging + the
+// rewound-messaging — a separate service (buyer↔seller messaging + the
 // contact guard), own port, own dev process. Same simulator/device split as
 // API_BASE_URL above, same reason.
 MESSAGING_API_BASE_URL[sdk=iphonesimulator*] = http:/$()/127.0.0.1:8020
@@ -16,11 +16,11 @@ MESSAGING_API_BASE_URL[sdk=iphoneos*] = http:/$()/192.168.86.50:8020
 
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
 
-// Shows Apple Pay in the payment sheet. Calibre.entitlements now carries
-// com.apple.developer.in-app-payments for merchant.com.buycalibre.calibre, so
+// Shows Apple Pay in the payment sheet. Rewound.entitlements now carries
+// com.apple.developer.in-app-payments for merchant.com.shoprewound.rewound, so
 // this flag no longer stands alone; the remaining half is portal work, and it
 // is not code. The merchant id has to exist on team KVXR84LZH3, Apple Pay has
-// to be enabled as a capability on the com.buycalibre.calibre App ID, and the
+// to be enabled as a capability on the com.shoprewound.rewound App ID, and the
 // merchant has to be paired with a payment-processing certificate in Stripe.
 // Until all three exist a tap opens no sheet and CheckoutModel says so out
 // loud rather than sitting there silently, which is what it used to do.
@@ -34,16 +34,16 @@ APPLE_PAY_ENABLED = YES
 // capture is a no-op. Supply a real project key in a local override or CI
 // build setting to turn it on. The host has a working default because it is
 // not a secret; only the key gates the feature.
-CALIBRE_POSTHOG_KEY =
-CALIBRE_POSTHOG_HOST = https:/$()/us.i.posthog.com
+REWOUND_POSTHOG_KEY =
+REWOUND_POSTHOG_HOST = https:/$()/us.i.posthog.com
 
 // Crash/error reporting (Sentry) and log shipping (Better Stack). Empty on
-// Debug on purpose — see Release.xcconfig and Calibre/App/Observability.swift
+// Debug on purpose — see Release.xcconfig and Rewound/App/Observability.swift
 // for what an empty value does (nothing: no SDK start, no network call, no
 // crash). Paste a DSN/token here only to exercise the wiring locally.
-CALIBRE_SENTRY_DSN =
-CALIBRE_BETTERSTACK_TOKEN =
-CALIBRE_BETTERSTACK_HOST = s2743596.us-west-2a.betterstackdata.com
+REWOUND_SENTRY_DSN =
+REWOUND_BETTERSTACK_TOKEN =
+REWOUND_BETTERSTACK_HOST = s2743596.us-west-2a.betterstackdata.com
 
 // Real keys live in Secrets.xcconfig beside this file — untracked and
 // gitignored, so nothing secret is ever committed. The `?` makes the include

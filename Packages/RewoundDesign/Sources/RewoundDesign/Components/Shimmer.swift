@@ -17,12 +17,12 @@ public struct Shimmer: ViewModifier {
 
     public func body(content: Content) -> some View {
         content
-            .foregroundStyle(Color.calibre.secondary)
+            .foregroundStyle(Color.rewound.secondary)
             .overlay {
                 if !reduceMotion {
                     GeometryReader { proxy in
                         LinearGradient(
-                            colors: [.clear, Color.calibre.accent.opacity(0.7), .clear],
+                            colors: [.clear, Color.rewound.accent.opacity(0.7), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -87,5 +87,5 @@ public struct ListingCardSkeleton: View {
         ListingCardSkeleton().frame(width: 160)
     }
     .padding()
-    .background(Color.calibre.background)
+    .background(Color.rewound.background)
 }

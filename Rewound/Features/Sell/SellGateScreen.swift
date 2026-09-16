@@ -1,8 +1,8 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
-/// "Start selling on Calibre" — the Sell tab root until Connect payouts are
+/// "Start selling on Rewound" — the Sell tab root until Connect payouts are
 /// ready. Guests see the same story with a sign-in gate on the CTA.
 ///
 /// A signed-in seller sees their setup instead of the pitch: payouts, then the
@@ -124,28 +124,28 @@ struct SellGateScreen: View {
 
     private var pitch: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Text("Start selling on Calibre")
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+            Text("Start selling on Rewound")
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
             Text("List your watch in minutes. Every sale is authenticated before it reaches the buyer, we handle the buyer for you, and your money goes straight to your bank account.")
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
             Text(keepClaim)
-                .font(CalibreType.bodyMedium)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.bodyMedium)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
             Text("Free to list. No monthly fees. No buyer premium.")
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             NavigationLink {
                 FeeBreakdownScreen()
             } label: {
                 Label("See the fee breakdown", systemImage: "percent")
-                    .font(CalibreType.label)
-                    .foregroundStyle(Color.calibre.primary)
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.primary)
             }
             .buttonStyle(PressableStyle())
         }
@@ -191,7 +191,7 @@ struct SellGateScreen: View {
     private var stepArrow: some View {
         Image(systemName: "arrow.right")
             .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(Color.calibre.mutedForeground)
+            .foregroundStyle(Color.rewound.mutedForeground)
             .padding(.top, 14)
             .accessibilityHidden(true)
     }
@@ -200,11 +200,11 @@ struct SellGateScreen: View {
         VStack(spacing: Space.s) {
             IconTile(systemName: icon)
             Text(title)
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.foreground)
             Text(caption)
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, alignment: .top)
@@ -213,11 +213,11 @@ struct SellGateScreen: View {
     private var guestCTA: some View {
         VStack(spacing: Space.m) {
             Button {
-                session.require("Sign in to start selling on Calibre") {}
+                session.require("Sign in to start selling on Rewound") {}
             } label: {
                 Text("Set up payouts")
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
 
             payoutDisclosures
         }
@@ -225,12 +225,12 @@ struct SellGateScreen: View {
 
     private var payoutDisclosures: some View {
         VStack(spacing: Space.s) {
-            Text("You verify your details once with our payments partner. Calibre never sees your banking information.")
+            Text("You verify your details once with our payments partner. Rewound never sees your banking information.")
             // Disclosed during onboarding, not after the first sale.
             Text("Your first payout may take about two weeks while your account is established. After that, payouts arrive on the normal schedule.")
         }
-        .font(CalibreType.caption)
-        .foregroundStyle(Color.calibre.mutedForeground)
+        .font(RewoundType.caption)
+        .foregroundStyle(Color.rewound.mutedForeground)
         .frame(maxWidth: .infinity)
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)
@@ -269,7 +269,7 @@ struct SellGateScreen: View {
                     // fact nobody established. The cards beneath say which
                     // step, in words; the mark has no label.
                     if let windKey = setupProgress.markKey {
-                        CalibreMark.crown(size: 36, trigger: windKey)
+                        RewoundMark.crown(size: 36, trigger: windKey)
                             .markAnnounces(windKey)
                     }
                 }
@@ -321,20 +321,20 @@ struct SellGateScreen: View {
             VStack(alignment: .leading, spacing: Space.m) {
                 if let title = step.title {
                     Text(title)
-                        .font(CalibreType.bodySemiBold)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.bodySemiBold)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Text(step.body)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let itemsTitle = step.itemsTitle {
                     Text(itemsTitle)
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.foreground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -350,15 +350,15 @@ struct SellGateScreen: View {
                 // something was outstanding, not what it was called.
                 if let withheld = step.itemsWithheldNote {
                     Text(withheld)
-                        .font(CalibreType.body)
-                        .foregroundStyle(Color.calibre.secondaryForeground)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.secondaryForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if let upcoming = step.upcomingNote {
                     Text(upcoming)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -366,8 +366,8 @@ struct SellGateScreen: View {
 
                 if let footnote = step.footnote {
                     Text(footnote)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -378,12 +378,12 @@ struct SellGateScreen: View {
         HStack(alignment: .top, spacing: Space.s) {
             Image(systemName: checking ? "hourglass" : "circle")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .padding(.top, 3)
                 .accessibilityHidden(true)
             Text(item.label)
-                .font(CalibreType.body)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -398,7 +398,7 @@ struct SellGateScreen: View {
             } label: {
                 BusyLabel(title: title, busy: refreshingReadiness)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(refreshingReadiness)
 
         case .openForm(let title):
@@ -407,7 +407,7 @@ struct SellGateScreen: View {
             } label: {
                 BusyLabel(title: title, busy: refreshingReadiness)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .disabled(refreshingReadiness)
 
         case .refresh(let title):
@@ -416,7 +416,7 @@ struct SellGateScreen: View {
             } label: {
                 BusyLabel(title: title, busy: refreshingReadiness)
             }
-            .buttonStyle(.calibre(.secondary, fullWidth: true))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
             .disabled(refreshingReadiness)
 
         case .contactSupport(let title):
@@ -429,7 +429,7 @@ struct SellGateScreen: View {
             } label: {
                 Text(title).frame(maxWidth: .infinity)
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
 
         case .none:
             EmptyView()
@@ -461,8 +461,8 @@ struct SellGateScreen: View {
                 }
 
                 Text(cardStepBody)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if onFile {
@@ -473,8 +473,8 @@ struct SellGateScreen: View {
                         showCardStep = true
                     } label: {
                         Text("Replace card")
-                            .font(CalibreType.label)
-                            .foregroundStyle(Color.calibre.primary)
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.primary)
                             .frame(minHeight: Space.touchTarget, alignment: .leading)
                     }
                     .buttonStyle(PressableStyle())
@@ -485,7 +485,7 @@ struct SellGateScreen: View {
                         Text(sellerCard?.present == true ? "Replace your card" : "Add your card")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.calibre(payoutsComplete ? .primary : .secondary, fullWidth: true))
+                    .buttonStyle(.rewound(payoutsComplete ? .primary : .secondary, fullWidth: true))
                 }
             }
         }
@@ -642,12 +642,12 @@ private struct SetupStepCard<Content: View>: View {
                     VStack(alignment: .leading, spacing: 2) {
                         if of > 1 {
                             Text("Step \(number) of \(of)")
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         Text(name)
-                            .font(CalibreType.bodyMedium)
-                            .foregroundStyle(Color.calibre.foreground)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: Space.s)
@@ -666,22 +666,22 @@ private struct SetupStepCard<Content: View>: View {
             case .done:
                 Image(systemName: "checkmark")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.calibre.success)
+                    .foregroundStyle(Color.rewound.success)
             case .attention:
                 Image(systemName: "exclamationmark")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.calibre.destructive)
+                    .foregroundStyle(Color.rewound.destructive)
             case .current, .waiting:
                 Text("\(number)")
-                    .font(CalibreType.bodyMedium)
+                    .font(RewoundType.bodyMedium)
                     .foregroundStyle(
-                        state == .current ? Color.calibre.accentForeground : Color.calibre.mutedForeground
+                        state == .current ? Color.rewound.accentForeground : Color.rewound.mutedForeground
                     )
             }
         }
         .frame(width: 32, height: 32)
         .background(
-            Color.calibre.accent.opacity(state == .waiting ? 0.5 : 1),
+            Color.rewound.accent.opacity(state == .waiting ? 0.5 : 1),
             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
         )
         .accessibilityHidden(true)

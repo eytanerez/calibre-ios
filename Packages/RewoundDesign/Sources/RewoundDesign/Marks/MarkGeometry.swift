@@ -8,10 +8,10 @@ import UIKit
 enum MarkGrid {
     /// The square the geometry is written against.
     static let side: CGFloat = 120
-    /// The one stroke weight in the system, measured off the logo's centreline.
+    /// The one stroke weight in the system, measured off the logo's centerline.
     static let stroke: CGFloat = 4.55
-    /// Centre of the grid.
-    static let centre = CGPoint(x: 60, y: 60)
+    /// Center of the grid.
+    static let center = CGPoint(x: 60, y: 60)
 
     /// Round caps, round joins, single weight — the whole stroke vocabulary.
     static var style: StrokeStyle {
@@ -42,17 +42,17 @@ extension Path {
     /// SwiftUI's `Path` draws circular arcs and nothing else — there is no
     /// elliptical form on it, and the logo's arc is an ellipse. So the arc is
     /// built on a unit circle and pushed through the ellipse's own transform,
-    /// which lands the drawn centreline on the fitted ellipse rather than near
+    /// which lands the drawn centerline on the fitted ellipse rather than near
     /// it. Building the curves by hand also sidesteps the flipped-y reading of
     /// `addArc`'s `clockwise` flag: the direction here is the sign of `delta`.
     mutating func addEllipticalArc(
-        centre: CGPoint,
+        center: CGPoint,
         radii: CGSize,
         rotation: Angle,
         start: Angle,
         delta: Angle
     ) {
-        let transform = CGAffineTransform(translationX: centre.x, y: centre.y)
+        let transform = CGAffineTransform(translationX: center.x, y: center.y)
             .rotated(by: rotation.radians)
             .scaledBy(x: radii.width, y: radii.height)
 
@@ -83,9 +83,9 @@ extension Path {
     }
 
     /// The circular case of the above — a gauge track, a crown's rim.
-    mutating func addCircularArc(centre: CGPoint, radius: CGFloat, start: Angle, delta: Angle) {
+    mutating func addCircularArc(center: CGPoint, radius: CGFloat, start: Angle, delta: Angle) {
         addEllipticalArc(
-            centre: centre,
+            center: center,
             radii: CGSize(width: radius, height: radius),
             rotation: .zero,
             start: start,
@@ -118,9 +118,9 @@ struct MarkStillness: DynamicProperty {
 }
 
 /// Radial point on the grid, for ticks, teeth and debris.
-func markPoint(_ centre: CGPoint, _ radius: CGFloat, _ angle: Angle) -> CGPoint {
+func markPoint(_ center: CGPoint, _ radius: CGFloat, _ angle: Angle) -> CGPoint {
     CGPoint(
-        x: centre.x + radius * cos(angle.radians),
-        y: centre.y + radius * sin(angle.radians)
+        x: center.x + radius * cos(angle.radians),
+        y: center.y + radius * sin(angle.radians)
     )
 }

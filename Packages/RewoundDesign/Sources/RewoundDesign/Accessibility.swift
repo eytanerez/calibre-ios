@@ -60,7 +60,7 @@ public enum A11y {
 /// Below the accessibility threshold this returns exactly the two flexible
 /// columns the grids already use, so nothing moves for a default reader.
 @MainActor
-public func calibreGridColumns(
+public func rewoundGridColumns(
     _ typeSize: DynamicTypeSize,
     spacing: CGFloat = Space.m
 ) -> [GridItem] {
@@ -82,7 +82,7 @@ public func calibreGridColumns(
 /// the phone is worse than a cramped one. The cap leaves the next card
 /// peeking on the narrowest supported iPhone, so the lane still reads as a
 /// lane rather than as a single stranded card.
-public func calibreLaneCardWidth(_ scaled: CGFloat, cap: CGFloat = 320) -> CGFloat {
+public func rewoundLaneCardWidth(_ scaled: CGFloat, cap: CGFloat = 320) -> CGFloat {
     min(max(scaled, 1), cap)
 }
 

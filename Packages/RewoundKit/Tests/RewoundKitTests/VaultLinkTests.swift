@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import CalibreKit
+@testable import RewoundKit
 
 /// The two halves of "is this the watch you already own?": the question the
 /// sell flow asks the vault, and the seller's answer riding back on the
@@ -34,7 +34,7 @@ final class VaultLinkTests: XCTestCase {
     }
 
     /// A watch the catalog only half-knows is still one the owner can
-    /// recognise — the prompt falls back to the reference rather than to a
+    /// recognize — the prompt falls back to the reference rather than to a
     /// blank line or an invented name.
     func testMatchWithoutBrandOrModelIsNamedByItsReference() throws {
         let payload = Data("""

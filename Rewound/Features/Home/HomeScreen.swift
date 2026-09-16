@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// Home: wordmark and bag up top, search, anything still in motion, then the
@@ -72,7 +72,7 @@ struct HomeScreen: View {
             }
             .padding(.bottom, Space.xxl)
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .tutorialOverlay(tutorial)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(item: $pushed) { destination in
@@ -118,7 +118,7 @@ struct HomeScreen: View {
 
     private var headerRow: some View {
         HStack {
-            CalibreWordmark(size: 26)
+            RewoundWordmark(size: 26)
 
             Spacer()
 
@@ -130,7 +130,7 @@ struct HomeScreen: View {
             } label: {
                 Image(systemName: "rectangle.stack")
                     .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Color.calibre.foreground)
+                    .foregroundStyle(Color.rewound.foreground)
                     .frame(width: Space.touchTarget, height: Space.touchTarget)
             }
             .buttonStyle(PressableStyle())
@@ -144,15 +144,15 @@ struct HomeScreen: View {
             } label: {
                 Image(systemName: "bag")
                     .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Color.calibre.foreground)
+                    .foregroundStyle(Color.rewound.foreground)
                     .frame(width: Space.touchTarget, height: Space.touchTarget)
                     .overlay(alignment: .topTrailing) {
                         if bagCount > 0 {
                             Text("\(bagCount)")
-                                .font(CalibreType.caption)
-                                .foregroundStyle(Color.calibre.primaryForeground)
+                                .font(RewoundType.caption)
+                                .foregroundStyle(Color.rewound.primaryForeground)
                                 .frame(minWidth: 17, minHeight: 17)
-                                .background(Color.calibre.primary, in: Circle())
+                                .background(Color.rewound.primary, in: Circle())
                                 .offset(x: -2, y: 4)
                         }
                     }
@@ -183,21 +183,21 @@ struct HomeScreen: View {
             HStack(spacing: Space.s) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                 Text("Search watches")
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.placeholder)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.placeholder)
                 Spacer()
             }
             .padding(.horizontal, Space.m)
             .frame(minHeight: Space.touchTarget)
             .background(
-                Color.calibre.secondary,
+                Color.rewound.secondary,
                 in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                    .strokeBorder(Color.calibre.border, lineWidth: 1)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
             )
         }
         .buttonStyle(PressableStyle())
@@ -398,14 +398,14 @@ struct HomeScreen: View {
         VStack(alignment: .leading, spacing: Space.m) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Browse by brand")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 Spacer()
                 Button("View all") {
                     pushed = .brands
                 }
-                .font(CalibreType.label)
-                .foregroundStyle(Color.calibre.primary)
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.primary)
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("View all watch brands")
             }
@@ -417,8 +417,8 @@ struct HomeScreen: View {
                     } label: {
                         HStack(spacing: Space.s) {
                             Text(group.brand)
-                                .font(CalibreType.bodyMedium)
-                                .foregroundStyle(Color.calibre.foreground)
+                                .font(RewoundType.bodyMedium)
+                                .foregroundStyle(Color.rewound.foreground)
                                 // One line with an 0.8 floor is the shipped
                                 // look and stays it; past that floor a long
                                 // brand name is truncated rather than shrunk,
@@ -429,17 +429,17 @@ struct HomeScreen: View {
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(Color.calibre.mutedForeground)
+                                .foregroundStyle(Color.rewound.mutedForeground)
                         }
                         .padding(.horizontal, Space.m)
                         .frame(maxWidth: .infinity, minHeight: Space.touchTarget)
                         .background(
-                            Color.calibre.card,
+                            Color.rewound.card,
                             in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                .strokeBorder(Color.calibre.border, lineWidth: 1)
+                                .strokeBorder(Color.rewound.border, lineWidth: 1)
                         )
                     }
                     .buttonStyle(PressableStyle())

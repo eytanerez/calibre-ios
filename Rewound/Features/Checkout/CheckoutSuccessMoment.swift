@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The full-screen success moment — the watch breathes in over 420ms, a
@@ -31,8 +31,8 @@ struct CheckoutSuccessMoment: View {
                 .opacity(arrived ? 1 : 0)
 
             Text(headline)
-                .font(CalibreType.display)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.display)
+                .foregroundStyle(Color.rewound.foreground)
                 .multilineTextAlignment(.center)
                 .padding(.top, Space.xxl)
                 .padding(.horizontal, Space.xl)
@@ -40,8 +40,8 @@ struct CheckoutSuccessMoment: View {
 
             if let subtitle {
                 Text(subtitle)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.mutedForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
                     .multilineTextAlignment(.center)
                     .padding(.top, Space.s)
                     .padding(.horizontal, Space.xxl)
@@ -62,19 +62,19 @@ struct CheckoutSuccessMoment: View {
                     Text(isMultiItem ? "View your orders" : "View your order")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.calibre(.primary, fullWidth: true))
+                .buttonStyle(.rewound(.primary, fullWidth: true))
 
                 Button("Keep browsing") {
                     onKeepBrowsing()
                 }
-                .buttonStyle(.calibreGhost)
+                .buttonStyle(.rewoundGhost)
             }
             .padding(.horizontal, Space.margin)
             .padding(.bottom, Space.l)
             .opacity(arrived ? 1 : 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .onAppear {
             Haptics.shared.play(.paymentSuccess)
             withAnimation(reduceMotion ? Motion.easeMedium : Motion.easeSlow) {
@@ -94,7 +94,7 @@ struct CheckoutSuccessMoment: View {
                 ForEach(Array(imageURLs.prefix(3).enumerated().reversed()), id: \.offset) { index, url in
                     SquareThumb(url: url, side: index == 0 ? 180 : 156)
                         .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
-                        .calibreShadow(.lifted)
+                        .rewoundShadow(.lifted)
                         .rotationEffect(.degrees(fanAngle(index)))
                         .offset(x: fanOffset(index))
                         .zIndex(Double(3 - index))
@@ -104,7 +104,7 @@ struct CheckoutSuccessMoment: View {
         } else {
             SquareThumb(url: imageURLs.first ?? nil, side: 200)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous))
-                .calibreShadow(.lifted)
+                .rewoundShadow(.lifted)
         }
     }
 

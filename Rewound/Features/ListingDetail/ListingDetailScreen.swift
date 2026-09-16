@@ -1,5 +1,5 @@
-import CalibreDesign
-import CalibreKit
+import RewoundDesign
+import RewoundKit
 import SwiftUI
 
 /// The product detail page — gallery, buy box, authentication callout,
@@ -73,7 +73,7 @@ struct ListingDetailScreen: View {
                 skeleton
             }
         }
-        .calibrePageBackground()
+        .rewoundPageBackground()
         .accessibilityIdentifier("listing-detail-screen")
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
@@ -84,7 +84,7 @@ struct ListingDetailScreen: View {
                     ShareLink(items: [listing.webURL, shareImageURL]) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.calibre.foreground)
+                            .foregroundStyle(Color.rewound.foreground)
                     }
                     .accessibilityLabel("Share this watch")
                 }
@@ -135,7 +135,7 @@ struct ListingDetailScreen: View {
 
                     CalloutBand(
                         icon: "checkmark.shield",
-                        title: "Authenticated by Calibre",
+                        title: "Authenticated by Rewound",
                         message: "Inspected at our authentication center before it ships, with a 1-year mechanical warranty."
                     ) {
                         showAuthenticationInfo = true
@@ -169,24 +169,24 @@ struct ListingDetailScreen: View {
             Eyebrow(eyebrowText(listing))
 
             Text(listing.model ?? listing.title)
-                .font(CalibreType.title)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.title)
+                .foregroundStyle(Color.rewound.foreground)
 
             HStack(alignment: .firstTextBaseline, spacing: Space.m) {
                 // Logged-out visitors only ever see the seller's listed
                 // price; the model keeps it that way until there is a quote.
                 Text(pricing?.headlinePrice(for: listing)
                     ?? PriceFormatter.listing(listing.price.value, currency: listing.currency))
-                    .font(CalibreType.priceLarge)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.priceLarge)
+                    .foregroundStyle(Color.rewound.foreground)
                 if let badge = availabilityBadge(listing) {
                     StatusBadge(badge.text, tone: badge.tone)
                 }
             }
 
             Text("Final price may include tax and shipping. See breakdown below.")
-                .font(CalibreType.caption)
-                .foregroundStyle(Color.calibre.mutedForeground)
+                .font(RewoundType.caption)
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let pricing {
@@ -209,17 +209,17 @@ struct ListingDetailScreen: View {
                 Label {
                     // Item 1.22: the window, not the fact of a window.
                     Text(terms.summary ?? "Sold without returns")
-                        .font(CalibreType.label)
-                        .foregroundStyle(Color.calibre.foreground)
+                        .font(RewoundType.label)
+                        .foregroundStyle(Color.rewound.foreground)
                 } icon: {
                     Image(systemName: terms.accepted ? "arrow.uturn.backward" : "xmark.circle")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                 }
                 if terms.accepted, let costLine = returnCostLine {
                     Text(costLine)
-                        .font(CalibreType.caption)
-                        .foregroundStyle(Color.calibre.mutedForeground)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -243,7 +243,7 @@ struct ListingDetailScreen: View {
         VStack(spacing: Space.m) {
             // The reason comes before the disabled controls, not after them.
             // Whichever of the two applies, the buyer reads why the buttons
-            // below are grey before they try one.
+            // below are gray before they try one.
             ownListingBand(listing)
             unavailableBand(listing)
 
@@ -251,19 +251,19 @@ struct ListingDetailScreen: View {
                 Haptics.shared.play(.press)
                 buyNow()
             }
-            .buttonStyle(.calibre(.primary, fullWidth: true))
+            .buttonStyle(.rewound(.primary, fullWidth: true))
             .unavailable(!canTransact(listing))
 
             if let openOffer {
                 Button("Offer pending — view") {
                     routePush(.offer(openOffer.id))
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
             } else {
                 Button("Make Offer") {
                     makeOffer()
                 }
-                .buttonStyle(.calibre(.secondary, fullWidth: true))
+                .buttonStyle(.rewound(.secondary, fullWidth: true))
                 .unavailable(!canTransact(listing))
             }
 
@@ -276,7 +276,7 @@ struct ListingDetailScreen: View {
                         systemImage: isSaved ? "heart.fill" : "heart"
                     )
                 }
-                .buttonStyle(.calibre(.ghost, fullWidth: true))
+                .buttonStyle(.rewound(.ghost, fullWidth: true))
                 // Save is wider than buy — the server keeps saving open on a
                 // reserved watch whose hold can lapse
                 // (`_SAVABLE_LISTING_STATUSES`) — so it is gated on ownership
@@ -292,7 +292,7 @@ struct ListingDetailScreen: View {
                         systemImage: isInCart ? "bag.fill" : "bag"
                     )
                 }
-                .buttonStyle(.calibre(.ghost, fullWidth: true))
+                .buttonStyle(.rewound(.ghost, fullWidth: true))
                 // Deliberately NOT greyed when it is already in the cart. Save
                 // does the same thing one button to the left: "Saved" is a
                 // state the buyer put the watch in, not a rule stopping them
@@ -382,13 +382,13 @@ struct ListingDetailScreen: View {
         // carried no specs at all and prose was the only thing there was to
         // read. Which meant the app showed whichever facts a seller happened to
         // type, in whatever words they used, and never the ten (now sixteen)
-        // fields Calibre actually keeps.
+        // fields Rewound actually keeps.
         rows.append(contentsOf: listing.specs?.rows ?? [])
 
         return VStack(alignment: .leading, spacing: Space.m) {
             Text("The details")
-                .font(CalibreType.sectionTitle)
-                .foregroundStyle(Color.calibre.foreground)
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
             SpecList(rows)
         }
     }
@@ -398,8 +398,8 @@ struct ListingDetailScreen: View {
         if let condition = listing.condition {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("Condition grading")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 ConditionGradingCard(condition: condition)
             }
         }
@@ -410,8 +410,8 @@ struct ListingDetailScreen: View {
         if let seller = listing.seller {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("The seller")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 SellerCard(seller: seller) {
                     push(.seller(seller.username))
                 }
@@ -422,7 +422,7 @@ struct ListingDetailScreen: View {
                     } label: {
                         Label("Contact seller", systemImage: "bubble.left.and.bubble.right")
                     }
-                    .buttonStyle(.calibre(.ghost, fullWidth: true))
+                    .buttonStyle(.rewound(.ghost, fullWidth: true))
                 }
             }
         }
@@ -434,11 +434,11 @@ struct ListingDetailScreen: View {
         if !notes.isEmpty {
             VStack(alignment: .leading, spacing: Space.m) {
                 Text("From the seller")
-                    .font(CalibreType.sectionTitle)
-                    .foregroundStyle(Color.calibre.foreground)
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
                 Text(notes)
-                    .font(CalibreType.body)
-                    .foregroundStyle(Color.calibre.secondaryForeground)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
                     .lineSpacing(6)
             }
         }
@@ -796,9 +796,9 @@ struct ListingDetailScreen: View {
 
 /// Greying out, which the button style does not do for itself.
 ///
-/// `CalibreButtonStyle.makeBody` reads `configuration.isPressed` and nothing
+/// `RewoundButtonStyle.makeBody` reads `configuration.isPressed` and nothing
 /// else — there is no `\.isEnabled` branch anywhere in it — so `.disabled(true)`
-/// on a Calibre button produces a control that is pixel-identical to a live one
+/// on a Rewound button produces a control that is pixel-identical to a live one
 /// and simply ignores taps. Item 1.6 asks for these to be **greyed out** and to
 /// say why, and an inert button that still looks tappable is the worse half of
 /// both: the buyer taps it, nothing happens, and they conclude the app is
