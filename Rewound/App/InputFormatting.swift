@@ -13,8 +13,7 @@ import SwiftUI
 /// They deliberately do not live on `RewoundFieldKind`: that enum is in
 /// `RewoundDesign`, which is a UI-only package with no dependency on
 /// `RewoundKit`, and giving the design system an opinion about how a number is
-/// punctuated would put the rule in two places. `SSNStepSheet` already
-/// formatted at the call site the same way, and this is that pattern named.
+/// punctuated would put the rule in two places.
 ///
 /// Each writes back only when the formatted string differs from what is there,
 /// so a `.onChange` cannot loop.

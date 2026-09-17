@@ -205,9 +205,20 @@ struct ProfileCompletionView: View {
             focusedField = firstFocus
             // Deliberately not `try` — a lookup that fails leaves the count
             // unknown, which is what keeps the address step from being offered
-            // to somebody who already has one.
+            // to somebody who already has one. But a gate raised the instant a
+            // social sign-in lands is the first request of the session, and
+            // one transient failure there (a cold connection, a token still
+            // settling) would permanently skip the step for someone with no
+            // address at all — the more common case a fresh gate meets. One
+            // retry after a beat covers that without reopening the original
+            // problem, which needed permanence, not speed.
             if let rows = try? await services.commerce.loadAddresses() {
                 savedAddressCount = rows.count
+            } else {
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                if let rows = try? await services.commerce.loadAddresses() {
+                    savedAddressCount = rows.count
+                }
             }
         }
     }

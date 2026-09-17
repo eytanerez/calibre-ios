@@ -32,7 +32,6 @@ struct DealerApplicationScreen: View {
     /// Set when the backend answers `connect_required`: payouts have to exist
     /// before the business step can run.
     @State private var needsPayoutSetup = false
-    @State private var showSSNStep = false
     @State private var pendingConnect: PendingConnect?
 
     var body: some View {
@@ -62,17 +61,6 @@ struct DealerApplicationScreen: View {
             }
             if let existing = application?.country, InputValidation.isISO2CountryCode(existing) {
                 country = existing.uppercased()
-            }
-        }
-        .sheet(isPresented: $showSSNStep) {
-            SSNStepSheet { session in
-                Task {
-                    await present(
-                        clientSecret: session.clientSecret,
-                        title: "Set up payouts",
-                        isPayoutSetup: true
-                    )
-                }
             }
         }
         .fullScreenCover(item: $pendingConnect) { pending in
@@ -263,24 +251,20 @@ struct DealerApplicationScreen: View {
         }
     }
 
+    /// No SSN gate any more (contracts §2) — first-time and returning
+    /// sellers both just mint a session, same as the sell gate's onboarding.
     private func startPayoutSetup() {
         guard !busy else { return }
         formError = nil
-        // An account already exists — the backend ignores the SSN field then,
-        // exactly as the sell gate's resume path does.
-        if services.seller.readiness?.connect.accountId != nil {
-            busy = true
-            Task {
-                defer { busy = false }
-                do {
-                    let session = try await sell.ops.connectAccountSession(ssn: "")
-                    await present(clientSecret: session.clientSecret, title: "Set up payouts", isPayoutSetup: true)
-                } catch {
-                    formError = sellErrorMessage(error)
-                }
+        busy = true
+        Task {
+            defer { busy = false }
+            do {
+                let session = try await sell.ops.connectAccountSession(ssn: "")
+                await present(clientSecret: session.clientSecret, title: "Set up payouts", isPayoutSetup: true)
+            } catch {
+                formError = sellErrorMessage(error)
             }
-        } else {
-            showSSNStep = true
         }
     }
 

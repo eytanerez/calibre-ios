@@ -25,7 +25,6 @@ struct SellGateScreen: View {
     @Environment(ToastCenter.self) private var toasts
     @Environment(\.openURL) private var openURL
 
-    @State private var showSSNStep = false
     @State private var accountSession: ConnectAccountSession?
     @State private var stripeKey: String?
     @State private var showWebFallback = false
@@ -66,11 +65,6 @@ struct SellGateScreen: View {
         // key is the one that plays.
         .onChange(of: setupStepsDone, initial: true) { _, done in
             if let done { setupProgress.record(stepsDone: done) }
-        }
-        .sheet(isPresented: $showSSNStep) {
-            SSNStepSheet { session in
-                accountSession = session
-            }
         }
         .fullScreenCover(item: connectItem) { item in
             ConnectOnboardingScreen(
@@ -540,10 +534,14 @@ struct SellGateScreen: View {
 
     /// The first onboarding session — server truth, not a client guess. (The
     /// seam also latches it, covering the other entries into onboarding.)
+    ///
+    /// There was an SSN step here, gating the very first Connect account. The
+    /// backend dropped that field along with `users.ssn_hash` (contracts §2:
+    /// identity now runs on card/bank fingerprints and Stripe's own KYC) — so
+    /// the first-time and returning-seller paths both just mint a session.
     private func beginOnboarding() {
-        showWebFallback = false
         Analytics.sellerStarted()
-        showSSNStep = true
+        resumeOnboarding()
     }
 
     private func openHostedOnboarding() async {
