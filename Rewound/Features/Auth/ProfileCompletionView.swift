@@ -59,6 +59,8 @@ struct ProfileCompletionView: View {
     @State private var state = ""
     @State private var zip = ""
     @State private var usernameError: String?
+    @State private var usernameState: UsernameCheckState = .idle
+    @State private var usernameCheckTask: Task<Void, Never>?
     @State private var errorMessage: String?
     @State private var busy = false
     @State private var confirmSignOut = false
@@ -85,6 +87,7 @@ struct ProfileCompletionView: View {
             && InputValidation.isNonBlank(lastName)
             && InputValidation.isValidPhone(phone)
             && Self.usernameProblem(username) == nil
+            && usernameState.isAvailable
     }
 
     /// Only a lookup that came back empty asks for an address.
@@ -201,7 +204,12 @@ struct ProfileCompletionView: View {
             firstName = startingUser?.firstName ?? ""
             lastName = startingUser?.lastName ?? ""
             phone = PhoneFormatter.format(startingUser?.phone ?? "")
-            username = startingUser?.username ?? ""
+            // Deliberately not `startingUser?.username`. The only accounts
+            // that reach this gate with a username already on file got it
+            // invented from their email at social sign-up — nobody chose it,
+            // so it is asked for here exactly as registration asks for it,
+            // live availability check and all, rather than shown as if it
+            // were already settled.
             focusedField = firstFocus
             // Deliberately not `try` — a lookup that fails leaves the count
             // unknown, which is what keeps the address step from being offered
@@ -327,24 +335,104 @@ struct ProfileCompletionView: View {
             .submitLabel(.next)
             .onSubmit { focusedField = .username }
 
-            RewoundTextField(
-                "Username",
-                text: $username,
-                placeholder: "eytan",
-                error: usernameError,
-                kind: .username
-            )
-            .focused($focusedField, equals: .username)
-            .submitLabel(.done)
-            .onSubmit { if canSubmit { Task { await submit() } } }
-            // Lowercased as it is typed rather than at submit: the backend
-            // lowercases anyway, and a member who typed "Eytan" should see
-            // the handle they are actually getting.
-            .onChange(of: username) { _, newValue in
-                let lowered = newValue.lowercased()
-                if lowered != newValue { username = lowered }
-                // The server's verdict is stale the moment the box changes.
-                usernameError = nil
+            VStack(alignment: .leading, spacing: Space.s) {
+                RewoundTextField(
+                    "Username",
+                    text: $username,
+                    placeholder: "e.g. dialside",
+                    error: usernameError,
+                    kind: .username
+                ) {
+                    usernameAccessory
+                }
+                .focused($focusedField, equals: .username)
+                .submitLabel(.done)
+                .onSubmit { if canSubmit { Task { await submit() } } }
+                // Lowercased as it is typed rather than at submit: the backend
+                // lowercases anyway, and a member who typed "Eytan" should see
+                // the handle they are actually getting.
+                .onChange(of: username) { _, newValue in
+                    let lowered = newValue.lowercased()
+                    if lowered != newValue {
+                        username = lowered
+                        return
+                    }
+                    // The server's verdict is stale the moment the box changes.
+                    usernameError = nil
+                    scheduleUsernameCheck(for: lowered)
+                }
+
+                if let caption = usernameState.caption {
+                    Text(caption.text)
+                        .font(RewoundType.caption)
+                        .foregroundStyle(caption.positive ? Color.rewound.success : Color.rewound.destructive)
+                        .transition(.opacity)
+                }
+            }
+            .animation(Motion.easeFast, value: usernameState)
+        }
+    }
+
+    @ViewBuilder
+    private var usernameAccessory: some View {
+        switch usernameState {
+        case .idle:
+            EmptyView()
+        case .checking:
+            RewoundInlineLoading(size: 16, tint: Color.rewound.mutedForeground)
+        case .available:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.rewound.success)
+                .accessibilityLabel("Username is available")
+        case .unavailable, .invalid:
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.rewound.destructive)
+                .accessibilityLabel("Username is not available")
+        case .unverified:
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.rewound.mutedForeground)
+                .accessibilityLabel("Username availability not checked")
+        }
+    }
+
+    // MARK: - Username availability
+
+    /// Same debounce, same endpoint, same states as `RegisterScreen` — one
+    /// live check, not two independently-drifting ones.
+    private func scheduleUsernameCheck(for candidate: String) {
+        usernameCheckTask?.cancel()
+        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+
+        guard !trimmed.isEmpty else {
+            usernameState = .idle
+            return
+        }
+        guard trimmed.wholeMatch(of: /[A-Za-z0-9_]{3,32}/) != nil else {
+            usernameState = .invalid("Use 3–32 letters, numbers, or underscore.")
+            return
+        }
+
+        usernameState = .checking
+        let client = services.client
+        usernameCheckTask = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            do {
+                let result = try await client.send(Endpoint<UsernameAvailability>(
+                    path: "/auth/username-availability",
+                    query: [URLQueryItem(name: "username", value: trimmed)],
+                    requiresAuth: false
+                ))
+                guard !Task.isCancelled, trimmed == username.trimmingCharacters(in: .whitespaces) else { return }
+                usernameState = result.available
+                    ? .available(result.message)
+                    : .unavailable(result.message)
+            } catch {
+                guard !Task.isCancelled else { return }
+                usernameState = .unverified("We couldn't check that username right now — you can carry on.")
             }
         }
     }
