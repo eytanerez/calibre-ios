@@ -53,9 +53,9 @@ struct DetailsStep: View {
                 ListingCatalogField("Brand", text: $model.brand, level: .brands, error: model.brandError)
                     .id(WizardField.brand)
                     .onChange(of: model.brand) { _, _ in model.brandChanged() }
-                ListingCatalogField("Model", text: $model.model, level: .models, brand: model.brand)
+                ListingCatalogField("Model", text: $model.model, level: .models, brand: model.brand, error: model.modelError)
                     .onChange(of: model.model) { _, _ in model.modelChanged() }
-                ListingCatalogField("Reference", text: $model.reference, level: .references, brand: model.brand, model: model.model)
+                ListingCatalogField("Reference", text: $model.reference, level: .references, brand: model.brand, model: model.model, error: model.referenceError)
                     .onChange(of: model.reference) { _, _ in model.referenceChanged() }
                 RewoundTextField(
                     "Seller SKU (optional)",

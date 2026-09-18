@@ -381,6 +381,8 @@ final class WizardModel {
 
     var detailsComplete: Bool {
         InputValidation.isNonBlank(brand)
+            && InputValidation.isNonBlank(model)
+            && InputValidation.isNonBlank(reference)
             && (yearUnknown || InputValidation.productionYear(yearText) != nil)
             && ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
     }
@@ -399,6 +401,8 @@ final class WizardModel {
     var detailsMissing: [String] {
         var missing: [String] = []
         if !InputValidation.isNonBlank(brand) { missing.append("Brand") }
+        if !InputValidation.isNonBlank(model) { missing.append("Model") }
+        if !InputValidation.isNonBlank(reference) { missing.append("Reference number") }
         if !yearUnknown, InputValidation.productionYear(yearText) == nil { missing.append("Year") }
         for part in ConditionPart.allCases where conditions[part] == nil {
             missing.append(part.label)
@@ -429,6 +433,16 @@ final class WizardModel {
     var brandError: String? {
         guard attempted(0), !InputValidation.isNonBlank(brand) else { return nil }
         return "Enter the brand."
+    }
+
+    var modelError: String? {
+        guard attempted(0), !InputValidation.isNonBlank(model) else { return nil }
+        return "Enter the model."
+    }
+
+    var referenceError: String? {
+        guard attempted(0), !InputValidation.isNonBlank(reference) else { return nil }
+        return "Enter the reference number."
     }
 
     /// A year that's been typed wrong is worth flagging straight away; an
@@ -1179,6 +1193,8 @@ final class WizardModel {
         guard detailsComplete else {
             var parts: [String] = []
             if !InputValidation.isNonBlank(brand) { parts.append("Add the brand.") }
+            if !InputValidation.isNonBlank(model) { parts.append("Add the model.") }
+            if !InputValidation.isNonBlank(reference) { parts.append("Add the reference number.") }
             if !yearUnknown, InputValidation.productionYear(yearText) == nil {
                 parts.append("Add a 4-digit year, or mark it unknown.")
             }

@@ -201,14 +201,11 @@ struct ConditionGradingCard: View {
         )
     }
 
+    // One tone for every grade, deliberately: distinct colors per grade read
+    // as if they meant something (a stoplight, a ranking) rather than just
+    // labeling a fact about the watch.
     static func tone(for grade: String) -> StatusBadge.Tone {
-        switch grade.lowercased() {
-        case "new", "like new": .success
-        case "very good": .info
-        case "good": .neutral
-        case "worn": .warning
-        default: .neutral
-        }
+        .success
     }
 }
 

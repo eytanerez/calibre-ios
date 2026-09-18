@@ -541,7 +541,11 @@ struct SellGateScreen: View {
     /// the first-time and returning-seller paths both just mint a session.
     private func beginOnboarding() {
         Analytics.sellerStarted()
-        resumeOnboarding()
+        // No existing Connect account, so the endpoint requires the explicit
+        // create flag (409 "Choose Start with Stripe..." otherwise) — it is a
+        // guard against a retried request accidentally minting a second
+        // account, not something the SSN step ever carried.
+        mintOnboardingSession(createAccount: true)
     }
 
     private func openHostedOnboarding() async {
@@ -559,12 +563,16 @@ struct SellGateScreen: View {
     /// With an existing Connect account the backend ignores the SSN field,
     /// so we can mint a session directly.
     private func resumeOnboarding() {
+        mintOnboardingSession(createAccount: false)
+    }
+
+    private func mintOnboardingSession(createAccount: Bool) {
         showWebFallback = false
         refreshingReadiness = true
         Task {
             defer { refreshingReadiness = false }
             do {
-                accountSession = try await sell.ops.connectAccountSession(ssn: "")
+                accountSession = try await sell.ops.connectAccountSession(ssn: "", createAccount: createAccount)
             } catch {
                 // Listing readiness can fail on the card rather than on
                 // payouts — route to the step that actually unblocks them.

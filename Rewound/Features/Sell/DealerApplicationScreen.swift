@@ -253,14 +253,19 @@ struct DealerApplicationScreen: View {
 
     /// No SSN gate any more (contracts §2) — first-time and returning
     /// sellers both just mint a session, same as the sell gate's onboarding.
+    /// A first-time seller still needs the explicit create flag: with no
+    /// Connect account on file the endpoint refuses with 409
+    /// "Choose Start with Stripe..." otherwise, a guard against a retried
+    /// request accidentally minting a second account.
     private func startPayoutSetup() {
         guard !busy else { return }
         formError = nil
         busy = true
+        let createAccount = services.seller.readiness?.connect.accountId == nil
         Task {
             defer { busy = false }
             do {
-                let session = try await sell.ops.connectAccountSession(ssn: "")
+                let session = try await sell.ops.connectAccountSession(ssn: "", createAccount: createAccount)
                 await present(clientSecret: session.clientSecret, title: "Set up payouts", isPayoutSetup: true)
             } catch {
                 formError = sellErrorMessage(error)
