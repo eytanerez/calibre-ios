@@ -12,6 +12,7 @@ struct YouScreen: View {
     @Environment(AuthSession.self) private var session
     @Environment(AppServices.self) private var services
     @Environment(ToastCenter.self) private var toasts
+    @Environment(BetaStore.self) private var beta
     @AppStorage("guestChosen") private var guestChosen = false
     // Same key the app root reads to apply `.preferredColorScheme` — the two
     // `@AppStorage` instances stay in sync automatically.
@@ -19,10 +20,12 @@ struct YouScreen: View {
 
     @State private var showLogin = false
     @State private var confirmSignOut = false
+    @State private var showsBetaFeedback = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xxl) {
+                betaFeedbackEntry
                 header
 
                 if session.isAuthenticated {
@@ -132,6 +135,9 @@ struct YouScreen: View {
                 LoginScreen(context: .modal)
             }
         }
+        .sheet(isPresented: $showsBetaFeedback) {
+            BetaFeedbackSheet()
+        }
         .alert(
             "Sign out of Rewound?",
             isPresented: $confirmSignOut
@@ -142,6 +148,59 @@ struct YouScreen: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You can keep browsing as a guest, and sign back in any time.")
+        }
+    }
+
+    // MARK: - Beta feedback
+
+    /// The entry point into the beta survey, at the top of the tab so a
+    /// tester who came looking for it doesn't have to. Invisible the moment
+    /// `beta.isEnabled` goes false, so a build shipped after the beta closes
+    /// draws nothing here at all.
+    @ViewBuilder
+    private var betaFeedbackEntry: some View {
+        if beta.isEnabled {
+            Button {
+                Haptics.shared.play(.press)
+                showsBetaFeedback = true
+            } label: {
+                HStack(spacing: Space.m) {
+                    Image(systemName: "flask")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color.rewound.primary)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Color.rewound.accent.opacity(0.6),
+                            in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                        )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Beta feedback")
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
+                        Text("Tell us what's broken or confusing. It takes a few minutes.")
+                            .font(RewoundType.label)
+                            .foregroundStyle(Color.rewound.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.rewound.mutedForeground)
+                }
+                .padding(Space.l)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    Color.rewound.primary.opacity(0.06),
+                    in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                        .strokeBorder(Color.rewound.primary.opacity(0.3), lineWidth: 1)
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityHint("Opens the beta feedback form")
         }
     }
 

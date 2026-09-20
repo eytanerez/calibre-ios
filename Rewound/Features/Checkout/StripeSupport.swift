@@ -11,12 +11,13 @@ import UIKit
 /// One place that shapes Stripe PaymentSheet like Rewound: warm cream/ink
 /// (or their dark equivalents), Radius.control corners, Geist type.
 ///
-/// PaymentSheet still drives offer holds and seller label purchases. Buyer
-/// card checkout collects the card itself (see `CardEntryField`) because the
-/// card's funding has to be known before any money moves — so the pieces the
-/// hand-rolled path needs (the frontmost presenter, an authentication
-/// context, the Apple Pay request) live here too, beside the merchant id and
-/// the entitlement gate they share.
+/// PaymentSheet drives every payment now — offer holds, seller label
+/// purchases, and buyer checkout. Checkout uses `IntentConfiguration`'s
+/// deferred flow so the funding gate still runs before any money moves: its
+/// confirm handler gets a full `STPPaymentMethod` and hands back a client
+/// secret only once the server has accepted it. So the pieces every path
+/// needs (the frontmost presenter, an authentication context for 3-D Secure)
+/// live here too, beside the merchant id and the entitlement gate they share.
 enum RewoundStripe {
     static let merchantDisplayName = "Rewound"
     static let returnURL = "rewound://stripe-redirect"
@@ -74,6 +75,16 @@ enum RewoundStripe {
     /// without pricing a card asks this before deciding a blank key is fatal.
     static var isKeyed: Bool {
         !(STPAPIClient.shared.publishableKey ?? "").isEmpty
+    }
+
+    /// Whether a Stripe publishable key is a test-mode key.
+    ///
+    /// Derived from the key itself, never from `#if DEBUG`: a debug build
+    /// pointed at live keys (a developer testing production data) must stay
+    /// quiet, and a TestFlight build pointed at test keys (the beta program)
+    /// still has to warn a tester before they authorize a real-looking total.
+    static func isTestKey(_ key: String?) -> Bool {
+        (key ?? "").hasPrefix("pk_test_")
     }
 
     /// What a buyer is told when the server named no Stripe account.
@@ -176,25 +187,6 @@ enum RewoundStripe {
         hasApplePayEntitlement && PKPaymentAuthorizationController.canMakePayments()
     }
 
-    /// The request behind the Apple Pay sheet. Every line the buyer reads is
-    /// passed in already priced by the server; nothing here adds to a total.
-    static func applePayRequest(
-        currency: String,
-        summaryItems: [PKPaymentSummaryItem]
-    ) -> PKPaymentRequest {
-        let request = StripeAPI.paymentRequest(
-            withMerchantIdentifier: applePayMerchantID,
-            country: "US",
-            currency: currency
-        )
-        request.paymentSummaryItems = summaryItems
-        // Checkout already collected a shipping address of its own, and the
-        // order is priced against it. Asking Apple for one again would let the
-        // buyer pick a destination the tax and shipping lines don't match.
-        request.requiredShippingContactFields = []
-        return request
-    }
-
     /// Presents a PaymentSheet from whatever is frontmost.
     ///
     /// We deliberately don't use the SDK's `.paymentSheet(isPresented:)`
@@ -242,12 +234,11 @@ enum RewoundStripe {
     /// recogniser on the *window*, and the sheet is presented into that same
     /// window, so tapping anywhere off a field still closes the keypad.
     ///
-    /// Only PaymentSheet needs this. The toolbar belongs to StripeUICore's
-    /// element text fields, which is the sheet's form; the inline
-    /// `CardEntryField` is `STPPaymentCardTextField`, a different control that
-    /// installs no accessory of its own. The buyer card step therefore calls
-    /// neither of these, and giving it them would strip the accessory from
-    /// every field in the app for as long as that step was on screen.
+    /// Only `present(_:completion:)` calls this — the toolbar belongs to
+    /// StripeUICore's element text fields, which is PaymentSheet's own form,
+    /// so every PaymentSheet presentation in the app (checkout, an offer
+    /// hold, adding a card) gets it for free by going through that one
+    /// entry point rather than presenting a sheet directly.
     @MainActor
     static func beginHidingDoneAccessory() {
         doneAccessoryStripper.start()

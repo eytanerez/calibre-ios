@@ -1,9 +1,8 @@
 import RewoundKit
 import Foundation
 import Observation
-import PassKit
-import StripeApplePay
 import StripePayments
+import StripePaymentSheet
 
 /// Steps pushed inside the checkout's own NavigationStack. Shipping is the
 /// stack root.
@@ -19,15 +18,30 @@ enum CheckoutMethod: Hashable {
     case wire
 }
 
-/// A refused card, thrown so it can travel out of the Apple Pay delegate as
-/// an error while still carrying the backend's machine reason.
+/// A refused card, thrown so it can travel out of PaymentSheet's deferred
+/// confirm handler as an error while still carrying the backend's machine
+/// reason. The handler runs after the buyer taps Pay inside Stripe's own
+/// sheet, so this is also what the sheet shows them: `errorDescription`
+/// names the way out (credit cards only, wire at any price) because there is
+/// no button beside it to say so instead.
 struct CardRefusalError: LocalizedError {
     let refusal: CardRefusal
-    /// Filled in by whoever can reach the marketplace config; Apple Pay's
-    /// sheet shows this string.
     let message: String
 
     var errorDescription: String? { message }
+}
+
+/// A failure carrying copy we already wrote. PaymentSheet surfaces the
+/// thrown error's description inside its own sheet, so refusals have to
+/// travel as errors rather than as state the sheet can't see.
+struct CheckoutMessageError: LocalizedError {
+    let message: String
+
+    var errorDescription: String? { message }
+
+    static let lost = CheckoutMessageError(
+        message: "We lost track of this checkout. Please start again."
+    )
 }
 
 /// One watch in the checkout: the listing itself, and the server's own line
@@ -91,29 +105,6 @@ final class CheckoutModel {
         case loading
         case ready
         case failed(String)
-    }
-
-    /// Where the payment has got to, so the pay bar can say something true
-    /// rather than spinning anonymously.
-    enum PayState: Equatable {
-        case idle
-        case readingCard
-        case checkingCard
-        case confirming
-        case authenticating
-
-        var isBusy: Bool { self != .idle }
-
-        /// What the buyer is actually waiting on.
-        var label: String? {
-            switch self {
-            case .idle: nil
-            case .readingCard: "Reading your card…"
-            case .checkingCard: "Checking your card…"
-            case .confirming: "Taking payment…"
-            case .authenticating: "Waiting on your bank…"
-            }
-        }
     }
 
     var phase: Phase = .loading
@@ -202,68 +193,8 @@ final class CheckoutModel {
     /// rather than silently shrinking.
     private(set) var droppedWatch: ReservedWatch?
 
-    // MARK: Card entry
-
-    /// Written by `CardEntryField`; nil until every field validates. Any
-    /// change to it retires whatever the funding gate previously accepted —
-    /// a different card is a different verdict.
-    var cardParams: STPPaymentMethodCardParams? {
-        didSet {
-            validatedPaymentMethodID = nil
-            cardCheckProblem = nil
-        }
-    }
-    var cardIsValid = false
-
-    /// The PaymentMethod the funding gate has already accepted. Created once,
-    /// at card entry — while wire is still one tap away — and reused at
-    /// confirm, so paying never creates a second PaymentMethod for the same
-    /// card.
-    private(set) var validatedPaymentMethodID: String?
-    private(set) var checkingCardEntry = false
-    /// A funding check that couldn't be completed (as opposed to one that
-    /// said no). Retrying is honest advice here, so the view offers it.
-    private(set) var cardCheckProblem: CheckoutProblem?
-
-    /// The gate said yes to the card in the field.
-    var cardAccepted: Bool { validatedPaymentMethodID != nil }
-
-    // MARK: Cards the buyer already has
-
-    /// The buyer's saved cards, from `GET /account/payment-methods`.
-    ///
-    /// Checkout used to ignore the wallet entirely: a buyer who had paid on
-    /// this account ten minutes ago was handed an empty card field and asked
-    /// to find their wallet again. The account screen could list the card the
-    /// whole time. Loading it here is not a shortcut past the funding gate —
-    /// a saved card goes through exactly the same
-    /// `POST /checkout/validate-payment-method` a typed one does, before the
-    /// Pay button is live, and the server judges it a second time on confirm.
-    private(set) var savedCards: [WalletCard] = []
-    /// Which saved card is selected; nil while a new card is being typed.
-    private(set) var selectedSavedCardID: String?
-    /// The buyer chose to type a card instead. Also the only state a buyer
-    /// with no saved cards is ever in.
-    private(set) var isEnteringNewCard = false
-    private(set) var checkingSavedCard = false
-
-    var hasSavedCards: Bool { !savedCards.isEmpty }
-
-    var selectedSavedCard: WalletCard? {
-        savedCards.first { $0.id == selectedSavedCardID }
-    }
-
-    /// The card to offer first: the one the account calls default, else the
-    /// newest. Never a guess about funding — that is the server's answer.
-    private var preferredSavedCard: WalletCard? {
-        savedCards.first(where: \.isDefault) ?? savedCards.first
-    }
-
     // MARK: Payment
 
-    private(set) var payState: PayState = .idle
-    /// The funding gate said no. Shown inline, with wire one tap away.
-    private(set) var cardRefusal: CardRefusal?
     private(set) var paymentProblem: CheckoutProblem?
     private(set) var confirmingOrder = false
     /// Every order the purchase materialized — one per watch.
@@ -273,24 +204,16 @@ final class CheckoutModel {
     /// opens). Nil until the purchase has materialized.
     var completedOrder: Order? { completedOrders.first }
 
-    /// `STPPaymentHandler` and `STPApplePayContext` both keep only weak
-    /// references to these, so the model owns them for the life of a payment.
+    /// `STPPaymentHandler` keeps only a weak reference to this, so the model
+    /// owns it for the life of a payment.
     @ObservationIgnored private let authenticationContext = CheckoutAuthenticationContext()
-    @ObservationIgnored private var applePayCheckout: ApplePayCheckout?
-    @ObservationIgnored private var applePayContext: STPApplePayContext?
-    /// True from the first word PassKit says back — the wallet handing over a
-    /// PaymentMethod, or the sheet finishing for any reason including a plain
-    /// cancel. It is the only thing that separates "the sheet is open and the
-    /// buyer is reading it" from "the sheet never opened", because
-    /// `presentApplePay`'s completion fires either way.
-    @ObservationIgnored private var applePayAnswered = false
-    /// PassKit refused to raise the sheet on this device. Observed, not
-    /// inferred: the watchdog below sets it only after PassKit has been given
-    /// its chance and said nothing. It is a fact about the build's
-    /// entitlements rather than about this tap, so a second tap would fail the
-    /// same way — the button goes dead-looking on purpose, beside a message
-    /// that names the two routes that do work.
-    private(set) var applePayRefusedToOpen = false
+    /// Stripe holds this weakly once presented, so the model owns it for the
+    /// life of the sheet.
+    @ObservationIgnored private var paymentSheet: PaymentSheet?
+    /// True from `presentPaymentSheet()` until the sheet reports a result —
+    /// the guard against a second tap while Stripe's own sheet is up, and
+    /// what disables "Pay by wire instead" while a card payment is in flight.
+    private(set) var presentingPaymentSheet = false
 
     init(
         listingIDs: [String],
@@ -327,24 +250,7 @@ final class CheckoutModel {
             phase = .ready
         } catch {
             phase = .failed(friendlyMessage(error))
-            return
         }
-        await loadSavedCards()
-    }
-
-    /// The wallet, loaded after the checkout itself is on screen and never
-    /// able to stop it. A buyer with no cards, or a cards call that fell over,
-    /// gets the card form — which is exactly what they got before this
-    /// existed. Nothing here decides whether a card may be used.
-    private func loadSavedCards() async {
-        // `spendableCards`, not every card: a seller's guarantee card sits on
-        // the same Stripe customer, and a seller who used one card for both
-        // sees the same brand and the same four digits twice with nothing to
-        // choose between them. It is the card a counterfeit charge lands on —
-        // never a card to buy a watch with.
-        let cards = (try? await commerce.wallet())?.spendableCards ?? []
-        savedCards = cards
-        isEnteringNewCard = cards.isEmpty
     }
 
     /// Every watch in the set, fetched together. One failure fails the load —
@@ -449,11 +355,11 @@ final class CheckoutModel {
                 offerID: offerID
             )
             // Before the intent is kept, not after. Everything the card path
-            // draws hangs off `cardIntent` — the card field, the Apple Pay
-            // button, the breakdown — and every one of them would be a
-            // promise the SDK cannot keep if the server named no account.
-            // Failing here puts the reason on screen; keeping the intent
-            // would put a card form on screen that silently 401s at the tap.
+            // draws hangs off `cardIntent` — the breakdown, the Pay button,
+            // the sheet it opens — and every one of them would be a promise
+            // the SDK cannot keep if the server named no account. Failing
+            // here puts the reason on screen; keeping the intent would put a
+            // Pay button on screen whose sheet silently 401s at the tap.
             guard RewoundStripe.useKey(intent.publishableKey) else {
                 recordPricingFailure(RewoundStripe.unkeyedFailure)
                 return
@@ -464,9 +370,6 @@ final class CheckoutModel {
             recordPricingFailure(error)
             return
         }
-        // A re-price is a new verdict: the funding rule rides on the pricing
-        // mode, and the mode rides on where the purchase is going.
-        await prepareCardSelection()
     }
 
     /// The card cost in dollars, once the server has priced the purchase.
@@ -495,7 +398,6 @@ final class CheckoutModel {
     /// buyer has seen exactly what the card costs.
     func switchToWire() async {
         method = .wire
-        clearCardEntry()
         await startWire()
         // The card gate can refuse wire, and everything a buyer can do about
         // that — the message for each code, "Add a credit card", "Pay by card
@@ -556,7 +458,6 @@ final class CheckoutModel {
         do {
             let wallet = try await commerce.wallet()
             let spendable = wallet.spendableCards
-            savedCards = spendable
             // Never the guarantee card: the deposit has to sit on a card the
             // buyer chose to spend from.
             let card = spendable.first { $0.id == wallet.defaultPaymentMethodId } ?? spendable.first
@@ -750,201 +651,120 @@ final class CheckoutModel {
             wireCheckout = nil
         }
         pricingError = nil
-        clearCardEntry()
     }
 
     // MARK: - Review & pay (card)
 
-    /// Paying is only offered once the funding gate has accepted the card —
-    /// typed or saved. A card nobody has checked is never one tap from a
-    /// charge.
+    /// Paying is offered once the purchase is priced. The funding gate no
+    /// longer runs before this button lights up — it runs inside Stripe's
+    /// own sheet, in `confirmForPaymentSheet`, the moment the buyer taps its
+    /// Pay button.
     var canPayWithCard: Bool {
-        cardIntent != nil && cardAccepted && !payState.isBusy && !confirmingOrder
-            && !checkingCardEntry && !checkingSavedCard
+        cardIntent != nil && !presentingPaymentSheet && !confirmingOrder
     }
 
-    // MARK: - Paying with a card already on the account
-
-    /// Settles which card the review step is offering, and puts it through the
-    /// gate. Called when the step appears and again whenever the purchase is
-    /// re-priced — a new destination can change the pricing mode, and the
-    /// funding rule rides on the mode, so an old verdict is not reusable.
-    func prepareCardSelection() async {
-        guard cardIntent != nil else { return }
-        if selectedSavedCardID == nil, !isEnteringNewCard, let preferred = preferredSavedCard {
-            selectedSavedCardID = preferred.id
-        }
-        guard selectedSavedCardID != nil, validatedPaymentMethodID == nil else { return }
-        await validateSavedCard()
+    /// Whether this checkout is priced against a Stripe test key. Derived
+    /// from the key the server priced it with, never from `#if DEBUG` — a
+    /// debug build pointed at live keys must stay quiet, and a TestFlight
+    /// build pointed at test keys (the beta program) still has to warn a
+    /// tester before they authorize a real-looking total.
+    var isTestModePayment: Bool {
+        RewoundStripe.isTestKey(cardIntent?.publishableKey)
     }
 
-    /// Switch to one of the buyer's saved cards. The previous verdict goes
-    /// with the previous card.
-    func useSavedCard(_ id: String) {
-        guard savedCards.contains(where: { $0.id == id }) else { return }
-        isEnteringNewCard = false
-        selectedSavedCardID = id
-        // Writing `cardParams` retires the accepted PaymentMethod, so nothing
-        // a typed card earned can be paid with under a saved card's name.
-        cardParams = nil
-        cardIsValid = false
-        cardRefusal = nil
-        cardCheckProblem = nil
-        Task { await validateSavedCard() }
-    }
-
-    /// "Use a different card" — a fresh form, with nothing carried over.
-    func enterNewCard() {
-        isEnteringNewCard = true
-        selectedSavedCardID = nil
-        clearCardEntry()
-    }
-
-    /// Back to the saved cards from the form.
-    func useSavedCardsInstead() {
-        guard hasSavedCards else { return }
-        clearCardEntry()
-        isEnteringNewCard = false
-        if let preferred = preferredSavedCard {
-            useSavedCard(preferred.id)
-        }
-    }
-
-    /// The same funding gate a typed card goes through, run on a saved card
-    /// before the Pay button is live. A saved card is not a trusted card: it
-    /// may be the debit card the buyer added for an offer hold, and this
-    /// order may be one that only takes credit.
-    func validateSavedCard() async {
-        guard let card = selectedSavedCard, cardIntent != nil else { return }
-        guard !checkingSavedCard, !payState.isBusy, !confirmingOrder else { return }
-        checkingSavedCard = true
-        cardRefusal = nil
-        cardCheckProblem = nil
-        paymentProblem = nil
-        defer { checkingSavedCard = false }
-
-        do {
-            let validation = try await checkout.validatePaymentMethod(
-                listingIDs: listingIDs,
-                paymentMethodID: card.id
-            )
-            // The buyer may have moved on to another card while this was in
-            // flight; that verdict is not about what is on screen.
-            guard selectedSavedCardID == card.id else { return }
-            guard validation.accepted else {
-                cardRefusal = CardRefusal(code: validation.reason, serverMessage: nil)
-                return
-            }
-            validatedPaymentMethodID = card.id
-        } catch {
-            guard selectedSavedCardID == card.id else { return }
-            cardCheckProblem = CheckoutCopy.problem(for: error)
-        }
-    }
-
-    /// The funding check, run the moment a complete card is in the field —
-    /// while wire is still one tap away, and before the Pay button is live.
+    /// Presents Stripe's PaymentSheet against the priced intent, using its
+    /// deferred-confirmation flow: Stripe hands `confirmForPaymentSheet` a
+    /// full `STPPaymentMethod` and no money moves until it hands back a
+    /// client secret. That is what keeps the funding gate alive now that it
+    /// no longer runs at a card field of our own — it runs the moment the
+    /// buyer taps Pay inside Stripe's sheet, and a refusal is shown right
+    /// there, with wire still one tap away outside it.
     ///
-    /// A refusal lands inline here rather than after a submission the buyer
-    /// thought had succeeded. The accepted PaymentMethod is kept so paying
-    /// reuses it instead of creating a second one for the same card.
-    func validateEnteredCard() async {
-        guard let params = cardParams, cardIntent != nil else { return }
-        guard !checkingCardEntry, !payState.isBusy, !confirmingOrder else { return }
-        checkingCardEntry = true
-        cardRefusal = nil
-        cardCheckProblem = nil
+    /// Apple Pay lives inside this same sheet — `RewoundStripe.configuration`
+    /// attaches it whenever the build and device both support it — so
+    /// tapping it calls this exact same confirm handler rather than a path
+    /// of its own.
+    func presentPaymentSheet() {
+        guard canPayWithCard, let intent = cardIntent else { return }
+        guard let amount = Self.minorUnits(intent.payableBreakdown?.grandTotal.value) else {
+            paymentProblem = CheckoutProblem(message: "We couldn't price this purchase. Please try again.")
+            return
+        }
         paymentProblem = nil
-        defer { checkingCardEntry = false }
 
-        do {
-            let paymentMethodID = try await createPaymentMethodID(params)
-            let validation = try await checkout.validatePaymentMethod(
-                listingIDs: listingIDs,
-                paymentMethodID: paymentMethodID
-            )
-            // The card the gate judged may already have been replaced by a
-            // newer one — that write cleared the id, and this verdict is no
-            // longer about what is on screen. Checked before the refusal too,
-            // or a card the buyer has already typed over shows a refusal for
-            // a card that is no longer in the field.
-            guard cardParams === params else { return }
-            guard validation.accepted else {
-                cardRefusal = CardRefusal(code: validation.reason, serverMessage: nil)
-                return
+        let intentConfiguration = PaymentSheet.IntentConfiguration(
+            mode: .payment(
+                amount: amount,
+                currency: (intent.payableBreakdown?.currency ?? "usd").lowercased()
+            ),
+            confirmHandler: { [weak self] paymentMethod, _ in
+                guard let self else { throw CheckoutMessageError.lost }
+                return try await self.confirmForPaymentSheet(paymentMethodID: paymentMethod.stripeId)
             }
-            validatedPaymentMethodID = paymentMethodID
-        } catch {
-            guard cardParams === params else { return }
-            cardCheckProblem = CheckoutCopy.problem(for: error)
+        )
+        let sheet = PaymentSheet(
+            intentConfiguration: intentConfiguration,
+            configuration: RewoundStripe.configuration(
+                customerID: intent.customerId,
+                customerSessionClientSecret: intent.customerSessionClientSecret
+            )
+        )
+        paymentSheet = sheet
+        presentingPaymentSheet = true
+        RewoundStripe.present(sheet) { [weak self] result in
+            self?.handlePaymentSheetResult(result)
         }
     }
 
-    /// The whole card path from an accepted card: let the server confirm,
-    /// answer a 3-D Secure challenge if one comes back, then materialize. The
-    /// funding gate already ran at card entry and its PaymentMethod is reused.
-    func payWithCard() async {
-        guard let intent = cardIntent,
-              let paymentMethodID = validatedPaymentMethodID,
-              !payState.isBusy, !confirmingOrder else { return }
-        // Claimed here, before anything can suspend, so a second tap landing
-        // in the gap between the tap and the first network call finds the
-        // guard above already closed. `confirmAccepted` sets it again; this is
-        // the one that has to be synchronous with the guard.
-        payState = .confirming
-        cardRefusal = nil
-        paymentProblem = nil
+    /// The gate, then the server's confirmation — the exact pipeline a saved
+    /// or typed card used to run before Pay went live, reused rather than
+    /// duplicated. A refusal throws, so PaymentSheet shows it inside the
+    /// sheet with wire still one tap away outside it.
+    func confirmForPaymentSheet(paymentMethodID: String) async throws -> String {
+        guard let intent = cardIntent else { throw CheckoutMessageError.lost }
+        _ = try await gateThenConfirm(paymentMethodID: paymentMethodID, paymentIntentID: intent.paymentIntent.id)
+        return intent.paymentIntent.clientSecret
+    }
 
-        do {
-            let clientSecret = try await confirmAccepted(
-                paymentMethodID: paymentMethodID,
-                paymentIntentID: intent.paymentIntent.id
-            )
-            if let clientSecret {
-                payState = .authenticating
-                try await handleNextAction(clientSecret: clientSecret)
-            }
-            payState = .idle
-            await materializeOrders()
-        } catch let refusal as CardRefusalError {
-            payState = .idle
-            cardRefusal = refusal.refusal
-        } catch {
-            payState = .idle
+    /// Where `RewoundStripe.present` hands the sheet's outcome back. A
+    /// refusal the confirm handler threw is already shown inside the sheet
+    /// by this point — `.failed` here is an SDK-level failure outside our
+    /// own control, so it gets the same generic handling any other payment
+    /// failure gets.
+    private func handlePaymentSheetResult(_ result: PaymentSheetResult) {
+        presentingPaymentSheet = false
+        paymentSheet = nil
+        switch result {
+        case .completed:
+            Task { await materializeOrders() }
+        case .canceled:
+            break
+        case .failed(let error):
             paymentProblem = CheckoutCopy.problem(for: error)
         }
     }
 
-    /// Turns a validated card into a Stripe PaymentMethod. Only the id
-    /// crosses back — the PaymentMethod object itself never leaves the
-    /// callback.
-    private func createPaymentMethodID(_ card: STPPaymentMethodCardParams) async throws -> String {
-        let params = STPPaymentMethodParams(card: card, billingDetails: nil, metadata: nil)
-        return try await withCheckedThrowingContinuation { continuation in
-            STPAPIClient.shared.createPaymentMethod(with: params) { method, error in
-                if let id = method?.stripeId {
-                    continuation.resume(returning: id)
-                } else {
-                    continuation.resume(
-                        throwing: error ?? CheckoutMessageError(
-                            message: "We couldn't read that card. Please check the details and try again."
-                        )
-                    )
-                }
-            }
-        }
+    /// The purchase total in the smallest currency unit `IntentConfiguration`
+    /// wants. Straight from the server's own `grand_total` — never
+    /// remembered, never recomputed from a formatted string.
+    private static func minorUnits(_ amount: Decimal?) -> Int? {
+        guard let amount, amount > 0 else { return nil }
+        var scaled = amount * 100
+        var whole = Decimal()
+        NSDecimalRound(&whole, &scaled, 0, .plain)
+        let cents = NSDecimalNumber(decimal: whole).intValue
+        return cents > 0 ? cents : nil
     }
 
     /// The funding gate, then the server's confirmation.
     ///
-    /// Validation runs the moment the PaymentMethod exists — while wire is
-    /// still one tap away — and the server enforces the same rule again on
-    /// confirm, which is why a 402 there is read as the same refusal rather
-    /// than as a generic failure.
+    /// Validation runs the moment PaymentSheet hands over a PaymentMethod —
+    /// the moment the buyer taps its own Pay button — and the server
+    /// enforces the same rule again on confirm, which is why a 402 there is
+    /// read as the same refusal rather than as a generic failure.
     ///
     /// Returns a client secret only when a challenge is owed.
     private func gateThenConfirm(paymentMethodID: String, paymentIntentID: String) async throws -> String? {
-        payState = .checkingCard
         let validation = try await checkout.validatePaymentMethod(
             listingIDs: listingIDs,
             paymentMethodID: paymentMethodID
@@ -962,7 +782,6 @@ final class CheckoutModel {
     /// server enforces the funding rule again here, which is why a 402 is read
     /// as the same refusal rather than as a generic failure.
     private func confirmAccepted(paymentMethodID: String, paymentIntentID: String) async throws -> String? {
-        payState = .confirming
         let confirmation: CheckoutConfirmation
         do {
             confirmation = try await checkout.confirm(
@@ -980,8 +799,11 @@ final class CheckoutModel {
         return confirmation.clientSecret
     }
 
-    /// 3-D Secure. The status is mapped to a plain outcome before it crosses
-    /// back, so nothing non-Sendable rides the continuation.
+    /// 3-D Secure for the wire deposit's own PaymentIntent — PaymentSheet
+    /// handles the card path's challenges internally once its confirm
+    /// handler hands back a client secret, so this is what the wire hold
+    /// still calls directly. The status is mapped to a plain outcome before
+    /// it crosses back, so nothing non-Sendable rides the continuation.
     private func handleNextAction(clientSecret: String) async throws {
         enum Outcome: Sendable {
             case succeeded
@@ -1025,25 +847,15 @@ final class CheckoutModel {
         }
     }
 
+    /// A refused card, said warmly and plainly, naming the way out. Read by
+    /// PaymentSheet, which shows `errorDescription` inside its own sheet and
+    /// leaves it open for another card.
     private func refusalError(code: String?, serverMessage: String?) -> CardRefusalError {
         let refusal = CardRefusal(code: code, serverMessage: serverMessage)
         return CardRefusalError(
             refusal: refusal,
-            // Apple Pay's sheet can only show a string, and it has no access
-            // to the marketplace config, so the states clause is dropped
-            // there rather than guessed at. The inline card path re-renders
-            // the same refusal with the states named.
-            message: CheckoutCopy.refusalMessage(refusal, statesText: nil)
+            message: CheckoutCopy.refusalMessage(refusal)
         )
-    }
-
-    /// Clears a refused or abandoned card so the next attempt starts clean.
-    func clearCardEntry() {
-        // Writing `cardParams` also retires the accepted PaymentMethod.
-        cardParams = nil
-        cardIsValid = false
-        cardRefusal = nil
-        cardCheckProblem = nil
     }
 
     func dismissPaymentProblem() {
@@ -1052,172 +864,12 @@ final class CheckoutModel {
 
     // MARK: - Apple Pay
 
+    /// Whether the sheet the Pay button opens can promise Apple Pay inside
+    /// it. Read by the method step's own copy ("Card or Apple Pay" versus
+    /// "Card"), which is why this stays a promise the review step can
+    /// actually keep rather than a guess about the device.
     var canOfferApplePay: Bool {
         RewoundStripe.canOfferApplePay && cardIntent != nil
-    }
-
-    /// Raises the wallet. Everything after the buyer authorizes runs through
-    /// `ApplePayCheckout` into the same gate the card form uses.
-    ///
-    /// The re-entry guard is the live context rather than `payState`, because
-    /// the watchdog below hands `payState` back while a sheet may still be up.
-    /// Stripe asserts on a second `presentApplePay` against the same context,
-    /// and the SDK holds both the delegate and the context weakly, so building
-    /// a second pair would deallocate the first mid-payment.
-    func startApplePay() {
-        guard let breakdown, canOfferApplePay, applePayContext == nil else { return }
-        cardRefusal = nil
-        paymentProblem = nil
-
-        let request = RewoundStripe.applePayRequest(
-            currency: breakdown.currency,
-            summaryItems: applePaySummaryItems(breakdown)
-        )
-        let delegate = ApplePayCheckout(model: self)
-        applePayCheckout = delegate
-        guard let context = STPApplePayContext(paymentRequest: request, delegate: delegate) else {
-            paymentProblem = CheckoutProblem(
-                message: "Apple Pay isn't available for this order. You can pay by card or by wire."
-            )
-            applePayCheckout = nil
-            return
-        }
-        applePayContext = context
-        applePayAnswered = false
-        // Claimed before the sheet goes up, the way the card path claims it, so
-        // the pay bar says something is happening. `applePayFinished` and the
-        // watchdog are the two ways back out of it.
-        payState = .confirming
-        context.presentApplePay { [weak self] in
-            // Stripe hops to the main queue before calling this, so the
-            // isolation is already true and the assumption only says so to the
-            // compiler — the closure itself carries no isolation of its own.
-            MainActor.assumeIsolated { self?.watchForSilentApplePay() }
-        }
-    }
-
-    /// Apple Pay used to fail as a tap that changed nothing. `presentApplePay`
-    /// takes a completion, but Stripe throws away the one signal that matters:
-    /// `PKPaymentAuthorizationController.present` reports whether the sheet
-    /// actually opened, and the SDK calls our completion with that Bool
-    /// discarded. So when PassKit refuses — no in-app-payments entitlement, no
-    /// registered merchant, no processing certificate — no sheet appears, no
-    /// delegate method ever runs, and nothing on screen moves.
-    ///
-    /// This waits a beat past that completion and, if PassKit has still said
-    /// nothing at all, says so in the buyer's own words. A buyer who is simply
-    /// reading an open sheet cannot see the message, and the first delegate
-    /// callback clears it, so being wrong here costs nothing; staying silent
-    /// costs the sale.
-    ///
-    /// Apple Pay stays claimed after a silent failure. A refusal is a property
-    /// of the build's entitlements, not of this tap, so it would refuse again
-    /// identically — the message points at card and wire because those are the
-    /// two things that will actually work.
-    private func watchForSilentApplePay() {
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(3))
-            guard let self, !self.applePayAnswered, self.applePayContext != nil else { return }
-            self.payState = .idle
-            self.applePayRefusedToOpen = true
-            self.paymentProblem = CheckoutProblem(
-                message: "We couldn't open Apple Pay on this device. You can pay by card or by wire."
-            )
-        }
-    }
-
-    /// Every line already priced by the server. Nothing here adds up to a
-    /// total — the total is the server's `grand_total`, shown as the last item
-    /// because that is the one Apple charges. A purchase of several watches
-    /// lists each one, so the wallet sheet says what is being bought.
-    private func applePaySummaryItems(_ breakdown: CheckoutBreakdown) -> [PKPaymentSummaryItem] {
-        var items: [PKPaymentSummaryItem] = []
-        let lines = breakdownGroup?.items ?? []
-        if isMultiItem, lines.count == listingIDs.count {
-            for line in lines {
-                items.append(
-                    PKPaymentSummaryItem(
-                        label: listingsByID[line.listingId]?.title ?? "Watch",
-                        amount: NSDecimalNumber(decimal: line.subtotal.value)
-                    )
-                )
-            }
-        } else {
-            items.append(
-                PKPaymentSummaryItem(
-                    label: offerID == nil ? "Watch" : "Your accepted offer",
-                    amount: NSDecimalNumber(decimal: breakdown.subtotal.value)
-                )
-            )
-        }
-        items.append(
-            PKPaymentSummaryItem(
-                label: "Shipping",
-                amount: NSDecimalNumber(decimal: breakdown.shipping.value)
-            )
-        )
-        if let fee = CheckoutCopy.cardFeeAmount(breakdown), fee > 0 {
-            items.append(
-                PKPaymentSummaryItem(label: "Card processing", amount: NSDecimalNumber(decimal: fee))
-            )
-        }
-        if let tax = breakdown.tax?.value, tax > 0 {
-            items.append(PKPaymentSummaryItem(label: "Tax", amount: NSDecimalNumber(decimal: tax)))
-        }
-        items.append(
-            PKPaymentSummaryItem(
-                label: RewoundStripe.merchantDisplayName,
-                amount: NSDecimalNumber(decimal: breakdown.grandTotal.value)
-            )
-        )
-        return items
-    }
-
-    /// The wallet's PaymentMethod, put through exactly the gate a typed card
-    /// goes through. Returns the client secret Stripe needs to close its
-    /// sheet; throws so a refusal shows inside the sheet rather than behind it.
-    func authorizeWalletPayment(paymentMethodID: String) async throws -> String {
-        // PassKit has spoken, so the silent-failure watchdog is moot and any
-        // message it already wrote is wrong. The LATCH has to go with the
-        // message: it disables the Apple Pay button for the rest of the
-        // session, and the watchdog's own three seconds is shorter than a
-        // person reading a sheet and authorizing with their face — so leaving
-        // it set would take Apple Pay away from the buyer it just worked for.
-        applePayAnswered = true
-        applePayRefusedToOpen = false
-        paymentProblem = nil
-        guard let intent = cardIntent else { throw CheckoutMessageError.lost }
-        _ = try await gateThenConfirm(
-            paymentMethodID: paymentMethodID,
-            paymentIntentID: intent.paymentIntent.id
-        )
-        payState = .idle
-        return intent.paymentIntent.clientSecret
-    }
-
-    func applePayFinished(succeeded: Bool, error: Error?) {
-        applePayAnswered = true
-        applePayCheckout = nil
-        applePayContext = nil
-        payState = .idle
-        // The sheet did open, so whatever the watchdog wrote while it was up
-        // described a failure that did not happen. Anything real about this
-        // attempt is written below. The latch clears with the message for the
-        // same reason: a buyer who canceled a sheet that worked must still be
-        // able to tap Apple Pay again.
-        applePayRefusedToOpen = false
-        paymentProblem = nil
-
-        guard succeeded else {
-            if let refusal = error as? CardRefusalError {
-                cardRefusal = refusal.refusal
-            } else if let error {
-                paymentProblem = CheckoutCopy.problem(for: error)
-            }
-            // A plain cancel says nothing — the buyer changed their mind.
-            return
-        }
-        Task { await materializeOrders() }
     }
 
     // MARK: - Order materialization

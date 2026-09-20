@@ -1,18 +1,22 @@
 import RewoundDesign
 import RewoundKit
-import PassKit
 import SwiftUI
 
-/// Step 3 (card path) — the server-priced breakdown, the card itself, and
+/// Step 3 (card path) — the server-priced breakdown, one Pay button, and
 /// every disclosure that has to be on screen *before* the buyer pays.
 ///
-/// The card is collected here rather than in a Stripe sheet because the
-/// card's funding has to be known before any money moves. That is also why a
-/// refusal lands inline, with wire still one tap away, instead of arriving
-/// after a submission the buyer thought had succeeded.
+/// The card itself is collected inside Stripe's own PaymentSheet rather than
+/// a field of ours — the same sheet "add a card" already uses, with Apple Pay
+/// in it. PaymentSheet's deferred-confirmation flow is what keeps the funding
+/// gate alive after that move: its confirm handler (`CheckoutModel.
+/// confirmForPaymentSheet`) gets a full `STPPaymentMethod` and no money moves
+/// until it hands back a client secret, so a refusal still lands before any
+/// charge — just inside the sheet, after the buyer taps its own Pay button,
+/// rather than inline at a field of ours. Wire stays exactly where it is,
+/// one tap away, as the way out of a refusal.
 struct CheckoutReviewStep: View {
     @Bindable var model: CheckoutModel
-    @Environment(AppServices.self) private var services
+    @Environment(BetaStore.self) private var beta
 
     var body: some View {
         ScrollView {
@@ -45,7 +49,6 @@ struct CheckoutReviewStep: View {
                         DiscountPresentationNotice(breakdown: breakdown)
                     }
                     breakdownCard(breakdown)
-                    cardSection(breakdown)
                     disclosures(breakdown)
                 } else if model.pricingProblem == nil {
                     breakdownSkeleton
@@ -78,23 +81,16 @@ struct CheckoutReviewStep: View {
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(model.confirmingOrder || model.payState.isBusy)
+        .navigationBarBackButtonHidden(model.confirmingOrder || model.presentingPaymentSheet)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                CheckoutCloseButton(disabled: model.confirmingOrder || model.payState.isBusy)
+                CheckoutCloseButton(disabled: model.confirmingOrder || model.presentingPaymentSheet)
             }
         }
         .safeAreaInset(edge: .bottom) { payBar }
-        .animation(Motion.easeFast, value: model.cardRefusal)
         .animation(Motion.easeFast, value: model.paymentProblem)
-        .animation(Motion.easeFast, value: model.cardCheckProblem)
-        .animation(Motion.easeFast, value: model.checkingCardEntry)
-        .animation(Motion.easeFast, value: model.checkingSavedCard)
-        .animation(Motion.easeFast, value: model.selectedSavedCardID)
-        .animation(Motion.easeFast, value: model.isEnteringNewCard)
-        .animation(Motion.easeFast, value: model.cardAccepted)
         .animation(Motion.easeMedium, value: model.confirmingOrder)
-        .animation(Motion.easeMedium, value: model.payState)
+        .animation(Motion.easeMedium, value: model.presentingPaymentSheet)
     }
 
     // MARK: - Breakdown
@@ -169,233 +165,6 @@ struct CheckoutReviewStep: View {
         )
     }
 
-    // MARK: - Card
-
-    private func cardSection(_ breakdown: CheckoutBreakdown) -> some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            Text("Your card")
-                .font(RewoundType.sectionTitle)
-                .foregroundStyle(Color.rewound.foreground)
-
-            // Which cards work here, said at card entry — while wire is still
-            // one tap away, never after submission.
-            Text(CheckoutCopy.acceptedCardsNote(breakdown, statesText: discountStatesText))
-                .font(RewoundType.label)
-                .foregroundStyle(Color.rewound.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-
-            // Cards the buyer already has, when they have any. Each one still
-            // goes through the funding gate before Pay comes alive — a saved
-            // card is a card we have seen before, not a card we have approved
-            // for this order.
-            if !model.isEnteringNewCard, model.hasSavedCards {
-                savedCards
-            } else {
-                newCardEntry
-            }
-
-            if model.checkingCardEntry || model.checkingSavedCard {
-                cardCheckRow
-            } else if model.cardAccepted {
-                cardAcceptedRow
-            }
-
-            if let refusal = model.cardRefusal {
-                refusalBlock(refusal)
-            }
-
-            if let problem = model.cardCheckProblem {
-                VStack(alignment: .leading, spacing: Space.s) {
-                    InlineErrorLine(message: problem.message)
-                    Button("Check this card again") {
-                        Task {
-                            if model.isEnteringNewCard {
-                                await model.validateEnteredCard()
-                            } else {
-                                await model.validateSavedCard()
-                            }
-                        }
-                    }
-                    .buttonStyle(.rewoundGhost)
-                }
-            }
-
-            if model.canOfferApplePay {
-                VStack(spacing: Space.s) {
-                    Text("or")
-                        .font(RewoundType.caption)
-                        .foregroundStyle(Color.rewound.mutedForeground)
-                        .frame(maxWidth: .infinity)
-                    PayWithApplePayButton(.buy) {
-                        Haptics.shared.play(.press)
-                        model.startApplePay()
-                    }
-                    .payWithApplePayButtonStyle(.automatic)
-                    .frame(height: Space.touchTarget)
-                    .disabled(
-                        model.payState.isBusy
-                            || model.confirmingOrder
-                            || model.applePayRefusedToOpen
-                    )
-                    .accessibilityLabel("Pay with Apple Pay")
-                }
-            }
-        }
-        .task { await model.prepareCardSelection() }
-    }
-
-    /// The wallet, as the cards themselves rather than as a list of choices.
-    ///
-    /// A saved card is drawn here exactly as it is drawn in settings — one
-    /// `WalletCardFace`, two contexts — so the thing a buyer picks at checkout
-    /// is the thing they recognize from their own account rather than a row
-    /// with a radio dot beside it. Picking one runs the same server-side
-    /// funding check a typed card runs, and the Pay button stays dead until it
-    /// comes back yes.
-    private var savedCards: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            ForEach(model.savedCards) { card in
-                WalletCardFace(
-                    brand: GuaranteeCard.Brand(stripeBrand: card.brand),
-                    last4: card.last4,
-                    expiry: card.expiryPrinted,
-                    isDefault: card.isDefault,
-                    isDisabled: model.payState.isBusy || model.confirmingOrder,
-                    context: .select(
-                        isSelected: model.selectedSavedCardID == card.id,
-                        onSelect: {
-                            Haptics.shared.play(.selection)
-                            model.useSavedCard(card.id)
-                        }
-                    )
-                )
-            }
-
-            Button("Use a different card") {
-                Haptics.shared.play(.selection)
-                model.enterNewCard()
-            }
-            .buttonStyle(.rewoundGhost)
-            .disabled(model.payState.isBusy || model.confirmingOrder)
-        }
-    }
-
-    @ViewBuilder
-    private var newCardEntry: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            // The demo card, printed directly above the field it is for. It
-            // cannot fill that field — Stripe's entry is Stripe's — so one tap
-            // puts the number on the clipboard instead. Draws nothing when the
-            // beta is off.
-            BetaCardCallout()
-            // The funding check runs the moment the card is complete, so a
-            // refusal arrives here — with wire one tap away — rather than
-            // after a payment the buyer thought had gone through.
-            CardEntryField(
-                cardParams: $model.cardParams,
-                isValid: $model.cardIsValid,
-                onComplete: { Task { await model.validateEnteredCard() } }
-            )
-            // `minHeight`, not `height`. CardEntryField goes to real trouble to
-            // be Dynamic-Type-correct — `UIFontMetrics.default.scaledFont` on a
-            // 17pt base, plus required vertical hugging and compression — and a
-            // fixed height threw all of it away: at an accessibility text size
-            // the font wants ~70pt and the card number clipped as it was typed,
-            // on the one screen where a buyer has to proofread it. Stripe's own
-            // intrinsic floor is 44pt, so at the default size this still
-            // resolves to exactly 48 and nothing moves.
-            .frame(minHeight: 48)
-            .disabled(model.payState.isBusy || model.confirmingOrder)
-
-            // A buyer who opened the form to check something can get back to
-            // the card they already had without leaving checkout.
-            if model.hasSavedCards {
-                Button("Use a saved card") {
-                    Haptics.shared.play(.selection)
-                    model.useSavedCardsInstead()
-                }
-                .buttonStyle(.rewoundGhost)
-                .disabled(model.payState.isBusy || model.confirmingOrder)
-            }
-        }
-    }
-
-    /// The check is quick and quiet, but it is happening, so it says so.
-    private var cardCheckRow: some View {
-        HStack(spacing: Space.s) {
-            RewoundInlineLoading(size: 18)
-            Text("Checking your card…")
-                .font(RewoundType.label)
-                .foregroundStyle(Color.rewound.mutedForeground)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var cardAcceptedRow: some View {
-        Label("This card works here. Nothing has been charged yet.", systemImage: "checkmark.circle")
-            .font(RewoundType.label)
-            .foregroundStyle(Color.rewound.mutedForeground)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
-    }
-
-    /// A refused card is never a dead end: the buyer can type another one, or
-    /// take the wire route, which is available at any price.
-    private func refusalBlock(_ refusal: CardRefusal) -> some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            VStack(alignment: .leading, spacing: Space.xs) {
-                Label {
-                    Text(CheckoutCopy.refusalMessage(refusal, statesText: discountStatesText))
-                        .font(RewoundType.bodyMedium)
-                        .foregroundStyle(Color.rewound.foreground)
-                        .fixedSize(horizontal: false, vertical: true)
-                } icon: {
-                    Image(systemName: "creditcard.trianglebadge.exclamationmark")
-                        .foregroundStyle(Color.rewound.destructive)
-                }
-                Text("Nothing has been charged.")
-                    .font(RewoundType.caption)
-                    .foregroundStyle(Color.rewound.mutedForeground)
-            }
-
-            HStack(spacing: Space.m) {
-                // Always the empty form, never the saved list: the card that
-                // was just refused is on that list, and offering it again is
-                // offering the same answer.
-                Button("Use a different card") {
-                    model.enterNewCard()
-                }
-                .buttonStyle(.rewound(.secondary, fullWidth: true))
-
-                Button {
-                    Haptics.shared.play(.press)
-                    Task { await model.switchToWire() }
-                } label: {
-                    BusyLabel(title: "Pay by wire", busy: model.preparingWire)
-                }
-                .buttonStyle(.rewound(.primary, fullWidth: true))
-            }
-
-            Text(CheckoutCopy.wireAlwaysAvailable)
-                .font(RewoundType.caption)
-                .foregroundStyle(Color.rewound.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(Space.l)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Color.rewound.destructive.opacity(0.06),
-            in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.rewound.destructive.opacity(0.35), lineWidth: 1)
-        )
-        .transition(.opacity)
-    }
-
     // MARK: - Disclosures
 
     private func disclosures(_ breakdown: CheckoutBreakdown) -> some View {
@@ -449,7 +218,7 @@ struct CheckoutReviewStep: View {
                 BusyLabel(title: "Pay by wire instead", busy: model.preparingWire)
             }
             .buttonStyle(.rewound(.secondary, fullWidth: true))
-            .disabled(model.payState.isBusy || model.confirmingOrder)
+            .disabled(model.presentingPaymentSheet || model.confirmingOrder)
         }
     }
 
@@ -477,29 +246,54 @@ struct CheckoutReviewStep: View {
         return "This is payment on an accepted offer. If it isn't completed in time, your hold is forfeited and split between the seller and Rewound."
     }
 
-    private var discountStatesText: String? {
-        services.config.config?.discountStatesText
+    // MARK: - Test mode
+
+    /// The card to print in the test-mode banner, when the checkout is
+    /// running against a Stripe test key. The beta program's own test card
+    /// wins when it has one (the server's `REWOUND_BETA_TEST_CARD*` env
+    /// vars, carried on `/beta/config`); Stripe's universal test number is
+    /// the fallback for a test key outside the beta program, where the
+    /// server has nothing configured to hand back. The heading and note are
+    /// always ours — regardless of source, the banner has to say plainly
+    /// that this is test mode and nothing is charged, which is not
+    /// necessarily what the beta program's own card copy says.
+    private var testModeCard: BetaTestCard? {
+        guard model.isTestModePayment else { return nil }
+        let card = beta.config.testCard
+        return BetaTestCard(
+            number: card?.number ?? "4242 4242 4242 4242",
+            expiry: card?.expiry ?? "12/34",
+            cvc: card?.cvc ?? "123",
+            caption: "Test mode. Nothing is charged.",
+            note: "Pay with the card below to try checkout end to end."
+        )
     }
 
     // MARK: - Pay
 
     @ViewBuilder
     private var payBar: some View {
-        Group {
-            if model.confirmingOrder {
-                busyRow(model.isMultiItem ? "Confirming your orders…" : "Confirming your order…")
-            } else if let label = model.payState.label {
-                busyRow(label)
-            } else {
-                Button {
-                    Haptics.shared.play(.press)
-                    Task { await model.payWithCard() }
-                } label: {
-                    Text(payTitle)
-                        .frame(maxWidth: .infinity)
+        VStack(spacing: Space.m) {
+            if let testModeCard {
+                BetaTestCardPanel(card: testModeCard)
+            }
+
+            Group {
+                if model.confirmingOrder {
+                    busyRow(model.isMultiItem ? "Confirming your orders…" : "Confirming your order…")
+                } else if model.presentingPaymentSheet {
+                    busyRow("Opening payment…")
+                } else {
+                    Button {
+                        Haptics.shared.play(.press)
+                        model.presentPaymentSheet()
+                    } label: {
+                        Text(payTitle)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.rewound(.primary, fullWidth: true))
+                    .disabled(!model.canPayWithCard)
                 }
-                .buttonStyle(.rewound(.primary, fullWidth: true))
-                .disabled(!model.canPayWithCard)
             }
         }
         .padding(.horizontal, Space.margin)

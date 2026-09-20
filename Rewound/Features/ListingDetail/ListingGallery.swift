@@ -99,15 +99,23 @@ struct ListingGallery: View {
     }
 
     private func photo(index: Int, url: URL?) -> some View {
-        ListingImageWell(url: url, targetWidth: 900)
-            .aspectRatio(1, contentMode: .fill)
-            .clipped()
-            .contentShape(Rectangle())
-            .onTapGesture {
-                onOpenLightbox(index)
-            }
-            .accessibilityLabel("Photo \(index + 1) of \(images.count)")
-            .accessibilityAddTraits(.isButton)
+        // A `Button`, not `.onTapGesture` — this tile sits inside a paging
+        // `ScrollView` (`.scrollTargetBehavior(.paging)`), which wins gesture
+        // arbitration over a bare discrete tap gesture and swallows it
+        // entirely. Every other tappable image in the app is already a
+        // `Button` for the same reason (`ListingGridCard` in
+        // `BrowseSupport.swift`), and a real button's gesture machinery is
+        // what coexists correctly with the enclosing scroll view.
+        Button {
+            onOpenLightbox(index)
+        } label: {
+            ListingImageWell(url: url, targetWidth: 900)
+                .aspectRatio(1, contentMode: .fill)
+                .clipped()
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("Photo \(index + 1) of \(images.count)")
     }
 }
 
@@ -167,7 +175,17 @@ struct GalleryLightbox: View {
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Color(white: 1).opacity(0.9))
                         .frame(width: Space.touchTarget, height: Space.touchTarget)
-                        .background(Color(white: 1).opacity(0.12), in: Circle())
+                        .contentShape(Circle())
+                        // ONE layer, not two: this used to hand-roll its own
+                        // translucent disc on top of the automatic chrome a
+                        // plain circular icon button picks up on iOS 26 — two
+                        // discs painted in the same place. There is no
+                        // toolbar here to hand the chrome to (the admin
+                        // app's `sharedBackgroundVisibility(.hidden)`
+                        // precedent), so the app supplies the single layer
+                        // itself with the design system's own glass instead
+                        // of a bespoke background.
+                        .rewoundGlass(in: Circle(), interactive: true)
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("Close photos")

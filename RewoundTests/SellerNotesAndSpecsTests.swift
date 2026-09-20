@@ -50,10 +50,46 @@ final class SellerNotesAndSpecsTests: XCTestCase {
         XCTAssertEqual(SellerNotes(source).text, source)
     }
 
-    func testADealersOwnSpecLinesAreNotDeleted() {
-        // A CSV import's description is whatever the dealer wrote. Only the
-        // keys OUR form generated are dropped.
-        let source = "Movement: Automatic\nCase: 41mm steel\nA lovely honest watch."
+    func testAStandaloneServicedSentenceSurvives() {
+        // The exact phrase the closed list was built to protect, without the
+        // `Seller Notes:` wrapper: a spec-shaped key with a year folded into
+        // it, which is what a sentence looks like and a label never does.
+        let source = "Serviced 2025: full service"
+        XCTAssertEqual(SellerNotes(source).text, source)
+    }
+
+    func testGeneratedRowsTheClosedListNeverKnewAboutAreStillDropped() {
+        // The bug this rewrite fixes: a closed list of keys leaks the moment
+        // the sell form grows a field the list was never updated for. The
+        // shape test does not need to know these keys either — it only needs
+        // the block's shape, which is the same as ever.
+        let source = "Movement: Automatic\nServiced: 2024\nWater resistance: 300m"
+        XCTAssertEqual(SellerNotes(source).text, "")
+    }
+
+    func testAGeneratedBlockFollowedByFreestandingProseKeepsOnlyTheProse() {
+        // Prose that was never routed through the `Seller Notes:` key at all
+        // — a legacy row whose block and notes were simply concatenated.
+        // The run has to end the moment the shape breaks, on its own, with
+        // no label to announce it.
+        let source = """
+        Brand: Rolex
+        Model: Submariner
+        This watch has been lovingly maintained and comes with a fresh service.
+        """
+        XCTAssertEqual(
+            SellerNotes(source).text,
+            "This watch has been lovingly maintained and comes with a fresh service."
+        )
+    }
+
+    func testAGeneratedBlockWithNoProseRendersNothing() {
+        let source = "Brand: Rolex\nModel: Submariner\nReference Number: 126610LN"
+        XCTAssertEqual(SellerNotes(source).text, "")
+    }
+
+    func testAPureProseDescriptionIsUnchanged() {
+        let source = "A lovely honest watch, barely worn, kept in a cool dry safe."
         XCTAssertEqual(SellerNotes(source).text, source)
     }
 

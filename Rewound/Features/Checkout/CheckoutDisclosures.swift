@@ -124,58 +124,31 @@ enum CheckoutCopy {
 
     // MARK: - Which cards work here
 
-    /// Stated at card entry, while wire is still one tap away — never after
-    /// submission. The accepted list comes from the order's own breakdown;
-    /// the states, when we name them, come from the marketplace config.
-    static func acceptedCardsNote(_ breakdown: CheckoutBreakdown, statesText: String?) -> String {
-        var sentences: [String] = []
-
-        if let funding = breakdown.acceptedCardFunding, !funding.isEmpty {
-            sentences.append("This order accepts \(list(funding)) cards.")
-        }
-
-        sentences.append("Prepaid cards are not accepted anywhere on Rewound.")
-
-        if !breakdown.acceptsDebit {
-            if let statesText {
-                sentences.append(
-                    "Debit is accepted only where the discount presentation applies — today that is \(statesText) — and this order is not one of those."
-                )
-            } else {
-                sentences.append(
-                    "Debit is accepted only where the discount presentation applies, and this order is not one of those."
-                )
-            }
-        }
-
-        return sentences.joined(separator: " ")
-    }
+    /// The one rule, stated plainly: only credit clears, in every state, and
+    /// wire is the way through for anything else.
+    static let acceptedCardsNote =
+        "Only credit cards are accepted here. Debit and prepaid cards are never accepted, in any state. Wire transfer is available at any price."
 
     // MARK: - Refusals
 
-    /// A refused card, said warmly and plainly. Never a dead end: the view
-    /// puts "use a different card" and "pay by wire" directly beneath this.
-    static func refusalMessage(_ refusal: CardRefusal, statesText: String?) -> String {
+    /// A refused card, said warmly and plainly, naming the way out. This is
+    /// what Stripe's PaymentSheet shows inside its own sheet when the funding
+    /// gate refuses a card at Pay, so the way out has to be in the sentence
+    /// itself rather than in a button beside it.
+    static func refusalMessage(_ refusal: CardRefusal) -> String {
         switch refusal.code {
         case "prepaid_not_accepted":
-            return "Prepaid cards are not accepted anywhere on Rewound."
+            return "Prepaid cards are not accepted anywhere on Rewound. Wire transfer is available at any price."
         case "debit_not_accepted_in_state":
-            if let statesText {
-                return "Debit cards are accepted only where the discount presentation applies — today that is \(statesText) — and this order is not one of those."
-            }
-            return "Debit cards are accepted only where the discount presentation applies, and this order is not one of those."
+            return "Only credit cards are accepted here, in every state. Wire transfer is available at any price."
         case "card_funding_not_accepted", "card_funding_unknown":
-            return "We could not confirm what kind of card this is, so we cannot accept it here."
+            return "We could not confirm this is a credit card, so we can't accept it here. Wire transfer is available at any price."
         default:
             let message = refusal.serverMessage?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let message, !message.isEmpty { return message }
-            return "This card can't be used for this order."
+            if let message, !message.isEmpty { return "\(message) Wire transfer is available at any price." }
+            return "This card can't be used for this order. Wire transfer is available at any price."
         }
     }
-
-    /// The way out, always available at any price.
-    static let wireAlwaysAvailable =
-        "Wire transfer is available at any price and has no processing cost."
 
     // MARK: - Wire
 

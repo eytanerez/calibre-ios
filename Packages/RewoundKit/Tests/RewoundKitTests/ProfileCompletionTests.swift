@@ -185,7 +185,7 @@ final class ProfileCompletionTests: XCTestCase {
             return (200, Data(body.utf8))
         }
 
-        let store = AccountStore(client: APIClient(configuration: configuration, auth: session))
+        let store = AccountStore(client: APIClient(configuration: configuration, auth: session), auth: session)
         let updated = try await store.completeProfile(ProfileCompletionFields(phone: "(415) 555-0134"))
         session.replaceUser(with: updated)
 
@@ -211,7 +211,7 @@ final class ProfileCompletionTests: XCTestCase {
             (409, Data(#"{"ok": false, "error": "Username already in use"}"#.utf8))
         }
 
-        let store = AccountStore(client: APIClient(configuration: configuration, auth: session))
+        let store = AccountStore(client: APIClient(configuration: configuration, auth: session), auth: session)
         do {
             _ = try await store.completeProfile(ProfileCompletionFields(username: "taken"))
             XCTFail("Expected the conflict to throw")
@@ -236,7 +236,7 @@ final class ProfileCompletionTests: XCTestCase {
             (400, Data(#"{"ok": false, "error": "phone needs at least 7 digits"}"#.utf8))
         }
 
-        let store = AccountStore(client: APIClient(configuration: configuration, auth: session))
+        let store = AccountStore(client: APIClient(configuration: configuration, auth: session), auth: session)
         do {
             _ = try await store.completeProfile(ProfileCompletionFields(phone: "1"))
             XCTFail("Expected the refusal to throw")

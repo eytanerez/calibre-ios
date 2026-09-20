@@ -70,10 +70,9 @@ public struct CheckoutStore: Sendable {
 
     // MARK: - Funding gate + server confirm
 
-    /// Asks whether this card may be used for this listing, the moment the
-    /// PaymentMethod exists and while wire is still one tap away. Prepaid is
-    /// refused everywhere; debit only clears where the discount presentation
-    /// applies. `reason` carries the backend's machine code.
+    /// Asks whether this card may be used for this listing. Only credit
+    /// clears, in every state; debit and prepaid are refused everywhere.
+    /// `reason` carries the backend's machine code.
     public func validatePaymentMethod(
         listingIDs: [String],
         paymentMethodID: String

@@ -95,9 +95,9 @@ struct CheckoutMethodStep: View {
                 .tutorialAnchor("checkout.methods")
 
                 // Which cards work here, before the buyer commits to the card
-                // route at all — the card form says it again at entry.
-                if let breakdown = model.breakdown, model.method == .card {
-                    Text(CheckoutCopy.acceptedCardsNote(breakdown, statesText: discountStatesText))
+                // route at all.
+                if model.method == .card {
+                    Text(CheckoutCopy.acceptedCardsNote)
                         .font(RewoundType.caption)
                         .foregroundStyle(Color.rewound.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
@@ -335,10 +335,6 @@ struct CheckoutMethodStep: View {
         guard let breakdown = model.breakdown else { return nil }
         guard let amount = breakdown.totals?.wire?.value ?? breakdown.display?.wirePrice?.value else { return nil }
         return PriceFormatter.format(amount, currency: breakdown.currency)
-    }
-
-    private var discountStatesText: String? {
-        services.config.config?.discountStatesText
     }
 }
 

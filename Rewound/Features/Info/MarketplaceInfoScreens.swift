@@ -306,7 +306,7 @@ struct FeeBreakdownScreen: View {
             divider
             detailRow(
                 title: "Which cards work",
-                message: "Prepaid cards are not accepted anywhere on Rewound. Debit cards are accepted only where the discount presentation applies. The card form tells you at card entry, while you can still choose wire."
+                message: "Only credit cards are accepted, in every state. Debit and prepaid cards are always refused, and you can pay by wire instead at any price."
             )
         }
     }
@@ -329,7 +329,7 @@ struct FeeBreakdownScreen: View {
         feeSection("How prices are shown") {
             detailRow(
                 title: "Where wire is presented as a discount",
-                message: "In \(PolicyCopy.discountStates(config)), where a surcharge is prohibited and a discount is permitted, the listed price is the card price and paying by wire receives a discount off it. The final total is identical in every state — only the way it is presented differs. Debit is accepted there; prepaid still is not."
+                message: "In \(PolicyCopy.discountStates(config)), where a surcharge is prohibited and a discount is permitted, the listed price is the card price and paying by wire receives a discount off it. The final total is identical in every state; only the way it is presented differs."
             )
             divider
             detailRow(

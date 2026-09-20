@@ -143,6 +143,25 @@ struct ListingWizardScreen: View {
                             .padding(.bottom, Space.xxl)
                     }
                     .scrollDismissesKeyboard(.interactively)
+                    // A buyer who scrolled down reading step 1 used to land
+                    // mid-page on step 2 — `advance(_:to:)` moved `model.step`
+                    // but nothing ever moved the scroll offset back with it.
+                    // `stepBody(model)` already carries `.id(model.step)`, so
+                    // the step itself is the anchor: no separate marker to add
+                    // or keep in sync with a fourth step down the line.
+                    //
+                    // This fires on every step change, forward (Continue) and
+                    // back (Back) alike — `advance(_:to:)` is the only place
+                    // `model.step` is ever written. It does not fire on a
+                    // validation failure, because `continueTapped` returns
+                    // before calling `advance` when the step is incomplete,
+                    // so `model.step` never changes and the `scrollTarget`
+                    // scroll-to-first-invalid-field below still wins.
+                    .onChange(of: model.step) { _, step in
+                        withAnimation(Motion.easeMedium) {
+                            proxy.scrollTo(step, anchor: .top)
+                        }
+                    }
                     .onChange(of: scrollTarget) { _, target in
                         guard let target else { return }
                         withAnimation(Motion.easeMedium) {

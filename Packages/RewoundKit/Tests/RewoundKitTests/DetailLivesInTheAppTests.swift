@@ -110,11 +110,11 @@ final class DetailLivesInTheAppTests: XCTestCase {
     func testTheFindingReachesTheOrderScreen() throws {
         let row = try order(authResult: failedResult("The movement is not the calibre the listing described."))
 
-        XCTAssertEqual(row.authenticationFinding, "The movement is not the rewound the listing described.")
+        XCTAssertEqual(row.authenticationFinding, "The movement is not the calibre the listing described.")
 
         let step = row.nextStep()
         XCTAssertEqual(step.headline, "This watch did not pass")
-        XCTAssertEqual(step.next, "The movement is not the rewound the listing described.")
+        XCTAssertEqual(step.next, "The movement is not the calibre the listing described.")
         // And the screen no longer answers the question by promising an email.
         XCTAssertFalse(step.next?.contains("will write to you") ?? true)
     }

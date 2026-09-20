@@ -65,6 +65,17 @@ public struct BetaTestCard: Decodable, Sendable {
     public let cvc: String
     public let caption: String
     public let note: String
+
+    /// Decodable structs don't get a public memberwise initializer for free —
+    /// this is for a caller building one locally (a fallback test card),
+    /// rather than decoding one off the wire.
+    public init(number: String, expiry: String, cvc: String, caption: String, note: String) {
+        self.number = number
+        self.expiry = expiry
+        self.cvc = cvc
+        self.caption = caption
+        self.note = note
+    }
 }
 
 public struct BetaForm: Decodable, Sendable {
