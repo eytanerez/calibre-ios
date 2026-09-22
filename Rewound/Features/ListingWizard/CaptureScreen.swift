@@ -416,7 +416,38 @@ final class CameraController {
     @ObservationIgnored private var device: AVCaptureDevice?
     @ObservationIgnored private let queue = DispatchQueue(label: "com.shoprewound.capture")
     @ObservationIgnored private var delegateBox: PhotoDelegate?
-    @ObservationIgnored weak var previewLayer: AVCaptureVideoPreviewLayer?
+
+    /// The one preview this session will ever have, attached here and nowhere
+    /// else.
+    ///
+    /// `previewLayer.session = …` is not a property write. It commits a
+    /// session configuration and blocks the calling thread until the capture
+    /// graph confirms it. It used to happen in `CameraPreview.makeUIView`, on
+    /// the main thread, every time SwiftUI rebuilt the camera view — while
+    /// `start()` and `stopAndWait()` were configuring the same session on
+    /// `queue`, which is exactly what opening and closing the photo library
+    /// does. Two commits at once deadlock: the main thread holds the session's
+    /// lock waiting for its confirmation, and AVFoundation's notification
+    /// queue, delivering the *other* commit's confirmation, waits for that
+    /// lock. The app froze and iOS killed it (0x8BADF00D, "failed to terminate
+    /// gracefully after 5.0s"; main thread parked in
+    /// `-[AVCaptureVideoPreviewLayer setSession:]`, crash report
+    /// Rewound-2026-09-21-211453, build 43). Because the whole app went, the
+    /// Photos sheet went with it, and it looked like the picker had crashed.
+    ///
+    /// Apple's AVCam does it this way for this reason: attach once, while the
+    /// session is still empty and nothing can be configuring it, and never
+    /// again. `init` runs before `start()` has queued anything, so there is no
+    /// second commit for this one to meet. After that, `CameraPreview` only
+    /// moves this layer between views, which never touches the session.
+    @ObservationIgnored let previewLayer: AVCaptureVideoPreviewLayer
+
+    init() {
+        let layer = AVCaptureVideoPreviewLayer()
+        layer.videoGravity = .resizeAspectFill
+        layer.session = session
+        previewLayer = layer
+    }
 
     func start() async {
         #if targetEnvironment(simulator)
@@ -492,7 +523,8 @@ final class CameraController {
     func focus(at point: CGPoint, in size: CGSize) {
         guard let device else { return }
         let devicePoint: CGPoint
-        if let previewLayer {
+        // The layer always exists now; it has no size until it is on screen.
+        if previewLayer.bounds.width > 0, previewLayer.bounds.height > 0 {
             devicePoint = previewLayer.captureDevicePointConverted(fromLayerPoint: point)
         } else {
             devicePoint = CGPoint(x: point.y / size.height, y: 1 - point.x / size.width)
@@ -547,23 +579,53 @@ final class CameraController {
     }
 }
 
-/// The AVCaptureVideoPreviewLayer host.
+/// Hosts the controller's preview layer. Never attaches one.
+///
+/// SwiftUI makes a new one of these whenever it rebuilds the camera view — on
+/// a retake, and around the photo library — and this used to be where the
+/// preview was attached to the session, on the main thread, each time. See
+/// `CameraController.previewLayer` for the deadlock that caused. Now a rebuild
+/// only moves the one existing layer into the new view: a sublayer change,
+/// which AVFoundation never hears about.
 private struct CameraPreview: UIViewRepresentable {
     let controller: CameraController
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
-        view.videoPreviewLayer.session = controller.session
-        view.videoPreviewLayer.videoGravity = .resizeAspectFill
-        controller.previewLayer = view.videoPreviewLayer
+        view.host(controller.previewLayer)
         return view
     }
 
-    func updateUIView(_ uiView: PreviewView, context: Context) {}
+    func updateUIView(_ uiView: PreviewView, context: Context) {
+        uiView.host(controller.previewLayer)
+    }
 
     final class PreviewView: UIView {
-        override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
-        var videoPreviewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+        private weak var hosted: AVCaptureVideoPreviewLayer?
+
+        /// A layer has one superlayer, so adding it here takes it out of the
+        /// view it was in. That is the whole handover between an old preview
+        /// and its replacement.
+        func host(_ preview: AVCaptureVideoPreviewLayer) {
+            guard preview.superlayer !== layer else { return }
+            layer.addSublayer(preview)
+            hosted = preview
+            setNeedsLayout()
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            // Only while it is still ours: a view being replaced can lay out
+            // once more after its successor has taken the layer, and would
+            // stamp its own size onto a preview it no longer shows.
+            guard let hosted, hosted.superlayer === layer else { return }
+            // Resized without the implicit animation a sublayer frame change
+            // would otherwise get, so the preview does not slide into place.
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            hosted.frame = bounds
+            CATransaction.commit()
+        }
     }
 }
 
