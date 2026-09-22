@@ -25,7 +25,7 @@ public struct BetaConfig: Decodable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case enabled, welcome, bar, form
-        case testCard = "test_card"
+        case testCard
     }
 
     /// What the app shows when the program is off, and when the config could
@@ -87,8 +87,8 @@ public struct BetaForm: Decodable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case kinds, sections
-        case catalogueVersion = "catalogue_version"
-        case kindQuestion = "kind_question"
+        case catalogueVersion
+        case kindQuestion
     }
 }
 
@@ -119,7 +119,7 @@ public struct BetaCondition: Decodable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case question
-        case anyOf = "any_of"
+        case anyOf
     }
 }
 
@@ -144,10 +144,10 @@ public struct BetaQuestion: Decodable, Sendable, Identifiable {
 
     private enum CodingKeys: String, CodingKey {
         case id, type, prompt, help, options, rows, min, max
-        case minLabel = "min_label"
-        case maxLabel = "max_label"
-        case maxSelect = "max_select"
-        case showWhen = "show_when"
+        case minLabel
+        case maxLabel
+        case maxSelect
+        case showWhen
     }
 }
 
@@ -238,8 +238,8 @@ public struct BetaDemoFill: Decodable, Sendable {
 
         private enum CodingKeys: String, CodingKey {
             case username, email, password, phone
-            case firstName = "first_name"
-            case lastName = "last_name"
+            case firstName
+            case lastName
         }
     }
 
@@ -256,9 +256,9 @@ public struct BetaDemoFill: Decodable, Sendable {
 
         private enum CodingKeys: String, CodingKey {
             case phone, line1, line2, city, region, country
-            case firstName = "first_name"
-            case lastName = "last_name"
-            case postalCode = "postal_code"
+            case firstName
+            case lastName
+            case postalCode
         }
     }
 }
@@ -273,8 +273,8 @@ public struct BetaAttachment: Decodable, Sendable, Identifiable {
 
     private enum CodingKeys: String, CodingKey {
         case id, filename
-        case contentType = "content_type"
-        case sizeBytes = "size_bytes"
+        case contentType
+        case sizeBytes
     }
 }
 

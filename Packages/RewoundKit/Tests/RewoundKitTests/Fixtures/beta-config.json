@@ -1,0 +1,1343 @@
+{
+    "ok": true,
+    "data": {
+        "enabled": true,
+        "welcome": {
+            "title": "Thank you for trying Rewound",
+            "body": [
+                "Thank you so much for trying out our new platform, Rewound.",
+                "This is the app and website for you to try and test out. We've provided a dummy credit card so you can create an account, buy watches, and use every feature. As you're playing around with it we would love to get your feedback on the clearness of the message, the features, any questions, or anything else \u2014 the more genuine the feedback, the better.",
+                "Anywhere we ask you to fill something in \u2014 signing up, your address, listing a watch \u2014 there's a button that fills it in for you, so you never have to make up a phone number or an address to keep going. Use your own details instead any time you'd rather.",
+                "To give feedback on the site, click the beta bar at the top of the page. In the app, take a screenshot, tap the screenshot, press the checkmark, and an option to provide beta feedback will show up.",
+                "Any feedback that could help us improve would be awesome."
+            ],
+            "signoff": "Moshe & Eytan"
+        },
+        "bar": {
+            "text": "You're testing a beta of Rewound.",
+            "action": "Give feedback"
+        },
+        "test_card": {
+            "number": "4242 4242 4242 4242",
+            "expiry": "10/29",
+            "cvc": "207",
+            "caption": "Your demo credit card",
+            "note": "Not a real card. Use it anywhere Rewound asks for payment."
+        },
+        "form": {
+            "catalogue_version": "1",
+            "kind_question": "What are you here to submit?",
+            "kinds": [
+                {
+                    "value": "bug",
+                    "label": "I found a bug",
+                    "description": "Something did not work. Two minutes."
+                },
+                {
+                    "value": "feedback",
+                    "label": "I have feedback",
+                    "description": "Thoughts on the product. Five minutes."
+                },
+                {
+                    "value": "full_test",
+                    "label": "I completed the full beta test",
+                    "description": "Every question. Ten to fifteen minutes."
+                }
+            ],
+            "sections": {
+                "bug": [
+                    {
+                        "id": "bug",
+                        "title": "Anything broken",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "bug_trying_to_do",
+                                "type": "longtext",
+                                "prompt": "What were you trying to do?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_what_happened",
+                                "type": "longtext",
+                                "prompt": "What happened?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_expected",
+                                "type": "longtext",
+                                "prompt": "What did you expect to happen?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_where",
+                                "type": "single",
+                                "prompt": "Where did it happen?",
+                                "options": [
+                                    {
+                                        "value": "homepage",
+                                        "label": "Homepage"
+                                    },
+                                    {
+                                        "value": "buy_search",
+                                        "label": "Buy / search"
+                                    },
+                                    {
+                                        "value": "watch_page",
+                                        "label": "Watch page"
+                                    },
+                                    {
+                                        "value": "seller_dealer_page",
+                                        "label": "Seller / dealer page"
+                                    },
+                                    {
+                                        "value": "login_signup",
+                                        "label": "Login / signup"
+                                    },
+                                    {
+                                        "value": "listing_submission",
+                                        "label": "Listing submission"
+                                    },
+                                    {
+                                        "value": "bag",
+                                        "label": "Bag"
+                                    },
+                                    {
+                                        "value": "checkout",
+                                        "label": "Checkout"
+                                    },
+                                    {
+                                        "value": "messaging",
+                                        "label": "Messaging"
+                                    },
+                                    {
+                                        "value": "profile",
+                                        "label": "Profile"
+                                    },
+                                    {
+                                        "value": "other",
+                                        "label": "Other"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_where_other",
+                                "type": "text",
+                                "prompt": "Where?",
+                                "show_when": {
+                                    "question": "bug_where",
+                                    "any_of": [
+                                        "other"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_severity",
+                                "type": "single",
+                                "prompt": "How serious was it?",
+                                "options": [
+                                    {
+                                        "value": "minor_visual_issue",
+                                        "label": "Minor visual issue"
+                                    },
+                                    {
+                                        "value": "annoying_but_i_could_continue",
+                                        "label": "Annoying but I could continue"
+                                    },
+                                    {
+                                        "value": "prevented_me_from_completing_something",
+                                        "label": "Prevented me from completing something"
+                                    },
+                                    {
+                                        "value": "site_or_app_became_unusable",
+                                        "label": "Site or app became unusable"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_reproducible",
+                                "type": "single",
+                                "prompt": "Can you reproduce it?",
+                                "options": [
+                                    {
+                                        "value": "yes",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "no",
+                                        "label": "No"
+                                    },
+                                    {
+                                        "value": "not_sure",
+                                        "label": "Not sure"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_attachments",
+                                "type": "files",
+                                "prompt": "Screenshot or screen recording",
+                                "help": "Images and short videos, up to 25MB each."
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_device",
+                                "type": "single",
+                                "prompt": "Device",
+                                "options": [
+                                    {
+                                        "value": "iphone",
+                                        "label": "iPhone"
+                                    },
+                                    {
+                                        "value": "android",
+                                        "label": "Android"
+                                    },
+                                    {
+                                        "value": "mac",
+                                        "label": "Mac"
+                                    },
+                                    {
+                                        "value": "windows",
+                                        "label": "Windows"
+                                    },
+                                    {
+                                        "value": "ipad_tablet",
+                                        "label": "iPad / tablet"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_browser",
+                                "type": "single",
+                                "prompt": "Browser",
+                                "options": [
+                                    {
+                                        "value": "safari",
+                                        "label": "Safari"
+                                    },
+                                    {
+                                        "value": "chrome",
+                                        "label": "Chrome"
+                                    },
+                                    {
+                                        "value": "firefox",
+                                        "label": "Firefox"
+                                    },
+                                    {
+                                        "value": "edge",
+                                        "label": "Edge"
+                                    },
+                                    {
+                                        "value": "rewound_ios_app",
+                                        "label": "Rewound iOS app"
+                                    },
+                                    {
+                                        "value": "other",
+                                        "label": "Other"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "contact",
+                        "title": "Staying in touch",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "contact_ok",
+                                "type": "single",
+                                "prompt": "Can we contact you with follow-up questions?",
+                                "options": [
+                                    {
+                                        "value": "yes",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "no",
+                                        "label": "No"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "email",
+                                "type": "email",
+                                "prompt": "Email",
+                                "help": "Optional."
+                            }
+                        ]
+                    }
+                ],
+                "feedback": [
+                    {
+                        "id": "important",
+                        "title": "The important part",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "first_impression",
+                                "type": "longtext",
+                                "prompt": "What was the first thing you thought Rewound was when you opened the site?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "biggest_advantage",
+                                "type": "longtext",
+                                "prompt": "What do you think is Rewound's biggest advantage over other watch marketplaces?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "would_use_competitor",
+                                "type": "longtext",
+                                "prompt": "Was there anything that made you think \u201cI would just use Chrono24, Bezel, eBay, or another marketplace instead\u201d? Why?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "blocker_high_value",
+                                "type": "longtext",
+                                "prompt": "What, if anything, would stop you from purchasing a $5,000\u2013$15,000 watch through Rewound?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "trust_more",
+                                "type": "longtext",
+                                "prompt": "What would make you trust Rewound more?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "favorite_part",
+                                "type": "longtext",
+                                "prompt": "What was your favourite part of the experience?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "worst_part",
+                                "type": "longtext",
+                                "prompt": "What was the worst or most confusing part?"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "final",
+                        "title": "Last few",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "would_use_at_launch",
+                                "type": "single",
+                                "prompt": "If Rewound launched tomorrow, would you use it?",
+                                "options": [
+                                    {
+                                        "value": "yes_definitely",
+                                        "label": "Yes, definitely"
+                                    },
+                                    {
+                                        "value": "probably",
+                                        "label": "Probably"
+                                    },
+                                    {
+                                        "value": "maybe",
+                                        "label": "Maybe"
+                                    },
+                                    {
+                                        "value": "probably_not",
+                                        "label": "Probably not"
+                                    },
+                                    {
+                                        "value": "definitely_not",
+                                        "label": "Definitely not"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "recommend_score",
+                                "type": "scale",
+                                "prompt": "Would you recommend Rewound to someone looking for a watch?",
+                                "min": 0,
+                                "max": 10,
+                                "min_label": "Not at all likely",
+                                "max_label": "Extremely likely"
+                            },
+                            {
+                                "optional": true,
+                                "id": "one_change",
+                                "type": "longtext",
+                                "prompt": "If you could change one thing before launch, what would it be?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "anything_else",
+                                "type": "longtext",
+                                "prompt": "Anything else we should know?"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "contact",
+                        "title": "Staying in touch",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "contact_ok",
+                                "type": "single",
+                                "prompt": "Can we contact you with follow-up questions?",
+                                "options": [
+                                    {
+                                        "value": "yes",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "no",
+                                        "label": "No"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "email",
+                                "type": "email",
+                                "prompt": "Email",
+                                "help": "Optional."
+                            }
+                        ]
+                    }
+                ],
+                "full_test": [
+                    {
+                        "id": "about_you",
+                        "title": "About you",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "age",
+                                "type": "single",
+                                "prompt": "Age",
+                                "options": [
+                                    {
+                                        "value": "under_18",
+                                        "label": "Under 18"
+                                    },
+                                    {
+                                        "value": "18-24",
+                                        "label": "18\u201324"
+                                    },
+                                    {
+                                        "value": "25-29",
+                                        "label": "25\u201329"
+                                    },
+                                    {
+                                        "value": "30-34",
+                                        "label": "30\u201334"
+                                    },
+                                    {
+                                        "value": "35-39",
+                                        "label": "35\u201339"
+                                    },
+                                    {
+                                        "value": "40-49",
+                                        "label": "40\u201349"
+                                    },
+                                    {
+                                        "value": "50_plus",
+                                        "label": "50+"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "watch_interest",
+                                "type": "single",
+                                "prompt": "How interested are you in watches?",
+                                "options": [
+                                    {
+                                        "value": "not_really_into_watches",
+                                        "label": "Not really into watches"
+                                    },
+                                    {
+                                        "value": "casual_interest",
+                                        "label": "Casual interest"
+                                    },
+                                    {
+                                        "value": "own_1-2_nice_watches",
+                                        "label": "Own 1\u20132 nice watches"
+                                    },
+                                    {
+                                        "value": "collector",
+                                        "label": "Collector"
+                                    },
+                                    {
+                                        "value": "serious_collector_enthusiast",
+                                        "label": "Serious collector / enthusiast"
+                                    },
+                                    {
+                                        "value": "watch_dealer_industry_professional",
+                                        "label": "Watch dealer / industry professional"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "watches_over_1k",
+                                "type": "single",
+                                "prompt": "How many watches over $1,000 do you own?",
+                                "options": [
+                                    {
+                                        "value": "0",
+                                        "label": "0"
+                                    },
+                                    {
+                                        "value": "1",
+                                        "label": "1"
+                                    },
+                                    {
+                                        "value": "2-3",
+                                        "label": "2\u20133"
+                                    },
+                                    {
+                                        "value": "4-10",
+                                        "label": "4\u201310"
+                                    },
+                                    {
+                                        "value": "10_plus",
+                                        "label": "10+"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bought_preowned_before",
+                                "type": "single",
+                                "prompt": "Have you bought a pre-owned luxury watch before?",
+                                "options": [
+                                    {
+                                        "value": "never",
+                                        "label": "Never"
+                                    },
+                                    {
+                                        "value": "once",
+                                        "label": "Once"
+                                    },
+                                    {
+                                        "value": "a_few_times",
+                                        "label": "A few times"
+                                    },
+                                    {
+                                        "value": "frequently",
+                                        "label": "Frequently"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bought_sold_where",
+                                "type": "multi",
+                                "prompt": "Where have you bought or sold watches before?",
+                                "options": [
+                                    {
+                                        "value": "chrono24",
+                                        "label": "Chrono24"
+                                    },
+                                    {
+                                        "value": "ebay",
+                                        "label": "eBay"
+                                    },
+                                    {
+                                        "value": "bezel",
+                                        "label": "Bezel"
+                                    },
+                                    {
+                                        "value": "wristcheck",
+                                        "label": "Wristcheck"
+                                    },
+                                    {
+                                        "value": "grailzee",
+                                        "label": "Grailzee"
+                                    },
+                                    {
+                                        "value": "dealer_directly",
+                                        "label": "Dealer directly"
+                                    },
+                                    {
+                                        "value": "reddit_facebook_forums",
+                                        "label": "Reddit / Facebook / forums"
+                                    },
+                                    {
+                                        "value": "local_jeweler",
+                                        "label": "Local jeweler"
+                                    },
+                                    {
+                                        "value": "other",
+                                        "label": "Other"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bought_sold_where_other",
+                                "type": "text",
+                                "prompt": "Where else?",
+                                "show_when": {
+                                    "question": "bought_sold_where",
+                                    "any_of": [
+                                        "other"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "buyer_or_seller",
+                                "type": "single",
+                                "prompt": "Are you primarily a:",
+                                "options": [
+                                    {
+                                        "value": "buyer",
+                                        "label": "Buyer"
+                                    },
+                                    {
+                                        "value": "seller",
+                                        "label": "Seller"
+                                    },
+                                    {
+                                        "value": "both",
+                                        "label": "Both"
+                                    },
+                                    {
+                                        "value": "dealer",
+                                        "label": "Dealer"
+                                    },
+                                    {
+                                        "value": "just_browsing",
+                                        "label": "Just browsing"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "overall",
+                        "title": "Overall experience",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "overall_rating",
+                                "type": "scale",
+                                "prompt": "Overall, how would you rate Rewound?",
+                                "min": 1,
+                                "max": 10,
+                                "min_label": "Poor",
+                                "max_label": "Excellent"
+                            },
+                            {
+                                "optional": true,
+                                "id": "clarity",
+                                "type": "scale",
+                                "prompt": "How easy was it to understand what Rewound is and why you would use it?",
+                                "min": 1,
+                                "max": 5,
+                                "min_label": "Not at all",
+                                "max_label": "Immediately"
+                            },
+                            {
+                                "optional": true,
+                                "id": "premium_feel",
+                                "type": "scale",
+                                "prompt": "How premium did the website feel?",
+                                "min": 1,
+                                "max": 5,
+                                "min_label": "Not premium",
+                                "max_label": "Very premium"
+                            },
+                            {
+                                "optional": true,
+                                "id": "trust",
+                                "type": "scale",
+                                "prompt": "How trustworthy did Rewound feel?",
+                                "min": 1,
+                                "max": 5,
+                                "min_label": "Not at all",
+                                "max_label": "Completely"
+                            },
+                            {
+                                "optional": true,
+                                "id": "ease_of_use",
+                                "type": "scale",
+                                "prompt": "How easy was the site to use?",
+                                "min": 1,
+                                "max": 5,
+                                "min_label": "Difficult",
+                                "max_label": "Effortless"
+                            },
+                            {
+                                "optional": true,
+                                "id": "purchase_likelihood",
+                                "type": "scale",
+                                "prompt": "If you were actually shopping for a watch today, how likely would you be to buy through Rewound?",
+                                "min": 0,
+                                "max": 10,
+                                "min_label": "Not at all likely",
+                                "max_label": "Extremely likely"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "important",
+                        "title": "The important part",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "first_impression",
+                                "type": "longtext",
+                                "prompt": "What was the first thing you thought Rewound was when you opened the site?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "biggest_advantage",
+                                "type": "longtext",
+                                "prompt": "What do you think is Rewound's biggest advantage over other watch marketplaces?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "would_use_competitor",
+                                "type": "longtext",
+                                "prompt": "Was there anything that made you think \u201cI would just use Chrono24, Bezel, eBay, or another marketplace instead\u201d? Why?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "blocker_high_value",
+                                "type": "longtext",
+                                "prompt": "What, if anything, would stop you from purchasing a $5,000\u2013$15,000 watch through Rewound?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "trust_more",
+                                "type": "longtext",
+                                "prompt": "What would make you trust Rewound more?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "favorite_part",
+                                "type": "longtext",
+                                "prompt": "What was your favourite part of the experience?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "worst_part",
+                                "type": "longtext",
+                                "prompt": "What was the worst or most confusing part?"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "features",
+                        "title": "Features",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "feature_value",
+                                "type": "matrix",
+                                "prompt": "How valuable would each of these be to you?",
+                                "options": [
+                                    {
+                                        "value": "would_not_use",
+                                        "label": "Would not use"
+                                    },
+                                    {
+                                        "value": "nice_to_have",
+                                        "label": "Nice to have"
+                                    },
+                                    {
+                                        "value": "important",
+                                        "label": "Important"
+                                    },
+                                    {
+                                        "value": "extremely_important",
+                                        "label": "Extremely important"
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "value": "authentication_before_delivery",
+                                        "label": "Authentication before delivery"
+                                    },
+                                    {
+                                        "value": "detailed_condition_grading",
+                                        "label": "Detailed condition grading"
+                                    },
+                                    {
+                                        "value": "dealer_profiles_and_reputation",
+                                        "label": "Dealer profiles and reputation"
+                                    },
+                                    {
+                                        "value": "watch_market_and_pricing_information",
+                                        "label": "Watch market and pricing information"
+                                    },
+                                    {
+                                        "value": "ability_to_message_sellers",
+                                        "label": "Ability to message sellers"
+                                    },
+                                    {
+                                        "value": "following_dealers_and_sellers",
+                                        "label": "Following dealers and sellers"
+                                    },
+                                    {
+                                        "value": "saving_watches",
+                                        "label": "Saving watches"
+                                    },
+                                    {
+                                        "value": "personal_watch_collection_vault",
+                                        "label": "Personal watch collection / Vault"
+                                    },
+                                    {
+                                        "value": "watch-related_short-form_content",
+                                        "label": "Watch-related short-form content"
+                                    },
+                                    {
+                                        "value": "future_person-to-person_watch_trading",
+                                        "label": "Future person-to-person watch trading"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "missing_feature",
+                                "type": "longtext",
+                                "prompt": "What feature is missing that would make you significantly more likely to use Rewound?"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bug",
+                        "title": "Anything broken",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "bug_encountered",
+                                "type": "single",
+                                "prompt": "Did you encounter any bugs or anything that did not work correctly?",
+                                "options": [
+                                    {
+                                        "value": "yes",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "no",
+                                        "label": "No"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_trying_to_do",
+                                "type": "longtext",
+                                "prompt": "What were you trying to do?",
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_what_happened",
+                                "type": "longtext",
+                                "prompt": "What happened?",
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_expected",
+                                "type": "longtext",
+                                "prompt": "What did you expect to happen?",
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_where",
+                                "type": "single",
+                                "prompt": "Where did it happen?",
+                                "options": [
+                                    {
+                                        "value": "homepage",
+                                        "label": "Homepage"
+                                    },
+                                    {
+                                        "value": "buy_search",
+                                        "label": "Buy / search"
+                                    },
+                                    {
+                                        "value": "watch_page",
+                                        "label": "Watch page"
+                                    },
+                                    {
+                                        "value": "seller_dealer_page",
+                                        "label": "Seller / dealer page"
+                                    },
+                                    {
+                                        "value": "login_signup",
+                                        "label": "Login / signup"
+                                    },
+                                    {
+                                        "value": "listing_submission",
+                                        "label": "Listing submission"
+                                    },
+                                    {
+                                        "value": "bag",
+                                        "label": "Bag"
+                                    },
+                                    {
+                                        "value": "checkout",
+                                        "label": "Checkout"
+                                    },
+                                    {
+                                        "value": "messaging",
+                                        "label": "Messaging"
+                                    },
+                                    {
+                                        "value": "profile",
+                                        "label": "Profile"
+                                    },
+                                    {
+                                        "value": "other",
+                                        "label": "Other"
+                                    }
+                                ],
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_where_other",
+                                "type": "text",
+                                "prompt": "Where?",
+                                "show_when": {
+                                    "question": "bug_where",
+                                    "any_of": [
+                                        "other"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_severity",
+                                "type": "single",
+                                "prompt": "How serious was it?",
+                                "options": [
+                                    {
+                                        "value": "minor_visual_issue",
+                                        "label": "Minor visual issue"
+                                    },
+                                    {
+                                        "value": "annoying_but_i_could_continue",
+                                        "label": "Annoying but I could continue"
+                                    },
+                                    {
+                                        "value": "prevented_me_from_completing_something",
+                                        "label": "Prevented me from completing something"
+                                    },
+                                    {
+                                        "value": "site_or_app_became_unusable",
+                                        "label": "Site or app became unusable"
+                                    }
+                                ],
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_reproducible",
+                                "type": "single",
+                                "prompt": "Can you reproduce it?",
+                                "options": [
+                                    {
+                                        "value": "yes",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "no",
+                                        "label": "No"
+                                    },
+                                    {
+                                        "value": "not_sure",
+                                        "label": "Not sure"
+                                    }
+                                ],
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_attachments",
+                                "type": "files",
+                                "prompt": "Screenshot or screen recording",
+                                "help": "Images and short videos, up to 25MB each.",
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_device",
+                                "type": "single",
+                                "prompt": "Device",
+                                "options": [
+                                    {
+                                        "value": "iphone",
+                                        "label": "iPhone"
+                                    },
+                                    {
+                                        "value": "android",
+                                        "label": "Android"
+                                    },
+                                    {
+                                        "value": "mac",
+                                        "label": "Mac"
+                                    },
+                                    {
+                                        "value": "windows",
+                                        "label": "Windows"
+                                    },
+                                    {
+                                        "value": "ipad_tablet",
+                                        "label": "iPad / tablet"
+                                    }
+                                ],
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "bug_browser",
+                                "type": "single",
+                                "prompt": "Browser",
+                                "options": [
+                                    {
+                                        "value": "safari",
+                                        "label": "Safari"
+                                    },
+                                    {
+                                        "value": "chrome",
+                                        "label": "Chrome"
+                                    },
+                                    {
+                                        "value": "firefox",
+                                        "label": "Firefox"
+                                    },
+                                    {
+                                        "value": "edge",
+                                        "label": "Edge"
+                                    },
+                                    {
+                                        "value": "rewound_ios_app",
+                                        "label": "Rewound iOS app"
+                                    },
+                                    {
+                                        "value": "other",
+                                        "label": "Other"
+                                    }
+                                ],
+                                "show_when": {
+                                    "question": "bug_encountered",
+                                    "any_of": [
+                                        "yes"
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "brand",
+                        "title": "Brand and positioning",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "brand_words",
+                                "type": "multi",
+                                "prompt": "Choose up to three words that describe Rewound",
+                                "max_select": 3,
+                                "options": [
+                                    {
+                                        "value": "premium",
+                                        "label": "Premium"
+                                    },
+                                    {
+                                        "value": "modern",
+                                        "label": "Modern"
+                                    },
+                                    {
+                                        "value": "trustworthy",
+                                        "label": "Trustworthy"
+                                    },
+                                    {
+                                        "value": "young",
+                                        "label": "Young"
+                                    },
+                                    {
+                                        "value": "fun",
+                                        "label": "Fun"
+                                    },
+                                    {
+                                        "value": "serious",
+                                        "label": "Serious"
+                                    },
+                                    {
+                                        "value": "exclusive",
+                                        "label": "Exclusive"
+                                    },
+                                    {
+                                        "value": "approachable",
+                                        "label": "Approachable"
+                                    },
+                                    {
+                                        "value": "tech-forward",
+                                        "label": "Tech-forward"
+                                    },
+                                    {
+                                        "value": "collector-focused",
+                                        "label": "Collector-focused"
+                                    },
+                                    {
+                                        "value": "confusing",
+                                        "label": "Confusing"
+                                    },
+                                    {
+                                        "value": "generic",
+                                        "label": "Generic"
+                                    },
+                                    {
+                                        "value": "cheap",
+                                        "label": "Cheap"
+                                    },
+                                    {
+                                        "value": "luxurious",
+                                        "label": "Luxurious"
+                                    },
+                                    {
+                                        "value": "other",
+                                        "label": "Other"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "brand_words_other",
+                                "type": "text",
+                                "prompt": "Which word?",
+                                "show_when": {
+                                    "question": "brand_words",
+                                    "any_of": [
+                                        "other"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "reminds_of",
+                                "type": "single",
+                                "prompt": "Which marketplace does Rewound currently remind you of most?",
+                                "options": [
+                                    {
+                                        "value": "none",
+                                        "label": "None"
+                                    },
+                                    {
+                                        "value": "chrono24",
+                                        "label": "Chrono24"
+                                    },
+                                    {
+                                        "value": "bezel",
+                                        "label": "Bezel"
+                                    },
+                                    {
+                                        "value": "wristcheck",
+                                        "label": "Wristcheck"
+                                    },
+                                    {
+                                        "value": "ebay",
+                                        "label": "eBay"
+                                    },
+                                    {
+                                        "value": "grailzee",
+                                        "label": "Grailzee"
+                                    },
+                                    {
+                                        "value": "other",
+                                        "label": "Other"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "reminds_of_other",
+                                "type": "text",
+                                "prompt": "Which one?",
+                                "show_when": {
+                                    "question": "reminds_of",
+                                    "any_of": [
+                                        "other"
+                                    ]
+                                }
+                            },
+                            {
+                                "optional": true,
+                                "id": "reason_to_exist",
+                                "type": "single",
+                                "prompt": "Does Rewound feel like it has a reason to exist beyond being another place to buy watches?",
+                                "options": [
+                                    {
+                                        "value": "definitely",
+                                        "label": "Definitely"
+                                    },
+                                    {
+                                        "value": "mostly",
+                                        "label": "Mostly"
+                                    },
+                                    {
+                                        "value": "not_sure",
+                                        "label": "Not sure"
+                                    },
+                                    {
+                                        "value": "not_really",
+                                        "label": "Not really"
+                                    },
+                                    {
+                                        "value": "no",
+                                        "label": "No"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "reason_to_exist_why",
+                                "type": "longtext",
+                                "prompt": "Why?"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "final",
+                        "title": "Last few",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "would_use_at_launch",
+                                "type": "single",
+                                "prompt": "If Rewound launched tomorrow, would you use it?",
+                                "options": [
+                                    {
+                                        "value": "yes_definitely",
+                                        "label": "Yes, definitely"
+                                    },
+                                    {
+                                        "value": "probably",
+                                        "label": "Probably"
+                                    },
+                                    {
+                                        "value": "maybe",
+                                        "label": "Maybe"
+                                    },
+                                    {
+                                        "value": "probably_not",
+                                        "label": "Probably not"
+                                    },
+                                    {
+                                        "value": "definitely_not",
+                                        "label": "Definitely not"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "recommend_score",
+                                "type": "scale",
+                                "prompt": "Would you recommend Rewound to someone looking for a watch?",
+                                "min": 0,
+                                "max": 10,
+                                "min_label": "Not at all likely",
+                                "max_label": "Extremely likely"
+                            },
+                            {
+                                "optional": true,
+                                "id": "one_change",
+                                "type": "longtext",
+                                "prompt": "If you could change one thing before launch, what would it be?"
+                            },
+                            {
+                                "optional": true,
+                                "id": "anything_else",
+                                "type": "longtext",
+                                "prompt": "Anything else we should know?"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "contact",
+                        "title": "Staying in touch",
+                        "questions": [
+                            {
+                                "optional": true,
+                                "id": "contact_ok",
+                                "type": "single",
+                                "prompt": "Can we contact you with follow-up questions?",
+                                "options": [
+                                    {
+                                        "value": "yes",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "no",
+                                        "label": "No"
+                                    }
+                                ]
+                            },
+                            {
+                                "optional": true,
+                                "id": "email",
+                                "type": "email",
+                                "prompt": "Email",
+                                "help": "Optional."
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -28,6 +28,12 @@ grab listings-card GET "/listings?page_size=4&view=card"
 grab listings-metadata GET "/listings/metadata"
 grab listings-home GET "/listings/home"
 grab market-reference-prices GET "/market/reference-prices"
+# Public and unauthenticated. The whole beta hangs on this decoding: a
+# throw here is read by BetaStore as "no beta", with nothing on screen.
+# The local backend has the programme OFF unless REWOUND_BETA_PROGRAM=true,
+# and off records {"enabled": false} - a fixture that proves nothing.
+# BetaConfigFixtureTests fails on that rather than passing it.
+grab beta-config GET "/beta/config"
 
 LISTING_ID=$(python3 -c "import json;print(json.load(open('$FIXTURES/listings-page.json'))['data']['results'][0]['id'])")
 grab listing-detail GET "/listings/$LISTING_ID"

@@ -18,8 +18,18 @@ final class BetaProgramTests: XCTestCase {
 
     // MARK: - Decoding
 
+    /// The app's own decoder, never a fresh `JSONDecoder()`.
+    ///
+    /// This helper used a plain decoder, and that is how the beta was dark in
+    /// every build. `APIClient.makeDecoder` converts snake_case keys before
+    /// they are matched, so a model that also spelled its keys in snake_case
+    /// (`catalogue_version`) could never find them: the decode threw,
+    /// `BetaStore.load` read the throw as "no beta", and the app showed
+    /// nothing while the site showed the bar. A plain decoder matched those
+    /// keys literally, so every test here passed against a decode the app
+    /// never performs.
     private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
-        try JSONDecoder().decode(type, from: Data(json.utf8))
+        try APIClient.makeDecoder(origin: nil).decode(type, from: Data(json.utf8))
     }
 
     func testAnOffConfigCarriesNothingAtAll() throws {
