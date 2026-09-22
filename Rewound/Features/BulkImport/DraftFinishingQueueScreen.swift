@@ -111,11 +111,9 @@ struct DraftFinishingQueueScreen: View {
         .task {
             await load()
         }
-        .fullScreenCover(item: $captureTarget) { target in
-            CaptureScreen(target: target) { image in
-                Task { await attach(image: image, category: target.category) }
-            }
-        }
+        .modifier(ListingPhotoCapture(target: $captureTarget) { image, target in
+            Task { await attach(image: image, category: target.category) }
+        })
     }
 
     /// What this pass actually did. Anything skipped is still a draft and is

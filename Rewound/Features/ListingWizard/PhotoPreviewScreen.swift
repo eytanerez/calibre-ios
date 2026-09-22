@@ -33,7 +33,17 @@ struct PhotoPreviewScreen: View {
                 // Swapped inline rather than stacked as a second cover —
                 // presenting one full-screen cover from another's dismissal
                 // drops the presentation often enough to avoid entirely.
-                CaptureScreen(target: CaptureTarget(category: target.category)) { image in
+                CaptureScreen(
+                    target: CaptureTarget(category: target.category),
+                    // The camera is inline here, so there is no cover to wait
+                    // on: swap back to the preview, which has no camera, and
+                    // open the library from it — the same plain-screen picker
+                    // "Choose from library" below already uses.
+                    onChooseLibrary: {
+                        capturing = false
+                        showingLibrary = true
+                    }
+                ) { image in
                     // CaptureScreen closes this shared cover after onUse.
                     onReplace(image)
                 }

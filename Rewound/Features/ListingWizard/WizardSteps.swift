@@ -473,13 +473,11 @@ struct PhotosStep: View {
         }
         .tutorialOverlay(tutorial)
         .onAppear { tutorial.startIfNeeded() }
-        .fullScreenCover(item: $captureTarget) { target in
-            CaptureScreen(target: target) { image in
-                Task { await model.attach(image: image, to: target.category) }
-                // A real captured photo advances the hands-on step.
-                tutorial.fire("photo")
-            }
-        }
+        .modifier(ListingPhotoCapture(target: $captureTarget) { image, target in
+            Task { await model.attach(image: image, to: target.category) }
+            // A real photo, taken or picked, advances the hands-on step.
+            tutorial.fire("photo")
+        })
         .fullScreenCover(item: $previewTarget) { target in
             PhotoPreviewScreen(
                 target: target,

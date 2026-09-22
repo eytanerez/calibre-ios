@@ -20,6 +20,18 @@ struct CaptureTarget: Identifiable {
 /// (simulator) or access is declined.
 struct CaptureScreen: View {
     let target: CaptureTarget
+    /// Set when the screen underneath will open the photo library itself.
+    ///
+    /// The library button then stops the camera and hands over rather than
+    /// presenting Photos on top of a live capture session. That is the one
+    /// thing Vault's picker, which has never failed, does not have to survive:
+    /// it opens from a plain sheet. Opening Photos from here meant a picker
+    /// three modal levels deep over a running `AVCaptureSession`, and the
+    /// listing library went on failing through two fixes aimed at the session
+    /// alone. The presenter is expected to remove this screen when called;
+    /// `ListingPhotoCapture` is the one that does. Left nil — returns still
+    /// leave it nil — the library opens here, as it always has.
+    var onChooseLibrary: (() -> Void)? = nil
     let onUse: (UIImage) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -30,6 +42,7 @@ struct CaptureScreen: View {
     @State private var libraryFailed = false
     @State private var showingLibrary = false
     @State private var librarySelectionPending = false
+    @State private var handingOff = false
 
     var body: some View {
         ZStack {
@@ -81,6 +94,27 @@ struct CaptureScreen: View {
         .onDisappear {
             abandonImport()
             camera.stop()
+        }
+    }
+
+    /// Open the photo library: from the screen underneath when it offered
+    /// to (`onChooseLibrary`), otherwise here over the camera as before.
+    ///
+    /// The camera is stopped before the handoff, not by the presenter tearing
+    /// this screen down, so the session is never running while its preview
+    /// leaves the hierarchy. `handingOff` stops a second tap during that await
+    /// from handing over twice.
+    private func chooseFromLibrary() {
+        guard let onChooseLibrary else {
+            showingLibrary = true
+            return
+        }
+        guard !handingOff else { return }
+        handingOff = true
+        abandonImport()
+        Task { @MainActor in
+            await camera.stopAndWait()
+            onChooseLibrary()
         }
     }
 
@@ -229,7 +263,7 @@ struct CaptureScreen: View {
     /// without backing out of the wizard.
     private var libraryButton: some View {
         Button {
-            showingLibrary = true
+            chooseFromLibrary()
         } label: {
             Image(systemName: "photo.on.rectangle")
                 .font(.system(size: 18, weight: .medium))
@@ -357,7 +391,7 @@ struct CaptureScreen: View {
             }
 
             Button("Choose from library") {
-                showingLibrary = true
+                chooseFromLibrary()
             }
             .buttonStyle(.rewound(.primary, fullWidth: true))
             .padding(.horizontal, Space.margin)
@@ -555,9 +589,7 @@ private struct ListingPhotoPickerSmokeWizard: View {
                 Button("Replace front photo") { replacement = PhotoReplaceTarget(category: .front) }
             }
         }
-        .fullScreenCover(item: $target) { target in
-            CaptureScreen(target: target) { photo = $0 }
-        }
+        .modifier(ListingPhotoCapture(target: $target) { image, _ in photo = image })
         .fullScreenCover(item: $replacement) { target in
             PhotoPreviewScreen(target: target, slot: nil) { photo = $0 }
         }
@@ -626,6 +658,65 @@ struct ListingPhotoLibrary: ViewModifier {
             Observability.log(.warning, "listing_photo_library_decode_failed")
             onFailure()
         }
+    }
+}
+
+/// The camera for a listing photo, with the library opened the way Vault
+/// opens it: from this screen, which is a plain one, and never over the live
+/// camera.
+///
+/// The camera's library button hands over (`CaptureScreen.onChooseLibrary`).
+/// This closes the camera, waits for the dismissal to finish, and only then
+/// shows Photos. Presenting in the same update as the dismissal is the other
+/// way a SwiftUI picker silently fails to appear, so the order is the cover's
+/// own `onDismiss`, not a guess at an animation length.
+///
+/// A photo from the library goes straight into the slot, as it does in Vault.
+/// The camera's review step exists to allow a retake, and a photo picked from
+/// the library has already been chosen.
+struct ListingPhotoCapture: ViewModifier {
+    @Binding var target: CaptureTarget?
+    let onPhoto: (UIImage, CaptureTarget) -> Void
+
+    /// The slot the camera asked the library to fill, held across the
+    /// dismissal that has to finish before Photos can open.
+    @State private var pendingLibrary: CaptureTarget?
+    /// The slot the open picker is filling. Read when the photo arrives, which
+    /// is after the picker has closed.
+    @State private var libraryTarget: CaptureTarget?
+    @State private var showingLibrary = false
+    @State private var libraryFailed = false
+
+    func body(content: Content) -> some View {
+        content
+            .fullScreenCover(item: $target, onDismiss: openPendingLibrary) { current in
+                CaptureScreen(target: current, onChooseLibrary: {
+                    pendingLibrary = current
+                    target = nil
+                }) { image in
+                    onPhoto(image, current)
+                }
+            }
+            .modifier(ListingPhotoLibrary(isPresented: $showingLibrary) { image in
+                guard let filling = libraryTarget else { return }
+                libraryTarget = nil
+                onPhoto(image, filling)
+            } onFailure: {
+                libraryTarget = nil
+                libraryFailed = true
+            })
+            .alert("Couldn't open this photo", isPresented: $libraryFailed) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Try another photo, or download it from iCloud in Photos and try again.")
+            }
+    }
+
+    private func openPendingLibrary() {
+        guard let pending = pendingLibrary else { return }
+        pendingLibrary = nil
+        libraryTarget = pending
+        showingLibrary = true
     }
 }
 
