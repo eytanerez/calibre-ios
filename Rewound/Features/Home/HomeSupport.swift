@@ -81,7 +81,14 @@ final class HomeModel {
     var bite: HomeFeedModule? { feed?.module(ofType: "todays_bite") }
     var poll: HomeFeedModule? { feed?.module(ofType: "todays_poll") }
     var savedSearches: HomeFeedModule? { listingModule("saved_search_matches") }
-    var collection: HomeFeedModule? { feed?.module(ofType: "your_collection") }
+    /// The Vault module is off on Home for now (Eytan, 2026-09-21: "I don't
+    /// want vault on the home screen right now"). The server still sends it
+    /// and the site still draws it; this only stops iOS placing it, and the
+    /// Vault tab is untouched. Turning it back on is setting this to true.
+    static let showsCollection = false
+    var collection: HomeFeedModule? {
+        Self.showsCollection ? feed?.module(ofType: "your_collection") : nil
+    }
     var endOfFeed: HomeFeedModule? { feed?.module(ofType: "end_of_feed") }
 
     /// The ranked shelf, under Home's greeting.
