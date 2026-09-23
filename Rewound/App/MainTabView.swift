@@ -257,12 +257,17 @@ private struct CheckoutRedirect: View {
 
 /// The beta bar, inset above a tab's own navigation bar.
 ///
-/// It used to sit on the TabView. That reserves space inside the tab's content
-/// but does not move a NavigationStack's navigation bar, which is laid out
-/// against the window's safe area, so the bar drew straight over the top bar
-/// (Eytan, 2026-09-22: "the beta thing covers the top bar ... if you can just
-/// push everything down"). Applied to each NavigationStack instead, the whole
-/// stack begins below the bar and its navigation bar travels with it.
+/// A stack above the NavigationStack, not a safeAreaInset, and not on the
+/// TabView.
+///
+/// A safeAreaInset reserves room inside SwiftUI content, but a
+/// NavigationStack's navigation bar is UIKit and lays itself out against the
+/// *window's* safe area, so it ignored the inset and drew underneath the bar.
+/// On Home and Community that was invisible, because neither shows a system
+/// navigation bar; on Vault, and on any pushed screen, it swallowed the title
+/// and the back button (Eytan, 2026-09-22: "I noticed the beta thing on
+/// vault"). Putting the bar in a VStack above the stack moves the stack's
+/// whole frame down, and the navigation bar comes with it.
 ///
 /// Still not a VStack around the TabView. Wrapping it changed the
 /// accessibility hierarchy enough that `app.tabBars` began matching two "Me"
@@ -277,8 +282,9 @@ private struct BetaBarInset: ViewModifier {
     let onTapWelcome: () -> Void
 
     func body(content: Content) -> some View {
-        content.safeAreaInset(edge: .top, spacing: 0) {
+        VStack(spacing: 0) {
             BetaBar(onTapFeedback: onTapFeedback, onTapWelcome: onTapWelcome)
+            content
         }
     }
 }
