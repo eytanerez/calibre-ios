@@ -45,6 +45,10 @@ struct DeckView: View {
     @State private var armed = false
     /// 0→1 as the drag nears commit; under-cards scale/lift in sync.
     @State private var progress: CGFloat = 0
+    /// True while a finger is down. SwiftUI clears gesture state however the
+    /// drag finishes — including a cancel, which never calls `onEnded` — so
+    /// this is how the card learns a drag is over when nobody told it.
+    @GestureState private var isDragging = false
 
     /// The card currently flying off, animating independently of the live
     /// stack below it. Never blocks input.
@@ -90,6 +94,15 @@ struct DeckView: View {
                 guard let direction else { return }
                 command = nil
                 commit(direction, dragOffset: .zero, size: size)
+            }
+            .onChange(of: isDragging) { _, dragging in
+                // A drag the system cancelled (another gesture claimed the
+                // touch, the view under it was rebuilt) ends with no
+                // `onEnded`, and the card used to stay wherever the finger
+                // left it. `onEnded` has already zeroed the translation for
+                // every drag it handled, so anything left here was stranded.
+                guard !dragging, translation != .zero else { return }
+                resetDrag(animated: !reduceMotion)
             }
             .onChange(of: cards.first?.id) {
                 // Defensive reset for external mutations (Undo reinstates a
@@ -160,6 +173,7 @@ struct DeckView: View {
         // lock: nothing scrolls behind the deck, horizontal is the only
         // committing axis, and any lock risked swallowing a genuine swipe.
         DragGesture(minimumDistance: 8, coordinateSpace: .global)
+            .updating($isDragging) { _, dragging, _ in dragging = true }
             .onChanged { value in
                 // Horizontal follows the finger exactly; a small damped
                 // vertical component keeps the card tactile without letting

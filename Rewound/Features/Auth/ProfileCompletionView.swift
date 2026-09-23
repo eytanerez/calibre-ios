@@ -111,24 +111,6 @@ struct ProfileCompletionView: View {
             VStack(alignment: .leading, spacing: Space.xl) {
                 header
 
-                BetaFillButton { person in
-                    if step == .address {
-                        addressFullName = [person.address.firstName, person.address.lastName]
-                            .filter { !$0.isEmpty }
-                            .joined(separator: " ")
-                        street = person.address.line1
-                        apartment = person.address.line2
-                        city = person.address.city
-                        state = person.address.region
-                        zip = person.address.postalCode
-                    } else {
-                        firstName = person.account.firstName
-                        lastName = person.account.lastName
-                        phone = person.account.phone
-                        username = person.account.username
-                    }
-                }
-
                 if let errorMessage {
                     AuthErrorLine(message: errorMessage)
                 }

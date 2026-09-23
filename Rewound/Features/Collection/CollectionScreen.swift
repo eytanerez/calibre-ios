@@ -128,7 +128,7 @@ struct CollectionScreen: View {
                     .accessibilityLabel("Add a watch")
                 }
                 if lock.isAvailable {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    RewoundOwnGlassToolbarItem {
                         Menu {
                             Toggle(isOn: Binding(
                                 get: { lock.isEnabled },
@@ -137,9 +137,11 @@ struct CollectionScreen: View {
                                 Label("Require \(lock.methodLabel)", systemImage: "lock")
                             }
                         } label: {
-                            Image(systemName: "ellipsis.circle")
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundStyle(Color.rewound.primary)
+                                .rewoundToolbarDisc()
                         }
-                        .tint(Color.rewound.primary)
                         .accessibilityLabel("Vault options")
                     }
                 }
@@ -208,33 +210,35 @@ struct CollectionScreen: View {
     /// The shape of what is coming, which is now a list of rows rather than a
     /// column of square photographs. A skeleton that draws the old layout is
     /// worse than none: it promises a screen the drawer will not become.
+    /// The drawer while it loads: the same header and the same rows, drawn
+    /// with a stand-in watch. The old skeleton had no header line, so the list
+    /// dropped by a line's height the moment it arrived, and its bars were a
+    /// guess at a row rather than a row.
     private var skeleton: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                ForEach(0..<5, id: \.self) { _ in
-                    HStack(alignment: .top, spacing: Space.m) {
-                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                            .fill(Color.rewound.card)
-                            .frame(width: 72, height: 72)
-                            .shimmer()
-                        VStack(alignment: .leading, spacing: Space.s) {
-                            RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                .fill(Color.rewound.card)
-                                .frame(width: 180, height: 18)
-                                .shimmer()
-                            RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                                .fill(Color.rewound.card)
-                                .frame(width: 120, height: 14)
-                                .shimmer()
-                        }
-                        Spacer(minLength: 0)
+            LazyVStack(alignment: .leading, spacing: 0) {
+                vaultHeader
+                    .padding(.bottom, Space.l)
+
+                VStack(spacing: 0) {
+                    ForEach(0..<5, id: \.self) { index in
+                        CollectionWatchRow(
+                            watch: .skeleton(index),
+                            photoFrames: photoFrames,
+                            showsHairline: index < 4,
+                            onRemove: {},
+                            onList: {},
+                            onPassport: { _ in }
+                        )
                     }
-                    .padding(.vertical, Space.m)
                 }
+                .skeleton()
             }
             .padding(.horizontal, Space.l)
             .padding(.top, Space.m)
+            .padding(.bottom, Space.xxl)
         }
+        .scrollDisabled(true)
     }
 
     /// The title row: the one line that says what this screen is.

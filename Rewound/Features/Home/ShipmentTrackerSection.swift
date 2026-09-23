@@ -8,7 +8,6 @@ import SwiftUI
 /// to go looking for it. A finished order (delivered, refunded, canceled)
 /// lingers for a day so the good news is seen, then clears itself.
 struct ShipmentTrackerSection: View {
-    @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
     @Environment(AppRouter.self) private var router
     @Environment(\.routePush) private var routePush
@@ -19,8 +18,10 @@ struct ShipmentTrackerSection: View {
     /// twice.
     var handledByFeed: Set<String> = []
 
-    @State private var orders: [Order] = []
-    @State private var loaded = false
+    /// Home's own `trackedOrders`. The band used to fetch these itself, on its
+    /// own schedule, and whenever it answered after the feed it dropped in at
+    /// the top and pushed the page down.
+    let orders: [Order]
     /// Order ids the buyer has dismissed, so a card they've waved off doesn't
     /// come back on the next refresh.
     @AppStorage("dismissedTrackedOrders") private var dismissedRaw = ""
@@ -54,20 +55,6 @@ struct ShipmentTrackerSection: View {
                 .padding(.horizontal, Space.margin)
             }
         }
-        .task(id: session.isAuthenticated) {
-            guard session.isAuthenticated else {
-                orders = []
-                loaded = false
-                return
-            }
-            await load()
-        }
-    }
-
-    private func load() async {
-        // A short page: only the newest handful can still be in motion.
-        orders = (try? await services.commerce.orders(page: 1, pageSize: 10).results) ?? []
-        loaded = true
     }
 
     private func dismiss(_ order: Order) {

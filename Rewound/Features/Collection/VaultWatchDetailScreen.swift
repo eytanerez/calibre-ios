@@ -187,10 +187,18 @@ struct VaultWatchDetailScreen: View {
             // being set or not; a gallery is added to, arranged and thinned
             // from the same sheet, so a title that promised one of those would
             // be wrong most of the times it was read.
-            Button(watch.gallery.isEmpty ? "Add your photographs" : "Your photographs") {
+            // A real button, full width under the frame. As a ghost it was
+            // bare words on the page with nothing marking it as tappable, and
+            // it read as a stray caption (Eytan, 2026-09-23).
+            Button {
                 showPhotoSheet = true
+            } label: {
+                Label(
+                    watch.gallery.isEmpty ? "Add your photographs" : "Your photographs",
+                    systemImage: watch.gallery.isEmpty ? "camera" : "photo.on.rectangle"
+                )
             }
-            .buttonStyle(.rewound(.ghost))
+            .buttonStyle(.rewound(.secondary, fullWidth: true))
 
             if let brand = watch.brand {
                 Text(brand.uppercased())

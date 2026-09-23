@@ -108,6 +108,24 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
         guard authenticated else { return nil }
         return "vault-authenticated:\(id)"
     }
+
+    /// A stand-in row for the Vault's loading skeleton. Decoded the way the
+    /// API decodes, so a field added to the model later does not break it:
+    /// anything not named here is simply absent.
+    public static func skeleton(_ index: Int = 0) -> VaultWatch {
+        // Numbered, because each row registers its photograph as a zoom
+        // source under its id and five rows sharing one would collide.
+        let json = """
+        {"id": "skeleton-\(index)", "source": "rewound_order", "authenticated": true,
+         "brand": "Brand", "model": "Watch model name", "reference": "000000",
+         "production_year": 2020, "estimated_value": "10000.00"}
+        """
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        // The literal is fixed and covered by a test, so this cannot fail at
+        // runtime short of the model losing one of these fields.
+        return try! decoder.decode(VaultWatch.self, from: Data(json.utf8))
+    }
 }
 
 /// What Rewound will say about a watch's worth, or why it will not.

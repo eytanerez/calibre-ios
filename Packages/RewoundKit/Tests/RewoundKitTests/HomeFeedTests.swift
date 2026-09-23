@@ -465,12 +465,7 @@ final class HomeFeedTests: XCTestCase {
         XCTAssertEqual(guest.firstIndex(of: .bite), newest + 1)
 
         // The slot is relative to the shelf, not to the page: with the shelf
-        // still loading, or failed, the Bite follows whatever stands in for it
-        // and still comes before Recently viewed.
-        XCTAssertEqual(
-            HomeRunningOrder.sections(audience: .member, feed: .loading, present: [.bite, .recentlyViewed, .brands]),
-            [.feedLoading, .bite, .recentlyViewed, .brands]
-        )
+        // failed, the Bite follows the retry that stands in for it.
         XCTAssertEqual(
             HomeRunningOrder.sections(audience: .guest, feed: .failed, present: [.bite, .brands]),
             [.feedUnavailable, .bite, .brands]
@@ -486,33 +481,31 @@ final class HomeFeedTests: XCTestCase {
         XCTAssertEqual(HomeRunningOrder.sections(audience: .member, feed: .loaded, present: []), [])
     }
 
-    func testTheSkeletonAndTheRetryTakeTheFirstShelfsSlotAndThePageGoesOnBelowEither() {
-        // A load in flight is the skeleton in the ranked shelf's slot, and the
-        // page goes on below it: the shelves that run their own queries draw
-        // around a shelf that is still loading, as they do on the site.
+    func testTheSkeletonIsTheWholePageWhileTheFeedLoads() {
+        // Eytan, 2026-09-23: "things will load before others so then it just
+        // jumps down". Shelves that finish first no longer draw around the
+        // skeleton, to be pushed down when the feed lands above them.
         XCTAssertEqual(
             HomeRunningOrder.sections(
                 audience: .member, feed: .loading, present: [.recentlyViewed, .brands, .popular, .freshArrivals]
             ),
-            [.feedLoading, .recentlyViewed, .brands, .popular, .freshArrivals]
+            [.feedLoading]
         )
         XCTAssertEqual(
             HomeRunningOrder.sections(audience: .guest, feed: .loading, present: [.freshArrivals, .brands]),
-            [.feedLoading, .freshArrivals, .brands]
+            [.feedLoading]
         )
-        // The slot is the ranked shelf's — below the member's next-step band,
-        // first on the guest page.
         XCTAssertEqual(
-            HomeRunningOrder.sections(audience: .member, feed: .loading, present: [.nextStep, .brands]),
-            [.nextStep, .feedLoading, .brands]
+            HomeRunningOrder.sections(audience: .member, feed: .loading, present: [.nextStep, .bite, .brands]),
+            [.feedLoading]
         )
-        // With nothing else on hand yet, the skeleton stands alone: the slot
-        // is filled, and the rest is absent rather than an empty frame.
         XCTAssertEqual(HomeRunningOrder.sections(audience: .member, feed: .loading, present: []), [.feedLoading])
         XCTAssertEqual(HomeRunningOrder.sections(audience: .guest, feed: .loading, present: []), [.feedLoading])
+    }
 
-        // A failed request takes the same slot, and the page goes on below it
-        // the same way.
+    func testTheRetryTakesTheFirstShelfsSlotAndThePageGoesOnBelowIt() {
+        // A failed request takes the first shelf's slot, and the shelves that
+        // run their own queries still draw below it.
         XCTAssertEqual(
             HomeRunningOrder.sections(
                 audience: .member, feed: .failed, present: [.recentlyViewed, .brands, .popular, .freshArrivals]

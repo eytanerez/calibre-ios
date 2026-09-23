@@ -69,6 +69,7 @@ public enum Elevation {
     case menu        // popovers, toasts
     case modal       // sheets, large overlays
 
+    /// At most two layers: the shadow modifier draws exactly two.
     var layers: [(opacity: CGFloat, radius: CGFloat, y: CGFloat)] {
         switch self {
         case .resting: [(0.05, 2, 1)]
@@ -93,13 +94,30 @@ private struct RewoundShadowModifier: ViewModifier {
     func body(content: Content) -> some View {
         // Dark mode needs slightly stronger opacity for shadows to register at all.
         let boost: CGFloat = scheme == .dark ? 1.6 : 1.0
-        return elevation.layers.reduce(AnyView(content)) { view, layer in
-            AnyView(view.shadow(
-                color: Color.rewound.shadowTint.opacity(layer.opacity * boost),
-                radius: layer.radius,
+        // Always exactly two shadows, the second transparent where an
+        // elevation has one layer. This used to fold the layers into nested
+        // `AnyView`s, so `.resting` (one layer) and `.lifted` (two) were
+        // different view types: changing elevation tore down and rebuilt the
+        // content. The Discover card changes elevation on the first point of
+        // a drag, and the rebuild cancelled the drag under the finger, leaving
+        // the card stranded part-way until a second swipe. One fixed shape
+        // keeps the content's identity and lets a change of elevation animate.
+        let layers = elevation.layers
+        let none: (opacity: CGFloat, radius: CGFloat, y: CGFloat) = (0, 0, 0)
+        let first = layers.first ?? none
+        let second = layers.count > 1 ? layers[1] : none
+        return content
+            .shadow(
+                color: Color.rewound.shadowTint.opacity(first.opacity * boost),
+                radius: first.radius,
                 x: 0,
-                y: layer.y
-            ))
-        }
+                y: first.y
+            )
+            .shadow(
+                color: Color.rewound.shadowTint.opacity(second.opacity * boost),
+                radius: second.radius,
+                x: 0,
+                y: second.y
+            )
     }
 }

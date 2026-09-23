@@ -47,37 +47,84 @@ public extension View {
     }
 }
 
-/// Ready-made skeleton for a listing-card slot.
-public struct ListingCardSkeleton: View {
+/// A skeleton made of the real view: the content redacted to placeholder
+/// shapes, with the sweep running over those shapes only.
+///
+/// Hand-drawn skeletons (a 140×20 bar for a title, three lines for a card)
+/// drift from the views they stand in for, and every drift is a jump when the
+/// content lands (Eytan, 2026-09-23: "the skeleton doesnt match up anymore").
+/// Drawing the real view with stand-in values makes the two the same shape by
+/// construction — the same fonts, the same reserved lines, the same frames.
+public struct SkeletonShimmer: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var phase: CGFloat = -1
+
     public init() {}
 
-    public var body: some View {
-        VStack(alignment: .leading, spacing: Space.s) {
-            // Matches `ListingCard`'s photo well, which is the card tier —
-            // the sweep clips to the same corner or the skeleton is a
-            // different shape from the thing it is standing in for.
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .aspectRatio(1, contentMode: .fit)
-                .shimmer(radius: Radius.card)
-            VStack(alignment: .leading, spacing: 3) {
-                Rectangle().frame(width: 70, height: 10).shimmer()
-                Rectangle().frame(width: 120, height: 14).shimmer()
-                Rectangle().frame(width: 86, height: 10).shimmer()
-                HStack {
-                    Rectangle().frame(width: 60, height: 18).shimmer()
-                    Spacer(minLength: 0)
-                    Rectangle().frame(width: 28, height: 10).shimmer()
+    public func body(content: Content) -> some View {
+        let shapes = content.redacted(reason: .placeholder)
+        shapes
+            .overlay {
+                if !reduceMotion {
+                    GeometryReader { proxy in
+                        LinearGradient(
+                            colors: [.clear, Color.rewound.accent.opacity(0.7), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: proxy.size.width * 0.6)
+                        .offset(x: phase * proxy.size.width * 1.6)
+                    }
+                    // Only over the placeholder shapes, never over the page
+                    // between them.
+                    .mask { shapes }
+                    .onAppear {
+                        withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
+                            phase = 1
+                        }
+                    }
                 }
-                .padding(.top, 1)
             }
-            .padding(.horizontal, 2)
+            .allowsHitTesting(false)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Loading")
+            .accessibilityAddTraits(.updatesFrequently)
+    }
+}
+
+public extension View {
+    /// Draws this view as its own loading skeleton. See `SkeletonShimmer`.
+    func skeleton() -> some View {
+        modifier(SkeletonShimmer())
+    }
+}
+
+/// Ready-made skeleton for a listing-card slot: a real `ListingCard` with
+/// stand-in values, so it is exactly the height of the card that replaces it.
+public struct ListingCardSkeleton: View {
+    private let reservesReasonLine: Bool
+
+    /// `reservesReasonLine` matches a lane whose cards carry a "why this one"
+    /// line, which is one more line of card than a plain lane's.
+    public init(reservesReasonLine: Bool = false) {
+        self.reservesReasonLine = reservesReasonLine
+    }
+
+    public var body: some View {
+        ListingCard(
+            model: ListingCardModel(
+                id: "skeleton",
+                brand: "Brand",
+                year: "2024",
+                title: "Watch model",
+                reference: "Ref. 000000",
+                priceText: "$00,000",
+                reservesReasonLine: reservesReasonLine
+            )
+        ) { _ in
+            Color.clear
         }
-        // The skeleton is a stack of bare shapes, so VoiceOver reads nothing
-        // at all while a screen loads — silence that is indistinguishable
-        // from an empty shelf. One label on the card, not five on the bars.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Loading")
-        .accessibilityAddTraits(.updatesFrequently)
+        .skeleton()
     }
 }
 

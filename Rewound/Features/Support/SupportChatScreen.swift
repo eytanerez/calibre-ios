@@ -218,21 +218,21 @@ struct SupportChatScreen: View {
             }
         } else if loading {
             RewoundLoadingView("Opening this conversation")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .conversationPlaceholder()
         } else if threadUnavailable {
             EmptyState(
                 icon: "bubble.left.and.bubble.right",
                 title: "We couldn't open this conversation",
                 message: "It may have been closed on our side. Go back and start a new chat — we will still have your history."
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .conversationPlaceholder()
         } else {
             EmptyState(
                 icon: "bubble.left.and.bubble.right",
                 title: "How can we help?",
                 message: "Ask us anything — about a watch, an order, selling, or your account. We read every message."
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .conversationPlaceholder()
         }
     }
 

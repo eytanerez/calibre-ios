@@ -133,6 +133,28 @@ public extension View {
     }
 }
 
+public extension View {
+    /// The empty, loading and error states of a conversation screen, which
+    /// sit between its header and the composer tray.
+    ///
+    /// Scrollable so they give way to the keyboard. As a plain view framed to
+    /// `maxHeight: .infinity` a state like "How can we help?" still had a
+    /// minimum height, and once the keyboard took its share the header, that
+    /// state and the tray no longer fitted: SwiftUI spilled the stack out of
+    /// both ends, the header under the navigation bar and the bottom of the
+    /// tray under the keyboard (Eytan, 2026-09-23). In a scroll view the state
+    /// can shrink to nothing, and it is still centred whenever it fits.
+    func conversationPlaceholder() -> some View {
+        ScrollView {
+            frame(maxWidth: .infinity)
+                .padding(.vertical, Space.l)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .defaultScrollAnchor(.center, for: .alignment)
+        .scrollDismissesKeyboard(.interactively)
+    }
+}
+
 /// A transparent multiline input for the shared glass conversation tray.
 /// The tray supplies the surface; an opaque form-field card would cover it.
 public struct RewoundMessageField: View {
@@ -148,5 +170,45 @@ public struct RewoundMessageField: View {
             .padding(.horizontal, Space.s)
             .frame(minHeight: Space.touchTarget)
             .accessibilityLabel("Write a message")
+    }
+}
+
+// MARK: - A toolbar button that draws its own glass
+
+/// A trailing toolbar item whose label draws its own glass disc, with the
+/// bar's shared glass switched off behind it.
+///
+/// On iOS 26 every toolbar item gets the bar's glass. A label that also draws
+/// a circle (an `ellipsis.circle` glyph, or a filled disc) shows as a button
+/// inside a button (Eytan, 2026-09-23). The bar's glass alone is no answer for
+/// a ⋯: it hugs three dots as a wide capsule beside a round back control. So
+/// the label draws the one disc (`rewoundToolbarDisc()`) and the bar stands
+/// down, which is the construction the admin app settled on for its ⋯.
+public struct RewoundOwnGlassToolbarItem<Label: View>: ToolbarContent {
+    private let placement: ToolbarItemPlacement
+    private let label: Label
+
+    public init(placement: ToolbarItemPlacement = .topBarTrailing, @ViewBuilder label: () -> Label) {
+        self.placement = placement
+        self.label = label()
+    }
+
+    public var body: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            ToolbarItem(placement: placement) { label }
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: placement) { label }
+        }
+    }
+}
+
+public extension View {
+    /// The disc a `RewoundOwnGlassToolbarItem` label draws: the back
+    /// control's 44pt, in the design system's glass.
+    func rewoundToolbarDisc() -> some View {
+        frame(width: Space.touchTarget, height: Space.touchTarget)
+            .rewoundGlass(in: Circle(), interactive: true)
+            .contentShape(Circle())
     }
 }

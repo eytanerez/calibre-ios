@@ -74,15 +74,16 @@ struct CommunityScreen: View {
         isLoading = false
     }
 
+    /// Today's two questions, drawn as the real cards with stand-in words.
+    /// Three 140pt boxes stood in for two cards twice that height, and the
+    /// page jumped when they landed.
     private var skeleton: some View {
-        VStack(spacing: Space.l) {
-            ForEach(0..<3, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                    .fill(Color.rewound.card)
-                    .frame(height: 140)
-                    .shimmer()
+        VStack(alignment: .leading, spacing: Space.xxl) {
+            ForEach([CommunityPromptKind.watch, .siteFeedback], id: \.self) { kind in
+                CommunityPromptCard(prompt: .skeleton(kind: kind), featured: true)
             }
         }
+        .skeleton()
     }
 
     // MARK: - Today

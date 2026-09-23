@@ -605,25 +605,57 @@ struct ListingLaneViewAllCard: View {
 
 /// Skeleton twin of `ListingLaneRow` for cold loads.
 struct ListingLaneSkeleton: View {
+    /// The heading the lane will have, drawn as a placeholder bar of the same
+    /// length. The greeting shelf's heading runs to two lines, and a one-line
+    /// bar in its place was a jump.
+    var title = "Popular right now"
+    /// The feed's shelves put an action beside the heading ("View all
+    /// inventory"), which makes the header a touch target tall; a plain lane's
+    /// header is one line of text.
+    var actionTitle: String?
+    /// Cards that carry a "why this one" line are a line taller.
+    var reservesReasonLine = false
+
     /// Matches the real lane's card width so the skeleton doesn't jump.
     @ScaledMetric(relativeTo: .body) private var scaledCardWidth: CGFloat = 168
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Rectangle()
-                .frame(width: 140, height: 20)
-                .shimmer()
+            header
                 .padding(.horizontal, Space.margin)
+                .skeleton()
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: Space.l) {
                     ForEach(0..<4, id: \.self) { _ in
-                        ListingCardSkeleton().frame(width: rewoundLaneCardWidth(scaledCardWidth))
+                        ListingCardSkeleton(reservesReasonLine: reservesReasonLine)
+                            .frame(width: rewoundLaneCardWidth(scaledCardWidth))
                     }
                 }
                 .padding(.horizontal, Space.margin)
+                .padding(.vertical, 2)
             }
-            .disabled(true)
+            .scrollDisabled(true)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading")
+    }
+
+    /// The same stack `ListingLaneRow` and `FeedModuleHeader` draw.
+    @ViewBuilder private var header: some View {
+        if let actionTitle {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(RewoundType.sectionTitle)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: Space.s)
+                Text(actionTitle)
+                    .font(RewoundType.label)
+                    .frame(minHeight: Space.touchTarget)
+            }
+        } else {
+            Text(title)
+                .font(RewoundType.sectionTitle)
         }
     }
 }

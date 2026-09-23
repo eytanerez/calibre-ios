@@ -187,15 +187,14 @@ struct CheckoutCloseButton: View {
         Button {
             close()
         } label: {
+            // A bare glyph. Every use of this sits in a toolbar, and on
+            // iOS 26 the bar draws its own glass behind the item; the filled
+            // disc this used to draw showed inside it as a button inside a
+            // button (Eytan, 2026-09-23). An X is as wide as it is tall, so
+            // the bar's glass alone comes out round, like the back control.
             Image(systemName: "xmark")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.rewound.secondaryForeground)
-                .frame(width: 34, height: 34)
-                .background(Color.rewound.secondary, in: Circle())
-                // 34pt drawn, 44pt grabbable. The 5pt of growth spills into
-                // the header's padding, which nothing else answers, so the
-                // circle still draws and still measures 34.
-                .a11yExpandTarget(currentSize: 34)
+                .foregroundStyle(Color.rewound.foreground)
         }
         .disabled(disabled)
         .opacity(disabled ? 0.4 : 1)

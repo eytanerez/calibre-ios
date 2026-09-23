@@ -55,11 +55,16 @@ struct MessageThreadScreen: View {
         .navigationTitle("Message")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            RewoundOwnGlassToolbarItem {
                 Menu {
                     Button("Archive conversation", systemImage: "archivebox") { Task { await archive() } }
                     Button("Block participant", systemImage: "hand.raised", role: .destructive) { confirmingBlock = true }
-                } label: { Image(systemName: "ellipsis.circle") }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(Color.rewound.foreground)
+                        .rewoundToolbarDisc()
+                }
                 .accessibilityLabel("Conversation actions")
             }
         }
@@ -80,7 +85,7 @@ struct MessageThreadScreen: View {
     @ViewBuilder private var messagesList: some View {
         if loading && messages.isEmpty {
             RewoundLoadingView("Opening this conversation")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .conversationPlaceholder()
         } else if let loadErrorText, messages.isEmpty {
             EmptyState(
                 icon: "wifi.exclamationmark",
@@ -88,14 +93,14 @@ struct MessageThreadScreen: View {
                 message: loadErrorText,
                 actionTitle: "Try again"
             ) { Task { await loadMessages() } }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .conversationPlaceholder()
         } else if messages.isEmpty {
             EmptyState(
                 icon: "bubble.left.and.bubble.right",
                 title: "Say hello",
                 message: "Ask about condition, papers or timing — it goes straight to them."
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .conversationPlaceholder()
         } else {
             ScrollViewReader { proxy in
                 ScrollView {

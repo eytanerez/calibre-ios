@@ -63,11 +63,19 @@ struct HomeScreen: View {
                 // watch" beats "here's another watch". The orders the feed is
                 // already asking about are left to it, so an awaiting-wire
                 // order is not stated twice on one screen.
-                ShipmentTrackerSection(handledByFeed: model?.orderIDsInFeed ?? [])
+                ShipmentTrackerSection(
+                    handledByFeed: model?.orderIDsInFeed ?? [],
+                    orders: model?.trackedOrders ?? []
+                )
 
-                ForEach(Array(sections.enumerated()), id: \.element) { index, section in
+                // One reveal: every section fades in together, in place. They
+                // used to fade UP, each on its own cascade delay, so the page
+                // arrived a piece at a time even though the data had landed
+                // together. Opacity only — an animated layout here slid the
+                // whole page up into place as the skeleton left.
+                ForEach(sections, id: \.self) { section in
                     sectionView(section)
-                        .fadeUpEntrance(index: index)
+                        .modifier(RevealInPlace())
                 }
             }
             .padding(.bottom, Space.xxl)
@@ -250,8 +258,10 @@ struct HomeScreen: View {
     private func sectionView(_ section: HomeSection) -> some View {
         switch section {
         case .feedLoading:
-            ListingLaneSkeleton()
-            ListingLaneSkeleton()
+            HomePageSkeleton(
+                audience: audience,
+                greeting: HomeGreeting.watchesForYouTitle(addresses: services.commerce.addresses)
+            )
 
         case .feedUnavailable:
             // A request that failed is not a quiet day. It says so, and offers
@@ -470,4 +480,76 @@ struct BiteRoute: Identifiable, Hashable {
     let preloaded: Bite?
 
     var id: String { slug }
+}
+
+// MARK: - Loading
+
+/// Home while the feed is in flight, in the page's own shape: the first shelf,
+/// Today's Bite, and a shelf below it. The shelves are the real lane headers and
+/// cards drawn as placeholders, so the page that replaces this starts where it
+/// did.
+private struct HomePageSkeleton: View {
+    let audience: HomeAudience
+    let greeting: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.xxl) {
+            switch audience {
+            case .member:
+                // The greeting shelf: the feed's module header, with its
+                // action, over cards that each carry a "why this one" line.
+                ListingLaneSkeleton(title: greeting, actionTitle: "View all inventory", reservesReasonLine: true)
+            case .guest:
+                ListingLaneSkeleton(title: "New this week")
+            }
+            HomeBiteSkeleton()
+            ListingLaneSkeleton(title: audience == .member ? "Recently viewed" : "Popular right now")
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading")
+    }
+}
+
+/// `FeedBiteModule`'s stack with stand-in words and the photograph's frame.
+private struct HomeBiteSkeleton: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Rectangle()
+                .fill(Color.rewound.border)
+                .frame(height: 1)
+
+            VStack(alignment: .leading, spacing: Space.m) {
+                Eyebrow("Today's Bite")
+                    .padding(.top, Space.s)
+                Eyebrow("Topic")
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(Color.rewound.secondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                HStack(spacing: Space.xs) {
+                    Text("Read it")
+                        .font(RewoundType.label)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+            }
+            .skeleton()
+        }
+        .padding(.horizontal, Space.margin)
+    }
+}
+
+/// A section arriving: a short fade where it already stands. No offset, no
+/// delay, so a page whose data landed at once appears at once.
+private struct RevealInPlace: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown || reduceMotion ? 1 : 0)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.25)) { shown = true }
+            }
+    }
 }

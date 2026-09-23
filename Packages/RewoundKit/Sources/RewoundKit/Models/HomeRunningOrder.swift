@@ -77,11 +77,20 @@ public enum HomeRunningOrder {
         feed: HomeFeedLoadState,
         present: Set<HomeSection>
     ) -> [HomeSection] {
-        // The skeleton and the retry take the first shelf's slot — the ranked
-        // shelf's for a member, the newest shelf's for a guest — and the page
-        // goes on below either, as it does on the site: the shelves that run
-        // their own queries draw around a shelf that is still loading rather
-        // than waiting behind it. A failed request is not an empty feed, and
+        // While the feed is in flight the skeleton is the whole page. The
+        // shelves that run their own queries (recently viewed, the brand rail)
+        // used to draw around it as soon as they had rows, and then the feed
+        // landed above them and pushed everything down (Eytan, 2026-09-23:
+        // "things will load before others so then it just jumps down"). One
+        // reveal, of everything, from a skeleton shaped like the page.
+        if feed == .loading {
+            return [.feedLoading]
+        }
+
+        // The retry takes the first shelf's slot — the ranked shelf's for a
+        // member, the newest shelf's for a guest — and the page goes on below
+        // it: the shelves that run their own queries still draw around a feed
+        // that failed. A failed request is not an empty feed, and
         // for a guest it is not a quiet day either: the guest's Bite rides on
         // the same request, and a guest with no network would otherwise be
         // handed a page with nothing on it and no way to ask again. Both

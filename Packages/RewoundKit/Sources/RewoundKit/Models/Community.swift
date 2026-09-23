@@ -119,6 +119,26 @@ public struct CommunityPrompt: Decodable, Equatable, Hashable, Sendable, Identif
         URL(string: "https://shoprewound.com/community?poll=\(id)")
             ?? URL(string: "https://shoprewound.com/community")!
     }
+
+    /// A stand-in question for a loading skeleton: the real card drawn with
+    /// these words redacted is the shape of the card that replaces it. Two
+    /// lines of question and three answers, which is what the lanes ask.
+    public static func skeleton(kind: CommunityPromptKind) -> CommunityPrompt {
+        CommunityPrompt(
+            id: "skeleton-\(kind.rawValue)",
+            kind: kind.rawValue,
+            question: "How would you describe the question asked today?",
+            options: [
+                Option(key: "a", label: "The first answer"),
+                Option(key: "b", label: "The second answer"),
+                Option(key: "c", label: "Both"),
+            ],
+            askedOn: nil,
+            closed: false,
+            myVote: nil,
+            results: nil
+        )
+    }
 }
 
 /// One lane on the Today screen: which kind, and what it is asking — or

@@ -34,6 +34,11 @@ final class HomeModel {
     private(set) var popular: [Listing] = []
     /// What arrived last, newest first.
     private(set) var fresh: [Listing] = []
+    /// The newest orders, for the "where's my watch" band above the feed.
+    /// Fetched inside `load()` with everything else, so the band arrives with
+    /// the page instead of dropping in above it a beat later and pushing the
+    /// whole feed down.
+    private(set) var trackedOrders: [Order] = []
 
     @ObservationIgnored private let services: AppServices
     @ObservationIgnored private let feedStore: HomeFeedStore
@@ -129,9 +134,11 @@ final class HomeModel {
         async let metadataLoad: Void = loadMetadata(refresh: refresh)
         async let recentTask: Void = loadRecentlyViewed()
         async let accountTask: Void = loadAccountBits()
+        async let ordersResult = fetchTrackedOrders()
 
         let loadedFeed = await feedResult
         let loadedShelves = await shelfResult
+        let loadedOrders = await ordersResult
         _ = await (metadataLoad, recentTask, accountTask)
 
         guard generation == loadGeneration, !Task.isCancelled else { return }
@@ -140,6 +147,7 @@ final class HomeModel {
         // already showing rather than clearing itself under the reader.
         if let rows = loadedShelves.popular { popular = rows }
         if let rows = loadedShelves.fresh { fresh = rows }
+        if let loadedOrders { trackedOrders = loadedOrders }
         if let loadedFeed {
             feed = loadedFeed
             phase = .loaded
@@ -160,6 +168,8 @@ final class HomeModel {
     func reloadForSessionChange() async {
         feedStore.reset()
         feed = nil
+        // The previous reader's orders go with their feed.
+        trackedOrders = []
         phase = .loading
         await load()
     }
@@ -251,6 +261,14 @@ final class HomeModel {
     /// Nothing here lands on this model — the store owns all three — so there
     /// is no generation to guard. A reader with no address on file is greeted
     /// without a name rather than left waiting for one.
+    /// Nil when the request did not come back, so a failed refresh keeps the
+    /// band it already had; empty for a guest, who has no orders.
+    private func fetchTrackedOrders() async -> [Order]? {
+        guard services.auth.isAuthenticated else { return [] }
+        // A short page: only the newest handful can still be in motion.
+        return try? await services.commerce.orders(page: 1, pageSize: 10).results
+    }
+
     func loadAccountBits() async {
         guard services.auth.isAuthenticated else { return }
         let commerce = services.commerce
