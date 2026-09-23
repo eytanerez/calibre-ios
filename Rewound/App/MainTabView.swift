@@ -35,6 +35,7 @@ struct MainTabView: View {
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
                     .tabJumpBack()
             }
+            .betaBarInset(onTapFeedback: { showsBetaFeedback = true }, onTapWelcome: { showsBetaWelcome = true })
             .tabItem { Label("Home", systemImage: "house") }
             .tag(AppTab.home)
 
@@ -43,6 +44,7 @@ struct MainTabView: View {
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
                     .tabJumpBack()
             }
+            .betaBarInset(onTapFeedback: { showsBetaFeedback = true }, onTapWelcome: { showsBetaWelcome = true })
             .tabItem { Label("Community", systemImage: "bubble.left.and.bubble.right") }
             .tag(AppTab.community)
 
@@ -51,6 +53,7 @@ struct MainTabView: View {
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
                     .tabJumpBack()
             }
+            .betaBarInset(onTapFeedback: { showsBetaFeedback = true }, onTapWelcome: { showsBetaWelcome = true })
             .tabItem { Label("Sell", systemImage: "plus.circle.fill") }
             .tag(AppTab.sell)
 
@@ -61,6 +64,7 @@ struct MainTabView: View {
             }
             .environment(vaultLock)
             .vaultGate(vaultLock, signedIn: session.isAuthenticated)
+            .betaBarInset(onTapFeedback: { showsBetaFeedback = true }, onTapWelcome: { showsBetaWelcome = true })
             .tabItem { Label("Vault", systemImage: "latch.2.case") }
             .tag(AppTab.collection)
 
@@ -69,6 +73,7 @@ struct MainTabView: View {
                     .navigationDestination(for: Route.self) { RouteDestinationView(route: $0) }
                     .tabJumpBack()
             }
+            .betaBarInset(onTapFeedback: { showsBetaFeedback = true }, onTapWelcome: { showsBetaWelcome = true })
             .tabItem {
                 Label {
                     Text("Me")
@@ -113,23 +118,6 @@ struct MainTabView: View {
             // and every gated action on a listing opened inside it. The root's
             // sheet cannot reach over this cover, so the cover carries one.
             .authGate(for: .deck)
-        }
-        // The beta bar sits above every tab: a tester notices a problem on
-        // whichever screen they are on, so the way to report it cannot belong
-        // to a single tab.
-        //
-        // `safeAreaInset` rather than a VStack around the TabView. Wrapping it
-        // changed the accessibility hierarchy enough that `app.tabBars` began
-        // matching two "Me" buttons, and RewoundUITests could no longer tap the
-        // tab at all — a real regression for anybody driving the app by
-        // VoiceOver, not just for the test that caught it. An inset leaves
-        // TabView as the root and simply reserves space at its top edge, and
-        // reserves none at all when the bar draws nothing.
-        .safeAreaInset(edge: .top, spacing: 0) {
-            BetaBar(
-                onTapFeedback: { showsBetaFeedback = true },
-                onTapWelcome: { showsBetaWelcome = true }
-            )
         }
         .sheet(isPresented: $showsBetaWelcome) {
             BetaWelcomeSheet()
@@ -264,5 +252,42 @@ private struct CheckoutRedirect: View {
             .onAppear {
                 services.router.presentCheckout(listingID: listingID, offerID: offerID)
             }
+    }
+}
+
+/// The beta bar, inset above a tab's own navigation bar.
+///
+/// It used to sit on the TabView. That reserves space inside the tab's content
+/// but does not move a NavigationStack's navigation bar, which is laid out
+/// against the window's safe area, so the bar drew straight over the top bar
+/// (Eytan, 2026-09-22: "the beta thing covers the top bar ... if you can just
+/// push everything down"). Applied to each NavigationStack instead, the whole
+/// stack begins below the bar and its navigation bar travels with it.
+///
+/// Still not a VStack around the TabView. Wrapping it changed the
+/// accessibility hierarchy enough that `app.tabBars` began matching two "Me"
+/// buttons and RewoundUITests could no longer tap the tab at all — a real
+/// regression for anybody driving the app by VoiceOver, not just for the test
+/// that caught it. TabView stays the root here.
+///
+/// The bar draws nothing when the programme is off, and an inset around an
+/// empty view reserves no space, so this costs a tester-free build nothing.
+private struct BetaBarInset: ViewModifier {
+    let onTapFeedback: () -> Void
+    let onTapWelcome: () -> Void
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .top, spacing: 0) {
+            BetaBar(onTapFeedback: onTapFeedback, onTapWelcome: onTapWelcome)
+        }
+    }
+}
+
+extension View {
+    fileprivate func betaBarInset(
+        onTapFeedback: @escaping () -> Void,
+        onTapWelcome: @escaping () -> Void
+    ) -> some View {
+        modifier(BetaBarInset(onTapFeedback: onTapFeedback, onTapWelcome: onTapWelcome))
     }
 }
