@@ -20,6 +20,28 @@ final class ProfileCompletionTests: XCTestCase {
 
     // MARK: - Decoding
 
+    /// `has_password` only words the settings row ("Set password" for an
+    /// account made through Google or Apple), so it must arrive through the
+    /// app's own decoder — and an older server that never sends it must read
+    /// as an account that has one.
+    func testHasPasswordArrivesThroughTheAppDecoder() throws {
+        let providerOnly = try user("""
+        {"id": "u1", "email": "a@example.com", "username": "a", "roles": ["member"], "has_password": false}
+        """)
+        XCTAssertEqual(providerOnly.hasPassword, false)
+        let withPassword = try user("""
+        {"id": "u1", "email": "a@example.com", "username": "a", "roles": ["member"], "has_password": true}
+        """)
+        XCTAssertEqual(withPassword.hasPassword, true)
+    }
+
+    func testAnOlderServerLeavesHasPasswordUnsaid() throws {
+        let decoded = try user("""
+        {"id": "u1", "email": "a@example.com", "username": "a", "roles": ["member"]}
+        """)
+        XCTAssertNil(decoded.hasPassword)
+    }
+
     func testDecodesTheFullPayload() throws {
         let decoded = try user("""
         {

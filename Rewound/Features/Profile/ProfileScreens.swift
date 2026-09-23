@@ -800,70 +800,85 @@ struct NotificationSettingsScreen: View {
     }
 }
 
-// MARK: - Change password
+// MARK: - Password (by emailed link only)
 
+/// A password is only ever set or changed through a link sent to the account's
+/// email. This screen used to take the current password and a new one in
+/// place: an unlocked phone is not proof of who is holding it, and a Google or
+/// Apple account has no current password to type, so it could never use it.
+/// The link lands on the reset screen (in the app or on the web), which holds
+/// the new password to the same rules as sign-up.
 struct ChangePasswordScreen: View {
     @Environment(AppServices.self) private var services
-    @Environment(ToastCenter.self) private var toasts
-    @Environment(\.dismiss) private var dismiss
+    @Environment(AuthSession.self) private var session
 
-    @State private var current = ""
-    @State private var newPassword = ""
-    @State private var confirm = ""
-    @State private var saving = false
+    @State private var sending = false
+    @State private var sentTo: String?
     @State private var errorText: String?
+
+    private var settingFirstPassword: Bool { session.user?.hasPassword == false }
+    private var title: String { settingFirstPassword ? "Set password" : "Reset password" }
+    private var email: String { session.user?.email ?? "" }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.l) {
-                RewoundTextField("Current password", text: $current, kind: .password)
-                RewoundTextField(
-                    "New password",
-                    text: $newPassword,
-                    error: newPassword.isEmpty || InputValidation.passwordMeetsRules(newPassword)
-                        ? nil
-                        : "Use 8+ characters with a capital letter and a number.",
-                    kind: .newPassword
-                )
-                RewoundTextField(
-                    "Confirm new password",
-                    text: $confirm,
-                    error: mismatch ? "Passwords don't match" : nil,
-                    kind: .newPassword
-                )
-                if let errorText {
-                    Text(errorText).font(RewoundType.caption).foregroundStyle(Color.rewound.destructive)
-                }
-                Button(saving ? "Saving…" : "Update password") { Task { await save() } }
+                if let sentTo {
+                    EmptyState(
+                        icon: "envelope",
+                        title: "Check your email",
+                        message: "We sent a link to \(sentTo). It works once and lasts 30 minutes. Using it signs you out on your other devices."
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, Space.xl)
+                    Button("Send again") { Task { await send() } }
+                        .buttonStyle(.rewound(.secondary, fullWidth: true))
+                        .disabled(sending)
+                } else {
+                    Text(settingFirstPassword
+                        ? "You sign in with Google or Apple. Set a password to also sign in with your email."
+                        : "We'll email you a link to choose a new password.")
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
+                    Text(email)
+                        .font(RewoundType.bodyMedium)
+                        .foregroundStyle(Color.rewound.foreground)
+                    if let errorText {
+                        Text(errorText).font(RewoundType.caption).foregroundStyle(Color.rewound.destructive)
+                    }
+                    Button {
+                        Task { await send() }
+                    } label: {
+                        RewoundBusyLabel("Email me a link", busy: sending)
+                    }
                     .buttonStyle(.rewound(.primary, fullWidth: true))
-                    .disabled(!isValid || saving)
+                    .disabled(email.isEmpty || sending)
+                }
             }
             .padding(Space.margin)
         }
         .rewoundPageBackground()
-        .navigationTitle("Change password")
+        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var mismatch: Bool { !confirm.isEmpty && confirm != newPassword }
-    private var isValid: Bool {
-        !current.isEmpty
-            && InputValidation.passwordMeetsRules(newPassword)
-            && newPassword == confirm
-    }
-
-    private func save() async {
-        guard isValid, !saving else { return }
-        saving = true
+    private func send() async {
+        guard !email.isEmpty, !sending else { return }
+        sending = true
         errorText = nil
-        defer { saving = false }
+        defer { sending = false }
         do {
-            try await services.account.changePassword(current: current, new: newPassword)
+            let endpoint = try Endpoint<EmptyResponse>.json(
+                method: .post,
+                path: "/auth/password/forgot",
+                payload: ["email": email.lowercased()],
+                requiresAuth: false
+            )
+            _ = try await services.client.send(endpoint)
             Haptics.shared.play(.success)
-            toasts.show(title: "Password updated", tone: .success)
-            dismiss()
+            sentTo = email
         } catch {
-            errorText = (error as? APIError)?.errorDescription ?? "Couldn't update password."
+            errorText = (error as? APIError)?.errorDescription ?? "Couldn't send the link. Try again in a moment."
             Haptics.shared.play(.error)
         }
     }

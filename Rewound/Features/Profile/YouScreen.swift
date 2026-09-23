@@ -74,7 +74,11 @@ struct YouScreen: View {
                         divider
                         row(icon: "bell.badge", label: "Notifications", destination: .notifications)
                         divider
-                        row(icon: "lock", label: "Change password", destination: .changePassword)
+                        row(
+                            icon: "lock",
+                            label: session.user?.hasPassword == false ? "Set password" : "Reset password",
+                            destination: .changePassword
+                        )
                     }
                 }
 

@@ -30,6 +30,11 @@ public struct CurrentUser: Codable, Sendable, Equatable {
     /// The member's named Rewound contact. Optional for compatibility with
     /// older API deployments and accounts that have not been assigned yet.
     public let assignedContact: SupportContact?
+    /// `false` for an account made through Google or Apple that has never set
+    /// a password. Settings words its row from it — "Set password" rather than
+    /// "Reset password" — and both send the same emailed link. `nil` (an older
+    /// server) reads as "has one".
+    public let hasPassword: Bool?
 
     public var isAdmin: Bool { roles.contains("admin") }
 
@@ -42,7 +47,8 @@ public struct CurrentUser: Codable, Sendable, Equatable {
         lastName: String? = nil,
         phone: String? = nil,
         profileComplete: Bool? = nil,
-        assignedContact: SupportContact? = nil
+        assignedContact: SupportContact? = nil,
+        hasPassword: Bool? = nil
     ) {
         self.id = id
         self.email = email
@@ -53,6 +59,7 @@ public struct CurrentUser: Codable, Sendable, Equatable {
         self.phone = phone
         self.profileComplete = profileComplete
         self.assignedContact = assignedContact
+        self.hasPassword = hasPassword
     }
 }
 
