@@ -55,7 +55,10 @@ struct DeckView: View {
     var body: some View {
         GeometryReader { geo in
             let size = geo.size
-            let commitDistance = size.width * 0.35
+            // 22% of the width: at 35% an ordinary swipe stopped short, the
+            // card sprang back, and it took a second swipe to clear it. A deck
+            // swipe is a flick of the thumb, and one should be enough.
+            let commitDistance = size.width * 0.22
             // The bottom 20pt of the geometry is reserved for the under-card
             // peek bands, so the stack reads as a stack.
             let cardSize = CGSize(width: size.width, height: max(size.height - 20, 0))
@@ -173,10 +176,10 @@ struct DeckView: View {
                 let width = value.translation.width
                 let overDistance = abs(width) > commitDistance
                 let predictedWidth = value.predictedEndTranslation.width
-                // Prediction is useful for a quick flick, but require a real
-                // horizontal start so a tiny tap or vertical gesture never
-                // dismisses the card.
-                let intentionalFlick = abs(width) >= 36
+                // Prediction carries a quick flick the rest of the way, but it
+                // needs a real horizontal start so a tap or a vertical gesture
+                // never dismisses the card.
+                let intentionalFlick = abs(width) >= 20
                     && abs(predictedWidth) > commitDistance
                     && abs(predictedWidth) > abs(value.predictedEndTranslation.height)
                 armed = false
