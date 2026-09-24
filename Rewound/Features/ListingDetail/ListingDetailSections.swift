@@ -4,88 +4,68 @@ import SwiftUI
 
 // MARK: - The seller's own words
 
-/// What a listing's description says, once the block the sell form used to
-/// generate has been taken off it.
+/// What a listing's description says, once every generated row has been
+/// taken off it — the same answer the site's "From the seller" gives
+/// (`stripListingDescriptionNoise` in `frontend/src/lib/listingFacts.ts`).
 ///
-/// The description is the seller's notes and nothing else now: brand, model,
-/// reference, the eight grades, the year and the three inclusion answers are
-/// columns, and the spec sheet comes off `listing.specs`. A one-off migration
-/// strips the generated block from rows that already carry it; this does the
-/// same for a row that migration has not reached, so the app never shows a wall
-/// of `Key: Value` lines where a sentence belongs.
+/// The description is meant to be the seller's notes and nothing else: brand,
+/// model, reference, the grades, the year and what is included are columns,
+/// and the page already shows them above. Rows written before that change
+/// still carry a generated block, and on the staging inventory it does not
+/// only open the description: "Overall condition: Like New. Case, bezel…"
+/// and "Included: box included; papers included." come after a blank line.
 ///
-/// **This is a SHAPE test, not a lookup.** A closed list of the keys
-/// `listingDescription()` happened to write was tried first, and it leaked:
-/// any generated row whose key was not on the list — a field the form grew
-/// after the list was written, "Movement: Automatic", "Serviced: 2024",
-/// "Water resistance: 300m" — survived and showed as junk under "From the
-/// seller". The list cannot be complete by construction; the shape can be.
+/// **A line is judged by its label alone, wherever it falls.** A line that
+/// opens with one to four plain words and a colon is a field row and is
+/// dropped. This used to be a leading-run test that also asked the VALUE to be
+/// short and not end like a sentence, and those guards are exactly what let
+/// the condition and inclusion rows through — both end in a full stop, and the
+/// condition row is long — so the app showed them again under "From the
+/// seller" while the site did not (Eytan, 2026-09-23: "the app shows a ton of
+/// other info that is already displayed above"). The site made the same
+/// finding first; the two now apply the same rule.
 ///
-/// The generated block is a CONTIGUOUS RUN of short `Key: Value` lines at the
-/// START of the description — seller prose is not. `looksGenerated(_:)` is
-/// the whole test: a short label, a colon, a short value, neither reading
-/// like a sentence. Once a line fails that test, the run is over and
-/// everything from there on is the seller's own words, kept verbatim — even
-/// if a later line happens to contain a colon.
+/// What a seller's own sentence keeps: a label with a digit or any sentence
+/// punctuation in it is prose ("Serviced 2025: full service" is kept). The
+/// cost the site accepted is accepted here too: "One owner: bought at an AD" is
+/// read as a label and dropped. A false drop loses one sentence; a false keep
+/// puts the spec table on the page twice.
 ///
-/// **This still must not eat a seller's own sentence.** The version before
-/// this one split every line on its first colon and treated anything with a
-/// plausible label as a spec, which is what deleted "Serviced 2025: full
-/// service" — a spec row called "Serviced 2025" — out of a seller's own notes.
-/// Two things tell the two apart: a real generated value never ends the way a
-/// clause does ("bought at an AD in 2023 and worn on weekends." ends in a
-/// period; "Included" does not), and a real generated key is never a phrase
-/// with a number folded into it — "Serviced 2025" carries the year the way a
-/// sentence does; "Serviced" alone, the way a label does.
+/// One row is the exception in both directions: `Seller notes: …` was how the
+/// old generated block carried the seller's own words, so its value is kept.
 struct SellerNotes {
     let text: String
 
     private static let notesKey = "seller notes"
+    /// The longest label a generated row uses is three words ("Year of
+    /// Manufacture"); four is the site's allowance, kept identical.
+    private static let maxLabelWords = 4
 
     init(_ description: String?) {
-        var kept: [String] = []
-        // Whether the walk is still inside the leading generated run. Once a
-        // line breaks it, this stays false for the rest of the description —
-        // the run is only ever a PREFIX.
-        var inGeneratedRun = true
-
+        var lines: [String] = []
         for rawLine in (description ?? "").components(separatedBy: .newlines) {
             let line = rawLine.trimmingCharacters(in: .whitespaces)
-
-            if inGeneratedRun {
-                if line.isEmpty {
-                    // A blank line inside the block is still the block: it
-                    // neither ends the run nor starts the seller's prose.
-                    continue
-                }
-                if let value = Self.sellerNotesValue(in: line) {
-                    // The one row in the block whose value is the seller's
-                    // own words — kept, and the run keeps going, because
-                    // `Marketplace Status` follows it in the real format.
-                    if !value.isEmpty { kept.append(value) }
-                    continue
-                }
-                if Self.looksGenerated(line) {
-                    continue
-                }
-                // First line that is not the block's shape: the run is over.
-                inGeneratedRun = false
-            }
-
             if line.isEmpty {
-                // A blank line inside kept prose is the author's paragraph
-                // break; leading ones would just indent the notes down the page.
-                if !kept.isEmpty { kept.append("") }
-            } else {
-                kept.append(line)
+                lines.append("")
+            } else if let value = Self.sellerNotesValue(in: line) {
+                if !value.isEmpty { lines.append(value) }
+            } else if !Self.isGenerated(line) {
+                lines.append(line)
             }
+        }
+
+        // The author's paragraph breaks stay; the gaps the dropped rows leave
+        // collapse to one, and none lead or trail.
+        var kept: [String] = []
+        for line in lines {
+            if line.isEmpty, kept.last?.isEmpty ?? true { continue }
+            kept.append(line)
         }
         self.text = kept.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// The value of a `Seller Notes:` line, or nil when `line` is not one.
-    /// Checked ahead of `looksGenerated(_:)` because this value is the one
-    /// the block deliberately lets read like a sentence.
+    /// The seller's words out of a `Seller notes: …` row, or nil when the line
+    /// is not one.
     private static func sellerNotesValue(in line: String) -> String? {
         guard let colon = line.firstIndex(of: ":") else { return nil }
         let key = String(line[..<colon]).trimmingCharacters(in: .whitespaces).lowercased()
@@ -93,32 +73,26 @@ struct SellerNotes {
         return String(line[line.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
     }
 
-    /// Whether `line` has the shape `listingDescription()` used to generate:
-    /// a short factual label, a colon, and a short factual value — never a
-    /// sentence that happens to contain one.
-    private static func looksGenerated(_ line: String) -> Bool {
+    /// Whether `line` is a field row: a label of one to four plain words
+    /// (letters and the joiners a label uses), a colon, and something after
+    /// it. The two header lines the old importer wrote are rows too.
+    static func isGenerated(_ line: String) -> Bool {
+        let lower = line.lowercased()
+        if lower == "watchdb auto data:" { return true }
+
         guard let colon = line.firstIndex(of: ":") else { return false }
         let key = String(line[..<colon]).trimmingCharacters(in: .whitespaces)
         let value = String(line[line.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
-        guard !key.isEmpty, !value.isEmpty, line.count < 80 else { return false }
+        guard !key.isEmpty, !value.isEmpty else { return false }
 
-        let keyWords = key.split(separator: " ")
-        guard (1...4).contains(keyWords.count) else { return false }
+        // Plain A–Z, as the site's `/^[A-Za-z][A-Za-z/&' -]*$/` is.
+        let letters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        guard let first = key.unicodeScalars.first, letters.contains(first) else { return false }
+        let allowed = letters.union(CharacterSet(charactersIn: " /&'-"))
+        guard key.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { return false }
 
-        // A real label is words, never a phrase with a number folded into
-        // it — that number is what tells "Serviced 2025" it belongs to a
-        // sentence and "Serviced" that it belongs to a spec row.
-        guard key.rangeOfCharacter(from: .decimalDigits) == nil else { return false }
-
-        // Neither half reads like a clause. Every generated value on record
-        // ("Rolex", "Like New", "Not included", "Pending admin approval")
-        // ends mid-thought; a sentence that leads with a short phrase and a
-        // colon still ends the way sentences do.
-        let sentenceEnders: Set<Character> = [".", "!", "?"]
-        guard let keyLast = key.last, !sentenceEnders.contains(keyLast) else { return false }
-        guard let valueLast = value.last, !sentenceEnders.contains(valueLast) else { return false }
-
-        return true
+        let words = key.split(whereSeparator: { $0 == " " })
+        return words.count <= maxLabelWords
     }
 }
 

@@ -46,8 +46,52 @@ final class SellerNotesAndSpecsTests: XCTestCase {
     }
 
     func testAProseSentenceContainingAColonIsKeptWhole() {
-        let source = "One owner from new: bought at an AD in 2023 and worn on weekends."
+        // A digit in what comes before the colon makes it a sentence.
+        let source = "Bought at an AD in 2023: worn on weekends, never on a bracelet swap."
         XCTAssertEqual(SellerNotes(source).text, source)
+    }
+
+    func testAShortLabelShapedOpeningIsDroppedAsTheSiteDropsIt() {
+        // The trade the site made first and this now shares: one to four
+        // plain words and a colon read as a field label. A false drop loses a
+        // sentence; a false keep repeats the spec table.
+        XCTAssertEqual(SellerNotes("One owner from new: bought at an AD.").text, "")
+    }
+
+    func testTheStagingInventoryShowsOnlyTheSellersSentence() {
+        // The shape of 998 of the 999 live listings on 2026-09-23. The app
+        // used to keep everything from "Overall condition" down, because that
+        // row is long and ends in a full stop — the rows the page already
+        // shows in Condition and Box & papers.
+        let source = """
+        Brand: Rolex
+        Model: Submariner Date
+        Reference: 126610LN
+        Case Material: Oystersteel
+        Water Resistance: 300
+
+        Overall condition: Like New. Case, bezel, crystal, dial, caseback, bracelet/strap and clasp have been individually recorded at this grade.
+        Included: box included; papers included; booklets included.
+        All photographs are beta demo artwork for this test inventory.
+        """
+        XCTAssertEqual(SellerNotes(source).text, "All photographs are beta demo artwork for this test inventory.")
+    }
+
+    func testAFieldRowBetweenTwoOfTheSellersSentencesIsDroppedAndTheSentencesKept() {
+        let source = """
+        Bought new in 2021 and worn a handful of times.
+        Included: box included; papers included.
+
+        Comes with the original receipt.
+        """
+        XCTAssertEqual(
+            SellerNotes(source).text,
+            "Bought new in 2021 and worn a handful of times.\n\nComes with the original receipt."
+        )
+    }
+
+    func testTheSellersOwnNotesAreUntouched() {
+        XCTAssertEqual(SellerNotes("BNIB from AD purchased last week").text, "BNIB from AD purchased last week")
     }
 
     func testAStandaloneServicedSentenceSurvives() {
