@@ -51,7 +51,7 @@ struct OrdersListScreen: View {
                 title: "Couldn't load your orders",
                 message: message,
                 actionTitle: "Try again"
-            ) { Task { await load() } }
+            ) { await load() }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         default:
             if orders.isEmpty && search.isEmpty {

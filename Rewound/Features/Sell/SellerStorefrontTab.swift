@@ -126,7 +126,7 @@ struct SellerStorefrontTab: View {
                     message: "Check your connection and try again.",
                     actionTitle: "Try again"
                 ) {
-                    Task { await loadBio() }
+                    await loadBio()
                 }
             } else {
                 VStack(alignment: .leading, spacing: Space.m) {

@@ -22,6 +22,7 @@ import SwiftUI
 struct HomeScreen: View {
     @Environment(AppServices.self) private var services
     @Environment(AuthSession.self) private var session
+    @Environment(\.reconnectCount) private var reconnectCount
     @Environment(\.routePush) private var routePush
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -105,6 +106,12 @@ struct HomeScreen: View {
             // A feed is composed for one particular reader. Signing in or out
             // does not update it — it replaces it.
             Task { await model?.reloadForSessionChange() }
+        }
+        .onChange(of: reconnectCount) {
+            // Back online. Home can be half-filled from before the connection
+            // dropped with no failure showing anywhere, so it reloads whole
+            // rather than waiting for a retry nobody sees.
+            Task { await model?.load() }
         }
         .onChange(of: services.signals.recentlyViewed) {
             Task { await model?.loadRecentlyViewed() }
@@ -272,7 +279,7 @@ struct HomeScreen: View {
                 message: "We couldn't load your home feed. Check your connection and try again.",
                 actionTitle: "Try again"
             ) {
-                Task { await model?.load() }
+                await model?.load()
             }
 
         case .nextStep:
@@ -366,7 +373,7 @@ struct HomeScreen: View {
                 state: state,
                 onBrowse: { pushed = .results(BrowseFilters(), title: "All Watches") }
             ) {
-                Task { await model?.load() }
+                await model?.load()
             }
         case .unrecognized:
             // Filtered out above; the switch has to stay exhaustive so a new

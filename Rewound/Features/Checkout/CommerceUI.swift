@@ -299,7 +299,7 @@ struct DiscountPresentationNotice: View {
 struct CheckoutProblemBlock: View {
     let model: CheckoutModel
     let problem: CheckoutProblem
-    let retry: () -> Void
+    let retry: () async -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.m) {
@@ -329,8 +329,11 @@ struct CheckoutProblemBlock: View {
                 }
                 .buttonStyle(.rewoundGhost)
             } else if problem.retryable {
-                Button("Try again", action: retry)
-                    .buttonStyle(.rewoundGhost)
+                // Never on its own: this prices a purchase or clears a
+                // payment error, and neither should happen unasked.
+                RetryButton(variant: .ghost, retriesOnReconnect: false) {
+                    await retry()
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

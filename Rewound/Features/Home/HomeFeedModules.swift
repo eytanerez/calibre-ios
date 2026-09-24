@@ -951,7 +951,7 @@ struct FeedEndModule: View {
     let module: HomeFeedModule
     let state: String
     let onBrowse: () -> Void
-    let onRetry: () -> Void
+    let onRetry: () async -> Void
 
     private var degraded: Bool { state == "degraded" }
 
@@ -969,11 +969,9 @@ struct FeedEndModule: View {
 
                 // A degraded feed carries no CTA of its own — the retry is the
                 // action, and it belongs to this side.
-                Button("Try again") {
-                    Haptics.shared.play(.press)
-                    onRetry()
+                RetryButton(variant: .secondary, fullWidth: true) {
+                    await onRetry()
                 }
-                .buttonStyle(.rewound(.secondary, fullWidth: true))
             } else {
                 Button("Browse all watches") {
                     Haptics.shared.play(.press)

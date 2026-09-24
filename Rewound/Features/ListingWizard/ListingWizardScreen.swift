@@ -111,7 +111,7 @@ struct ListingWizardScreen: View {
                 title: "We couldn't open your draft",
                 message: message,
                 actionTitle: "Try again",
-                action: { Task { await model.start() } }
+                retry: { await model.start() }
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .ready:

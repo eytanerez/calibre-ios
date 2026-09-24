@@ -89,7 +89,7 @@ struct CollectionScreen: View {
                     message: "Check your connection and try again.",
                     actionTitle: "Try again"
                 ) {
-                    Task { await load() }
+                    await load()
                 }
             } else if watches.isEmpty {
                 EmptyState(

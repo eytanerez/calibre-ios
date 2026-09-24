@@ -91,7 +91,7 @@ private struct OfferDetailContent: View {
                     title: "We couldn't load this offer",
                     message: message,
                     actionTitle: "Try again",
-                    action: { Task { await model.load() } }
+                    retry: { await model.load() }
                 )
                 .padding(.top, Space.xxl)
             case .ready:

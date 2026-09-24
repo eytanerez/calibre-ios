@@ -68,7 +68,9 @@ struct SellScreen: View {
                     title: "We couldn't reach your storefront",
                     message: message,
                     actionTitle: "Try again",
-                    action: {
+                    retry: {
+                        // Back to the skeleton at once, which is the visible
+                        // reaction; the `.task(id:)` keyed on the token loads.
                         phase = .loading
                         retryToken += 1
                     }

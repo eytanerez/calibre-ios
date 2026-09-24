@@ -100,7 +100,7 @@ struct OffersListScreen: View {
                     title: "We couldn't load your offers",
                     message: message,
                     actionTitle: "Try again",
-                    action: { Task { await model.load() } }
+                    retry: { await model.load() }
                 )
                 Spacer()
             case .ready:

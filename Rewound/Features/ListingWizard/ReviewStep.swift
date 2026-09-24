@@ -212,12 +212,9 @@ struct ReviewStep: View {
                                 .font(RewoundType.label)
                                 .foregroundStyle(Color.rewound.mutedForeground)
                                 .fixedSize(horizontal: false, vertical: true)
-                            Button("Try again") {
-                                Task { await model.refreshPreview() }
+                            RetryButton(variant: .ghost) {
+                                await model.refreshPreview()
                             }
-                            .font(RewoundType.label)
-                            .foregroundStyle(Color.rewound.primary)
-                            .buttonStyle(PressableStyle())
                             .frame(minHeight: Space.touchTarget, alignment: .leading)
                         }
                     }

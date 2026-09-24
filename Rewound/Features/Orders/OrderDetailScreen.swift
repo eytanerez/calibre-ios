@@ -40,7 +40,7 @@ struct OrderDetailScreen: View {
                     title: "Couldn't load this order",
                     message: "Check your connection and try again.",
                     actionTitle: "Try again"
-                ) { failed = false; Task { await load() } }
+                ) { failed = false; await load() }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 // A page waiting, so the wheel says work is still going and

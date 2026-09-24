@@ -106,7 +106,7 @@ struct ProfileScreen: View {
                         title: "Couldn't load your profile",
                         message: "Check your connection and try again.",
                         actionTitle: "Try again"
-                    ) { Task { await load() } }
+                    ) { await load() }
                     .padding(.top, Space.xxl)
                 } else {
                     RewoundLoadingView("Opening your profile")
@@ -442,7 +442,7 @@ struct PaymentMethodScreen: View {
                         message: "Check your connection and try again.",
                         actionTitle: "Try again"
                     ) {
-                        Task { await loadMethod() }
+                        await loadMethod()
                     }
                 } else if loaded {
                     EmptyState(

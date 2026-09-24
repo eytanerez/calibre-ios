@@ -94,17 +94,21 @@ struct RecentlyViewedScreen: View {
     private func content(_ model: RecentlyViewedModel) -> some View {
         if model.isLoading, model.listings.isEmpty {
             ResultsGridSkeleton()
+        } else if model.listings.isEmpty, model.failed {
+            EmptyState(
+                icon: "wifi.slash",
+                title: "Couldn't load recently viewed",
+                message: "Check your connection and try again.",
+                actionTitle: "Try again"
+            ) {
+                await model.load()
+            }
         } else if model.listings.isEmpty {
             EmptyState(
-                icon: model.failed ? "wifi.slash" : "clock",
-                title: model.failed ? "Couldn't load recently viewed" : "Nothing viewed yet",
-                message: model.failed
-                    ? "Check your connection and try again."
-                    : "Watches you look at will show up here.",
-                actionTitle: model.failed ? "Try again" : nil
-            ) {
-                Task { await model.load() }
-            }
+                icon: "clock",
+                title: "Nothing viewed yet",
+                message: "Watches you look at will show up here."
+            )
         } else {
             ScrollView {
                 LazyVGrid(

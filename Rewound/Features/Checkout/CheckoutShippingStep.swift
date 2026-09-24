@@ -27,7 +27,7 @@ struct CheckoutShippingStep: View {
                             title: "We couldn't load checkout",
                             message: message,
                             actionTitle: "Try again",
-                            action: { Task { await model.load() } }
+                            retry: { await model.load() }
                         )
                     }
                 case .ready:

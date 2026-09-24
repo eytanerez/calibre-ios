@@ -311,7 +311,7 @@ struct ResultsContent: View {
                 message: "We couldn't load these watches. Check your connection and try again.",
                 actionTitle: "Try again"
             ) {
-                Task { await model.reload() }
+                await model.reload()
             }
         } else if model.listings.isEmpty {
             EmptyState(

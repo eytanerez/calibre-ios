@@ -51,7 +51,7 @@ struct SaleDetailScreen: View {
                         title: "This sale didn't load",
                         message: loadError,
                         actionTitle: "Try again",
-                        action: { Task { await load() } }
+                        retry: { await load() }
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {

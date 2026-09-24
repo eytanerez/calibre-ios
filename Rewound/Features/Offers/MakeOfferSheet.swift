@@ -137,7 +137,7 @@ struct MakeOfferSheet: View {
                 title: "We couldn't load this listing",
                 message: message,
                 actionTitle: "Try again",
-                action: { Task { await model.load() } }
+                retry: { await model.load() }
             )
         case .input:
             inputForm(model)

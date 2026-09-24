@@ -543,7 +543,7 @@ struct ReturnFlowSheet: View {
                             title: "We couldn't load your return",
                             message: message,
                             actionTitle: "Try again",
-                            action: { Task { await model.loadQuote() } }
+                            retry: { await model.loadQuote() }
                         )
                     }
                 }

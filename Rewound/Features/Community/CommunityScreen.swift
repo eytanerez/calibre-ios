@@ -99,7 +99,7 @@ struct CommunityScreen: View {
                 message: "Check your connection and try again.",
                 actionTitle: "Try again"
             ) {
-                Task { await load() }
+                await load()
             }
         } else {
             VStack(alignment: .leading, spacing: Space.xxl) {

@@ -65,7 +65,7 @@ struct VaultWatchDetailScreen: View {
                     message: "Check your connection and try again.",
                     actionTitle: "Try again"
                 ) {
-                    Task { await load() }
+                    await load()
                 }
             } else if isLoading {
                 skeleton
@@ -335,10 +335,9 @@ struct VaultWatchDetailScreen: View {
                 title: "Couldn't load the reference price",
                 message: "Check your connection and try again."
             ) {
-                Button("Try again") {
-                    Task { await loadPrice(for: detail.referenceRow) }
+                RetryButton(variant: .secondary) {
+                    await loadPrice(for: detail.referenceRow)
                 }
-                .buttonStyle(.rewound(.secondary))
             }
         } else if detail.referenceRow != nil {
             note(

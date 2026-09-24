@@ -169,7 +169,7 @@ struct AuthenticationReportScreen: View {
                     title: "We couldn't open the report",
                     message: failure,
                     actionTitle: "Try again"
-                ) { Task { await load() } }
+                ) { await load() }
             } else {
                 RewoundLoadingView("Opening the report")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

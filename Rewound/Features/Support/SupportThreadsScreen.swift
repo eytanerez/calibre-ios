@@ -30,7 +30,7 @@ struct SupportThreadsScreen: View {
                     title: "Couldn't load your conversations",
                     message: errorText,
                     actionTitle: "Try again"
-                ) { Task { await load() } }
+                ) { await load() }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if threads.isEmpty {
                 EmptyState(

@@ -92,7 +92,7 @@ struct MessageThreadScreen: View {
                 title: "Couldn't load this conversation",
                 message: loadErrorText,
                 actionTitle: "Try again"
-            ) { Task { await loadMessages() } }
+            ) { await loadMessages() }
             .conversationPlaceholder()
         } else if messages.isEmpty {
             EmptyState(

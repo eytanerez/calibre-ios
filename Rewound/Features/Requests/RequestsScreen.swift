@@ -32,7 +32,7 @@ struct RequestsScreen: View {
                     title: "Requests are out of reach",
                     message: "We couldn't load your requests. Check your connection and try again.",
                     actionTitle: "Try again"
-                ) { Task { await load() } }
+                ) { await load() }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if requests.isEmpty && loaded {
                 EmptyState(

@@ -252,6 +252,9 @@ struct RootView: View {
         .environment(services.router)
         .environment(services.toasts)
         .environment(services.beta)
+        .environment(services.connectivity)
+        .environment(\.isOffline, !services.connectivity.isOnline)
+        .environment(\.reconnectCount, services.connectivity.reconnects)
         .task {
             // Before the session, and never allowed to block it: a beta config
             // that cannot be fetched means "no beta", and a tester on a flaky
@@ -367,6 +370,7 @@ final class AppServices {
     let alerts = AlertsInbox()
     let router = AppRouter()
     let toasts = ToastCenter()
+    let connectivity = Connectivity()
     let push: PushCoordinator
     let presence: PresenceHeartbeat
 

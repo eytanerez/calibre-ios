@@ -39,7 +39,7 @@ struct AllBrandsScreen: View {
                     title: "The brand directory is out of reach",
                     message: "Check your connection and try again.",
                     actionTitle: "Try again",
-                    action: { Task { await load(forceRefresh: true) } }
+                    retry: { await load(forceRefresh: true) }
                 )
             } else if brands.isEmpty {
                 EmptyState(

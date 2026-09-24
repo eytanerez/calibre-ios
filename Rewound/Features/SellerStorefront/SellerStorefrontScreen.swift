@@ -27,7 +27,7 @@ struct SellerStorefrontScreen: View {
                     actionTitle: "Try again"
                 ) {
                     failed = false
-                    Task { await load() }
+                    await load()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

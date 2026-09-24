@@ -119,7 +119,7 @@ struct CheckoutMethodStep: View {
 
                 if let problem = model.pricingProblem {
                     CheckoutProblemBlock(model: model, problem: problem) {
-                        Task { await model.prepareCardIntent() }
+                        await model.prepareCardIntent()
                     }
                 }
             }

@@ -41,7 +41,7 @@ struct BiteScreen: View {
                     message: "It didn't come through just now. Try again in a moment.",
                     actionTitle: "Try again"
                 ) {
-                    Task { await load() }
+                    await load()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

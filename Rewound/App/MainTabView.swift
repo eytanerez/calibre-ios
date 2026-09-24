@@ -284,6 +284,10 @@ private struct BetaBarInset: ViewModifier {
     func body(content: Content) -> some View {
         VStack(spacing: 0) {
             BetaBar(onTapFeedback: onTapFeedback, onTapWelcome: onTapWelcome)
+            // Offline, and then "back online" for a moment. Here for the same
+            // reason the beta bar is: above the navigation stack, so the stack's
+            // own bar moves down rather than drawing underneath it.
+            ConnectionBar()
             content
         }
     }

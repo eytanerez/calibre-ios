@@ -155,7 +155,7 @@ struct DiscoverScreen: View {
                         title: "The deck couldn't load",
                         message: message,
                         actionTitle: "Try again",
-                        action: { Task { await feed.restart() } }
+                        retry: { await feed.restart() }
                     )
                 }
             case .exhausted:

@@ -117,7 +117,7 @@ struct SellerDashboardScreen: View {
                     title: "Your storefront didn't load",
                     message: loadError,
                     actionTitle: "Try again",
-                    action: { Task { await load() } }
+                    retry: { await load() }
                 )
                 .sellRow()
             } else if loading, !hasRevealedContent {

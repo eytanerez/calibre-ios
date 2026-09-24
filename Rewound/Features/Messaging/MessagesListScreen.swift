@@ -51,7 +51,7 @@ struct MessagesListScreen: View {
                 title: "Couldn't load your messages",
                 message: errorText,
                 actionTitle: "Try again"
-            ) { Task { await load() } }
+            ) { await load() }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if threads.isEmpty {
             EmptyState(

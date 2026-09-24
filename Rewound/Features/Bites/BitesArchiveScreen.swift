@@ -57,7 +57,7 @@ struct BitesArchiveList: View {
                     message: "It didn't come through just now. Try again in a moment.",
                     actionTitle: "Try again"
                 ) {
-                    Task { await loadFirstPage() }
+                    await loadFirstPage()
                 }
             } else if bites.isEmpty {
                 EmptyState(
