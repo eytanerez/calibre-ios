@@ -248,12 +248,15 @@ struct ProfileCompletionView: View {
                 .submitLabel(.next)
                 .onSubmit { focusedField = .street }
 
-            RewoundTextField(
-                "Street address",
+            AddressStreetField(
+                label: "Street address",
                 text: $street,
-                placeholder: "123 Meridian Ave",
-                kind: .addressLine1
-            )
+                placeholder: "123 Meridian Ave"
+            ) { address in
+                city = address.city
+                state = address.state
+                zip = address.postalCode
+            }
             .focused($focusedField, equals: .street)
             .submitLabel(.next)
             .onSubmit { focusedField = .apartment }

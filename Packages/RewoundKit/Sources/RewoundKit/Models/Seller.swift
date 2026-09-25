@@ -381,6 +381,15 @@ public struct ListingDraftPayload: Encodable, Sendable {
     public var conditionCrystal: String?
     public var conditionClasp: String?
     public var conditionCaseback: String?
+    /// The seller's note on each grade, keyed `overall`, `case`, `dial`,
+    /// `bezel`, `crystal`, `bracelet`, `clasp`, `caseback`.
+    ///
+    /// The server REPLACES its stored map with whatever this carries, so a
+    /// caller that sends it sends every note it holds, and `[:]` clears them
+    /// all. Nil leaves the key off the request, which leaves the stored notes
+    /// exactly as they are: the right thing for any caller that never showed
+    /// the seller their notes (the import queue, the submit flip).
+    public var conditionNotes: [String: String]?
     public var boxPapers: Bool?
     /// The seller's three answers, each in its own column.
     ///
@@ -418,6 +427,7 @@ public struct ListingDraftPayload: Encodable, Sendable {
         conditionCrystal: String? = nil,
         conditionClasp: String? = nil,
         conditionCaseback: String? = nil,
+        conditionNotes: [String: String]? = nil,
         boxPapers: Bool? = nil,
         boxIncluded: Bool? = nil,
         papersIncluded: Bool? = nil,
@@ -444,6 +454,7 @@ public struct ListingDraftPayload: Encodable, Sendable {
         self.conditionCrystal = conditionCrystal
         self.conditionClasp = conditionClasp
         self.conditionCaseback = conditionCaseback
+        self.conditionNotes = conditionNotes
         self.boxPapers = boxPapers
         self.boxIncluded = boxIncluded
         self.papersIncluded = papersIncluded

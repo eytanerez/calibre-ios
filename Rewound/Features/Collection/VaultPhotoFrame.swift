@@ -34,8 +34,13 @@ struct VaultPhotoFrame: View {
     enum Variant {
         /// In the collection.
         case card
-        /// The first thing on the watch's own screen.
+        /// The first thing on the watch's own screen, when there is nothing to
+        /// page through: the monogram and the words that ask for a photograph.
         case hero
+        /// One page of the watch's gallery on its own screen. A page that
+        /// cannot load keeps quiet: it stands for a picture that exists, so
+        /// "Add your photographs" over it would be the wrong sentence.
+        case page
     }
 
     let watch: VaultWatch
@@ -43,6 +48,9 @@ struct VaultPhotoFrame: View {
     /// The frame's drawn side, in points. The caller measures it, because only
     /// the caller knows how wide its column is.
     let side: CGFloat
+    /// The picture to draw in place of the cover: a page of the gallery. Nil
+    /// draws `cover_url`, which is every card and the empty hero.
+    var picture: URL? = nil
 
     @Environment(AppServices.self) private var services
 
@@ -87,7 +95,10 @@ struct VaultPhotoFrame: View {
     }
 
     private var source: VaultCoverSource? {
-        VaultCoverSource.cover(watch, apiOrigin: services.client.baseURL)
+        if let picture {
+            return VaultCoverSource.resolve(picture, apiOrigin: services.client.baseURL)
+        }
+        return VaultCoverSource.cover(watch, apiOrigin: services.client.baseURL)
     }
 
     /// Everything anyone may fetch goes through Nuke — a seller's link, and
@@ -103,7 +114,7 @@ struct VaultPhotoFrame: View {
             processors: [.resize(size: CGSize(width: pixels, height: pixels), unit: .pixels, crop: true)],
             // The hero is the first thing on its screen and the collection's
             // frames are a column being scrolled past.
-            priority: variant == .hero ? .high : .normal
+            priority: variant == .card ? .normal : .high
         )
     }
 

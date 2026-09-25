@@ -180,8 +180,9 @@ private struct AddressRadioCard: View {
 }
 
 /// The inline new-address form. Saves via POST /account/addresses and
-/// auto-selects the result. Fields carry their native autofill content types,
-/// so the keyboard's own address AutoFill works too.
+/// auto-selects the result. The street line offers Apple Maps suggestions as
+/// it is typed (`AddressStreetField`), and every field carries its native
+/// autofill content type, so the keyboard's own address AutoFill works too.
 private struct AddressForm: View {
     @Bindable var model: CheckoutModel
 
@@ -258,13 +259,17 @@ private struct AddressForm: View {
                 kind: .fullName
             )
 
-            RewoundTextField(
-                "Street address",
+            AddressStreetField(
+                label: "Street address",
                 text: $street,
                 placeholder: "Street and number",
-                error: fieldError(street, "Enter a street address."),
-                kind: .addressLine1
-            )
+                error: fieldError(street, "Enter a street address.")
+            ) { address in
+                city = address.city
+                state = address.state
+                zip = address.postalCode
+                country = "US"
+            }
 
             RewoundTextField("Apt, suite, unit (optional)", text: $apartment, kind: .addressLine2)
 

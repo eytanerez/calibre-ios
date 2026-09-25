@@ -171,10 +171,14 @@ struct DealerApplicationScreen: View {
                 error: countryError,
                 kind: .country
             )
-            .onChange(of: country) { _, newValue in
+            .onChange(of: country) { old, newValue in
+                if countryError != nil { countryError = nil }
+                // A whole name arriving at once (AutoFill, a paste) is
+                // RewoundTextField's to turn into its code; clipping it here
+                // first made "United States" into "UN".
+                guard newValue.count <= old.count + 1 else { return }
                 let upper = String(newValue.prefix(2)).uppercased()
                 if upper != newValue { country = upper }
-                if countryError != nil { countryError = nil }
             }
 
             Button {

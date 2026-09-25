@@ -70,7 +70,7 @@ struct ListingPrefill: Equatable {
 /// Scroll anchors for the wizard's inputs, so pressing Continue can bring the
 /// first offending field into view.
 enum WizardField: Hashable {
-    case brand, year, condition(ConditionPart), price
+    case brand, year, condition(ConditionPart), conditionNote(ConditionPart), price
 }
 
 /// The eight grades, in the order the sell form asks for them — the same
@@ -97,6 +97,51 @@ enum ConditionPart: String, CaseIterable, Identifiable, Hashable {
     }
 
     static let grades = ["New", "Like New", "Very Good", "Good", "Worn"]
+
+    /// A real example of the few words this part tends to get, for the
+    /// note field's placeholder. Each is short enough to show whole beside
+    /// the field's label on the narrowest phone.
+    var noteExample: String {
+        switch self {
+        case .watchCase: "Light hairlines on the lugs"
+        case .dial: "Clean, no marks or fading"
+        case .bezel: "Small nick near 12"
+        case .crystal: "No chips or scratches"
+        case .bracelet: "Some stretch, all links"
+        case .clasp: "Light hairlines on the clasp"
+        case .caseback: "Swirls from wear, no dents"
+        case .overall: "Worn gently, never polished"
+        }
+    }
+}
+
+// MARK: - Condition notes
+
+/// The seller's optional few words on a grade. One rule, stated once, so the
+/// field, the counter and the payload cannot come to disagree about what the
+/// server will accept.
+enum ConditionNote {
+    /// `Keep each condition note to 80 characters.` is the server's refusal
+    /// above this.
+    static let limit = 80
+
+    /// Trimmed, with every run of whitespace (a pasted line break included)
+    /// collapsed to one space: exactly what the server stores.
+    static func normalized(_ raw: String) -> String {
+        raw.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// Counted the way the server counts, in code points rather than in the
+    /// characters a person sees. An emoji built from several code points is
+    /// one character here and several there, and the server's count is the
+    /// one that refuses.
+    static func length(_ raw: String) -> Int {
+        normalized(raw).unicodeScalars.count
+    }
+
+    static func isTooLong(_ raw: String) -> Bool {
+        length(raw) > limit
+    }
 }
 
 // MARK: - Photo slots
@@ -155,6 +200,11 @@ struct WizardSnapshot: Codable {
     var yearUnknown: Bool
     /// ConditionPart.rawValue → grade.
     var conditions: [String: String]
+    /// ConditionPart.rawValue → the seller's note, as typed. Absent on
+    /// snapshots written before notes existed, which leaves the listing's own
+    /// notes standing; present, it is the seller's latest word and replaces
+    /// them, so a note cleared on this device stays cleared.
+    var conditionNotes: [String: String]? = nil
     var priceText: String
     var notes: String
     /// Category rawValue → local photo file name (inside the listing's
@@ -274,6 +324,17 @@ final class WizardModel {
     var yearText = ""
     var yearUnknown = false
     var conditions: [ConditionPart: String] = [:]
+    /// The seller's optional note on each grade, as typed. Normalized only on
+    /// the way out (`ConditionNote.normalized`), so the field never rewrites
+    /// what is under the cursor.
+    var conditionNotes: [ConditionPart: String] = [:]
+    /// Whether the server may be holding notes for this listing: it arrived
+    /// with some, or a save has carried some. Until then an empty set is left
+    /// off the request rather than sent as `{}`, which says the same thing to
+    /// a server that has none and nothing at all to one that predates the key.
+    /// Once true, the full set (even `{}`) goes on every save, because the
+    /// server REPLACES its map with whatever it is sent.
+    @ObservationIgnored private var conditionNotesMayBeStored = false
     private var suppressBrandCascade = false
     private var suppressModelCascade = false
 
@@ -385,6 +446,13 @@ final class WizardModel {
             && InputValidation.isNonBlank(reference)
             && (yearUnknown || InputValidation.productionYear(yearText) != nil)
             && ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
+            && conditionNotesValid
+    }
+
+    /// Every note within the server's limit. Notes are optional, so an empty
+    /// one is always valid.
+    var conditionNotesValid: Bool {
+        ConditionPart.allCases.allSatisfy { !ConditionNote.isTooLong(conditionNotes[$0] ?? "") }
     }
 
     /// The grades still to fill, worded the way the server's submit gate
@@ -406,6 +474,9 @@ final class WizardModel {
         if !yearUnknown, InputValidation.productionYear(yearText) == nil { missing.append("Year") }
         for part in ConditionPart.allCases where conditions[part] == nil {
             missing.append(part.label)
+        }
+        for part in ConditionPart.allCases where ConditionNote.isTooLong(conditionNotes[part] ?? "") {
+            missing.append("a shorter \(part.label.lowercased()) note")
         }
         return missing
     }
@@ -458,6 +529,13 @@ final class WizardModel {
         return "Pick a grade."
     }
 
+    /// Said as soon as it is true, not after Continue: a note that has run
+    /// over is worth knowing about while it is still being typed.
+    func conditionNoteError(_ part: ConditionPart) -> String? {
+        guard ConditionNote.isTooLong(conditionNotes[part] ?? "") else { return nil }
+        return "Keep it to \(ConditionNote.limit) characters."
+    }
+
     var priceFieldError: String? {
         if InputValidation.isNonBlank(priceText), price == nil {
             return "Enter an amount greater than zero, with at most two decimals."
@@ -474,6 +552,9 @@ final class WizardModel {
             if yearFieldError != nil { return .year }
             if let part = ConditionPart.allCases.first(where: { conditions[$0] == nil }) {
                 return .condition(part)
+            }
+            if let part = ConditionPart.allCases.first(where: { conditionNoteError($0) != nil }) {
+                return .conditionNote(part)
             }
             return nil
         case 2:
@@ -539,6 +620,7 @@ final class WizardModel {
         }
         var payload = currentPayload
         payload.status = ListingStatus.draft.rawValue
+        noteSending(payload)
         do {
             let created = try await seller.createListing(payload)
             listing = created
@@ -606,6 +688,15 @@ final class WizardModel {
                 conditions[part] = nil
             }
         }
+        // Nil is a payload that did not carry the key, which says nothing
+        // about what is stored; only a map that arrived is read.
+        if let notes = listing.conditionNotes {
+            for (key, note) in notes {
+                guard let part = ConditionPart(rawValue: key), !note.isEmpty else { continue }
+                conditionNotes[part] = note
+            }
+            conditionNotesMayBeStored = !notes.isEmpty
+        }
     }
 
     private func restore(from snapshot: WizardSnapshot) {
@@ -636,6 +727,14 @@ final class WizardModel {
         for (key, grade) in snapshot.conditions {
             if let part = ConditionPart(rawValue: key) {
                 conditions[part] = grade
+            }
+        }
+        if let notes = snapshot.conditionNotes {
+            conditionNotes = [:]
+            for (key, note) in notes {
+                if let part = ConditionPart(rawValue: key), !note.isEmpty {
+                    conditionNotes[part] = note
+                }
             }
         }
         guard let listingID = listing?.id else { return }
@@ -747,6 +846,7 @@ final class WizardModel {
             conditionCrystal: conditions[.crystal],
             conditionClasp: conditions[.clasp],
             conditionCaseback: conditions[.caseback],
+            conditionNotes: conditionNotesPayload,
             // What this column has always meant: both, not either. Kept as the
             // derived summary the cards and the search facets read.
             boxPapers: boxIncluded && papersIncluded,
@@ -764,10 +864,37 @@ final class WizardModel {
         )
     }
 
+    /// Every note the seller holds, normalized, or nil to leave the stored set
+    /// alone.
+    ///
+    /// Nil while any note is over the limit: the server refuses the WHOLE
+    /// request over one long note, so sending it would stop the brand, the
+    /// price and everything else from saving too. The field says what is wrong
+    /// and Continue will not pass it; the last set that was valid stays on the
+    /// server until it is fixed.
+    private var conditionNotesPayload: [String: String]? {
+        guard conditionNotesValid else { return nil }
+        var notes: [String: String] = [:]
+        for (part, raw) in conditionNotes {
+            let note = ConditionNote.normalized(raw)
+            if !note.isEmpty { notes[part.rawValue] = note }
+        }
+        guard !notes.isEmpty || conditionNotesMayBeStored else { return nil }
+        return notes
+    }
+
+    /// Called just before a payload leaves. Marked before the reply rather
+    /// than after it: a save whose answer is lost may still have landed.
+    private func noteSending(_ payload: ListingDraftPayload) {
+        if payload.conditionNotes?.isEmpty == false { conditionNotesMayBeStored = true }
+    }
+
     func pushPatch() async {
         guard let listing else { return }
+        let payload = currentPayload
+        noteSending(payload)
         do {
-            self.listing = try await seller.updateListing(id: listing.id, currentPayload)
+            self.listing = try await seller.updateListing(id: listing.id, payload)
             saveError = nil
         } catch {
             saveError = sellErrorMessage(error)
@@ -799,6 +926,7 @@ final class WizardModel {
             yearText: yearText,
             yearUnknown: yearUnknown,
             conditions: Dictionary(uniqueKeysWithValues: conditions.map { ($0.key.rawValue, $0.value) }),
+            conditionNotes: Dictionary(uniqueKeysWithValues: conditionNotes.map { ($0.key.rawValue, $0.value) }),
             priceText: priceText,
             notes: notes,
             slotFiles: slotFiles,
@@ -1199,6 +1327,9 @@ final class WizardModel {
                 parts.append("Add a 4-digit year, or mark it unknown.")
             }
             if let grades = missingGradesSentence { parts.append(grades) }
+            if !conditionNotesValid {
+                parts.append("Keep each condition note to \(ConditionNote.limit) characters.")
+            }
             submitError = parts.joined(separator: " ")
             return false
         }

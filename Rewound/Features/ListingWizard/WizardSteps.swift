@@ -118,6 +118,12 @@ struct DetailsStep: View {
                     .foregroundStyle(Color.rewound.primary)
                     .buttonStyle(PressableStyle())
                 }
+                // Said once for all eight, so each row's field can carry a
+                // one-word label instead of "(optional)" eight times over.
+                Text("Grade each part. A few words on why are optional, and buyers see them beside the grade.")
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 SellCard {
                     VStack(spacing: 0) {
@@ -139,6 +145,7 @@ struct DetailsStep: View {
 
     private func conditionRow(_ part: ConditionPart) -> some View {
         let error = model.conditionError(part)
+        let graded = model.conditions[part] != nil
         return VStack(alignment: .leading, spacing: 0) {
             // The part and its grade share a line right up to the
             // accessibility sizes, where the reserved grade column alone is
@@ -169,9 +176,35 @@ struct DetailsStep: View {
                     .padding(.bottom, Space.s)
                     .transition(.opacity)
             }
+
+            // Only once there is a grade to explain. An ungraded row is still
+            // one line, so the card fills in as the seller works down it
+            // rather than opening as sixteen things to do.
+            if graded {
+                ConditionNoteField(
+                    part: part,
+                    text: noteBinding(part),
+                    error: model.conditionNoteError(part)
+                )
+                .id(WizardField.conditionNote(part))
+                .padding(.bottom, Space.m)
+                .transition(.opacity)
+            }
         }
         .padding(.horizontal, Space.l)
         .animation(Motion.easeFast, value: error)
+        .animation(Motion.easeFast, value: graded)
+    }
+
+    private func noteBinding(_ part: ConditionPart) -> Binding<String> {
+        Binding(
+            get: { model.conditionNotes[part] ?? "" },
+            set: { typed in
+                guard typed != (model.conditionNotes[part] ?? "") else { return }
+                model.conditionNotes[part] = typed.isEmpty ? nil : typed
+                model.fieldChanged()
+            }
+        )
     }
 
     private func partLabel(_ part: ConditionPart, error: String?) -> some View {
@@ -221,6 +254,103 @@ struct DetailsStep: View {
         // The menu's dismissal animation must not drag the label
         // through a crossfade.
         .transaction { $0.animation = nil }
+    }
+}
+
+/// The optional few words under a graded part: "Why?" and the seller's own
+/// answer, on one quiet line that scrolls sideways, as the site's input does.
+/// It used to grow to three lines, and a growing field slid under the Continue
+/// bar and the keyboard because nothing scrolled to follow it.
+///
+/// Deliberately lighter than `RewoundTextField`: eight of those, each with its
+/// own label line above the box, turned the condition card into a form of
+/// sixteen fields. This is a hairline box inside the card with the label
+/// riding inside it, and the counter only appears once the limit is close
+/// enough to matter.
+private struct ConditionNoteField: View {
+    let part: ConditionPart
+    @Binding var text: String
+    let error: String?
+
+    @FocusState private var focused: Bool
+    /// Show how much room is left once the note is within this many of the
+    /// limit. Earlier than that the count is noise on a field that is meant to
+    /// hold a few words.
+    private static let counterFrom = 20
+
+    private var remaining: Int { ConditionNote.limit - ConditionNote.length(text) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            // Top, not first-baseline: an EMPTY vertical field reports no
+            // baseline of its own, so its placeholder dropped a line below
+            // "Why?". Both are the same font, so their first lines meet at
+            // the top.
+            HStack(alignment: .top, spacing: Space.s) {
+                Text("Why?")
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.mutedForeground)
+                    .accessibilityHidden(true)
+
+                TextField(
+                    "",
+                    text: $text,
+                    prompt: Text(part.noteExample).foregroundStyle(Color.rewound.placeholder)
+                )
+                .font(RewoundType.label)
+                .foregroundStyle(Color.rewound.foreground)
+                .tint(Color.rewound.primary)
+                .textInputAutocapitalization(.sentences)
+                .submitLabel(.done)
+                .focused($focused)
+                .accessibilityLabel("\(part.label), why this grade, optional")
+                .accessibilityHint(error ?? "")
+                // A pasted note can carry line breaks; a note is one line of
+                // prose, so they come out and the field lets go.
+                .onChange(of: text) { _, typed in
+                    guard typed.contains(where: \.isNewline) else { return }
+                    text = typed.filter { !$0.isNewline }
+                    focused = false
+                }
+
+                if remaining <= Self.counterFrom {
+                    // A real minus sign once it is over: a hyphen reads as a
+                    // dash stuck to the number.
+                    Text(remaining < 0 ? "\u{2212}\(-remaining)" : "\(remaining)")
+                        .font(RewoundType.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(remaining < 0 ? Color.rewound.destructive : Color.rewound.mutedForeground)
+                        .accessibilityLabel(
+                            remaining < 0
+                                ? "\(-remaining) characters over"
+                                : "\(remaining) characters left"
+                        )
+                }
+            }
+            .padding(.horizontal, Space.m)
+            .padding(.vertical, Space.s + 2)
+            .frame(minHeight: 40)
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+            .onTapGesture { focused = true }
+
+            if let error {
+                Text(error)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
+                    .transition(.opacity)
+            }
+        }
+        .animation(Motion.easeFast, value: error)
+        .animation(Motion.easeFast, value: focused)
+    }
+
+    private var borderColor: Color {
+        if error != nil { return Color.rewound.destructive }
+        return focused ? Color.rewound.borderBright : Color.rewound.border
     }
 }
 

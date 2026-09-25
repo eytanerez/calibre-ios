@@ -322,7 +322,7 @@ struct CheckoutMethodStep: View {
             return "Wire price: \(total)"
         }
         guard let fee = model.cardFeeText else { return nil }
-        return "Save \(fee) versus paying by card"
+        return "Save \(fee)"
     }
 
     private var cardTotalText: String? {

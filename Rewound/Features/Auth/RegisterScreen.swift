@@ -247,12 +247,16 @@ struct RegisterScreen: View {
         VStack(alignment: .leading, spacing: Space.l) {
             RewoundTextField("Full name", text: $addressFullName, kind: .fullName)
 
-            RewoundTextField(
-                "Street address",
+            AddressStreetField(
+                label: "Street address",
                 text: $street,
-                placeholder: "123 Meridian Ave",
-                kind: .addressLine1
-            )
+                placeholder: "123 Meridian Ave"
+            ) { address in
+                city = address.city
+                state = address.state
+                zip = address.postalCode
+                country = "US"
+            }
 
             RewoundTextField("Apartment, suite (optional)", text: $apartment, kind: .addressLine2)
 

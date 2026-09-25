@@ -88,6 +88,31 @@ final class DesignSystemContractTests: XCTestCase {
         XCTAssertLessThan(hand?.xHeight ?? .infinity, sans?.xHeight ?? 0)
     }
 
+    /// Prices are serif, and Playfair's own digits are old-style: 4, 5, 7 and 9
+    /// drop below the line. Rewound Serif maps 0-9 to the lining glyphs. A
+    /// face swapped back to upstream Playfair would still register and still
+    /// look like Playfair, and every price would go uneven again.
+    @MainActor
+    func testEverySerifFaceDrawsLiningDigits() {
+        RewoundFonts.register()
+        let names = [
+            RewoundFonts.Name.serifRegular, RewoundFonts.Name.serifMedium,
+            RewoundFonts.Name.serifSemiBold, RewoundFonts.Name.serifBold,
+            RewoundFonts.Name.serifItalic, RewoundFonts.Name.serifSemiBoldItalic,
+        ]
+        for name in names {
+            guard let font = UIFont(name: name, size: 20) else {
+                XCTFail("\(name) did not register")
+                continue
+            }
+            let ctFont = font as CTFont
+            var characters: [UniChar] = Array("4".utf16)
+            var glyphs = [CGGlyph](repeating: 0, count: 1)
+            XCTAssertTrue(CTFontGetGlyphsForCharacters(ctFont, &characters, &glyphs, 1), name)
+            XCTAssertEqual(glyphs[0], CTFontGetGlyphWithName(ctFont, "four.lf" as CFString), name)
+        }
+    }
+
     /// Inverted on 2026-08-30. This asserted that the paper tile shipped in
     /// the bundle, and it guarded something real while the grain existed: a
     /// resource declaration that stops copying a file fails silently, and the

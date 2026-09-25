@@ -293,11 +293,18 @@ enum Analytics {
         ])
     }
 
+    /// `entryPoint` is where the form was opened: `requests` (the member's own
+    /// list), `home` (the band above the end of Home), `browse` (the results
+    /// grid's capsule), `brand` (a brand page's capsule) or `no_results` (the
+    /// band under "No watches match"). Those last four are where somebody
+    /// finds the watch is not here, so this is what says whether each way in
+    /// earns its place.
     static func watchRequestSubmitted(
         brand: String,
         reference: String?,
         watchReferenceID: String?,
-        hasBudget: Bool
+        hasBudget: Bool,
+        entryPoint: String? = nil
     ) {
         var properties: [String: Any] = [
             "brand": brand,
@@ -310,6 +317,7 @@ enum Analytics {
         if let watchReferenceID, !watchReferenceID.isEmpty {
             properties["watch_reference_id"] = watchReferenceID
         }
+        if let entryPoint, !entryPoint.isEmpty { properties["entry_point"] = entryPoint }
         send(.watchRequestSubmitted, properties)
     }
 

@@ -280,6 +280,7 @@ struct ListingWizardScreen: View {
         case .brand: model.brandError
         case .year: model.yearFieldError
         case .condition(let part): model.conditionError(part).map { "\(part.label). \($0)" }
+        case .conditionNote(let part): model.conditionNoteError(part).map { "\(part.label) note. \($0)" }
         case .price: model.priceFieldError
         }
         if let message { A11y.announce(message, priority: .high) }

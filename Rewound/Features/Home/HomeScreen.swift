@@ -30,6 +30,7 @@ struct HomeScreen: View {
     @State private var pushed: BrowseDestination?
     @State private var openedBite: BiteRoute?
     @State private var showCart = false
+    @State private var showRequest = false
     /// Set by a `CartSheet` callback (which has already called its own
     /// `dismiss()`); consumed by `.sheet(onDismiss:)` once SwiftUI reports
     /// the dismissal animation actually finished — no fixed delay to guess.
@@ -74,8 +75,8 @@ struct HomeScreen: View {
                 // arrived a piece at a time even though the data had landed
                 // together. Opacity only — an animated layout here slid the
                 // whole page up into place as the skeleton left.
-                ForEach(sections, id: \.self) { section in
-                    sectionView(section)
+                ForEach(slots, id: \.self) { slot in
+                    slotView(slot)
                         .modifier(RevealInPlace())
                 }
             }
@@ -115,6 +116,9 @@ struct HomeScreen: View {
         }
         .onChange(of: services.signals.recentlyViewed) {
             Task { await model?.loadRecentlyViewed() }
+        }
+        .sheet(isPresented: $showRequest) {
+            NewRequestSheet(entryPoint: .home)
         }
         .sheet(isPresented: $showCart, onDismiss: {
             if let destination = pendingPushAfterCartDismiss {
@@ -259,6 +263,22 @@ struct HomeScreen: View {
 
     private var sections: [HomeSection] {
         HomeRunningOrder.sections(audience: audience, feed: feedState, present: presentSections)
+    }
+
+    /// The running order as drawn, with the request band set in above the
+    /// end of the page (see `HomePageSlot.arrange`).
+    private var slots: [HomePageSlot] {
+        HomePageSlot.arrange(sections)
+    }
+
+    @ViewBuilder
+    private func slotView(_ slot: HomePageSlot) -> some View {
+        switch slot {
+        case .section(let section):
+            sectionView(section)
+        case .requestWatch:
+            RequestWatchBand { openRequest() }
+        }
     }
 
     @ViewBuilder
@@ -468,6 +488,14 @@ struct HomeScreen: View {
     }
 
     // MARK: - Actions
+
+    /// A guest signs in first; the form opens once the sign-in sheet has gone.
+    private func openRequest() {
+        let requestPresented = $showRequest
+        session.requireThenPresent("Sign in to request a watch") {
+            requestPresented.wrappedValue = true
+        }
+    }
 
     private func openBag() {
         let cartPresented = $showCart

@@ -148,6 +148,8 @@ struct ResultsScreen: View {
 /// `ResultsScreen` and `BrandScreen` (which locks the brand facet).
 struct ResultsContent: View {
     @Environment(AppServices.self) private var services
+    @Environment(AuthSession.self) private var session
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The buy grid collapses to one column once the reader has asked for
     /// accessibility text sizes — see `rewoundGridColumns`. Two cards side by
     /// side leave roughly 160pt of text, which at AX5 truncates the reference
@@ -165,6 +167,14 @@ struct ResultsContent: View {
     var header: AnyView?
 
     @State private var showFilters = false
+    /// The "Can't find it?" capsule: shown once the reader is past about a
+    /// screen of watches or at the end of the grid, hidden again near the top
+    /// (`RequestPromptZone`).
+    @State private var showsRequestPrompt = false
+    @State private var showRequest = false
+    /// Which of the grid's two ways in opened the form: the capsule, or the
+    /// band under "No watches match".
+    @State private var requestEntry: WatchRequestEntryPoint = .browse
     @Namespace private var zoomNamespace
 
     private var countLine: String {
@@ -191,7 +201,35 @@ struct ResultsContent: View {
 
                 grid
             }
-            .padding(.bottom, Space.xxl)
+            // Room under the last row for the request capsule, so the final
+            // cards and the next-page placeholder can scroll clear of it.
+            .padding(.bottom, Space.xxl + RequestWatchCapsule.clearance)
+        }
+        .onScrollGeometryChange(for: RequestPromptZone.self) { geometry in
+            RequestPromptZone.zone(geometry)
+        } action: { _, zone in
+            let shows = zone.shows(whenCurrently: showsRequestPrompt)
+            guard shows != showsRequestPrompt else { return }
+            withAnimation(reduceMotion ? .easeOut(duration: Motion.fast) : Motion.easeMedium) {
+                showsRequestPrompt = shows
+            }
+        }
+        // Over the scroll view, inside its safe area: above the tab bar here,
+        // and above the brand rail on a brand page, whose `safeAreaInset`
+        // this sits inside of.
+        .overlay(alignment: .bottom) {
+            if showsRequestPrompt, !model.listings.isEmpty {
+                RequestWatchCapsule { openRequest(from: lockedBrand == nil ? .browse : .brand) }
+                    .padding(.bottom, Space.m)
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .opacity.combined(with: .offset(y: Space.l))
+                    )
+            }
+        }
+        .sheet(isPresented: $showRequest) {
+            NewRequestSheet(prefill: requestPrefill, entryPoint: requestEntry)
         }
         .refreshable {
             await model.reload(refresh: true)
@@ -208,6 +246,26 @@ struct ResultsContent: View {
         .task {
             // The sheet's cascading pickers need metadata; usually warm.
             _ = try? await services.catalog.loadMetadata()
+        }
+    }
+
+    /// What the grid already knows about the watch: the brand page's brand or
+    /// the brand filter, and the search, split into brand and model or
+    /// reference against the catalog's own brand list.
+    private var requestPrefill: WatchRequestPrefill {
+        WatchRequestPrefill.browsing(
+            filters: model.filters,
+            lockedBrand: lockedBrand,
+            knownBrands: services.catalog.metadata?.options.byBrand.map(\.brand) ?? []
+        )
+    }
+
+    /// A guest signs in first; the form opens once the sign-in sheet has gone.
+    private func openRequest(from entry: WatchRequestEntryPoint) {
+        requestEntry = entry
+        let requestPresented = $showRequest
+        session.requireThenPresent("Sign in to request a watch") {
+            requestPresented.wrappedValue = true
         }
     }
 
@@ -314,15 +372,25 @@ struct ResultsContent: View {
                 await model.reload()
             }
         } else if model.listings.isEmpty {
-            EmptyState(
-                icon: "magnifyingglass",
-                title: "No watches match",
-                message: badgeCount > 0
-                    ? "Nothing in the market fits these filters right now. Loosen one or two and look again."
-                    : "Nothing in the market matches this search right now. Try another brand, model, or reference.",
-                actionTitle: badgeCount > 0 ? "Clear filters" : nil
-            ) {
-                Task { await model.apply(model.filters.cleared(keepBrand: lockedBrand != nil)) }
+            // Nothing here is the moment a request matters most, so the band
+            // Home closes on sits under the empty state, with the form
+            // started from the same search and filters. Clearing filters
+            // stays the empty state's own button: it is the cheaper thing to
+            // try first.
+            VStack(spacing: 0) {
+                EmptyState(
+                    icon: "magnifyingglass",
+                    title: "No watches match",
+                    message: badgeCount > 0
+                        ? "Nothing in the market fits these filters right now. Loosen one or two and look again."
+                        : "Nothing in the market matches this search right now. Try another brand, model, or reference.",
+                    actionTitle: badgeCount > 0 ? "Clear filters" : nil
+                ) {
+                    Task { await model.apply(model.filters.cleared(keepBrand: lockedBrand != nil)) }
+                }
+                RequestWatchBand(message: "Tell us the reference and our dealers will source it.") {
+                    openRequest(from: .noResults)
+                }
             }
         } else {
             LazyVGrid(

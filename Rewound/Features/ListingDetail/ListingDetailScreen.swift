@@ -400,7 +400,7 @@ struct ListingDetailScreen: View {
                 Text("Condition grading")
                     .font(RewoundType.sectionTitle)
                     .foregroundStyle(Color.rewound.foreground)
-                ConditionGradingCard(condition: condition)
+                ConditionGradingCard(condition: condition, notes: listing.conditionNotes ?? [:])
             }
         }
     }

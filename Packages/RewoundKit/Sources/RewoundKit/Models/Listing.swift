@@ -45,6 +45,20 @@ public struct Listing: Codable, Sendable, Identifiable {
     public let price: APIDecimal
     public let currency: String
     public let condition: ListingCondition?
+    /// The seller's own few words about a grade, keyed by the same part names
+    /// `condition` uses (`overall`, `case`, `dial`, `bezel`, `crystal`,
+    /// `bracelet`, `clasp`, `caseback`). Only parts with a note are present.
+    ///
+    /// A sibling of `condition`, never inside it: every client decodes
+    /// `condition` as a flat part -> grade map. Nil is a payload that does not
+    /// carry the key (the browse cards never do); `[:]` is a listing whose
+    /// seller wrote none.
+    ///
+    /// The keys are plain lowercase words, so neither key strategy touches
+    /// them: `condition_notes` itself is renamed to this property on the way
+    /// in and back on the way out, and `case` stays `case` both ways
+    /// (`ConditionNotesCodingTests`).
+    public let conditionNotes: [String: String]?
     public let boxPapers: Bool?
     /// The seller's three answers, separately.
     ///
@@ -97,7 +111,7 @@ public struct Listing: Codable, Sendable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id, listingNumber, sellerId, seller, variantId, title, brand, model
-        case referenceNumber, sellerSku, vaultWatchId, description, price, currency, condition, boxPapers
+        case referenceNumber, sellerSku, vaultWatchId, description, price, currency, condition, conditionNotes, boxPapers
         case boxIncluded, papersIncluded, bookletsIncluded, specs
         case productionYear, status, reviewStatus, sellerStatus, reviewEvents
         case estimatedShipping, metrics, returns, countryOfOrigin, htsCode

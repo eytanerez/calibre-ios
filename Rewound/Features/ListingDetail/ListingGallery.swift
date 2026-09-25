@@ -1,5 +1,6 @@
 import RewoundDesign
 import RewoundKit
+import ImageIO
 import Nuke
 import NukeUI
 import SwiftUI
@@ -125,11 +126,34 @@ struct LightboxContext: Identifiable {
     let page: Int
 }
 
+/// One picture the lightbox can show, and how its bytes may be fetched.
+///
+/// Two kinds, because they are two kinds of fetch (`VaultCoverSource` draws the
+/// same line): a public photograph goes through Nuke like every other picture
+/// in the app, and a member's own photograph is behind their session, so its
+/// bytes come from `PrivateMediaLoader` and never touch Nuke's disk cache.
+enum LightboxPicture: Equatable {
+    case remote(URL?)
+    case privateMedia(URL)
+
+    /// What the page loads, so a page handed the same picture again does not
+    /// start over.
+    var address: URL? {
+        switch self {
+        case .remote(let url): url
+        case .privateMedia(let url): url
+        }
+    }
+}
+
 /// Full-screen gallery: black stage, pinch-zoomable pages, drag-down to
 /// dismiss (when not zoomed), photo counter and a close button.
 struct GalleryLightbox: View {
-    let images: [URL?]
+    let pictures: [LightboxPicture]
     let startPage: Int
+    /// Reads `.privateMedia` pictures. Nil where every picture is public,
+    /// which is every listing.
+    let privateMedia: (any PrivateMediaFetching)?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -137,11 +161,19 @@ struct GalleryLightbox: View {
     @State private var dragOffset: CGFloat = 0
     @State private var isZoomed = false
 
+    /// A listing's photographs: all public.
     init(images: [URL?], startPage: Int) {
-        self.images = images
+        self.init(pictures: images.map(LightboxPicture.remote), startPage: startPage, privateMedia: nil)
+    }
+
+    init(pictures: [LightboxPicture], startPage: Int, privateMedia: (any PrivateMediaFetching)?) {
+        self.pictures = pictures
         self.startPage = startPage
+        self.privateMedia = privateMedia
         _page = State(initialValue: startPage)
     }
+
+    private var count: Int { pictures.count }
 
     var body: some View {
         ZStack {
@@ -150,10 +182,10 @@ struct GalleryLightbox: View {
                 .opacity(backdropOpacity)
 
             TabView(selection: $page) {
-                ForEach(Array(images.enumerated()), id: \.offset) { index, url in
-                    ZoomableRemoteImage(url: url, isZoomed: $isZoomed)
+                ForEach(Array(pictures.enumerated()), id: \.offset) { index, picture in
+                    ZoomableRemoteImage(picture: picture, privateMedia: privateMedia, isZoomed: $isZoomed)
                         .tag(index)
-                        .accessibilityLabel("Photo \(index + 1) of \(images.count)")
+                        .accessibilityLabel("Photo \(index + 1) of \(count)")
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -161,7 +193,7 @@ struct GalleryLightbox: View {
         }
         .overlay(alignment: .top) {
             HStack {
-                Text("\(page + 1) of \(images.count)")
+                Text("\(page + 1) of \(count)")
                     .font(RewoundType.label)
                     .foregroundStyle(Color(white: 1).opacity(0.85))
                     .monospacedDigit()
@@ -224,10 +256,11 @@ struct GalleryLightbox: View {
     }
 }
 
-/// UIScrollView-backed pinch-zoom for one remote photo (1×–4×, double-tap
+/// UIScrollView-backed pinch-zoom for one photo (1×–4×, double-tap
 /// toggles). Reports zoom state so the container can arbitrate gestures.
 private struct ZoomableRemoteImage: UIViewRepresentable {
-    let url: URL?
+    let picture: LightboxPicture
+    let privateMedia: (any PrivateMediaFetching)?
     @Binding var isZoomed: Bool
 
     func makeUIView(context: Context) -> ZoomScrollView {
@@ -242,7 +275,7 @@ private struct ZoomableRemoteImage: UIViewRepresentable {
         doubleTap.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTap)
 
-        context.coordinator.load(url, into: view)
+        context.coordinator.load(picture, privateMedia: privateMedia, into: view)
         return view
     }
 
@@ -252,7 +285,7 @@ private struct ZoomableRemoteImage: UIViewRepresentable {
                 isZoomed = zoomed
             }
         }
-        context.coordinator.load(url, into: view)
+        context.coordinator.load(picture, privateMedia: privateMedia, into: view)
     }
 
     static func dismantleUIView(_ uiView: ZoomScrollView, coordinator: Coordinator) {
@@ -268,21 +301,40 @@ private struct ZoomableRemoteImage: UIViewRepresentable {
         weak var scrollView: ZoomScrollView?
         var onZoomChange: ((Bool) -> Void)?
         private var imageTask: ImageTask?
+        private var privateTask: Task<Void, Never>?
         private var loadedURL: URL?
 
-        func load(_ url: URL?, into view: ZoomScrollView) {
+        /// The long side a private photograph is decoded to. Enough to zoom
+        /// into at 4× on a phone, and a fraction of a full-resolution decode of
+        /// a picture the member took on the phone now drawing it.
+        private static let privateDecodePixels = 2_400
+
+        func load(_ picture: LightboxPicture, privateMedia: (any PrivateMediaFetching)?, into view: ZoomScrollView) {
+            let url = picture.address
             guard loadedURL != url else { return }
-            imageTask?.cancel()
-            imageTask = nil
+            cancelImageLoad()
             loadedURL = url
             view.imageView.image = nil
 
-            guard let url else { return }
-            imageTask = ImagePipeline.shared.loadImage(with: ImageRequest(url: url)) { [weak self, weak view] result in
-                guard let self, self.loadedURL == url else { return }
-                self.imageTask = nil
-                if case .success(let response) = result {
-                    view?.imageView.image = response.image
+            switch picture {
+            case .remote(let url):
+                guard let url else { return }
+                imageTask = ImagePipeline.shared.loadImage(with: ImageRequest(url: url)) { [weak self, weak view] result in
+                    guard let self, self.loadedURL == url else { return }
+                    self.imageTask = nil
+                    if case .success(let response) = result {
+                        view?.imageView.image = response.image
+                    }
+                }
+            case .privateMedia(let url):
+                // No fetcher, no credential: a private picture is left blank
+                // rather than handed to a loader that would send none.
+                guard let privateMedia else { return }
+                privateTask = Task { [weak self, weak view] in
+                    guard let data = try? await privateMedia.data(for: url) else { return }
+                    let image = await Self.decode(data, maxPixels: Self.privateDecodePixels)
+                    guard !Task.isCancelled, let self, self.loadedURL == url else { return }
+                    view?.imageView.image = image
                 }
             }
         }
@@ -290,7 +342,25 @@ private struct ZoomableRemoteImage: UIViewRepresentable {
         func cancelImageLoad() {
             imageTask?.cancel()
             imageTask = nil
+            privateTask?.cancel()
+            privateTask = nil
             loadedURL = nil
+        }
+
+        private static func decode(_ data: Data, maxPixels: Int) async -> UIImage? {
+            await Task.detached(priority: .userInitiated) {
+                guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+                let options: [CFString: Any] = [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceShouldCacheImmediately: true,
+                    kCGImageSourceThumbnailMaxPixelSize: maxPixels,
+                ]
+                guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+                    return UIImage(data: data)
+                }
+                return UIImage(cgImage: cgImage)
+            }.value
         }
 
         func viewForZooming(in scrollView: UIScrollView) -> UIView? {

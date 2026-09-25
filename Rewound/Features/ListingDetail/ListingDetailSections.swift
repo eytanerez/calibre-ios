@@ -177,38 +177,40 @@ struct QuickSpecRow: View {
 
 // MARK: - Condition grading
 
-/// Per-part condition as status badges in a spec-list-styled card.
+/// Per-part condition as status badges in a spec-list-styled card, with the
+/// seller's own few words under any part they wrote about.
 struct ConditionGradingCard: View {
     let condition: ListingCondition
+    /// The seller's notes, keyed by the part names `condition` uses. Empty
+    /// when they wrote none, or when the payload did not carry them; a row
+    /// without a note is drawn exactly as it was before notes existed.
+    var notes: [String: String] = [:]
 
     /// All eight parts, in the order the sell form asks for them — with the
     /// overall grade first, because that is the one a buyer reads as the
     /// summary. A part the seller left blank is simply not a row: nothing
     /// here is filled in from a grade that belongs to something else.
-    private var rows: [(label: String, value: String)] {
+    private var rows: [(key: String, label: String, value: String)] {
         [
-            ("Overall", condition.overall),
-            ("Case", condition.caseCondition),
-            ("Dial", condition.dial),
-            ("Bezel", condition.bezel),
-            ("Crystal", condition.crystal),
-            ("Bracelet", condition.bracelet),
-            ("Clasp", condition.clasp),
-            ("Caseback", condition.caseback),
-        ].compactMap { label, value in
-            value.map { (label, $0) }
+            ("overall", "Overall", condition.overall),
+            ("case", "Case", condition.caseCondition),
+            ("dial", "Dial", condition.dial),
+            ("bezel", "Bezel", condition.bezel),
+            ("crystal", "Crystal", condition.crystal),
+            ("bracelet", "Bracelet", condition.bracelet),
+            ("clasp", "Clasp", condition.clasp),
+            ("caseback", "Caseback", condition.caseback),
+        ].compactMap { key, label, value in
+            value.map { (key, label, $0) }
         }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(rows.indices, id: \.self) { index in
-                HStack(spacing: Space.l) {
-                    Text(rows[index].label)
-                        .font(RewoundType.body)
-                        .foregroundStyle(Color.rewound.mutedForeground)
-                    Spacer(minLength: Space.l)
-                    StatusBadge(rows[index].value, tone: Self.tone(for: rows[index].value))
+                let row = rows[index]
+                ConditionGradeRow(label: row.label, grade: row.value, note: conditionNoteText(notes[row.key])) {
+                    StatusBadge(row.value, tone: Self.tone(for: row.value))
                 }
                 .padding(.horizontal, Space.l)
                 .padding(.vertical, Space.m)
@@ -234,6 +236,65 @@ struct ConditionGradingCard: View {
     static func tone(for grade: String) -> StatusBadge.Tone {
         .success
     }
+}
+
+/// One part of the watch: its name and its grade on one line, and under the
+/// name, when the seller wrote one, their own few words about why.
+///
+/// The note is quoted in the body face, as the site sets it: the quotation
+/// marks say these are the seller's words, not Rewound's (the grade is checked
+/// against the watch at authentication; the note is what the seller said).
+/// Eytan's call, 2026-09-25: plain text, never the hand, for these notes.
+/// It runs the full width of the row under the name rather than squeezing
+/// into the column beside the grade, so eighty characters take two lines,
+/// not four.
+struct ConditionGradeRow<Grade: View>: View {
+    let label: String
+    /// The grade as words, for the spoken row; the view draws `badge`.
+    let grade: String
+    let note: String?
+    @ViewBuilder let badge: () -> Grade
+
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            // Side by side until an accessibility size, where the grade sits
+            // under the part it belongs to — `SpecList`'s rule, kept so the
+            // review step's rows break where they did before notes existed.
+            if typeSize.isAccessibilitySize {
+                Text(label)
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
+                badge()
+            } else {
+                HStack(spacing: Space.l) {
+                    Text(label)
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.mutedForeground)
+                    Spacer(minLength: Space.l)
+                    badge()
+                }
+            }
+            if let note {
+                Text("\u{201C}\(note)\u{201D}")
+                    .font(RewoundType.body)
+                    .foregroundStyle(Color.rewound.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        // One swipe per part, and the note said as what it is.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(note.map { "\(label), \(grade). The seller says: \($0)" } ?? "\(label), \(grade)")
+    }
+}
+
+/// A seller's condition note worth drawing, or nil: a blank or whitespace-only
+/// note is no note, whatever the payload carried.
+func conditionNoteText(_ raw: String?) -> String? {
+    guard let text = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+    return text
 }
 
 // MARK: - Seller card

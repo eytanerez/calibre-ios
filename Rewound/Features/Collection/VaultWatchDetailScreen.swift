@@ -47,6 +47,8 @@ struct VaultWatchDetailScreen: View {
     @State private var loadFailed = false
     @State private var showGapSheet = false
     @State private var showPhotoSheet = false
+    /// The page the full-screen viewer opens on, while it is open.
+    @State private var lightbox: LightboxContext?
 
     /// The uppercase micro labels over the performance windows and the stat
     /// cells sit below caption2 on purpose, but the literal froze them at 10pt
@@ -97,6 +99,43 @@ struct VaultWatchDetailScreen: View {
                     // redraws on the answer rather than on a second fetch.
                     self.watch = self.watch?.applying(gallery)
                 }
+            }
+        }
+        .fullScreenCover(item: $lightbox) { context in
+            GalleryLightbox(
+                pictures: lightboxPictures,
+                startPage: context.page,
+                privateMedia: services.privateMedia
+            )
+        }
+    }
+
+    // MARK: - The pictures
+
+    /// Every picture of this watch the screen can draw, in the one order it
+    /// shows them. Recomputed from `watch` so a photograph the owner adds or
+    /// removes in the sheet is in (or out of) the pager the moment the sheet
+    /// answers; the seller's photographs come with the detail and do not move.
+    ///
+    /// Only addresses that resolve to a fetch are kept, so the pager never
+    /// holds a page that could only ever be blank.
+    private var pictures: [URL] {
+        guard let watch else { return [] }
+        let origin = services.client.baseURL
+        return watch
+            .viewingGallery(listingPhotos: detail?.listingPhotos ?? [])
+            .filter { VaultCoverSource.resolve($0, apiOrigin: origin) != nil }
+    }
+
+    /// The same pictures, each marked with how its bytes may be fetched: the
+    /// owner's own with their credential, everything else without it.
+    private var lightboxPictures: [LightboxPicture] {
+        let origin = services.client.baseURL
+        return pictures.compactMap { url in
+            switch VaultCoverSource.resolve(url, apiOrigin: origin) {
+            case .privateMedia(let url): .privateMedia(url)
+            case .link(let url): .remote(url)
+            case nil: nil
             }
         }
     }
@@ -177,10 +216,18 @@ struct VaultWatchDetailScreen: View {
 
     private func hero(_ watch: VaultWatch) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            GeometryReader { proxy in
-                VaultPhotoFrame(watch: watch, variant: .hero, side: proxy.size.width)
+            let pictures = self.pictures
+            if pictures.isEmpty {
+                GeometryReader { proxy in
+                    VaultPhotoFrame(watch: watch, variant: .hero, side: proxy.size.width)
+                }
+                .aspectRatio(1, contentMode: .fit)
+            } else {
+                VaultGalleryPager(watch: watch, pictures: pictures) { page in
+                    Haptics.shared.play(.press)
+                    lightbox = LightboxContext(page: page)
+                }
             }
-            .aspectRatio(1, contentMode: .fit)
 
             // One door to the gallery whether or not there is anything in it
             // yet. The old pair of titles was keyed to a single link column

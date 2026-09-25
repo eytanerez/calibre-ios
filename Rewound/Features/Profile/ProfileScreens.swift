@@ -242,7 +242,12 @@ private struct AddressForm: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
                     RewoundTextField("Full name", text: $fullName, kind: .fullName)
-                    RewoundTextField("Street", text: $line1, kind: .addressLine1)
+                    AddressStreetField(label: "Street", text: $line1) { address in
+                        city = address.city
+                        region = address.state
+                        postalCode = address.postalCode
+                        country = "US"
+                    }
                     RewoundTextField("Apt, suite (optional)", text: $line2, kind: .addressLine2)
                     RewoundTextField("City", text: $city, kind: .city)
                     HStack(spacing: Space.m) {
@@ -836,7 +841,7 @@ struct ChangePasswordScreen: View {
                         .disabled(sending)
                 } else {
                     Text(settingFirstPassword
-                        ? "You sign in with Google or Apple. Set a password to also sign in with your email."
+                        ? "You signed in with Google or Apple. Set a password to also sign in with your email."
                         : "We'll email you a link to choose a new password.")
                         .font(RewoundType.body)
                         .foregroundStyle(Color.rewound.mutedForeground)

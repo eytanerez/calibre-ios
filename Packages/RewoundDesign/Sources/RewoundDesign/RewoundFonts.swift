@@ -1,19 +1,23 @@
 import CoreText
 import SwiftUI
 
-/// Registers the bundled brand fonts (Playfair Display, Geist, Caveat) with
+/// Registers the bundled brand fonts (Rewound Serif, Geist, Caveat) with
 /// Core Text.
 /// Idempotent; call once at app launch. Token accessors also trigger it lazily
 /// so package previews work without app-side setup.
 public enum RewoundFonts {
     /// PostScript names as they exist inside the bundled TTFs.
     enum Name {
-        static let serifRegular = "PlayfairDisplay-Regular"
-        static let serifMedium = "PlayfairDisplay-Medium"
-        static let serifSemiBold = "PlayfairDisplay-SemiBold"
-        static let serifBold = "PlayfairDisplay-Bold"
-        static let serifItalic = "PlayfairDisplay-Italic"
-        static let serifSemiBoldItalic = "PlayfairDisplay-SemiBoldItalic"
+        // Rewound Serif is Playfair Display with lining figures as the default
+        // digits (Fonts/RewoundSerif-OFL.txt, Scripts/make-rewound-serif.py).
+        // Playfair's own figures are old-style, so "$12,450" read as uneven, and
+        // SwiftUI cannot switch on `lnum` without giving up Dynamic Type.
+        static let serifRegular = "RewoundSerif-Regular"
+        static let serifMedium = "RewoundSerif-Medium"
+        static let serifSemiBold = "RewoundSerif-SemiBold"
+        static let serifBold = "RewoundSerif-Bold"
+        static let serifItalic = "RewoundSerif-Italic"
+        static let serifSemiBoldItalic = "RewoundSerif-SemiBoldItalic"
         static let sansRegular = "Geist-Regular"
         static let sansMedium = "Geist-Medium"
         static let sansSemiBold = "Geist-SemiBold"

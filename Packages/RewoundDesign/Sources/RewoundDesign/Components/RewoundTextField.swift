@@ -99,6 +99,50 @@ public enum RewoundFieldKind: Sendable, Equatable {
         self == .password || self == .newPassword
     }
 
+    /// A country filled in as a name, as the two-letter code every country
+    /// field here stores; nil when `value` is not a country's name.
+    ///
+    /// The `.country` kind asks AutoFill for `.countryName`, the only country
+    /// content type iOS has, so a saved address fills this box with "United
+    /// States". Every form behind the kind then rejects it as not a two-letter
+    /// code. The field converts the name on its way in instead of dropping the
+    /// content type, so AutoFill still fills the country, in the form the
+    /// forms accept.
+    ///
+    /// Names in the reader's language and in English, plus the usual ways of
+    /// writing the US.
+    static func countryCode(forName value: String) -> String? {
+        let key = countryKey(value)
+        guard key.count > 2 else { return nil }
+        return countryCodesByName[key]
+    }
+
+    private static func countryKey(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+            .replacingOccurrences(of: ".", with: "")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+    }
+
+    private static let countryCodesByName: [String: String] = {
+        var codes: [String: String] = [:]
+        let locales = [Locale.current, Locale(identifier: "en_US")]
+        for region in Locale.Region.isoRegions {
+            let code = region.identifier
+            guard code.count == 2, code.allSatisfy({ $0.isASCII && $0.isLetter }) else { continue }
+            for locale in locales {
+                if let name = locale.localizedString(forRegionCode: code) {
+                    codes[countryKey(name)] = code
+                }
+            }
+        }
+        for alias in ["usa", "united states of america"] {
+            codes[alias] = "US"
+        }
+        return codes
+    }()
+
     private static var suppressesStrongPasswordAutofill: Bool {
         #if DEBUG
         return ProcessInfo.processInfo.arguments.contains("-uiTesting")
@@ -215,6 +259,17 @@ public struct RewoundTextField<Accessory: View>: View {
         }
         .animation(Motion.easeFast, value: error)
         .animation(Motion.easeFast, value: focused)
+        .onChange(of: text) { old, new in
+            // A country name that arrives all at once (AutoFill, a paste)
+            // becomes its two-letter code. Typing is left alone, one
+            // character at a time: converting "Niger" mid-word would take
+            // "Nigeria" away from the person still typing it. Rewritten in
+            // `onChange` rather than in the binding's setter, because a
+            // setter that changes the value leaves the name on screen.
+            guard kind == .country, new.count > old.count + 1,
+                  let code = RewoundFieldKind.countryCode(forName: new) else { return }
+            text = code
+        }
     }
 
     @ViewBuilder

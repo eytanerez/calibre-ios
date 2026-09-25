@@ -460,11 +460,19 @@ public struct VaultWatchDetail: Decodable, Equatable, Sendable, Identifiable {
     public let referenceRow: VaultReferenceRow?
     /// This watch already has a suggestion waiting on a reviewer.
     public let pendingSuggestion: Bool
+    /// Every photograph of the listing this watch was bought from, lead first.
+    ///
+    /// Read through `listing_id` when the detail is served, never copied onto
+    /// the row, so a watch bought before the key existed has them too. Empty
+    /// when the watch was not bought here, and empty on a server that predates
+    /// the key: both are "no seller's photographs to show", and neither is an
+    /// error.
+    public let listingPhotos: [VaultListingPhoto]
 
     public var id: String { watch.id }
 
     private enum CodingKeys: String, CodingKey {
-        case serviceRecords, referenceRow, pendingSuggestion
+        case serviceRecords, referenceRow, pendingSuggestion, listingPhotos
     }
 
     public init(from decoder: Decoder) throws {
@@ -473,6 +481,60 @@ public struct VaultWatchDetail: Decodable, Equatable, Sendable, Identifiable {
         serviceRecords = try container.decode([VaultServiceRecord].self, forKey: .serviceRecords)
         referenceRow = try container.decodeIfPresent(VaultReferenceRow.self, forKey: .referenceRow)
         pendingSuggestion = try container.decode(Bool.self, forKey: .pendingSuggestion)
+        listingPhotos = try container.decodeIfPresent([VaultListingPhoto].self, forKey: .listingPhotos) ?? []
+    }
+}
+
+/// One of the seller's photographs of the listing a vault watch was bought
+/// from. Public media, the same `/media/` form a listing page draws, so it is
+/// fetched like any other listing photograph and never with the member's
+/// credential.
+public struct VaultListingPhoto: Decodable, Equatable, Sendable {
+    public let url: MediaURL?
+    /// Measured by the server where it could; both or neither.
+    public let width: Int?
+    public let height: Int?
+
+    public init(url: MediaURL?, width: Int? = nil, height: Int? = nil) {
+        self.url = url
+        self.width = width
+        self.height = height
+    }
+}
+
+public extension VaultWatch {
+    /// Every picture of this watch, in the one order the detail shows them.
+    ///
+    /// The cover first, because it is the picture the owner already knows
+    /// this watch by (their own first photograph, or the seller's lead until
+    /// they have one). Then the owner's own photographs in the order they
+    /// arranged them, then the seller's photographs from the listing it was
+    /// bought from, lead first.
+    ///
+    /// The same picture is never shown twice. The cover IS one of the other
+    /// two most of the time (position zero of the gallery, or the listing's
+    /// lead carried as `photo_url`), so a list built without the check would
+    /// open on the same photograph twice in a row. Compared as absolute
+    /// addresses, after `MediaURL` has rebased `/media/` paths onto the API
+    /// origin, so a relative and an absolute spelling of one file are one.
+    ///
+    /// An owner's photograph whose object cannot be addressed (`url == nil`)
+    /// is left out rather than drawn as a blank page in the pager. Whether an
+    /// address is safe to FETCH is not decided here: `VaultCoverSource` does
+    /// that per picture, at draw time.
+    func viewingGallery(listingPhotos: [VaultListingPhoto]) -> [URL] {
+        var seen = Set<String>()
+        var out: [URL] = []
+        func add(_ url: URL?) {
+            guard let url else { return }
+            let key = url.absoluteString
+            guard !key.isEmpty, seen.insert(key).inserted else { return }
+            out.append(url)
+        }
+        add(coverUrl?.url)
+        gallery.forEach { add($0.url?.url) }
+        listingPhotos.forEach { add($0.url?.url) }
+        return out
     }
 }
 

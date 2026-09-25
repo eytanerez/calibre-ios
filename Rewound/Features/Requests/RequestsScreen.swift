@@ -66,7 +66,7 @@ struct RequestsScreen: View {
             }
         }
         .sheet(isPresented: $showNew) {
-            NewRequestSheet { created in
+            NewRequestSheet(entryPoint: .requests) { created in
                 requests.insert(created, at: 0)
             }
         }
@@ -181,108 +181,6 @@ private struct RequestRow: View {
         VStack(alignment: .leading, spacing: 1) {
             Text(label).font(RewoundType.caption).foregroundStyle(Color.rewound.placeholder)
             Text(value).font(RewoundType.label).foregroundStyle(Color.rewound.foreground)
-        }
-    }
-}
-
-private struct NewRequestSheet: View {
-    @Environment(AppServices.self) private var services
-    @Environment(ToastCenter.self) private var toasts
-    @Environment(\.dismiss) private var dismiss
-    let onCreate: (WatchRequest) -> Void
-
-    @State private var brand = ""
-    @State private var model = ""
-    @State private var reference = ""
-    @State private var year = ""
-    @State private var budget = ""
-    @State private var notes = ""
-    @State private var saving = false
-
-    var body: some View {
-        SheetScaffold(title: "Request a watch", detents: [.large]) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Tell us what you're hunting. Sellers see open requests and list against them.")
-                        .font(RewoundType.body).foregroundStyle(Color.rewound.mutedForeground)
-                    RewoundTextField("Brand (required)", text: $brand, kind: .sentence)
-                    RewoundTextField("Model", text: $model, kind: .sentence)
-                    RewoundTextField("Reference", text: $reference, kind: .reference)
-                    RewoundTextField(
-                        "Year",
-                        text: $year,
-                        error: yearError,
-                        kind: .integer
-                    )
-                    RewoundTextField(
-                        "Max budget (USD)",
-                        text: $budget,
-                        error: budgetError,
-                        kind: .money
-                    )
-                    .moneyFormatted($budget)
-                    RewoundTextField("Notes", text: $notes, kind: .sentence)
-                        .onChange(of: notes) { _, value in
-                            if value.count > 2_000 { notes = String(value.prefix(2_000)) }
-                        }
-                    Button(saving ? "Posting…" : "Post request") {
-                        Task { await submit() }
-                    }
-                    .buttonStyle(.rewound(.primary, fullWidth: true))
-                    .disabled(!canSubmit)
-                }
-                .padding(Space.margin)
-            }
-        }
-    }
-
-    private var yearError: String? {
-        InputValidation.isNonBlank(year) && InputValidation.productionYear(year) == nil
-            ? "Enter a 4-digit year, or leave it blank."
-            : nil
-    }
-
-    private var budgetError: String? {
-        InputValidation.isNonBlank(budget) && InputValidation.positiveMoney(budget) == nil
-            ? "Enter an amount greater than zero, or leave it blank."
-            : nil
-    }
-
-    private var canSubmit: Bool {
-        InputValidation.isNonBlank(brand)
-            && yearError == nil
-            && budgetError == nil
-            && !saving
-    }
-
-    private func submit() async {
-        guard canSubmit else { return }
-        saving = true
-        defer { saving = false }
-        do {
-            let created = try await services.seller.createWatchRequest(
-                brand: InputValidation.trimmed(brand),
-                model: InputValidation.isNonBlank(model) ? InputValidation.trimmed(model) : nil,
-                reference: InputValidation.isNonBlank(reference) ? InputValidation.trimmed(reference) : nil,
-                productionYear: InputValidation.productionYear(year),
-                maxBudget: InputValidation.positiveMoney(budget),
-                notes: InputValidation.isNonBlank(notes) ? InputValidation.trimmed(notes) : nil
-            )
-            onCreate(created)
-            // `watch_reference_id` has no client-side equivalent — the request
-            // carries a free-text reference, never a catalog match — so it
-            // is omitted rather than invented.
-            Analytics.watchRequestSubmitted(
-                brand: created.brand,
-                reference: created.reference,
-                watchReferenceID: nil,
-                hasBudget: created.maxBudget != nil
-            )
-            Haptics.shared.play(.success)
-            toasts.show(title: "Request posted", message: "We'll let you know when a match goes live.", tone: .success)
-            dismiss()
-        } catch {
-            toasts.show(title: "Couldn't post request", message: error.orderMessage, tone: .error)
         }
     }
 }

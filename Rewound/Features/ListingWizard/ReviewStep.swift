@@ -153,14 +153,42 @@ struct ReviewStep: View {
 
     // MARK: Condition
 
+    /// The eight grades as `SpecList` draws a row, with each note under its
+    /// part exactly as the listing will show it (`ConditionGradeRow`, in the
+    /// hand), so the seller reads their own words back before they go out.
     private var conditionGrid: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Text("Condition")
                 .font(RewoundType.sectionTitle)
                 .foregroundStyle(Color.rewound.foreground)
-            SpecList(ConditionPart.allCases.map { part in
-                (part.label, model.conditions[part] ?? "Not graded")
-            })
+            VStack(spacing: 0) {
+                ForEach(Array(ConditionPart.allCases.enumerated()), id: \.element) { index, part in
+                    let grade = model.conditions[part] ?? "Not graded"
+                    ConditionGradeRow(
+                        label: part.label,
+                        grade: grade,
+                        note: conditionNoteText(model.conditionNotes[part].map(ConditionNote.normalized))
+                    ) {
+                        Text(grade)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
+                    }
+                    .padding(.horizontal, Space.l)
+                    .padding(.vertical, Space.m)
+
+                    if index < ConditionPart.allCases.count - 1 {
+                        Rectangle()
+                            .fill(Color.rewound.border)
+                            .frame(height: 1)
+                    }
+                }
+            }
+            .background(Color.rewound.card)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
+            )
         }
     }
 
