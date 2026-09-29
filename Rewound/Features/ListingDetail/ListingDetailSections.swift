@@ -300,8 +300,9 @@ enum ListingDetailRows {
     ]
 }
 
-/// "The details": copper labels, bold values, firm lines between the rows,
-/// and a (?) beside every fact that is not self-explanatory.
+/// "The details": black labels with a copper (?) beside every fact that is not
+/// self-explanatory, bold values and firm lines between the rows (Eytan,
+/// 2026-09-29: copper labels were too much).
 ///
 /// Its own view rather than `SpecList`, which draws a dozen other tables in
 /// the app (prices, payouts, dates) that keep the quieter muted-label style
@@ -337,14 +338,15 @@ struct ListingDetailsTable: View {
         let label = HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
             Text(row.label)
                 .font(RewoundType.body)
-                .foregroundStyle(Color.rewound.primary)
+                .foregroundStyle(Color.rewound.foreground)
                 // The fact and its figure are one swipe, as `SpecList` reads
                 // them; the (?) beside it is the next.
                 .accessibilityLabel("\(row.label), \(row.value)")
             if let key = row.helpKey, let sentence = SpecHelp.sentences[key] {
                 InfoHint(
                     ListingDetailRows.questions[key] ?? "What does \(row.label.lowercased()) mean?",
-                    message: sentence
+                    message: sentence,
+                    copper: true
                 )
             }
         }

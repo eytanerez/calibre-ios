@@ -30,6 +30,7 @@ import SwiftUI
 /// knows what will be explained before they open it.
 public struct InfoHint<Explanation: View>: View {
     private let label: String
+    private let copper: Bool
     private let explanation: Explanation
 
     @State private var isPresented = false
@@ -47,9 +48,13 @@ public struct InfoHint<Explanation: View>: View {
     /// - Parameters:
     ///   - label: What VoiceOver says for the (?): the question it answers,
     ///     such as "What is a reference number?".
+    ///   - copper: Copper at rest, not only while open: for a table whose
+    ///     labels are black, where the (?) is the row's one warm mark (the
+    ///     listing's details, Eytan 2026-09-29).
     ///   - explanation: What the bubble shows.
-    public init(_ label: String, @ViewBuilder explanation: () -> Explanation) {
+    public init(_ label: String, copper: Bool = false, @ViewBuilder explanation: () -> Explanation) {
         self.label = label
+        self.copper = copper
         self.explanation = explanation()
     }
 
@@ -61,7 +66,7 @@ public struct InfoHint<Explanation: View>: View {
                 .font(.system(size: glyphSize, weight: .regular))
                 // Copper while its bubble is open, so it is plain which (?)
                 // the bubble belongs to.
-                .foregroundStyle(isPresented ? Color.rewound.primary : Color.rewound.mutedForeground)
+                .foregroundStyle(isPresented || copper ? Color.rewound.primary : Color.rewound.mutedForeground)
         }
         .buttonStyle(.plain)
         .a11yExpandTarget(currentSize: glyphSize)
@@ -80,8 +85,9 @@ public extension InfoHint where Explanation == InfoHintText {
     /// - Parameters:
     ///   - label: The question VoiceOver says for the (?).
     ///   - message: The explanation.
-    init(_ label: String, message: String) {
-        self.init(label) { InfoHintText(message) }
+    ///   - copper: Copper at rest; see the main initializer.
+    init(_ label: String, message: String, copper: Bool = false) {
+        self.init(label, copper: copper) { InfoHintText(message) }
     }
 }
 
