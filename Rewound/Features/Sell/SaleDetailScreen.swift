@@ -181,7 +181,7 @@ struct SaleDetailScreen: View {
                             path.append(.shippingDetails)
                         }
                         .buttonStyle(.rewound(.primary, fullWidth: true))
-                        Text("Tell us the box you are sending and Rewound buys the label \u{2014} prepaid, insured for the full sale price, to our authentication center. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
+                        Text("Tell us the box you are sending and Rewound buys the label to WPB Watch Co in West Palm Beach, Florida, prepaid and insured for the full sale price. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
                             .font(RewoundType.caption)
                             .foregroundStyle(Color.rewound.mutedForeground)
                             .multilineTextAlignment(.center)

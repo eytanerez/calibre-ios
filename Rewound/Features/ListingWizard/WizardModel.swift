@@ -4,6 +4,63 @@ import Foundation
 import Observation
 import SwiftUI
 
+// MARK: - What comes with the watch
+
+/// What comes with the watch, and which of it the seller has actually answered.
+///
+/// A toggle can only be on or off, but each of the three has a third state on
+/// the listing: nobody asked. The wizard saves as soon as a draft opens, so
+/// before this an older draft that had never asked about booklets wrote
+/// "not included" for a seller who never said so. Only an answer is sent:
+/// one the listing already held, one the seller toggled, or all three once
+/// the seller has seen the question and moved past it.
+struct WizardInclusions: Equatable {
+    private(set) var box = false
+    private(set) var papers = false
+    private(set) var booklets = false
+    private(set) var boxAnswered = false
+    private(set) var papersAnswered = false
+    private(set) var bookletsAnswered = false
+
+    /// From what the server holds. `box_papers` predates the split and meant
+    /// box AND papers, so a true answers both. A false answers neither: it was
+    /// written on every listing, asked or not.
+    init(boxPapers: Bool? = nil, box: Bool? = nil, papers: Bool? = nil, booklets: Bool? = nil) {
+        if boxPapers == true {
+            self.box = true
+            self.papers = true
+            boxAnswered = true
+            papersAnswered = true
+        }
+        apply(box: box, papers: papers, booklets: booklets)
+    }
+
+    /// Layers the answers that are present over what is already here.
+    mutating func apply(box: Bool?, papers: Bool?, booklets: Bool?) {
+        if let box { setBox(box) }
+        if let papers { setPapers(papers) }
+        if let booklets { setBooklets(booklets) }
+    }
+
+    mutating func setBox(_ value: Bool) { box = value; boxAnswered = true }
+    mutating func setPapers(_ value: Bool) { papers = value; papersAnswered = true }
+    mutating func setBooklets(_ value: Bool) { booklets = value; bookletsAnswered = true }
+
+    /// The seller has seen the three toggles and gone on: what is off is a no.
+    mutating func markSeen() {
+        boxAnswered = true
+        papersAnswered = true
+        bookletsAnswered = true
+    }
+
+    var boxAnswer: Bool? { boxAnswered ? box : nil }
+    var papersAnswer: Bool? { papersAnswered ? papers : nil }
+    var bookletsAnswer: Bool? { bookletsAnswered ? booklets : nil }
+    /// The derived summary the cards and facets read, only once both halves
+    /// are answered.
+    var boxPapersAnswer: Bool? { boxAnswered && papersAnswered ? box && papers : nil }
+}
+
 // MARK: - Wizard context (presentation identity)
 
 /// What the wizard opens onto — a fresh listing (optionally prefilled from a
@@ -352,10 +409,9 @@ final class WizardModel {
     // Until this build the wizard asked none of them, so `box_papers` was
     // false on every listing ever made through it — not because sellers said
     // no, but because nobody was asked. The bench then compares what arrives
-    // against that false.
-    var boxIncluded = false
-    var papersIncluded = false
-    var bookletsIncluded = false
+    // against that false. `WizardInclusions` keeps "nobody was asked" apart
+    // from "no".
+    var inclusions = WizardInclusions()
 
     // Photos
     var slots: [ListingImageCategory: WizardPhotoSlot] = [:]
@@ -668,13 +724,12 @@ final class WizardModel {
         // three, and that bit meant box AND papers. Booklets were never asked
         // about, so they start unticked rather than inheriting an answer — nil
         // is "nobody was asked", which must not be drawn as a seller's no.
-        if listing.boxPapers == true {
-            boxIncluded = true
-            papersIncluded = true
-        }
-        if let box = listing.boxIncluded { boxIncluded = box }
-        if let papers = listing.papersIncluded { papersIncluded = papers }
-        if let booklets = listing.bookletsIncluded { bookletsIncluded = booklets }
+        inclusions = WizardInclusions(
+            boxPapers: listing.boxPapers,
+            box: listing.boxIncluded,
+            papers: listing.papersIncluded,
+            booklets: listing.bookletsIncluded
+        )
         if let condition = listing.condition {
             conditions[.watchCase] = condition.caseCondition
             conditions[.dial] = condition.dial
@@ -719,9 +774,11 @@ final class WizardModel {
         vaultAskDeclined = snapshot.vaultAskDeclined ?? false
         // Absent means the draft predates the question; the listing's own
         // answer, already applied above, stands in that case.
-        if let box = snapshot.boxIncluded { boxIncluded = box }
-        if let papers = snapshot.papersIncluded { papersIncluded = papers }
-        if let booklets = snapshot.bookletsIncluded { bookletsIncluded = booklets }
+        inclusions.apply(
+            box: snapshot.boxIncluded,
+            papers: snapshot.papersIncluded,
+            booklets: snapshot.bookletsIncluded
+        )
         step = min(max(snapshot.step, 0), 3)
         fulfillRequestID = snapshot.fulfillRequestID
         for (key, grade) in snapshot.conditions {
@@ -849,13 +906,12 @@ final class WizardModel {
             conditionNotes: conditionNotesPayload,
             // What this column has always meant: both, not either. Kept as the
             // derived summary the cards and the search facets read.
-            boxPapers: boxIncluded && papersIncluded,
-            // ...and the three answers as the seller actually gave them. All
-            // three have columns and the server has always accepted them; the
-            // wizard collected them and then threw two away.
-            boxIncluded: boxIncluded,
-            papersIncluded: papersIncluded,
-            bookletsIncluded: bookletsIncluded,
+            boxPapers: inclusions.boxPapersAnswer,
+            // ...and the three answers as the seller actually gave them. An
+            // unanswered one is nil, left off the request, and writes nothing.
+            boxIncluded: inclusions.boxAnswer,
+            papersIncluded: inclusions.papersAnswer,
+            bookletsIncluded: inclusions.bookletsAnswer,
             productionYear: yearUnknown ? nil : InputValidation.productionYear(yearText),
             returnsAccepted: returnsAccepted,
             // The server requires a window when returns are accepted, and
@@ -937,9 +993,9 @@ final class WizardModel {
             returnsAccepted: returnsAccepted,
             returnWindowHours: returnWindowHours,
             vaultAskDeclined: vaultAskDeclined,
-            boxIncluded: boxIncluded,
-            papersIncluded: papersIncluded,
-            bookletsIncluded: bookletsIncluded,
+            boxIncluded: inclusions.boxAnswer,
+            papersIncluded: inclusions.papersAnswer,
+            bookletsIncluded: inclusions.bookletsAnswer,
             updatedAt: .now
         ))
     }

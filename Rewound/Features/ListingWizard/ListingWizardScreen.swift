@@ -292,6 +292,11 @@ struct ListingWizardScreen: View {
         withAnimation(Motion.easeMedium) {
             model.step = to
         }
+        // Leaving the Photos step forward is leaving "What comes with it"
+        // behind: the seller saw the three toggles, so what is off is a no.
+        if from <= 1, to > 1 {
+            model.inclusions.markSeen()
+        }
         model.fieldChanged()
         // Forward, with a draft on the server to keep: the fact the crown
         // winds on. Back is not an advance and a draft that does not exist

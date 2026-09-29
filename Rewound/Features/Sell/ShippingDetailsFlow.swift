@@ -99,7 +99,7 @@ struct ShippingDetailsFlow: View {
                 .font(RewoundType.body)
                 .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("It ships to our authentication center, insured for the full sale price, signature required.")
+            Text("It ships to WPB Watch Co in West Palm Beach, Florida, insured for the full sale price, signature required.")
                 .font(RewoundType.caption)
                 .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -485,17 +485,22 @@ struct LabelReadyScreen: View {
                 HStack(alignment: .top, spacing: Space.m) {
                     IconTile(systemName: "checkmark.shield")
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Rewound Authentication Center")
-                            .font(RewoundType.bodyMedium)
-                            .foregroundStyle(Color.rewound.foreground)
+                        ForEach(recipientLines, id: \.self) { line in
+                            Text(line)
+                                .font(RewoundType.bodyMedium)
+                                .foregroundStyle(Color.rewound.foreground)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         ForEach(addressLines, id: \.self) { line in
                             Text(line)
                                 .font(RewoundType.label)
                                 .foregroundStyle(Color.rewound.mutedForeground)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        Text("The label is pre-addressed — nothing to write.")
+                        Text("The label already carries this address. There is nothing to write.")
                             .font(RewoundType.caption)
                             .foregroundStyle(Color.rewound.mutedForeground)
+                            .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, Space.xs)
                     }
                     Spacer(minLength: 0)
@@ -505,14 +510,44 @@ struct LabelReadyScreen: View {
         }
     }
 
+    /// Who the label is addressed to, exactly as the server bought it.
+    ///
+    /// The server buys the label with `full_name` on the name line and
+    /// `company_name` on the company line (`ShippingClient._ifs_create_label`), and
+    /// serves the same dict here as `auth_center_address`. A seller copies this
+    /// card onto a box, so it prints what the label prints and never a name of
+    /// its own: this card used to say "Rewound Authentication Center", a name
+    /// that was on no label.
+    private var recipientLines: [String] {
+        guard let address = order.authCenterAddress else { return [] }
+        var lines: [String] = []
+        for name in [address.fullName, address.companyName] {
+            guard let name = name?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !name.isEmpty,
+                  !lines.contains(name) else { continue }
+            lines.append(name)
+        }
+        return lines
+    }
+
+    /// "1601 Forum Pl #1010" and "West Palm Beach, FL 33401": the street with
+    /// its unit, then city, state code and ZIP, the way a US label reads. The
+    /// server spells the state out ("Florida"), so it is shortened here.
     private var addressLines: [String] {
         guard let address = order.authCenterAddress else { return [] }
-        let cityLine = [address.city, address.region, address.postalCode]
+        let street = [address.line1, address.line2]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let region = USStateCode.code(for: address.region) ?? address.region
+        let stateAndZip = [region, address.postalCode]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let cityLine = [address.city?.trimmingCharacters(in: .whitespacesAndNewlines), stateAndZip]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
-        return [address.line1, address.line2, cityLine.isEmpty ? nil : cityLine]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
+        return [street, cityLine].filter { !$0.isEmpty }
     }
 }

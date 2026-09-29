@@ -175,7 +175,263 @@ struct QuickSpecRow: View {
     }
 }
 
+// MARK: - The details
+
+/// One row of "The details": what the fact is, this watch's answer, and the
+/// key of the explanation behind its (?), if it has one.
+struct ListingDetailRow: Equatable {
+    let label: String
+    let value: String
+    /// A key into `SpecHelp.sentences`, or nil for the two rows with no (?):
+    /// Brand and Model, which explain themselves (Eytan, 2026-09-29).
+    let helpKey: String?
+}
+
+enum ListingDetailRows {
+    /// Every row the details table prints for `listing`, in order.
+    static func rows(for listing: Listing) -> [ListingDetailRow] {
+        var rows: [ListingDetailRow] = []
+        if let brand = listing.brand { rows.append(.init(label: "Brand", value: brand, helpKey: nil)) }
+        if let model = listing.model { rows.append(.init(label: "Model", value: model, helpKey: nil)) }
+        if let reference = listing.referenceNumber {
+            rows.append(.init(label: "Reference", value: reference, helpKey: "reference"))
+        }
+        if let year = listing.productionYear {
+            rows.append(.init(label: "Year", value: String(year), helpKey: "year"))
+        }
+        // What came with the watch, as three answers where the seller gave
+        // three. These used to reach a buyer only as `Key: Value` lines parsed
+        // out of the description; they are columns now and are read as columns.
+        // Nil is "nobody was asked" and prints nothing — an unasked question
+        // must never read as a seller's "no".
+        let inclusions: [(label: String, value: Bool?, helpKey: String)] = [
+            ("Box", listing.boxIncluded, "box"),
+            ("Papers", listing.papersIncluded, "papers"),
+            ("Booklets", listing.bookletsIncluded, "booklets"),
+        ]
+        let answered = inclusions.compactMap { label, value, helpKey -> ListingDetailRow? in
+            guard let value else { return nil }
+            return .init(label: label, value: value ? "Included" : "Not included", helpKey: helpKey)
+        }
+        if answered.isEmpty {
+            // The single bit a listing made before the question was split
+            // carries, and all it can say.
+            if let boxPapers = listing.boxPapers {
+                rows.append(.init(
+                    label: "Box & papers",
+                    value: boxPapers ? "Full set" : "Watch only",
+                    helpKey: "box_papers"
+                ))
+            }
+        } else {
+            rows.append(contentsOf: answered)
+        }
+        // The catalog's own specs, merged with whatever this one watch
+        // overrides, straight off the payload.
+        //
+        // This used to read `ParsedDescription(listing.description).specs` —
+        // the seller's description, split on its colons — because the payload
+        // carried no specs at all and prose was the only thing there was to
+        // read. Which meant the app showed whichever facts a seller happened to
+        // type, in whatever words they used, and never the ten (now sixteen)
+        // fields Rewound actually keeps.
+        rows.append(contentsOf: specRows(listing.specs))
+        return rows
+    }
+
+    /// The catalog's spec rows, each carrying its spec key.
+    ///
+    /// `ListingSpecs.rows` owns the words and the units, so the table cannot
+    /// come to disagree with the storefront about them; it hands back labels
+    /// without keys, and `specKeyByLabel` puts the key back. A label that
+    /// misses the map still prints, only without a (?).
+    static func specRows(_ specs: ListingSpecs?) -> [ListingDetailRow] {
+        (specs?.rows ?? []).map { row in
+            ListingDetailRow(label: row.label, value: row.value, helpKey: specKeyByLabel[row.label])
+        }
+    }
+
+    /// `ListingSpecs.rows`' labels, back to the server's spec keys
+    /// (`REFERENCE_SPEC_FIELDS`), which is how `SpecHelp` is keyed.
+    /// `ListingDetailRowsTests` fails if a label is renamed there and not here.
+    static let specKeyByLabel: [String: String] = [
+        "Case material": "material",
+        "Bezel": "bezel",
+        "Glass": "glass",
+        "Case back": "back",
+        "Shape": "shape",
+        "Diameter": "diameter_mm",
+        "Finish": "finish",
+        "Dial": "dial",
+        "Indexes": "indexes",
+        "Hands": "hands",
+        "Movement": "movement",
+        "Calibre": "calibre",
+        "Bracelet": "bracelet",
+        "Thickness": "thickness_mm",
+        "Lug width": "lug_width_mm",
+        "Water resistance": "water_resistance_m",
+    ]
+
+    /// What VoiceOver says for each row's (?): the question it answers.
+    static let questions: [String: String] = [
+        "reference": "What is a reference number?",
+        "year": "What does the year mean?",
+        "material": "What is the case material?",
+        "bezel": "What is the bezel?",
+        "glass": "What is the glass?",
+        "back": "What is the case back?",
+        "shape": "What is the case shape?",
+        "diameter_mm": "What is the diameter?",
+        "finish": "What is the finish?",
+        "dial": "What is the dial?",
+        "indexes": "What are indexes?",
+        "hands": "What are the hands?",
+        "movement": "What is the movement?",
+        "calibre": "What is a calibre?",
+        "bracelet": "What is the bracelet?",
+        "thickness_mm": "What is the thickness?",
+        "lug_width_mm": "What is lug width?",
+        "water_resistance_m": "What is water resistance?",
+        "box": "What counts as the box?",
+        "papers": "What counts as papers?",
+        "booklets": "What counts as booklets?",
+        "box_papers": "What does box and papers mean?",
+    ]
+}
+
+/// "The details": copper labels, bold values, firm lines between the rows,
+/// and a (?) beside every fact that is not self-explanatory.
+///
+/// Its own view rather than `SpecList`, which draws a dozen other tables in
+/// the app (prices, payouts, dates) that keep the quieter muted-label style
+/// and have nothing to explain.
+struct ListingDetailsTable: View {
+    let rows: [ListingDetailRow]
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(rows.indices, id: \.self) { index in
+                row(rows[index])
+                    .padding(.horizontal, Space.l)
+                    .padding(.vertical, Space.m)
+
+                if index < rows.count - 1 {
+                    Rectangle()
+                        .fill(Color.rewound.borderBright)
+                        .frame(height: 1)
+                }
+            }
+        }
+        .background(Color.rewound.card)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                .strokeBorder(Color.rewound.borderBright, lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func row(_ row: ListingDetailRow) -> some View {
+        let label = HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+            Text(row.label)
+                .font(RewoundType.body)
+                .foregroundStyle(Color.rewound.primary)
+                // The fact and its figure are one swipe, as `SpecList` reads
+                // them; the (?) beside it is the next.
+                .accessibilityLabel("\(row.label), \(row.value)")
+            if let key = row.helpKey, let sentence = SpecHelp.sentences[key] {
+                InfoHint(
+                    ListingDetailRows.questions[key] ?? "What does \(row.label.lowercased()) mean?",
+                    message: sentence
+                )
+            }
+        }
+        let value = Text(row.value)
+            .font(RewoundType.bodySemiBold)
+            .foregroundStyle(Color.rewound.foreground)
+            .accessibilityHidden(true)
+
+        Group {
+            // `SpecList`'s rule: side by side until an accessibility size,
+            // where the value would be left a word of width, then stacked.
+            if !typeSize.isAccessibilitySize {
+                HStack(alignment: .firstTextBaseline, spacing: Space.l) {
+                    label
+                    Spacer(minLength: Space.l)
+                    value.multilineTextAlignment(.trailing)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    label
+                    value
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
 // MARK: - Condition grading
+
+/// The five grades and what each one means, always on show above a listing's
+/// Condition grading table and inside the sell form's (?) on its Condition
+/// heading. The words are `ConditionGrades`, shared with the site.
+///
+/// A grade column and a meaning column until an accessibility size, where the
+/// meaning is given the full width under its grade instead of a sliver of it.
+struct ConditionGradeDefinitionsView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private static var gradeFont: Font { RewoundType.sans(.semiBold, 13, relativeTo: .footnote) }
+    private static var meaningFont: Font { RewoundType.sans(.regular, 13, relativeTo: .footnote) }
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Space.m) {
+                ForEach(ConditionGrades.definitions, id: \.grade) { definition in
+                    VStack(alignment: .leading, spacing: 2) {
+                        gradeName(definition)
+                        meaning(definition)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: Space.m, verticalSpacing: Space.s) {
+                ForEach(ConditionGrades.definitions, id: \.grade) { definition in
+                    GridRow {
+                        gradeName(definition)
+                            // The column is as wide as "Very Good" and no
+                            // wider; a grade never breaks across two lines.
+                            .fixedSize()
+                        meaning(definition)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func gradeName(_ definition: ConditionGradeDefinition) -> some View {
+        Text(definition.grade)
+            .font(Self.gradeFont)
+            .foregroundStyle(Color.rewound.foreground)
+            // One swipe per grade, the grade and what it means together.
+            .accessibilityLabel("\(definition.grade): \(definition.description)")
+    }
+
+    private func meaning(_ definition: ConditionGradeDefinition) -> some View {
+        Text(definition.description)
+            .font(Self.meaningFont)
+            .foregroundStyle(Color.rewound.secondaryForeground)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityHidden(true)
+    }
+}
 
 /// Per-part condition as status badges in a spec-list-styled card, with the
 /// seller's own few words under any part they wrote about.
@@ -215,9 +471,10 @@ struct ConditionGradingCard: View {
                 .padding(.horizontal, Space.l)
                 .padding(.vertical, Space.m)
 
+                // The same firm line as "The details" beside it.
                 if index < rows.count - 1 {
                     Rectangle()
-                        .fill(Color.rewound.border)
+                        .fill(Color.rewound.borderBright)
                         .frame(height: 1)
                 }
             }
@@ -226,7 +483,7 @@ struct ConditionGradingCard: View {
         .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.rewound.border, lineWidth: 1)
+                .strokeBorder(Color.rewound.borderBright, lineWidth: 1)
         )
     }
 
@@ -359,22 +616,27 @@ struct SellerCard: View {
 
 // MARK: - Authentication info sheet
 
-/// Static editorial content behind the "Inspected at our authentication
-/// center" callout.
+/// Static editorial content behind the "Authenticated by Rewound" callout.
+///
+/// WPB Watch Co is named where the watch is examined, as everywhere a customer
+/// reads about it (Eytan, 2026-09-29): "WPB Watch Co, our authentication
+/// partner in West Palm Beach, Florida" the first time on this sheet, "WPB
+/// Watch Co" after. The "Authenticated by" title stays Rewound's, as on the
+/// report. Name and city only, and no credential the row does not hold.
 struct AuthenticationInfoSheet: View {
     var body: some View {
         SheetScaffold(title: "Inspected before it ships", detents: [.medium, .large]) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Every watch sold on Rewound travels to the authentication center before it travels to you. Nothing ships buyer-direct.")
+                    Text("Every watch sold on Rewound travels to WPB Watch Co, our authentication partner in West Palm Beach, Florida, before it travels to you. Nothing ships buyer-direct.")
                         .font(RewoundType.body)
                         .foregroundStyle(Color.rewound.secondaryForeground)
                         .lineSpacing(5)
 
                     infoRow(
                         icon: "checkmark.shield",
-                        title: "Authenticated by a specialist partner",
-                        message: "Movement, case, dial, and papers are examined against the reference's factory specification by a third-party authentication partner, under a 72-hour commitment from arrival to verdict."
+                        title: "Authenticated by Rewound",
+                        message: "Movement, case, dial, and papers are examined against the reference's factory specification, under a 72-hour commitment from arrival to verdict."
                     )
                     infoRow(
                         icon: "clock.badge.checkmark",
@@ -396,11 +658,11 @@ struct AuthenticationInfoSheet: View {
                         Text("If something is wrong")
                             .font(RewoundType.bodyMedium)
                             .foregroundStyle(Color.rewound.foreground)
-                        Text("If a watch is found to be counterfeit, authentication costs you nothing, you're refunded in full including the card fee, and the watch is destroyed — it cannot legally be returned to anyone.")
+                        Text("If a watch is found to be counterfeit, authentication costs you nothing, you're refunded in full including the card fee, and the watch is destroyed. It cannot legally be returned to anyone.")
                             .font(RewoundType.label)
                             .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("If a watch is genuine but not as described, your Rewound contact treats it as urgent and settles it case by case — either a partial refund, or the watch goes back.")
+                        Text("If a watch is genuine but not as described, your Rewound contact treats it as urgent and settles it case by case: either a partial refund, or the watch goes back.")
                             .font(RewoundType.label)
                             .foregroundStyle(Color.rewound.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)

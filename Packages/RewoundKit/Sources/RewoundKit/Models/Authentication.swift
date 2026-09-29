@@ -136,11 +136,11 @@ public struct OrderAuthentication: Codable, Sendable, Hashable {
     /// every other hold deliberately differ only in what they promise next.
     public var holdBody: String {
         if holdReason == "service" || serviceRecommended == true {
-            return "Our authentication center found something worth a second opinion on how this watch is running. "
+            return "WPB Watch Co in West Palm Beach, Florida found something worth a second opinion on how this watch is running. "
                 + "Nothing is decided and nothing has changed about your order. A person at Rewound is reviewing it "
                 + "and will write to you with what we found and what we suggest."
         }
-        return "Your watch is with our authentication center and a person at Rewound is reviewing it before it goes "
+        return "Your watch is with WPB Watch Co in West Palm Beach, Florida and a person at Rewound is reviewing it before it goes "
             + "any further. Nothing is decided yet. We will write to you with what we found, and you will be asked "
             + "before anything about your order changes."
     }

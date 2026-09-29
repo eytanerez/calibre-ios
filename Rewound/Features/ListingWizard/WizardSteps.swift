@@ -7,7 +7,6 @@ import SwiftUI
 
 struct DetailsStep: View {
     @Bindable var model: WizardModel
-    @State private var showGradeGuide = false
     @Environment(\.dynamicTypeSize) private var typeSize
     /// Width of "Very Good" at the label's font — the widest grade. Scaled,
     /// because a fixed 84pt column holds about two characters of an
@@ -49,28 +48,40 @@ struct DetailsStep: View {
                 model.fieldChanged()
             }
 
+            // A (?) where sellers get stuck and nowhere else: reference, stock
+            // number, year, the grades, returns and the photo angles. Brand,
+            // model and price get none (Eytan, 2026-09-29).
             VStack(alignment: .leading, spacing: Space.l) {
                 ListingCatalogField("Brand", text: $model.brand, level: .brands, error: model.brandError)
                     .id(WizardField.brand)
                     .onChange(of: model.brand) { _, _ in model.brandChanged() }
                 ListingCatalogField("Model", text: $model.model, level: .models, brand: model.brand, error: model.modelError)
                     .onChange(of: model.model) { _, _ in model.modelChanged() }
-                ListingCatalogField("Reference", text: $model.reference, level: .references, brand: model.brand, model: model.model, error: model.referenceError)
+                ListingCatalogField(
+                    "Reference",
+                    text: $model.reference,
+                    level: .references,
+                    brand: model.brand,
+                    model: model.model,
+                    error: model.referenceError,
+                    help: ("What is a reference number?", SellFieldHelp.reference)
+                )
                     .onChange(of: model.reference) { _, _ in model.referenceChanged() }
+                // The site's stock number: the same `seller_sku` column. What
+                // it is for, and that buyers never see it, is the (?); the
+                // caption that used to say it under the field went when the
+                // (?) arrived, rather than say it twice.
                 RewoundTextField(
                     "Seller SKU (optional)",
                     text: $model.sellerSku,
                     placeholder: "CAL-001",
                     kind: .reference
                 )
+                .fieldLabelHint("Seller SKU (optional)", "What is a seller SKU?", message: SellFieldHelp.stockNumber)
                 .onChange(of: model.sellerSku) { _, value in
                     if value.count > 64 { model.sellerSku = String(value.prefix(64)) }
                     model.fieldChanged()
                 }
-                Text("Your own shelf label, if you keep one. It has to be unique to this watch \u{2014} a bulk import matches on the SKU and nothing else. Buyers never see it.")
-                    .font(RewoundType.caption)
-                    .foregroundStyle(Color.rewound.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
                 Text("Unusual brands still go to review.")
                     .font(RewoundType.caption)
                     .foregroundStyle(Color.rewound.mutedForeground)
@@ -89,6 +100,9 @@ struct DetailsStep: View {
                     .id(WizardField.year)
                     .disabled(model.yearUnknown)
                     .opacity(model.yearUnknown ? 0.5 : 1)
+                    // After the fade, so the (?) stays readable and tappable
+                    // while the year itself is switched off.
+                    .fieldLabelHint("Year", "What year should I enter?", message: SellFieldHelp.year)
                     .onChange(of: model.yearText) { _, newValue in
                         let digits = String(newValue.filter(\.isNumber).prefix(4))
                         if digits != newValue {
@@ -106,17 +120,20 @@ struct DetailsStep: View {
             }
 
             VStack(alignment: .leading, spacing: Space.m) {
-                HStack(alignment: .firstTextBaseline) {
+                // The scale, and the five grades in the site's words. This
+                // replaces the "How we grade" sheet, which carried its own
+                // five definitions that the listing page did not share.
+                HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                     Text("Condition")
                         .font(RewoundType.sectionTitle)
                         .foregroundStyle(Color.rewound.foreground)
-                    Spacer()
-                    Button("How we grade") {
-                        showGradeGuide = true
+                    InfoHint("How does grading work?") {
+                        VStack(alignment: .leading, spacing: Space.m) {
+                            InfoHintText(SellFieldHelp.grades)
+                            ConditionGradeDefinitionsView()
+                        }
                     }
-                    .font(RewoundType.label)
-                    .foregroundStyle(Color.rewound.primary)
-                    .buttonStyle(PressableStyle())
+                    .accessibilityIdentifier("wizard.condition.help")
                 }
                 // Said once for all eight, so each row's field can carry a
                 // one-word label instead of "(optional)" eight times over.
@@ -137,9 +154,6 @@ struct DetailsStep: View {
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showGradeGuide) {
-            GradeGuideSheet()
         }
     }
 
@@ -166,8 +180,10 @@ struct DetailsStep: View {
                 }
             }
             .frame(minHeight: Space.touchTarget)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(part.label): \(model.conditions[part] ?? "not selected")")
+            // Two stops, not one: the grade menu, which says the part and its
+            // grade exactly as the whole row used to, then the part's (?). A
+            // combined row would have swallowed the (?) into the menu.
+            .accessibilityElement(children: .contain)
 
             if let error {
                 Text(error)
@@ -208,9 +224,17 @@ struct DetailsStep: View {
     }
 
     private func partLabel(_ part: ConditionPart, error: String?) -> some View {
-        Text(part.label)
-            .font(RewoundType.body)
-            .foregroundStyle(error == nil ? Color.rewound.mutedForeground : Color.rewound.destructive)
+        HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+            Text(part.label)
+                .font(RewoundType.body)
+                .foregroundStyle(error == nil ? Color.rewound.mutedForeground : Color.rewound.destructive)
+                // The grade menu says the part's name with its grade.
+                .accessibilityHidden(true)
+            if let help = SellFieldHelp.gradePart(part) {
+                InfoHint("What does the \(part.label.lowercased()) grade cover?", message: help)
+                    .accessibilityIdentifier("wizard.condition.\(part.rawValue).help")
+            }
+        }
     }
 
     private func gradeMenu(_ part: ConditionPart) -> some View {
@@ -254,6 +278,8 @@ struct DetailsStep: View {
         // The menu's dismissal animation must not drag the label
         // through a crossfade.
         .transaction { $0.animation = nil }
+        .accessibilityLabel("\(part.label): \(model.conditions[part] ?? "not selected")")
+        .accessibilitySortPriority(1)
     }
 }
 
@@ -354,57 +380,26 @@ private struct ConditionNoteField: View {
     }
 }
 
-/// "How we grade" — the five grades, in plain words.
-private struct GradeGuideSheet: View {
-    @Environment(\.dynamicTypeSize) private var typeSize
-    /// Width of the grade column. `StatusBadge` draws in `RewoundType.label`
-    /// (13pt relative to .footnote), so the reservation tracks the text it is
-    /// holding room for instead of staying 92pt while the badge triples.
-    @ScaledMetric(relativeTo: .footnote) private var badgeColumnWidth: CGFloat = 92
+// MARK: - A (?) beside a field's own label
 
-    private let grades: [(String, String)] = [
-        ("New", "Unworn, exactly as it left the boutique — stickers still on."),
-        ("Like New", "Worn a handful of times. No marks visible to the naked eye."),
-        ("Very Good", "Light hairlines you have to hunt for. Nothing through the finish."),
-        ("Good", "Honest wear — visible scratches or a small ding, all cosmetic."),
-        ("Worn", "Heavy wear that tells the watch's story. Fully functional."),
-    ]
-
-    var body: some View {
-        SheetScaffold(title: "How we grade", detents: [.medium, .large]) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Grade each part on its own — buyers trust listings that read honestly, and our watchmakers verify every grade at authentication.")
-                        .font(RewoundType.body)
-                        .foregroundStyle(Color.rewound.mutedForeground)
-                    ForEach(grades, id: \.0) { grade, meaning in
-                        // Side by side until the grade column would take most
-                        // of the sheet and leave its meaning a word a line —
-                        // then the grade simply sits above what it means.
-                        if typeSize.isAccessibilitySize {
-                            VStack(alignment: .leading, spacing: Space.s) {
-                                StatusBadge(grade, tone: .neutral)
-                                meaningLine(meaning)
-                            }
-                        } else {
-                            HStack(alignment: .firstTextBaseline, spacing: Space.m) {
-                                StatusBadge(grade, tone: .neutral)
-                                    .frame(width: badgeColumnWidth, alignment: .leading)
-                                meaningLine(meaning)
-                            }
-                        }
-                    }
-                }
-                .padding(.bottom, Space.xxl)
+private extension View {
+    /// Puts an `InfoHint` right after the label `RewoundTextField` draws above
+    /// its box, which has no slot of its own for one.
+    ///
+    /// The overlay lays the label's own words out again, invisibly and in the
+    /// label's own font (`RewoundType.label`, as `RewoundTextField` sets it),
+    /// so the (?) lands exactly where the label ends without the field's
+    /// layout moving at all. If that label's font ever changes, change it here.
+    func fieldLabelHint(_ fieldLabel: String, _ question: String, message: String) -> some View {
+        overlay(alignment: .topLeading) {
+            HStack(alignment: .center, spacing: Space.xs) {
+                Text(fieldLabel)
+                    .font(RewoundType.label)
+                    .hidden()
+                    .accessibilityHidden(true)
+                InfoHint(question, message: message)
             }
         }
-    }
-
-    private func meaningLine(_ meaning: String) -> some View {
-        Text(meaning)
-            .font(RewoundType.body)
-            .foregroundStyle(Color.rewound.foreground)
-            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -569,10 +564,14 @@ struct PhotosStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             VStack(alignment: .leading, spacing: Space.s) {
-                Text("Six shots, one story")
-                    .font(RewoundType.sectionTitle)
-                    .foregroundStyle(Color.rewound.foreground)
-                Text("Each photo uploads the moment you take it. Natural light, plain background — the watch does the talking.")
+                HStack(alignment: .firstTextBaseline, spacing: Space.s) {
+                    Text("Six shots, one story")
+                        .font(RewoundType.sectionTitle)
+                        .foregroundStyle(Color.rewound.foreground)
+                    InfoHint("What are the six photos for?", message: SellFieldHelp.photos)
+                        .accessibilityIdentifier("wizard.photos.help")
+                }
+                Text("Each photo uploads the moment you take it. Natural light, plain background: the watch does the talking.")
                     .font(RewoundType.body)
                     .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -637,22 +636,32 @@ struct PhotosStep: View {
                 Text("What comes with it")
                     .font(RewoundType.sectionTitle)
                     .foregroundStyle(Color.rewound.foreground)
-                Text("Our authentication center checks each of these against what actually arrives.")
+                // The step's first visible mention of the authenticator, so
+                // it carries the city (Eytan, 2026-09-29).
+                Text("WPB Watch Co in West Palm Beach, Florida, checks each of these against what actually arrives.")
                     .font(RewoundType.body)
                     .foregroundStyle(Color.rewound.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Toggle("Original box", isOn: $model.boxIncluded)
-            Toggle("Papers", isOn: $model.papersIncluded)
-            Toggle("Booklets", isOn: $model.bookletsIncluded)
+            // A toggle is an answer, so it goes through the setter that
+            // records one; see `WizardInclusions`.
+            Toggle("Original box", isOn: Binding(
+                get: { model.inclusions.box },
+                set: { model.inclusions.setBox($0); model.fieldChanged() }
+            ))
+            Toggle("Papers", isOn: Binding(
+                get: { model.inclusions.papers },
+                set: { model.inclusions.setPapers($0); model.fieldChanged() }
+            ))
+            Toggle("Booklets", isOn: Binding(
+                get: { model.inclusions.booklets },
+                set: { model.inclusions.setBooklets($0); model.fieldChanged() }
+            ))
         }
         .font(RewoundType.bodyMedium)
         .foregroundStyle(Color.rewound.foreground)
         .tint(Color.rewound.primary)
-        .onChange(of: model.boxIncluded) { _, _ in model.fieldChanged() }
-        .onChange(of: model.papersIncluded) { _, _ in model.fieldChanged() }
-        .onChange(of: model.bookletsIncluded) { _, _ in model.fieldChanged() }
     }
 
     private func slotCell(_ category: ListingImageCategory) -> some View {
@@ -701,11 +710,21 @@ struct PhotosStep: View {
                 }
             }
 
-            Text(category.label)
-                .font(RewoundType.caption)
-                .foregroundStyle(Color.rewound.mutedForeground)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
+            // The angle's name and its (?), which says what the shot has to
+            // show. Two stops for VoiceOver: the slot button above already
+            // says "Front photo".
+            HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                Text(category.label)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.mutedForeground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .accessibilityHidden(true)
+                if let help = SellFieldHelp.photoAngle(category) {
+                    InfoHint(photoHelpQuestion(category), message: help)
+                        .accessibilityIdentifier("listing-photo-\(category.rawValue)-help")
+                }
+            }
 
             if phase == .failed {
                 Button {
@@ -720,6 +739,14 @@ struct PhotosStep: View {
                 }
                 .buttonStyle(PressableStyle())
             }
+        }
+    }
+
+    /// What VoiceOver says for an angle's (?).
+    private func photoHelpQuestion(_ category: ListingImageCategory) -> String {
+        switch category {
+        case .fullSet: "What goes in the everything included photo?"
+        default: "What should the \(category.label.lowercased()) photo show?"
         }
     }
 
@@ -1034,9 +1061,13 @@ struct PriceStep: View {
     /// them — which is the real substance of the choice.
     private var returnsSection: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Text("Returns")
-                .font(RewoundType.sectionTitle)
-                .foregroundStyle(Color.rewound.foreground)
+            HStack(alignment: .firstTextBaseline, spacing: Space.s) {
+                Text("Returns")
+                    .font(RewoundType.sectionTitle)
+                    .foregroundStyle(Color.rewound.foreground)
+                InfoHint("How do returns work?", message: SellFieldHelp.returns)
+                    .accessibilityIdentifier("wizard.returns.help")
+            }
 
             SellCard {
                 VStack(alignment: .leading, spacing: Space.l) {
@@ -1116,14 +1147,18 @@ private struct ListingCatalogField: View {
     let brand: String
     let model: String
     let error: String?
+    /// A (?) after the label: the question VoiceOver says, and the answer.
+    let help: (question: String, message: String)?
     @FocusState private var focused: Bool
     @State private var response: CatalogCascadeResponse?
     @State private var failed = false
 
     init(_ label: String, text: Binding<String>, level: CatalogCascadeQuery.Level,
-         brand: String = "", model: String = "", error: String? = nil) {
+         brand: String = "", model: String = "", error: String? = nil,
+         help: (question: String, message: String)? = nil) {
         self.label = label; self._text = text; self.level = level
         self.brand = brand; self.model = model; self.error = error
+        self.help = help
     }
     private var query: CatalogCascadeQuery {
         CatalogCascadeQuery(level: level, brand: brand, model: model, text: text)
@@ -1132,8 +1167,14 @@ private struct ListingCatalogField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            Text(label).font(RewoundType.label).foregroundStyle(Color.rewound.secondaryForeground)
-                .accessibilityHidden(true)
+            HStack(alignment: .center, spacing: Space.xs) {
+                Text(label).font(RewoundType.label).foregroundStyle(Color.rewound.secondaryForeground)
+                    .accessibilityHidden(true)
+                if let help {
+                    InfoHint(help.question, message: help.message)
+                        .accessibilityIdentifier("listing.\(label.lowercased()).help")
+                }
+            }
             TextField(label, text: $text)
                 .font(RewoundType.body)
                 .textInputAutocapitalization(level == .references ? .characters : .words)

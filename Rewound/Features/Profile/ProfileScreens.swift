@@ -31,7 +31,7 @@ struct AboutScreen: View {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.s) {
                     RewoundWordmark(size: 32)
-                    Text("A marketplace for authenticated luxury watches. Every watch is inspected by our watchmakers before it reaches you.")
+                    Text("A marketplace for authenticated luxury watches. Every watch is inspected by WPB Watch Co in West Palm Beach, Florida before it reaches you.")
                         .font(RewoundType.body)
                         .foregroundStyle(Color.rewound.mutedForeground)
                 }

@@ -340,14 +340,14 @@ final class OrderStateTests: XCTestCase {
                 let arrived = try withReturn(state, scanned: scanned)
                 let reading = arrived.nextStep()
                 XCTAssertEqual(reading.actor, .rewound, state)
-                XCTAssertEqual(reading.headline, "Your return is with our authentication center", state)
-                XCTAssertEqual(reading.next, "We authenticate it again, then your refund is issued.", state)
+                XCTAssertEqual(reading.headline, "Your return is with WPB Watch Co in West Palm Beach, Florida", state)
+                XCTAssertEqual(reading.next, "WPB Watch Co authenticates it again, then your refund is issued.", state)
             }
         }
 
         // Still on the road, and still worded that way.
         let onTheRoad = try withReturn("in_transit", scanned: true)
-        XCTAssertEqual(onTheRoad.nextStep().headline, "Your return is on its way to us")
+        XCTAssertEqual(onTheRoad.nextStep().headline, "Your return is on its way to WPB Watch Co in West Palm Beach, Florida")
 
         // Not handed over yet: the buyer still owes the carrier a parcel.
         let owed = try withReturn("requested", scanned: false)

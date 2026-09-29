@@ -470,7 +470,7 @@ private struct CollectionWatchRow: View {
     }
 }
 
-/// "Authenticated by Rewound" — driven by the server's own flag, never by
+/// "Authenticated by Rewound", driven by the server's own flag, never by
 /// re-reading `source`.
 struct AuthenticatedBadge: View {
     var body: some View {

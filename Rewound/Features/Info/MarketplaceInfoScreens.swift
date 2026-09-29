@@ -70,13 +70,13 @@ struct MarketplaceGuideScreen: View {
             guideRow(
                 icon: "checkmark.shield",
                 title: "Every sale is authenticated",
-                message: "The seller ships to the authentication center first, where a third-party partner verifies the watch before it goes anywhere near the buyer."
+                message: "The seller ships the watch to WPB Watch Co, our authentication partner in West Palm Beach, Florida, which verifies it before it goes anywhere near the buyer."
             )
             divider
             guideRow(
                 icon: "shippingbox",
                 title: "It ships insured, on every leg",
-                message: "Every label requires a direct signature and is insured for the full sale price. Rewound buys the inbound label to the authentication center once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
+                message: "Every label requires a direct signature and is insured for the full sale price. Rewound buys the inbound label to WPB Watch Co once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
             )
         }
         .infoCard()
@@ -113,7 +113,7 @@ struct MarketplaceGuideScreen: View {
                 destinationRow(
                     icon: "checkmark.shield",
                     title: "Authentication",
-                    message: "What the partner checks, how long it takes, and what happens if a watch does not pass."
+                    message: "What WPB Watch Co checks, how long it takes, and what happens if a watch does not pass."
                 )
             }
             .buttonStyle(PressableStyle())
@@ -417,7 +417,7 @@ struct AuthenticationGuideScreen: View {
                 .font(RewoundType.title)
                 .foregroundStyle(Color.rewound.foreground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Every watch sold on Rewound travels to the authentication center before it travels to the buyer. The inspection is carried out by a third-party partner, not by us.")
+            Text("Every watch sold on Rewound travels to WPB Watch Co in West Palm Beach, Florida before it travels to the buyer. WPB Watch Co is a third-party partner, not part of Rewound, and the inspection is theirs.")
                 .font(RewoundType.body)
                 .foregroundStyle(Color.rewound.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -429,7 +429,7 @@ struct AuthenticationGuideScreen: View {
             checkRow(
                 icon: "checkmark.shield",
                 title: "Authenticity",
-                message: "The partner's watchmakers examine the movement, case, dial, and papers against the reference's factory specification."
+                message: "WPB Watch Co examines the movement, case, dial, and papers against the reference's factory specification."
             )
             divider
             checkRow(
@@ -575,7 +575,7 @@ struct ReturnsPolicyScreen: View {
             PolicyDivider()
             PolicyRow(
                 "Rewound generates the label",
-                "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to the authentication center and is re-authenticated before anything is refunded."
+                "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to WPB Watch Co in West Palm Beach, Florida and is re-authenticated before anything is refunded."
             )
         }
     }

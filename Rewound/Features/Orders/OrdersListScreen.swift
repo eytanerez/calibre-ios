@@ -252,11 +252,13 @@ struct OrderRow: View {
                 // The same sentence this order's own screen leads with, from
                 // the same function. What it replaces was keyed to the status
                 // word, so a row and the screen behind it could — and did —
-                // describe the same order differently.
+                // describe the same order differently. Never clipped: naming
+                // WPB Watch Co and its city made most of these longer than the
+                // two lines this used to allow.
                 Text(step.sentence)
                     .font(RewoundType.caption)
                     .foregroundStyle(Color.rewound.mutedForeground)
-                    .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                    .fixedSize(horizontal: false, vertical: true)
                 totalText
             }
             Spacer(minLength: 0)
@@ -367,8 +369,8 @@ extension Order {
         switch status {
         case .awaitingWire: "Complete your wire transfer to secure this watch."
         case .purchased: "Paid. The seller is preparing to ship it to authentication."
-        case .toAuth: "On its way to our authentication center."
-        case .authPass: "Authenticated by our watchmakers. Shipping to you next."
+        case .toAuth: "On its way to WPB Watch Co in West Palm Beach, Florida."
+        case .authPass: "Authenticated by Rewound. Shipping to you next."
         case .authFail: "We found an issue during authentication. Our team will follow up by email."
         case .toBuyer: "Shipped to you and on the way."
         case .delivered: "Delivered. We hope you love it."

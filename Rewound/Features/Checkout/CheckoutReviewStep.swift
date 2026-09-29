@@ -63,8 +63,8 @@ struct CheckoutReviewStep: View {
                 CalloutBand(
                     icon: "checkmark.shield",
                     message: model.isMultiItem
-                        ? "Every watch is inspected at the authentication center before it ships."
-                        : "Your watch is inspected at the authentication center before it ships."
+                        ? "Every watch is inspected by WPB Watch Co in West Palm Beach, Florida before it ships."
+                        : "Your watch is inspected by WPB Watch Co in West Palm Beach, Florida before it ships."
                 )
 
                 if let problem = model.paymentProblem {

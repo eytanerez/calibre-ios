@@ -178,7 +178,7 @@ struct SellGateScreen: View {
             stepArrow
             gateStep(icon: "camera", title: "List your watch", caption: "Six photos, one calm flow")
             stepArrow
-            gateStep(icon: "shippingbox", title: "Ship when it sells", caption: "Prepaid label to our vault")
+            gateStep(icon: "shippingbox", title: "Ship when it sells", caption: "Prepaid label to WPB Watch Co in West Palm Beach, Florida")
         }
     }
 

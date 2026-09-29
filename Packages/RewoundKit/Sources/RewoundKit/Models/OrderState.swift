@@ -130,11 +130,11 @@ public extension Order {
         case .labelBought:
             return "The seller has their label. Your watch is with them until they hand it to the carrier."
         case .inTransit:
-            return "With the carrier, on its way to our authentication center."
+            return "With the carrier, on its way to WPB Watch Co in West Palm Beach, Florida."
         case .deliveredUnconfirmed:
-            return "It has reached our authentication center and is waiting to be checked in by hand."
+            return "It has reached WPB Watch Co in West Palm Beach, Florida and is waiting to be checked in by hand."
         case .onTheBench:
-            return "On the bench at our authentication center."
+            return "On the bench at WPB Watch Co in West Palm Beach, Florida."
         }
     }
 
@@ -147,9 +147,9 @@ public extension Order {
         case .inTransit:
             return "The carrier has your watch and it is on its way to authentication."
         case .deliveredUnconfirmed:
-            return "Your watch has reached the authentication center and is waiting to be checked in by hand."
+            return "Your watch has reached WPB Watch Co in West Palm Beach, Florida and is waiting to be checked in by hand."
         case .onTheBench:
-            return "Your watch is on the bench at the authentication center."
+            return "Your watch is on the bench at WPB Watch Co in West Palm Beach, Florida."
         }
     }
 
@@ -233,7 +233,7 @@ public extension Order {
                     actor: .rewound,
                     headline: "We could not accept this return",
                     body: "The watch we received back did not pass verification, so no refund has been "
-                        + "issued. It is being held securely at our authentication center while we look "
+                        + "issued. It is being held securely at WPB Watch Co in West Palm Beach, Florida while we look "
                         + "into it.",
                     next: written.isEmpty
                         ? "Someone from Rewound will contact you directly about what happens next."
@@ -246,15 +246,15 @@ public extension Order {
             if let state = activeReturn.state, returnAtTheBench.contains(state) {
                 return OrderNextStep(
                     actor: .rewound,
-                    headline: "Your return is with our authentication center",
-                    next: "We authenticate it again, then your refund is issued."
+                    headline: "Your return is with WPB Watch Co in West Palm Beach, Florida",
+                    next: "WPB Watch Co authenticates it again, then your refund is issued."
                 )
             }
             if activeReturn.isInTransit {
                 return OrderNextStep(
                     actor: .rewound,
-                    headline: "Your return is on its way to us",
-                    next: "We authenticate it again when it lands, then your refund is issued."
+                    headline: "Your return is on its way to WPB Watch Co in West Palm Beach, Florida",
+                    next: "WPB Watch Co authenticates it again when it lands, then your refund is issued."
                 )
             }
             let by = OrderDay.dayAndTime(activeReturn.shipDeadlineAt)
@@ -304,7 +304,7 @@ public extension Order {
         case .toAuth:
             // The authored sentence, which is the only thing that tells the
             // three holders of a `to_auth` watch apart.
-            let headline = arrivalSummary ?? "Your watch is on its way to our authentication center."
+            let headline = arrivalSummary ?? "Your watch is on its way to WPB Watch Co in West Palm Beach, Florida."
             switch arrivalPhase {
             case .labelBought:
                 return OrderNextStep(
@@ -316,13 +316,13 @@ public extension Order {
                 return OrderNextStep(
                     actor: .rewound,
                     headline: headline,
-                    next: "We check every watch in by hand when it arrives."
+                    next: "WPB Watch Co checks every watch in by hand when it arrives."
                 )
             case .deliveredUnconfirmed, .onTheBench:
                 return OrderNextStep(
                     actor: .rewound,
                     headline: headline,
-                    next: verdictExpectedBy.map { "We expect to finish authenticating it by \($0)." }
+                    next: verdictExpectedBy.map { "We expect authentication to finish by \($0)." }
                         ?? "We will write to you as soon as it is authenticated."
                 )
             }
@@ -364,7 +364,7 @@ public extension Order {
             return OrderNextStep(
                 actor: .rewound,
                 headline: "This watch did not pass",
-                body: "Our authentication center could not authenticate it, so the sale is off. You are being "
+                body: "WPB Watch Co in West Palm Beach, Florida could not authenticate it, so the sale is off. You are being "
                     + "refunded in full, including the card processing fee, and you owe nothing.",
                 // What we found, here, rather than a promise to send it. This
                 // read "Your Rewound contact will write to you with what we
@@ -422,7 +422,7 @@ public extension Order {
     static let timelineStepNames = [
         "Order placed",
         "Shipped to authentication",
-        "At the authentication center",
+        "At WPB Watch Co",
         "Authentication",
         "Shipped to you",
         "Delivered",

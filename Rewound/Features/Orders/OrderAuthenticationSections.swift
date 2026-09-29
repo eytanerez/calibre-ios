@@ -124,7 +124,7 @@ struct AuthenticationReportRow: View {
     }
 
     private var subtitle: String {
-        var parts: [String] = ["What our authentication center found"]
+        var parts: [String] = ["What WPB Watch Co found"]
         if let version = reference?.version, version > 1 { parts.append("version \(version)") }
         return parts.joined(separator: " · ")
     }
@@ -275,7 +275,7 @@ struct AuthenticationReportScreen: View {
             parts.append("Issued \(issued.formatted(date: .abbreviated, time: .omitted))")
         }
         if report.version > 1 { parts.append("version \(report.version)") }
-        return parts.isEmpty ? "Filed by our authentication center" : parts.joined(separator: " · ")
+        return parts.isEmpty ? "Filed by WPB Watch Co in West Palm Beach, Florida" : parts.joined(separator: " · ")
     }
 
     /// Rewound stands behind the watch and has no filed document to open for
@@ -286,7 +286,7 @@ struct AuthenticationReportScreen: View {
             EmptyState(
                 icon: "doc.text.magnifyingglass",
                 title: "No filed report for this one",
-                message: "Rewound inspected this watch before it shipped, and there's no report document on file to open. Its Passport is the record of what has happened to it, and our team can tell you what the bench found."
+                message: "WPB Watch Co in West Palm Beach, Florida inspected this watch before it shipped, and there's no report document on file to open. Its Passport is the record of what has happened to it, and our team can tell you what WPB Watch Co found."
             )
             VStack(spacing: Space.m) {
                 // Ordinary pushes now. This is a page on the reader's own
@@ -750,7 +750,7 @@ struct AuthCaseCard: View {
 
             Text(
                 payload.summary
-                    ?? "Our authentication center found something that does not match how this watch was described. "
+                    ?? "WPB Watch Co found something that does not match how this watch was described. "
                     + "A person at Rewound is working out what should happen."
             )
             .font(RewoundType.body)

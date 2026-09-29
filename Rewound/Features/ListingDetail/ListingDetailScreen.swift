@@ -133,10 +133,13 @@ struct ListingDetailScreen: View {
                     buyBox(listing)
                     actionStack(listing)
 
+                    // Rewound authenticates; WPB Watch Co is where the watch is
+                    // examined, named with its city on the screen's first mention
+                    // (Eytan, 2026-09-29). Every "Authenticated by" says Rewound.
                     CalloutBand(
                         icon: "checkmark.shield",
                         title: "Authenticated by Rewound",
-                        message: "Inspected at our authentication center before it ships, with a 1-year mechanical warranty."
+                        message: "Examined at WPB Watch Co in West Palm Beach, Florida, before it ships, with a 1-year mechanical warranty."
                     ) {
                         showAuthenticationInfo = true
                     }
@@ -345,54 +348,19 @@ struct ListingDetailScreen: View {
         listing.status == .active || listing.status == .reserved
     }
 
+    /// Which rows print, and which carry a (?), is `ListingDetailRows`.
     private func specSection(_ listing: Listing) -> some View {
-        var rows: [(label: String, value: String)] = []
-        if let brand = listing.brand { rows.append(("Brand", brand)) }
-        if let model = listing.model { rows.append(("Model", model)) }
-        if let reference = listing.referenceNumber { rows.append(("Reference", reference)) }
-        if let year = listing.productionYear { rows.append(("Year", String(year))) }
-        // What came with the watch, as three answers where the seller gave
-        // three. These used to reach a buyer only as `Key: Value` lines parsed
-        // out of the description; they are columns now and are read as columns.
-        // Nil is "nobody was asked" and prints nothing — an unasked question
-        // must never read as a seller's "no".
-        let inclusions: [(String, Bool?)] = [
-            ("Box", listing.boxIncluded),
-            ("Papers", listing.papersIncluded),
-            ("Booklets", listing.bookletsIncluded),
-        ]
-        let answered = inclusions.compactMap { label, value -> (String, String)? in
-            guard let value else { return nil }
-            return (label, value ? "Included" : "Not included")
-        }
-        if answered.isEmpty {
-            // The single bit a listing made before the question was split
-            // carries, and all it can say.
-            if let boxPapers = listing.boxPapers {
-                rows.append(("Box & papers", boxPapers ? "Full set" : "Watch only"))
-            }
-        } else {
-            rows.append(contentsOf: answered)
-        }
-        // The catalog's own specs, merged with whatever this one watch
-        // overrides, straight off the payload.
-        //
-        // This used to read `ParsedDescription(listing.description).specs` —
-        // the seller's description, split on its colons — because the payload
-        // carried no specs at all and prose was the only thing there was to
-        // read. Which meant the app showed whichever facts a seller happened to
-        // type, in whatever words they used, and never the ten (now sixteen)
-        // fields Rewound actually keeps.
-        rows.append(contentsOf: listing.specs?.rows ?? [])
-
-        return VStack(alignment: .leading, spacing: Space.m) {
+        VStack(alignment: .leading, spacing: Space.m) {
             Text("The details")
                 .font(RewoundType.sectionTitle)
                 .foregroundStyle(Color.rewound.foreground)
-            SpecList(rows)
+            ListingDetailsTable(rows: ListingDetailRows.rows(for: listing))
         }
     }
 
+    /// The five grades are defined above the table, always on show: a buyer
+    /// reading "Very Good" beside the dial should not have to go looking for
+    /// what Very Good means (Eytan, 2026-09-29).
     @ViewBuilder
     private func conditionSection(_ listing: Listing) -> some View {
         if let condition = listing.condition {
@@ -400,6 +368,7 @@ struct ListingDetailScreen: View {
                 Text("Condition grading")
                     .font(RewoundType.sectionTitle)
                     .foregroundStyle(Color.rewound.foreground)
+                ConditionGradeDefinitionsView()
                 ConditionGradingCard(condition: condition, notes: listing.conditionNotes ?? [:])
             }
         }

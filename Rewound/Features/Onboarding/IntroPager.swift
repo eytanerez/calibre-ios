@@ -19,7 +19,7 @@ struct IntroPager: View {
         Panel(
             icons: ["checkmark.shield", "sparkle.magnifyingglass", "checkmark.seal"],
             headline: "Every watch,\nauthenticated.",
-            line: "Each piece is inspected in hand by our watchmakers before it ever reaches you."
+            line: "Each piece is inspected in hand by WPB Watch Co in West Palm Beach, Florida before it ever reaches you."
         ),
         Panel(
             icons: ["arrow.left.arrow.right", "creditcard", "shippingbox"],
