@@ -56,6 +56,7 @@ struct DetailsStep: View {
                     .id(WizardField.brand)
                     .onChange(of: model.brand) { _, _ in model.brandChanged() }
                 ListingCatalogField("Model", text: $model.model, level: .models, brand: model.brand, error: model.modelError)
+                    .id(WizardField.model)
                     .onChange(of: model.model) { _, _ in model.modelChanged() }
                 ListingCatalogField(
                     "Reference",
@@ -66,6 +67,7 @@ struct DetailsStep: View {
                     error: model.referenceError,
                     help: ("What is a reference number?", SellFieldHelp.reference)
                 )
+                    .id(WizardField.reference)
                     .onChange(of: model.reference) { _, _ in model.referenceChanged() }
                 // The site's stock number: the same `seller_sku` column. What
                 // it is for, and that buyers never see it, is the (?); the

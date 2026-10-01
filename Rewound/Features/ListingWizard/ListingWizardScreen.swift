@@ -278,6 +278,8 @@ struct ListingWizardScreen: View {
         guard let field else { return }
         let message: String? = switch field {
         case .brand: model.brandError
+        case .model: model.modelError
+        case .reference: model.referenceError
         case .year: model.yearFieldError
         case .condition(let part): model.conditionError(part).map { "\(part.label). \($0)" }
         case .conditionNote(let part): model.conditionNoteError(part).map { "\(part.label) note. \($0)" }

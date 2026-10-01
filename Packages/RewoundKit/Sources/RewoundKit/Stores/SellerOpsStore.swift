@@ -25,10 +25,13 @@ public final class SellerOpsStore {
     // MARK: - Connect onboarding
 
     /// Creates (or reuses) the seller's Connect account and returns an
-    /// AccountSession client secret for the Stripe Connect SDK. The SSN is
-    /// forwarded to Stripe for identity verification; the backend keeps only
-    /// a one-way fingerprint. Error codes: `ssn_required`,
-    /// `seller_onboarding_blocked`.
+    /// AccountSession client secret for the Stripe Connect SDK.
+    ///
+    /// `createAccount` must be true to create the first account: without it a
+    /// seller with no account gets 409 `connect_account_missing`, which keeps a
+    /// retried request from minting a second one. The backend no longer reads
+    /// `ssn` (identity is checked inside Stripe's own form); every caller sends
+    /// it empty. Other error code: `seller_onboarding_blocked`.
     public func connectAccountSession(
         ssn: String,
         createAccount: Bool = false

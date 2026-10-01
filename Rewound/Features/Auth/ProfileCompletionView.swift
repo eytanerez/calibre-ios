@@ -21,10 +21,12 @@ import SwiftUI
 /// * **Signing out is always possible.** A gate with no exit at all is a
 ///   trapped account, so the way out is the honest one rather than a hidden
 ///   "skip" that leaves the same hole.
-/// * **Only what is missing is asked for.** Every field is prefilled from the
-///   session, and a box that arrived full is a box the member can leave alone.
-///   The submit sends only what actually changed — the endpoint writes exactly
-///   what it is given.
+/// * **Only what is missing is asked for.** Every field but the username is
+///   prefilled from the session, and a box that arrived full is a box the
+///   member can leave alone. The username starts empty because one on file
+///   here was invented from the email at social sign-up; typing that handle
+///   back in is accepted as theirs. The submit sends only what actually
+///   changed — the endpoint writes exactly what it is given.
 ///
 /// Registering by email is two steps — who you are, then where watches ship
 /// (`RegisterScreen`). A social sign-in never passes through it, so those
@@ -399,6 +401,13 @@ struct ProfileCompletionView: View {
             usernameState = .invalid("Use 3–32 letters, numbers, or underscore.")
             return
         }
+        // The account's own handle, typed back in. The availability endpoint
+        // is unauthenticated, so for this one name it can only answer "already
+        // in use", and that held a member at this gate for keeping their own.
+        if Self.isCurrentUsername(trimmed, current: startingUser?.username) {
+            usernameState = .available("That's already your username.")
+            return
+        }
 
         usernameState = .checking
         let client = services.client
@@ -417,7 +426,7 @@ struct ProfileCompletionView: View {
                     : .unavailable(result.message)
             } catch {
                 guard !Task.isCancelled else { return }
-                usernameState = .unverified("We couldn't check that username right now — you can carry on.")
+                usernameState = .unverified("We couldn't check that username right now. You can carry on.")
             }
         }
     }
@@ -471,6 +480,13 @@ struct ProfileCompletionView: View {
     /// The backend's rule, checked here so a bad handle costs no round trip:
     /// lowercase letters, digits and underscore, three to thirty-two of them.
     /// The server stays the authority on whether it is *taken*.
+    /// Whether `candidate` is the username the account already holds, compared
+    /// the way the backend stores it: trimmed and lowercased.
+    static func isCurrentUsername(_ candidate: String, current: String?) -> Bool {
+        guard let current, InputValidation.isNonBlank(current) else { return false }
+        return InputValidation.trimmed(candidate).lowercased() == InputValidation.trimmed(current).lowercased()
+    }
+
     static func usernameProblem(_ raw: String) -> String? {
         let candidate = InputValidation.trimmed(raw).lowercased()
         guard !candidate.isEmpty else { return "Pick a username." }

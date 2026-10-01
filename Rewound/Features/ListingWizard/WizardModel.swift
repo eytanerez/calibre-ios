@@ -271,7 +271,7 @@ struct ListingPrefill: Equatable {
 /// Scroll anchors for the wizard's inputs, so pressing Continue can bring the
 /// first offending field into view.
 enum WizardField: Hashable {
-    case brand, year, condition(ConditionPart), conditionNote(ConditionPart), price
+    case brand, model, reference, year, condition(ConditionPart), conditionNote(ConditionPart), price
     case history(HistoryQuestion), historyNote, historyYear
 }
 
@@ -791,6 +791,8 @@ final class WizardModel {
         switch step {
         case 0:
             if brandError != nil { return .brand }
+            if modelError != nil { return .model }
+            if referenceError != nil { return .reference }
             if yearFieldError != nil { return .year }
             if let part = ConditionPart.allCases.first(where: { conditions[$0] == nil }) {
                 return .condition(part)

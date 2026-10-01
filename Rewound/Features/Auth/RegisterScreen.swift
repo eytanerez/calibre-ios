@@ -467,7 +467,7 @@ struct RegisterScreen: View {
                     : .unavailable(result.message)
             } catch {
                 guard !Task.isCancelled else { return }
-                usernameState = .unverified("We couldn't check that username right now — you can carry on.")
+                usernameState = .unverified("We couldn't check that username right now. You can carry on.")
             }
         }
     }

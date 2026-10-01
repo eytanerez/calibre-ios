@@ -124,7 +124,9 @@ public struct PayoutSetupStep: Equatable, Sendable {
 
     /// The single thing this step's button does.
     public enum Action: Equatable, Sendable {
-        /// Collect the SSN, then open Stripe's form for the first time.
+        /// Create the Connect account and open Stripe's form for the first
+        /// time. The name outlived the SSN step that used to come first; the
+        /// backend no longer asks for one (`create_account: true` instead).
         case collectSSN(title: String)
         /// Open the embedded form on an account that already exists.
         case openForm(title: String)
