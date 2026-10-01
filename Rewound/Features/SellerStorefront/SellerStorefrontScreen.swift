@@ -263,6 +263,9 @@ struct SellerStorefrontScreen: View {
                                 laneKey: "storefront",
                                 zoomNamespace: zoomNamespace
                             )
+                            // Row-tall, so every row of the card stays level
+                            // with its neighbour's (see `listingCardPinsPrice`).
+                            .frame(maxHeight: .infinity, alignment: .top)
                             .task {
                                 await inventory.loadMoreIfNeeded(current: listing)
                             }

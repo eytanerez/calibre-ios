@@ -173,9 +173,24 @@ struct SavedScreen: View {
             ) {
                 ForEach(items) { item in
                     savedCell(item)
+                        // Each cell as tall as its row's tallest, with the
+                        // price held at the bottom, as on every other grid.
+                        .frame(maxHeight: .infinity, alignment: .top)
                 }
             }
             .padding(Space.margin)
+            .environment(\.listingCardPinsPrice, true)
+            // The account summary a saved row carries sends no grade and no
+            // seller answers, so these cards hold no empty condition rows
+            // unless one of them actually has something to print.
+            .environment(\.listingCardHoldsConditionRows, holdsConditionRows)
+        }
+    }
+
+    private var holdsConditionRows: Bool {
+        items.contains { item in
+            let model = cardModel(for: item)
+            return model.condition != nil || model.partException != nil || !model.facts.isEmpty
         }
     }
 
@@ -270,14 +285,16 @@ struct SavedScreen: View {
     /// cannot.
     private func cardLabel(for item: WatchlistItem) -> String {
         let model = cardModel(for: item)
-        return [
+        return ([
             model.brand,
             model.title,
-            model.priceText,
             model.condition,
+            model.partException,
+        ] + model.facts.map { Optional($0) } + [
+            model.priceText,
             model.isVerifiedDealer ? "Verified dealer" : nil,
             item.listing?.unavailableBadge?.text,
-        ]
+        ])
         .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
         .filter { !$0.isEmpty }
         .joined(separator: ", ")
@@ -315,7 +332,7 @@ struct SavedScreen: View {
                 spacing: Space.xl
             ) {
                 ForEach(0..<4, id: \.self) { _ in
-                    ListingCardSkeleton()
+                    ListingCardSkeleton(showsCondition: false)
                 }
             }
             .padding(Space.margin)

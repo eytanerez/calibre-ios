@@ -240,14 +240,15 @@ extension Listing {
 
     var cardModel: ListingCardModel { cardModel(inCart: false) }
 
-    /// What VoiceOver reads for a card: the watch, its grade and the seller's
-    /// answers, any part graded apart, then the price.
+    /// What VoiceOver reads for a card, in the order the card prints it: the
+    /// watch, its grade, any part graded lower, the seller's answers, then
+    /// the price.
     var cardAccessibilityLabel: String {
         let card = cardModel
         return (
-            ["\(card.brand) \(card.title)", card.condition]
+            ["\(card.brand) \(card.title)", card.condition, card.partException]
                 + card.facts
-                + [card.partException, card.priceText]
+                + [card.priceText]
         )
         .compactMap { $0 }
         .joined(separator: ", ")

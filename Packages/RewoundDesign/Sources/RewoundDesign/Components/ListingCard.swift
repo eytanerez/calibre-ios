@@ -8,16 +8,16 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
     public let title: String
     public let reference: String?
     public let priceText: String
-    /// The overall grade, drawn as a small pill under the title block.
+    /// The overall grade, drawn as a small pill under the Ref. line.
     public let condition: String?
     /// The seller's answers worth a buyer's glance, in the contract's order
     /// (polish, originality, box): "Unpolished", "All original", "Full set".
-    /// Printed after the grade, joined with " · ", wrapping rather than ever
-    /// cut short. Empty prints nothing.
+    /// Printed on one line of their own under the grade, joined with " · ";
+    /// the line is held, empty, on a card with none.
     public let facts: [String]
-    /// "Bracelet: Good" when one graded part is worse than the overall grade,
+    /// "Bracelet: Worn" when one graded part is worse than the overall grade,
     /// "2 parts graded lower" when several are; nil when none is.
-    /// A warning-tinted chip under the facts.
+    /// A neutral outlined pill beside the grade pill.
     public let partException: String?
     public let watcherCount: Int?
     public let imageURL: URL?
@@ -84,7 +84,7 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
 }
 
 /// The overall grade as a small pill on the page ground, where a listing
-/// card's text block prints it: "Like New", ahead of the card's facts.
+/// card's text block prints it: "Like New", first on the condition row.
 ///
 /// Not `ConditionPill`, which is the frosted plate that rides on a photograph.
 /// This one sits on the card's own ground, so it wears the accent fill rather
@@ -108,77 +108,151 @@ public struct GradePill: View {
     }
 }
 
-/// "Bracelet: Good" when a part of the watch was graded apart from the whole,
-/// in the warning tint with an info mark: the one thing on a card a buyer
-/// should read before they tap.
+/// "Bracelet: Worn" when one part of the watch was graded below the whole,
+/// "2 parts graded lower" when several were: a neutral outlined pill beside
+/// the grade pill (Option D, 2026-10-01).
 ///
-/// Wraps rather than truncating; the corner is the chip radius, not a capsule,
-/// so a second line still looks like the same chip.
+/// Neutral on purpose. A part graded lower is something to read, not an
+/// alarm, so it wears the hairline border and the page's own ink, never the
+/// warning tint; the info mark is the only thing that says "there is more on
+/// the listing".
 public struct PartExceptionChip: View {
     let text: String
+    @ScaledMetric(relativeTo: .caption2) private var iconSize: CGFloat = 10
 
     public init(_ text: String) {
         self.text = text
     }
 
     public var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+        HStack(spacing: 3) {
             Image(systemName: "info.circle")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: iconSize, weight: .medium))
+                .foregroundStyle(Color.rewound.mutedForeground)
                 .accessibilityHidden(true)
             Text(text)
-                .font(RewoundType.sans(.semiBold, 12, relativeTo: .caption))
+                .font(RewoundType.sans(.medium, 11, relativeTo: .caption2))
+                .foregroundStyle(Color.rewound.foreground)
+                // Never an ellipsis. One line at every size this card is
+                // drawn at; at an accessibility size, a second line rather
+                // than a cut.
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .foregroundStyle(Color.rewound.warning)
-        .padding(.horizontal, Space.s)
-        .padding(.vertical, 3)
-        .background(
-            Color.rewound.warning.opacity(0.12),
-            in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous)
-        )
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2)
+        .overlay(Capsule().strokeBorder(Color.rewound.border, lineWidth: 1))
         .accessibilityElement(children: .combine)
     }
 }
 
-/// The grade pill and the facts after it, on as many lines as they need.
+/// The grade pill, and the outlined part pill beside it when a part was graded
+/// below the whole: the first of a listing card's two condition rows.
 ///
-/// Each fact is its own piece so a line breaks between facts, never inside
-/// one; the separator rides at the end of the fact before it.
-public struct GradeFactsLine: View {
+/// The pair sits on one line when the card is wide enough for both and the
+/// part pill takes the next line when it is not ("Very Good" beside "2 parts
+/// graded lower" is ~218pt, and a shelf card's text column is 164pt). Neither
+/// pill is ever squeezed or cut.
+///
+/// The row is never absent: a card with no grade holds the grade pill's height
+/// with a zero-opacity twin hidden from VoiceOver, the same way the card holds
+/// its Ref. line, so a shelf's condition rows stand on one line.
+public struct CardConditionRow: View {
     let grade: String?
-    let facts: [String]
-    let font: Font
+    let part: String?
+    /// Off on a surface that is not a shelf (the swipe deck, a list row),
+    /// where an empty row would only be a gap.
+    let reserves: Bool
 
-    public init(grade: String?, facts: [String], font: Font = RewoundType.caption) {
+    public init(grade: String?, part: String?, reserves: Bool = true) {
         self.grade = grade
-        self.facts = facts
-        self.font = font
+        self.part = part
+        self.reserves = reserves
     }
 
     public var body: some View {
-        WrapLayout(spacing: Space.xs + 2, lineSpacing: Space.xs) {
-            if let grade {
-                GradePill(grade)
+        ZStack(alignment: .topLeading) {
+            if reserves {
+                GradePill("Very Good")
+                    .hidden()
+                    .accessibilityHidden(true)
             }
-            ForEach(Array(facts.enumerated()), id: \.offset) { index, fact in
-                Text(index < facts.count - 1 ? "\(fact) \u{00B7}" : fact)
-                    .font(font)
-                    .foregroundStyle(Color.rewound.secondaryForeground)
-                    .fixedSize(horizontal: false, vertical: true)
+            if grade != nil || part != nil {
+                WrapLayout(spacing: 6, lineSpacing: Space.xs) {
+                    // Pills of two type sizes share a line by their centres,
+                    // not their baselines, so neither sits higher than the
+                    // other.
+                    if let grade {
+                        GradePill(grade)
+                            .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
+                    }
+                    if let part {
+                        PartExceptionChip(part)
+                            .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel([grade, part].compactMap { $0 }.joined(separator: ", "))
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(([grade].compactMap { $0 } + facts).joined(separator: ", "))
+    }
+}
+
+/// The seller's answers on one line, in the contract's order and joined with
+/// " · ": "Unpolished · All original · Full set". The second condition row.
+///
+/// One line at every non-accessibility size: the whole run shrinks (to 0.75
+/// of the caption, the same floor family as the Ref. line) before any fact
+/// could be cut, and nothing here can produce an ellipsis. The longest run
+/// the contract can produce is 176pt at full size against a 164pt shelf
+/// column. Above the accessibility threshold the limit lifts and the run
+/// wraps instead.
+///
+/// A card with no answers holds the line anyway (`reserves`), so its price
+/// stands level with a neighbour that has three.
+public struct CardFactsLine: View {
+    let facts: [String]
+    let font: Font
+    let reserves: Bool
+
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    public init(facts: [String], font: Font = RewoundType.caption, reserves: Bool = true) {
+        self.facts = facts
+        self.font = font
+        self.reserves = reserves
+    }
+
+    public var body: some View {
+        if reserves || !facts.isEmpty {
+            SteadyLine(font: font) {
+                Text(facts.isEmpty ? "Ag" : facts.joined(separator: " \u{00B7} "))
+                    .font(font)
+                    .foregroundStyle(Color.rewound.mutedForeground)
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    .minimumScaleFactor(0.75)
+                    .opacity(facts.isEmpty ? 0 : 1)
+                    .accessibilityHidden(facts.isEmpty)
+                    .accessibilityLabel(facts.joined(separator: ", "))
+            }
+        }
     }
 }
 
 extension EnvironmentValues {
     /// Set by a shelf or grid that gives each of its cards the height of the
-    /// tallest one: the card then holds its price at the bottom, so prices
-    /// stay level whatever the facts and chips above them come to. Off by
-    /// default, where a card is exactly as tall as its content.
+    /// tallest one: the card then takes the extra height between its two
+    /// condition rows, so a part pill that needed a second line on one card
+    /// moves nothing on its neighbours (facts, reason and price stay level).
+    /// Off by default, where a card is exactly as tall as its content.
     @Entry public var listingCardPinsPrice: Bool = false
+
+    /// Whether a card holds its two condition rows (the grade row and the
+    /// facts row) when it has nothing to put in them. On by default, which is
+    /// what keeps a shelf's rows level card to card. A surface whose data can
+    /// never carry a grade or facts (the Saved grid, fed by the account
+    /// summary, which sends neither) turns it off rather than printing two
+    /// empty lines under every watch.
+    @Entry public var listingCardHoldsConditionRows: Bool = true
 }
 
 /// The dealer mark: a verified business is behind this listing. Small,
@@ -287,14 +361,18 @@ private struct SteadyReasonSlot<Content: View>: View {
 ///     BRAND                                          year
 ///     Model name
 ///     Ref. 0000000
-///     (Like New) Unpolished · All original · Full set
-///     [ ⓘ Bracelet: Good ]
+///     (Like New) (ⓘ Bracelet: Worn)
+///     Unpolished · All original · Full set
 ///     [ reason, when supplied — its slot held for the whole shelf ]
 ///     $ price                        [ verified-dealer chip ]
 ///
 /// The grade left the photograph for the line under the title block on
-/// 2026-09-30 (the condition card contracts, Part D): it now leads the
-/// seller's answers, and a part graded apart from the whole follows it.
+/// 2026-09-30 (the condition card contracts, Part D). Its layout is Eytan's
+/// Option D (2026-10-01): the grade pill with a neutral outlined pill beside
+/// it when a part was graded lower, then the seller's facts on a line of
+/// their own. Every row is held on every card, so on a shelf each row stands
+/// on the same line as its neighbours' whatever is in it: "one has a bigger
+/// title than the other, still line everything up".
 ///
 /// The dealer mark sits on the price row rather than on a line of its own —
 /// Eytan, 2026-08-30: *"make the dealer mark on the right of the listing cards
@@ -312,6 +390,7 @@ public struct ListingCard<ImageContent: View>: View {
 
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.listingCardPinsPrice) private var pinsPrice
+    @Environment(\.listingCardHoldsConditionRows) private var holdsConditionRows
 
     public init(model: ListingCardModel, @ViewBuilder image: @escaping (URL?) -> ImageContent) {
         self.model = model
@@ -433,18 +512,33 @@ public struct ListingCard<ImageContent: View>: View {
                         .opacity(model.reference == nil ? 0 : 1)
                         .accessibilityHidden(model.reference == nil)
                 }
-                // The grade and the seller's answers, then any part graded
-                // apart from the whole (contracts, 2026-09-30, Part D). Both
-                // wrap rather than truncate, so a card that carries them can
-                // run taller than one that does not; a shelf that wants its
-                // prices level sets `listingCardPinsPrice`.
-                if model.condition != nil || !model.facts.isEmpty {
-                    GradeFactsLine(grade: model.condition, facts: model.facts)
-                        .padding(.top, 3)
+                // The condition row: the grade pill, and the outlined part
+                // pill beside it (or under it, when the two do not fit one
+                // line). Held at the grade pill's height on a card with
+                // neither.
+                if holdsConditionRows || model.condition != nil || model.partException != nil {
+                    CardConditionRow(
+                        grade: model.condition,
+                        part: model.partException,
+                        reserves: holdsConditionRows
+                    )
+                    .padding(.top, 3)
                 }
-                if let exception = model.partException {
-                    PartExceptionChip(exception)
-                        .padding(.top, 2)
+                // On a shelf that gives every card the tallest one's height,
+                // the slack goes HERE, between the two condition rows. Above
+                // it everything is anchored to the top (brand, title, Ref.,
+                // grade); below it everything is anchored to the bottom
+                // (facts, reason, price), and every one of those rows is a
+                // fixed height. So the one row whose height varies, a part
+                // pill that took a second line, is the only thing the slack
+                // has to absorb, and every other row stands level with its
+                // neighbours'.
+                if pinsPrice {
+                    Spacer(minLength: 0)
+                }
+                if holdsConditionRows || !model.facts.isEmpty {
+                    CardFactsLine(facts: model.facts, reserves: holdsConditionRows)
+                        .padding(.top, 1)
                 }
                 // The price is the one thing on this card that may never be
                 // lost. It keeps the leading edge of its row — the watcher
@@ -482,9 +576,6 @@ public struct ListingCard<ImageContent: View>: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                }
-                if pinsPrice {
-                    Spacer(minLength: 0)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                     Text(model.priceText)

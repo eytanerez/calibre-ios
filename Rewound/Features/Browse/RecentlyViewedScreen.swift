@@ -118,6 +118,9 @@ struct RecentlyViewedScreen: View {
                 ) {
                     ForEach(model.listings) { listing in
                         ListingGridCard(listing: listing, laneKey: "recentGrid", zoomNamespace: zoomNamespace)
+                            // Row-tall, so every row of the card stays level
+                            // with its neighbour's (see `listingCardPinsPrice`).
+                            .frame(maxHeight: .infinity, alignment: .top)
                     }
                 }
                 .padding(Space.margin)

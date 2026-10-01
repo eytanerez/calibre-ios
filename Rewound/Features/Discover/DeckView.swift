@@ -308,13 +308,11 @@ struct DeckView: View {
         var parts: [String] = []
         if let brand = listing.brand { parts.append(brand) }
         parts.append(listing.title)
-        parts.append(PriceFormatter.listing(listing.price.value, currency: listing.currency))
-        if let condition = listing.condition?.overall { parts.append(condition) }
+        // Grade, part note, facts, price: the order the card prints them.
+        if let condition = GradeScale.cleaned(listing.condition?.overall) { parts.append(condition) }
+        if let part = ConditionBreakdown(listing: listing).cardChip { parts.append(part) }
         parts.append(contentsOf: ListingHistoryWords.cardFacts(for: listing))
-        for part in ConditionBreakdown(listing: listing).worseParts {
-            parts.append(ConditionBreakdown.calloutTitle(part))
-            if let note = part.note { parts.append(note) }
-        }
+        parts.append(PriceFormatter.listing(listing.price.value, currency: listing.currency))
         return parts.joined(separator: ", ")
     }
 }

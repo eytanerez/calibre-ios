@@ -271,15 +271,19 @@ private struct FeedCompactCardRow: View {
                         .font(RewoundType.bodyMedium)
                         .foregroundStyle(Color.rewound.foreground)
                         .multilineTextAlignment(.leading)
-                    // The grid card's grade line and part chip, so a match
-                    // reads the same here as on the shelf it came from.
-                    if card.cardModel.condition != nil || !card.cardModel.facts.isEmpty {
-                        GradeFactsLine(grade: card.cardModel.condition, facts: card.cardModel.facts)
-                            .padding(.vertical, 2)
+                    // The grid card's two condition rows, so a match reads
+                    // the same here as on the shelf it came from. A list row
+                    // has no neighbour to line up with, so it holds neither
+                    // row when it has nothing for it.
+                    if card.cardModel.condition != nil || card.cardModel.partException != nil {
+                        CardConditionRow(
+                            grade: card.cardModel.condition,
+                            part: card.cardModel.partException,
+                            reserves: false
+                        )
+                        .padding(.top, 2)
                     }
-                    if let exception = card.cardModel.partException {
-                        PartExceptionChip(exception)
-                    }
+                    CardFactsLine(facts: card.cardModel.facts, reserves: false)
                     Text(card.cardModel.priceText)
                         .font(RewoundType.priceSmall)
                         .foregroundStyle(Color.rewound.foreground)
@@ -313,9 +317,9 @@ private struct FeedCompactCardRow: View {
 
     private var accessibilityLabel: String {
         (
-            [card.cardModel.brand, card.cardModel.title, card.cardModel.condition]
+            [card.cardModel.brand, card.cardModel.title, card.cardModel.condition, card.cardModel.partException]
                 + card.cardModel.facts.map { Optional($0) }
-                + [card.cardModel.partException, card.cardModel.priceText, card.reasonLine]
+                + [card.cardModel.priceText, card.reasonLine]
         )
         .compactMap { $0 }
         .joined(separator: ", ")
@@ -419,16 +423,18 @@ private struct FeedCardLane: View {
                     .matchedTransitionSource(id: sourceID, in: zoomNamespace)
                     .frame(width: cardWidth)
                     // Every card as tall as the tallest (the HStack below is
-                    // sized to its tallest child), with the price held at the
-                    // bottom: the grade, facts and part chip vary card to
-                    // card, and the prices still stand level.
+                    // sized to its tallest child). The card spends the extra
+                    // height between its grade row and its facts row, so a
+                    // part pill that took a second line on one card leaves
+                    // every other row on the shelf level.
                     .frame(maxHeight: .infinity, alignment: .top)
                     .environment(\.listingCardPinsPrice, true)
                     .accessibilityLabel(
                         (
-                            [card.signal?.label, card.cardModel.brand, card.cardModel.title, card.cardModel.condition]
+                            [card.signal?.label, card.cardModel.brand, card.cardModel.title,
+                             card.cardModel.condition, card.cardModel.partException]
                                 + card.cardModel.facts.map { Optional($0) }
-                                + [card.cardModel.partException, card.cardModel.priceText, card.reasonLine]
+                                + [card.cardModel.priceText, card.reasonLine]
                         )
                         .compactMap { $0 }
                         .joined(separator: ", ")

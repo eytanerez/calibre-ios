@@ -348,6 +348,215 @@ final class ListingCardAlignmentTests: XCTestCase {
         XCTAssertGreaterThan(height(busy), height(plain) + 10)
     }
 
+    // MARK: - Option D: every row level, whatever is in it
+
+    /// A Home lane card: `rewoundLaneCardWidth(168)` at the default size.
+    private static let laneCardWidth: CGFloat = 168
+
+    /// Eytan, choosing Option D: "one has a bigger title than the other, still
+    /// line everything up."
+    ///
+    /// Three cards on one pinned shelf that differ in every way Option D can
+    /// differ: a long title with a part graded lower (wide enough that the
+    /// part pill has to take a second line at a lane card's width) and all
+    /// three facts; a short card with a grade and the same facts but no part
+    /// and no reference; and a card with no grade, no part, no facts and no
+    /// reference. The grade row, the facts row
+    /// and the price are each read off the painted pixels and held to one y.
+    private enum ShelfCard: CaseIterable {
+        case busy, plain, bare
+
+        var model: ListingCardModel {
+            switch self {
+            case .busy:
+                .init(id: "busy", brand: "Tudor", year: "2022",
+                      title: "Black Bay Fifty-Eight Navy Blue", reference: "M79030B-0001",
+                      priceText: "$3,450", condition: "Like New",
+                      facts: ["Unpolished", "All original", "Full set"],
+                      partException: "Bracelet: Very Good",
+                      watcherCount: 99, isVerifiedDealer: true)
+            case .plain:
+                .init(id: "plain", brand: "Omega", year: "2019",
+                      title: "Speedmaster", reference: nil,
+                      priceText: "$6,200", condition: "Very Good",
+                      // The busy card's facts, word for word: the run is
+                      // shrunk to fit, and the same words at the same scale
+                      // paint the same ink, so any difference in where the
+                      // two rows land is position and nothing else.
+                      facts: ["Unpolished", "All original", "Full set"],
+                      watcherCount: 31)
+            case .bare:
+                .init(id: "bare", brand: "Cartier", year: nil,
+                      title: "Tank", reference: nil,
+                      priceText: "$2,950")
+            }
+        }
+    }
+
+    /// The shelf as `FeedCardLane` builds it: each card at the lane width,
+    /// stretched to the tallest, with `listingCardPinsPrice` set.
+    @MainActor
+    private func shelfImage() -> UIImage? {
+        let row = HStack(alignment: .top, spacing: Space.l) {
+            ForEach(ShelfCard.allCases, id: \.self) { card in
+                ListingCard(model: card.model) { _ in Rectangle().fill(Color.rewound.secondary) }
+                    .frame(width: Self.laneCardWidth)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .environment(\.listingCardPinsPrice, true)
+        .background(Color.rewound.background)
+        .environment(\.colorScheme, .light)
+        let renderer = ImageRenderer(content: row)
+        renderer.scale = Self.pixelScale
+        return renderer.uiImage
+    }
+
+    /// Contiguous runs of inked rows, top to bottom.
+    private func bands(_ rows: [Int]) -> [ClosedRange<Int>] {
+        var result: [ClosedRange<Int>] = []
+        for row in rows {
+            if let last = result.last, row <= last.upperBound + 1 {
+                result[result.count - 1] = last.lowerBound...row
+            } else {
+                result.append(row...row)
+            }
+        }
+        return result
+    }
+
+    /// The first row, at or below `yFrom`, holding a run of pixels painted in
+    /// the grade pill's own fill (`accent`, light: #ECE7E0). That is the top of
+    /// the grade pill: nothing else on a card is filled with that colour (the
+    /// dealer mark is `accent` at 60% over the page, a different pixel).
+    private func firstAccentRow(_ image: UIImage, xFrom: Int, xTo: Int, yFrom: Int) -> Int? {
+        guard let cgImage = image.cgImage else { return nil }
+        let width = cgImage.width
+        let height = cgImage.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        guard let context = CGContext(
+            data: &pixels, width: width, height: height,
+            bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let target = (236, 231, 224)
+        for y in yFrom..<height {
+            var run = 0
+            for x in xFrom..<min(xTo, width) {
+                let i = (y * width + x) * 4
+                let match = abs(Int(pixels[i]) - target.0) <= 3
+                    && abs(Int(pixels[i + 1]) - target.1) <= 3
+                    && abs(Int(pixels[i + 2]) - target.2) <= 3
+                run = match ? run + 1 : 0
+                if run >= 12 { return y }
+            }
+        }
+        return nil
+    }
+
+    @MainActor
+    func testOptionDRowsStandLevelOnAShelfOfCardsThatDiffer() {
+        RewoundFonts.register()
+        let scale = Int(Self.pixelScale)
+        guard let image = shelfImage() else { return XCTFail("the shelf did not render") }
+        let belowPhoto = Int(Self.laneCardWidth) * scale + 4 * scale
+
+        struct Read { let card: ShelfCard; let grade: Int?; let bands: [ClosedRange<Int>] }
+        var reads: [Read] = []
+        for (index, card) in ShelfCard.allCases.enumerated() {
+            let x0 = Int((Self.laneCardWidth + Space.l) * CGFloat(index)) * scale
+            // The leading 55% of the card: the price, the facts and the pills
+            // live at the leading edge, and the dealer mark at the trailing one.
+            let x1 = x0 + Int(Self.laneCardWidth * 0.55) * scale
+            let rows = inkRows(image, xFrom: x0, xTo: x1, yFrom: belowPhoto)
+            XCTAssertFalse(rows.isEmpty, "\(card) drew nothing under its photo; nothing was measured")
+            reads.append(Read(
+                card: card,
+                grade: firstAccentRow(image, xFrom: x0, xTo: x0 + Int(Self.laneCardWidth) * scale, yFrom: belowPhoto),
+                bands: bands(rows)
+            ))
+        }
+        print("OPTION-D " + reads.map { "\($0.card): grade=\($0.grade.map(String.init) ?? "none") bands=\($0.bands)" }.joined(separator: " | "))
+
+        guard reads.count == ShelfCard.allCases.count,
+              let busy = reads.first(where: { $0.card == .busy }),
+              let plain = reads.first(where: { $0.card == .plain }),
+              let bare = reads.first(where: { $0.card == .bare }) else {
+            return XCTFail("not every card was read")
+        }
+
+        // The price: the lowest band on every card.
+        let prices = reads.compactMap { $0.bands.last?.lowerBound }
+        XCTAssertEqual(prices.count, 3)
+        XCTAssertEqual(Set(prices).count, 1, "the prices stand on different lines: \(prices)")
+
+        // The facts: the band directly above the price, on the two cards that
+        // have facts. The busy card's part pill took a second line; that line
+        // must not have pushed its facts below the plain card's.
+        guard busy.bands.count >= 2, plain.bands.count >= 2 else {
+            return XCTFail("a card with facts drew fewer than two bands")
+        }
+        let busyFacts = busy.bands[busy.bands.count - 2]
+        let plainFacts = plain.bands[plain.bands.count - 2]
+        XCTAssertEqual(
+            busyFacts.lowerBound, plainFacts.lowerBound,
+            "the facts rows stand \(busyFacts.lowerBound - plainFacts.lowerBound) device pixels apart"
+        )
+
+        // The grade row: the top of the grade pill's fill, on the two cards
+        // that have a grade. The bare card has none, so it paints no fill.
+        guard let busyGrade = busy.grade, let plainGrade = plain.grade else {
+            return XCTFail("a graded card painted no grade pill")
+        }
+        XCTAssertEqual(busyGrade, plainGrade, "the grade rows stand \(busyGrade - plainGrade) device pixels apart")
+        XCTAssertNil(bare.grade, "the bare card painted a grade pill it does not have")
+
+        // The bare card holds both condition rows: on its own, unpinned, it is
+        // exactly as tall as the plain card that has a grade and facts. And
+        // the busy card really did wrap its part pill, or the shelf above
+        // proved nothing: it is a pill line taller than the plain card.
+        func height(_ card: ShelfCard) -> CGFloat {
+            UIHostingController(rootView: ListingCard(model: card.model) { _ in Rectangle() })
+                .sizeThatFits(in: CGSize(width: Self.laneCardWidth, height: .greatestFiniteMagnitude)).height
+        }
+        print("OPTION-D-HEIGHTS busy=\(height(.busy)) plain=\(height(.plain)) bare=\(height(.bare))")
+        XCTAssertEqual(height(.bare), height(.plain), accuracy: 0.5, "the bare card does not hold the rows it has nothing for")
+        XCTAssertGreaterThan(height(.busy), height(.plain) + 12, "the busy card's part pill did not take a second line")
+    }
+
+    /// The facts never end in an ellipsis. One line is held by
+    /// `.lineLimit(1)`, so the only way a fact could be lost is the run not
+    /// fitting even at the 0.75 shrink floor; this measures the longest run
+    /// the contract can produce, in the caption's own face, against a lane
+    /// card's text column. And an empty facts row holds exactly one line.
+    @MainActor
+    func testTheLongestFactsRunFitsOneLineAtTheLaneWidth() {
+        RewoundFonts.register()
+        guard let caption = UIFont(name: RewoundFonts.Name.sansRegular, size: 12) else {
+            return XCTFail("Geist-Regular missing; the measurement would be against the system font")
+        }
+        let column = Self.laneCardWidth - 4
+        let longest = ["Unpolished", "All original", "Full set"].joined(separator: " \u{00B7} ")
+        let full = (longest as NSString).size(withAttributes: [.font: caption]).width
+        print("FACTS-WIDTH full=\(full) at0.75=\(full * 0.75) column=\(column)")
+        XCTAssertLessThanOrEqual(full * 0.75, column, "the longest facts run cannot fit one line at the 0.75 floor")
+
+        func height(_ facts: [String]) -> CGFloat {
+            UIHostingController(rootView: CardFactsLine(facts: facts))
+                .sizeThatFits(in: CGSize(width: column, height: .greatestFiniteMagnitude)).height
+        }
+        let three = height(["Unpolished", "All original", "Full set"])
+        let one = height(["Box"])
+        let none = height([])
+        print("FACTS-HEIGHTS three=\(three) one=\(one) none=\(none)")
+        XCTAssertGreaterThan(one, 10, "a facts row measured as nothing; the comparisons below would be vacuous")
+        XCTAssertEqual(three, one, accuracy: 0.5, "the longest facts run took more than one line")
+        XCTAssertEqual(none, one, accuracy: 0.5, "an empty facts row does not hold its line")
+    }
+
     /// §0.6: a brand name may not be clipped. The brand is now held to one
     /// line, so `.minimumScaleFactor(0.65)` is the only thing standing between
     /// "Jaeger-LeCoultre" and an ellipsis. This measures the two worst real

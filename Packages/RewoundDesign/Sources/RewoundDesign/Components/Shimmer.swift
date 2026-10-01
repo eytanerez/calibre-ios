@@ -103,11 +103,16 @@ public extension View {
 /// stand-in values, so it is exactly the height of the card that replaces it.
 public struct ListingCardSkeleton: View {
     private let reservesReasonLine: Bool
+    private let showsCondition: Bool
 
     /// `reservesReasonLine` matches a lane whose cards carry a "why this one"
     /// line, which is one more line of card than a plain lane's.
-    public init(reservesReasonLine: Bool = false) {
+    /// `showsCondition` is off only for a grid whose cards can carry no grade
+    /// or facts (see `listingCardHoldsConditionRows`), so the stand-in is no
+    /// taller than what replaces it.
+    public init(reservesReasonLine: Bool = false, showsCondition: Bool = true) {
         self.reservesReasonLine = reservesReasonLine
+        self.showsCondition = showsCondition
     }
 
     public var body: some View {
@@ -119,14 +124,16 @@ public struct ListingCardSkeleton: View {
                 title: "Watch model",
                 reference: "Ref. 000000",
                 priceText: "$00,000",
-                // Nearly every card now carries its grade under the title,
-                // so the stand-in holds that line too.
-                condition: "Very Good",
+                // Every card holds its grade row and its facts row whether
+                // or not it has them, so the stand-in draws both.
+                condition: showsCondition ? "Very Good" : nil,
+                facts: showsCondition ? ["Unpolished", "Full set"] : [],
                 reservesReasonLine: reservesReasonLine
             )
         ) { _ in
             Color.clear
         }
+        .environment(\.listingCardHoldsConditionRows, showsCondition)
         .skeleton()
     }
 }

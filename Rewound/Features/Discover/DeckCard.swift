@@ -14,16 +14,17 @@ import SwiftUI
 ///     BRAND                                          year
 ///     Model name
 ///     Ref. 0000000
-///     (Like New) Unpolished · All original · Full set
-///     [ ⓘ Bracelet graded Good / the seller's note ]
+///     (Like New) (ⓘ Bracelet: Worn)
+///     Unpolished · All original · Full set
 ///     [ verified-dealer chip, only when true ]
 ///     $ price
 ///
-/// The deck is the app's one full-width listing card, so it takes the
-/// contract's full-width treatment (2026-09-30, Part D): the grade leaves the
-/// photograph for the line under the title, and a part graded apart from the
-/// whole gets a warning-tinted callout with the seller's note rather than the
-/// grid card's chip.
+/// The grade left the photograph for the line under the title on 2026-09-30,
+/// and the two condition rows are the grid card's own (Option D, 2026-10-01):
+/// the grade pill with a neutral outlined pill beside it when a part was
+/// graded lower, then the seller's facts. One reading on every card shape.
+/// The deck is a single card with no neighbour to line up with, so it holds
+/// neither row when it has nothing to put in it.
 ///
 /// The deck keeps `sectionTitle` for the model line where the grid card uses
 /// `bodyMedium` — §4 fixes the order, not the type size, and this card is the
@@ -150,18 +151,17 @@ struct DeckCard: View {
                     .minimumScaleFactor(0.8)
             }
 
-            let facts = ListingHistoryWords.cardFacts(for: listing)
             let grade = GradeScale.cleaned(listing.condition?.overall)
-            if grade != nil || !facts.isEmpty {
-                GradeFactsLine(grade: grade, facts: facts, font: RewoundType.label)
+            let part = breakdown.cardChip
+            if grade != nil || part != nil {
+                CardConditionRow(grade: grade, part: part, reserves: false)
                     .padding(.top, Space.xs)
             }
-
-            let worse = breakdown.worseParts
-            if !worse.isEmpty {
-                DeckPartCallout(parts: worse)
-                    .padding(.top, Space.xs)
-            }
+            CardFactsLine(
+                facts: ListingHistoryWords.cardFacts(for: listing),
+                font: RewoundType.label,
+                reserves: false
+            )
 
             if listing.seller?.isVerifiedDealer == true {
                 DealerBadge(compact: true)
@@ -176,44 +176,6 @@ struct DeckCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.l)
-    }
-}
-
-/// The full-width card's warning callout: "Bracelet graded Good" and the
-/// seller's note on it, for each part graded apart from the whole.
-private struct DeckPartCallout: View {
-    let parts: [ConditionBreakdown.Part]
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-            Image(systemName: "info.circle")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.rewound.warning)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: Space.s) {
-                ForEach(parts) { part in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(ConditionBreakdown.calloutTitle(part))
-                            .font(RewoundType.sans(.semiBold, 13, relativeTo: .footnote))
-                            .foregroundStyle(Color.rewound.warning)
-                        if let note = part.note {
-                            Text(note)
-                                .font(RewoundType.label)
-                                .foregroundStyle(Color.rewound.secondaryForeground)
-                        }
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, Space.m)
-        .padding(.vertical, Space.s + 2)
-        .background(
-            Color.rewound.warning.opacity(0.12),
-            in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-        )
-        .accessibilityElement(children: .combine)
     }
 }
 
