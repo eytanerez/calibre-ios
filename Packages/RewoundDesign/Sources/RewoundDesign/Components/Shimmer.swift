@@ -119,6 +119,9 @@ public struct ListingCardSkeleton: View {
                 title: "Watch model",
                 reference: "Ref. 000000",
                 priceText: "$00,000",
+                // Nearly every card now carries its grade under the title,
+                // so the stand-in holds that line too.
+                condition: "Very Good",
                 reservesReasonLine: reservesReasonLine
             )
         ) { _ in

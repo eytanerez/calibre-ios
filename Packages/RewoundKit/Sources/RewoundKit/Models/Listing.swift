@@ -70,6 +70,13 @@ public struct Listing: Codable, Sendable, Identifiable {
     public let boxIncluded: Bool?
     public let papersIncluded: Bool?
     public let bookletsIncluded: Bool?
+    /// The seller's three answers about the watch's past: polish, original
+    /// parts and last service (contracts, 2026-09-30, Part A).
+    ///
+    /// Nil is a payload that does not carry the key at all, which is every
+    /// response from a server that predates the questions; inside it, a nil
+    /// answer is "nobody asked". Both hide the row on every consumer surface.
+    public let history: ListingHistory?
     /// What the watch IS, as opposed to what condition it is in.
     ///
     /// The reference's own specs, overridden where this one watch differs. The
@@ -112,7 +119,7 @@ public struct Listing: Codable, Sendable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id, listingNumber, sellerId, seller, variantId, title, brand, model
         case referenceNumber, sellerSku, vaultWatchId, description, price, currency, condition, conditionNotes, boxPapers
-        case boxIncluded, papersIncluded, bookletsIncluded, specs
+        case boxIncluded, papersIncluded, bookletsIncluded, history, specs
         case productionYear, status, reviewStatus, sellerStatus, reviewEvents
         case estimatedShipping, metrics, returns, countryOfOrigin, htsCode
         case annotations, createdAt, updatedAt
@@ -190,6 +197,77 @@ public struct ListingSpecs: Codable, Sendable {
             out.append(("Water resistance", waterResistanceM == 0 ? "Not water resistant" : "\(waterResistanceM)m"))
         }
         return out
+    }
+}
+
+/// The seller's answers to the three history questions, as the listing
+/// payloads carry them under `history`.
+///
+/// The words are the server's vocabulary, kept as strings rather than enums:
+/// `unknown` is the seller's truthful "I don't know" and is an answer, while
+/// nil is a question nobody put. A value this build has never heard of reads
+/// as nil (the row hides) rather than failing the listing.
+///
+/// The property names are camelCase and there are no hand-written keys: the
+/// API decoder converts `replaced_parts_note` to `replacedPartsNote` before it
+/// matches, and a snake `CodingKey` here would silently cancel that out
+/// (`ListingHistoryCodingTests`).
+public struct ListingHistory: Codable, Sendable, Equatable {
+    /// `unpolished`, `polished` or `unknown`.
+    public let polish: String?
+    /// `all_original`, `replaced` or `unknown`.
+    public let originality: String?
+    /// What was replaced, in the seller's words. Only ever set beside
+    /// `replaced`.
+    public let replacedPartsNote: String?
+    /// `serviced`, `never` or `unknown`.
+    public let serviceHistory: String?
+    /// Only ever set beside `serviced`, and optional even then.
+    public let lastServiceYear: Int?
+
+    public static let polishValues: Set<String> = ["unpolished", "polished", "unknown"]
+    public static let originalityValues: Set<String> = ["all_original", "replaced", "unknown"]
+    public static let serviceValues: Set<String> = ["serviced", "never", "unknown"]
+
+    public init(
+        polish: String? = nil,
+        originality: String? = nil,
+        replacedPartsNote: String? = nil,
+        serviceHistory: String? = nil,
+        lastServiceYear: Int? = nil
+    ) {
+        self.polish = polish
+        self.originality = originality
+        self.replacedPartsNote = replacedPartsNote
+        self.serviceHistory = serviceHistory
+        self.lastServiceYear = lastServiceYear
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case polish, originality, replacedPartsNote, serviceHistory, lastServiceYear
+    }
+
+    /// Field by field and forgiving: one odd value (a year sent as a string, a
+    /// word from a newer server) costs that one answer, never the listing.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        func word(_ key: CodingKeys, _ allowed: Set<String>) -> String? {
+            guard let raw = try? container.decodeIfPresent(String.self, forKey: key) else { return nil }
+            return allowed.contains(raw) ? raw : nil
+        }
+        polish = word(.polish, Self.polishValues)
+        originality = word(.originality, Self.originalityValues)
+        serviceHistory = word(.serviceHistory, Self.serviceValues)
+        let note = (try? container.decodeIfPresent(String.self, forKey: .replacedPartsNote))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        replacedPartsNote = (note?.isEmpty ?? true) ? nil : note
+        if let year = try? container.decodeIfPresent(Int.self, forKey: .lastServiceYear) {
+            lastServiceYear = year
+        } else if let text = try? container.decodeIfPresent(String.self, forKey: .lastServiceYear) {
+            lastServiceYear = Int(text.trimmingCharacters(in: .whitespaces))
+        } else {
+            lastServiceYear = nil
+        }
     }
 }
 

@@ -153,6 +153,11 @@ struct DetailsStep: View {
                         }
                     }
                 }
+
+                // After the grades and their notes: the watch's past, in three
+                // questions (contracts, 2026-09-30, Part B).
+                HistoryQuestionsCard(model: model)
+                    .padding(.top, Space.s)
             }
         }
     }
@@ -377,6 +382,119 @@ private struct ConditionNoteField: View {
     private var borderColor: Color {
         if error != nil { return Color.rewound.destructive }
         return focused ? Color.rewound.borderBright : Color.rewound.border
+    }
+}
+
+// MARK: - The watch's past
+
+/// The three history questions: polish, original parts and last service, each
+/// answered with one of three chips, a (?) beside the question, and one
+/// optional field that opens under the answer it belongs to.
+///
+/// Required on a new listing (the model flags an unanswered one once Continue
+/// has been pressed); on an edit an unanswered one simply starts unselected.
+private struct HistoryQuestionsCard: View {
+    @Bindable var model: WizardModel
+
+    var body: some View {
+        SellCard {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(HistoryQuestion.allCases.enumerated()), id: \.element) { index, question in
+                    block(question)
+                        .id(WizardField.history(question))
+                    if index < HistoryQuestion.allCases.count - 1 {
+                        Rectangle().fill(Color.rewound.border).frame(height: 1)
+                    }
+                }
+            }
+        }
+        // The optional field opening under its answer, not every keystroke.
+        .animation(Motion.easeFast, value: model.history.originality)
+        .animation(Motion.easeFast, value: model.history.serviceHistory)
+    }
+
+    private func block(_ question: HistoryQuestion) -> some View {
+        let error = model.historyError(question)
+        return VStack(alignment: .leading, spacing: Space.s) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                Text(question.question)
+                    .font(RewoundType.bodyMedium)
+                    .foregroundStyle(error == nil ? Color.rewound.foreground : Color.rewound.destructive)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                InfoHint(question.helpLabel, message: question.help)
+                    .accessibilityIdentifier("wizard.history.\(question.rawValue).help")
+            }
+
+            WrapLayout(spacing: Space.s, lineSpacing: 0) {
+                ForEach(question.options, id: \.value) { option in
+                    // A chip heard on its own still says what it answers.
+                    FilterChip(
+                        option.label,
+                        isSelected: model.history.answer(question) == option.value,
+                        minTapHeight: Space.touchTarget
+                    ) {
+                        guard model.history.answer(question) != option.value else { return }
+                        model.history.setAnswer(option.value, for: question)
+                        model.fieldChanged()
+                    }
+                    .accessibilityLabel("\(question.rowLabel): \(option.label)")
+                }
+            }
+
+            if let error {
+                Text(error)
+                    .font(RewoundType.caption)
+                    .foregroundStyle(Color.rewound.destructive)
+                    .transition(.opacity)
+            }
+
+            follow(question)
+        }
+        .padding(.horizontal, Space.l)
+        .padding(.vertical, Space.m)
+    }
+
+    /// The optional field under "Some parts replaced" and under "Serviced".
+    @ViewBuilder
+    private func follow(_ question: HistoryQuestion) -> some View {
+        switch question {
+        case .originality where model.history.asksNote:
+            RewoundTextField(
+                question.followUpLabel ?? "",
+                text: $model.history.replacedNote,
+                placeholder: "Optional, for example the crown",
+                error: model.history.noteError,
+                kind: .sentence
+            )
+            .onChange(of: model.history.replacedNote) { _, typed in
+                // One line of prose: a pasted line break comes out.
+                let line = typed.filter { !$0.isNewline }
+                if line != typed { model.history.replacedNote = line }
+                model.fieldChanged()
+            }
+            .id(WizardField.historyNote)
+            .padding(.top, Space.xs)
+            .transition(.opacity)
+        case .service where model.history.asksYear:
+            RewoundTextField(
+                question.followUpLabel ?? "",
+                text: $model.history.serviceYearText,
+                placeholder: "Optional, for example \(model.currentYear - 2)",
+                error: model.historyYearError,
+                kind: .integer
+            )
+            .onChange(of: model.history.serviceYearText) { _, typed in
+                let digits = String(typed.filter(\.isNumber).prefix(4))
+                if digits != typed { model.history.serviceYearText = digits }
+                model.fieldChanged()
+            }
+            .id(WizardField.historyYear)
+            .padding(.top, Space.xs)
+            .transition(.opacity)
+        default:
+            EmptyView()
+        }
     }
 }
 

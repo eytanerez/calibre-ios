@@ -282,6 +282,9 @@ struct ListingWizardScreen: View {
         case .condition(let part): model.conditionError(part).map { "\(part.label). \($0)" }
         case .conditionNote(let part): model.conditionNoteError(part).map { "\(part.label) note. \($0)" }
         case .price: model.priceFieldError
+        case .history(let question): model.historyError(question)
+        case .historyNote: model.history.noteError.map { "What was replaced. \($0)" }
+        case .historyYear: model.historyYearError.map { "Year of the last service. \($0)" }
         }
         if let message { A11y.announce(message, priority: .high) }
     }

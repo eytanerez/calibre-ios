@@ -27,6 +27,8 @@ struct ReviewStep: View {
 
             conditionGrid
 
+            historyCard
+
             priceCard
 
             photoChecklist
@@ -80,7 +82,7 @@ struct ReviewStep: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 } else if !model.detailsComplete {
-                    Text("Finish the watch details and grade each condition item before review.")
+                    Text("Finish the watch details, grade each condition item and answer the three history questions before review.")
                         .font(RewoundType.caption)
                         .foregroundStyle(Color.rewound.mutedForeground)
                         .multilineTextAlignment(.center)
@@ -177,6 +179,44 @@ struct ReviewStep: View {
                     .padding(.vertical, Space.m)
 
                     if index < ConditionPart.allCases.count - 1 {
+                        Rectangle()
+                            .fill(Color.rewound.border)
+                            .frame(height: 1)
+                    }
+                }
+            }
+            .background(Color.rewound.card)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                    .strokeBorder(Color.rewound.border, lineWidth: 1)
+            )
+        }
+    }
+
+    // MARK: History
+
+    /// The three history answers in the words the listing will print them
+    /// in, so the seller reads back exactly what a buyer will.
+    private var historyCard: some View {
+        let rows = model.history.reviewRows(currentYear: model.currentYear)
+        return VStack(alignment: .leading, spacing: Space.m) {
+            Text("History")
+                .font(RewoundType.sectionTitle)
+                .foregroundStyle(Color.rewound.foreground)
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    ConditionGradeRow(label: row.label, grade: row.value, note: nil) {
+                        Text(row.value)
+                            .font(RewoundType.bodyMedium)
+                            .foregroundStyle(Color.rewound.foreground)
+                            .multilineTextAlignment(.trailing)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, Space.l)
+                    .padding(.vertical, Space.m)
+
+                    if index < rows.count - 1 {
                         Rectangle()
                             .fill(Color.rewound.border)
                             .frame(height: 1)

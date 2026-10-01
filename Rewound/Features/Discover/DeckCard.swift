@@ -10,12 +10,20 @@ import SwiftUI
 /// same one `ListingCard` uses, because §4 fixes that order across the whole
 /// product and the deck is the second listing-card shape:
 ///
-///     [ photo ]  ⌐ condition pill top-left   ⌐ watcher count top-right
+///     [ photo ]                              ⌐ watcher count top-right
 ///     BRAND                                          year
 ///     Model name
 ///     Ref. 0000000
+///     (Like New) Unpolished · All original · Full set
+///     [ ⓘ Bracelet graded Good / the seller's note ]
 ///     [ verified-dealer chip, only when true ]
 ///     $ price
+///
+/// The deck is the app's one full-width listing card, so it takes the
+/// contract's full-width treatment (2026-09-30, Part D): the grade leaves the
+/// photograph for the line under the title, and a part graded apart from the
+/// whole gets a warning-tinted callout with the seller's note rather than the
+/// grid card's chip.
 ///
 /// The deck keeps `sectionTitle` for the model line where the grid card uses
 /// `bodyMedium` — §4 fixes the order, not the type size, and this card is the
@@ -24,13 +32,35 @@ struct DeckCard: View {
     let listing: Listing
 
     @Environment(\.dynamicTypeSize) private var typeSize
+    /// The panel's natural height, measured off a hidden copy. The photo gives
+    /// way to it (down to a floor) so a long note is never cut off.
+    @State private var panelHeight: CGFloat = 0
+
+    private var breakdown: ConditionBreakdown { ConditionBreakdown(listing: listing) }
+
+    /// 70% of the card, as drawn before the facts existed, less whatever the
+    /// panel needs beyond the 30% that leaves it; never under 40%.
+    static func photoHeight(card: CGFloat, panel: CGFloat) -> CGFloat {
+        max(card * 0.4, min(card * 0.7, card - panel))
+    }
 
     var body: some View {
         GeometryReader { geo in
             VStack(spacing: 0) {
-                photo(width: geo.size.width, height: geo.size.height * 0.7)
+                photo(
+                    width: geo.size.width,
+                    height: Self.photoHeight(card: geo.size.height, panel: panelHeight)
+                )
                 panel
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .background(alignment: .topLeading) {
+                panel
+                    .frame(width: geo.size.width, alignment: .topLeading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .hidden()
+                    .accessibilityHidden(true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { panelHeight = $0 }
             }
         }
         .background(Color.rewound.card)
@@ -66,13 +96,9 @@ struct DeckCard: View {
             .frame(width: width, height: height)
             .clipped()
 
-            // §4: the condition pill rides top-left over the photograph and
-            // the watcher count top-right. Both used to sit in the panel
-            // below, where the condition badge shared the price's row.
-            if let condition = listing.condition?.overall {
-                ConditionPill(condition)
-                    .padding(Space.m)
-            }
+            // §4: the watcher count rides top-right over the photograph. The
+            // grade rode top-left until 2026-09-30, when it moved under the
+            // title to lead the seller's answers.
             if let watchers = listing.metrics?.watchers, watchers > 0 {
                 WatcherPill(count: watchers)
                     .padding(Space.m)
@@ -124,6 +150,19 @@ struct DeckCard: View {
                     .minimumScaleFactor(0.8)
             }
 
+            let facts = ListingHistoryWords.cardFacts(for: listing)
+            let grade = GradeScale.cleaned(listing.condition?.overall)
+            if grade != nil || !facts.isEmpty {
+                GradeFactsLine(grade: grade, facts: facts, font: RewoundType.label)
+                    .padding(.top, Space.xs)
+            }
+
+            let worse = breakdown.worseParts
+            if !worse.isEmpty {
+                DeckPartCallout(parts: worse)
+                    .padding(.top, Space.xs)
+            }
+
             if listing.seller?.isVerifiedDealer == true {
                 DealerBadge(compact: true)
                     .padding(.top, 2)
@@ -137,6 +176,44 @@ struct DeckCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Space.l)
+    }
+}
+
+/// The full-width card's warning callout: "Bracelet graded Good" and the
+/// seller's note on it, for each part graded apart from the whole.
+private struct DeckPartCallout: View {
+    let parts: [ConditionBreakdown.Part]
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.rewound.warning)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: Space.s) {
+                ForEach(parts) { part in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(ConditionBreakdown.calloutTitle(part))
+                            .font(RewoundType.sans(.semiBold, 13, relativeTo: .footnote))
+                            .foregroundStyle(Color.rewound.warning)
+                        if let note = part.note {
+                            Text(note)
+                                .font(RewoundType.label)
+                                .foregroundStyle(Color.rewound.secondaryForeground)
+                        }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, Space.m)
+        .padding(.vertical, Space.s + 2)
+        .background(
+            Color.rewound.warning.opacity(0.12),
+            in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
     }
 }
 

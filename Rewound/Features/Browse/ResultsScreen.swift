@@ -404,6 +404,9 @@ struct ResultsContent: View {
                         laneKey: "grid",
                         zoomNamespace: zoomNamespace
                     )
+                    // Where the grid gives a row the height of its tallest
+                    // card, the others take it and hold their prices level.
+                    .frame(maxHeight: .infinity, alignment: .top)
                     .task {
                         await model.loadMoreIfNeeded(current: listing)
                     }

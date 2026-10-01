@@ -289,6 +289,65 @@ final class ListingCardAlignmentTests: XCTestCase {
         XCTAssertFalse(marked.isEmpty, "the In-cart pill drew nothing — the height test above proves only that nothing changed")
     }
 
+    /// The grade line and the part chip (contracts, 2026-09-30, Part D) vary
+    /// card to card and wrap rather than truncate, so a card that carries
+    /// them is taller. On a shelf that gives every card the tallest one's
+    /// height and sets `listingCardPinsPrice`, the prices still land level.
+    @MainActor
+    func testAPinnedShelfKeepsPricesLevelBesideFactsAndAChip() {
+        RewoundFonts.register()
+        let scale = Int(Self.pixelScale)
+        let plain = ListingCardModel(
+            id: "plain", brand: "Rolex", year: "2019", title: "Submariner Date",
+            reference: "126610LN", priceText: "$12,400", condition: "Very Good"
+        )
+        let busy = ListingCardModel(
+            id: "busy", brand: "Omega", year: "2020", title: "Speedmaster Professional",
+            reference: "310.30.42", priceText: "$4,950", condition: "Very Good",
+            facts: ["Unpolished", "All original", "Full set"],
+            partException: "2 parts graded lower"
+        )
+        let gutter: CGFloat = 12
+        let row = HStack(alignment: .top, spacing: gutter) {
+            ForEach([plain, busy], id: \.id) { model in
+                ListingCard(model: model) { _ in Rectangle().fill(Color.rewound.secondary) }
+                    .frame(width: Self.cardWidth)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .environment(\.listingCardPinsPrice, true)
+        .background(Color.rewound.background)
+        .environment(\.colorScheme, .light)
+
+        let renderer = ImageRenderer(content: row)
+        renderer.scale = Self.pixelScale
+        guard let image = renderer.uiImage else { return XCTFail("the shelf did not render") }
+
+        let belowPhoto = Int(Self.cardWidth) * scale + 8 * scale
+        func priceTop(columnStart: CGFloat) -> Int? {
+            let from = Int(columnStart) * scale
+            let rows = inkRows(image, xFrom: from, xTo: from + Int(Self.cardWidth * 0.45) * scale, yFrom: belowPhoto)
+            guard var index = rows.indices.last else { return nil }
+            while index > 0, rows[index - 1] >= rows[index] - 1 { index -= 1 }
+            return rows[index]
+        }
+        guard let left = priceTop(columnStart: 0),
+              let right = priceTop(columnStart: Self.cardWidth + gutter) else {
+            return XCTFail("no price was painted under one of the photos")
+        }
+        print("PINNED-PRICES plain=\(left) busy=\(right)")
+        XCTAssertEqual(left, right, "the prices stand \(right - left) device pixels apart on a pinned shelf")
+
+        // And the busy card really is taller on its own, or the pin proved
+        // nothing.
+        func height(_ model: ListingCardModel) -> CGFloat {
+            UIHostingController(rootView: ListingCard(model: model) { _ in Rectangle() })
+                .sizeThatFits(in: CGSize(width: Self.cardWidth, height: .greatestFiniteMagnitude)).height
+        }
+        XCTAssertGreaterThan(height(busy), height(plain) + 10)
+    }
+
     /// §0.6: a brand name may not be clipped. The brand is now held to one
     /// line, so `.minimumScaleFactor(0.65)` is the only thing standing between
     /// "Jaeger-LeCoultre" and an ellipsis. This measures the two worst real

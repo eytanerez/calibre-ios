@@ -51,11 +51,15 @@ final class SharedWordingParityTests: XCTestCase {
     /// The standing copy rule, on everything these files put in front of a
     /// person: no em dashes.
     func testNoSharedSentenceCarriesAnEmDash() {
-        let all = Array(SpecHelp.sentences.values)
-            + Array(SellFieldHelp.fields.values)
-            + Array(SellFieldHelp.gradeParts.values)
-            + Array(SellFieldHelp.photoAngles.values)
-            + ConditionGrades.definitions.flatMap { [$0.grade, $0.description, $0.points] }
+        var all: [String] = Array(SpecHelp.sentences.values)
+        all += Array(SellFieldHelp.fields.values)
+        all += Array(SellFieldHelp.gradeParts.values)
+        all += Array(SellFieldHelp.photoAngles.values)
+        all += ConditionGrades.definitions.flatMap { [$0.grade, $0.description, $0.points, $0.check] }
+        for question in HistoryQuestion.allCases {
+            all += [question.question, question.help, question.helpLabel, question.requiredMessage]
+            all += question.options.map(\.label)
+        }
         XCTAssertFalse(all.isEmpty)
         for sentence in all {
             XCTAssertFalse(sentence.contains("\u{2014}"), sentence)
@@ -88,7 +92,32 @@ final class SharedWordingParityTests: XCTestCase {
         let fields = pairs(in: block(named: "SELL_FIELD_HELP", in: source))
         let parts = pairs(in: block(named: "SELL_GRADE_PART_HELP", in: source))
         let angles = pairs(in: block(named: "SELL_PHOTO_HELP", in: source))
-        XCTAssertEqual(fields.count + parts.count + angles.count, sellHelp.count)
+        // The three history questions (contracts, 2026-09-30, Part B), where
+        // the checkout carries them: question, each answer's value and
+        // label, the (?)'s question and answer, the unanswered message, and
+        // the optional field's label, in order.
+        let history = source.contains("export const SELL_HISTORY_QUESTIONS")
+            ? pairs(in: block(named: "SELL_HISTORY_QUESTIONS", in: source))
+            : []
+        XCTAssertEqual(fields.count + parts.count + angles.count + history.count, sellHelp.count)
+        if !history.isEmpty {
+            var swiftHistory: [(key: String, value: String)] = []
+            for question in HistoryQuestion.allCases {
+                swiftHistory.append(("question", question.question))
+                for option in question.options {
+                    swiftHistory.append(("value", option.value))
+                    swiftHistory.append(("label", option.label))
+                }
+                swiftHistory.append(("helpLabel", question.helpLabel))
+                swiftHistory.append(("help", question.help))
+                swiftHistory.append(("required", question.requiredMessage))
+                if let followUp = question.followUpLabel {
+                    swiftHistory.append(("followUpLabel", followUp))
+                }
+            }
+            XCTAssertEqual(history.map(\.key), swiftHistory.map(\.key))
+            XCTAssertEqual(history.map(\.value), swiftHistory.map(\.value))
+        }
         XCTAssertEqual(Dictionary(uniqueKeysWithValues: fields), SellFieldHelp.fields)
         XCTAssertEqual(Dictionary(uniqueKeysWithValues: parts), SellFieldHelp.gradeParts)
         XCTAssertEqual(Dictionary(uniqueKeysWithValues: angles), SellFieldHelp.photoAngles)
@@ -97,6 +126,13 @@ final class SharedWordingParityTests: XCTestCase {
         let values = grades.filter { ["grade", "description", "points"].contains($0.key) }.map(\.value)
         let swift = ConditionGrades.definitions.flatMap { [$0.grade, $0.description, $0.points] }
         XCTAssertEqual(values, swift)
+
+        // The check lines (contracts, 2026-09-30, Part C), once the site
+        // carries them: all five, word for word.
+        let checks = grades.filter { $0.key == "check" }.map(\.value)
+        if !checks.isEmpty {
+            XCTAssertEqual(checks, ConditionGrades.definitions.map(\.check))
+        }
     }
 
     // MARK: - Reading the TypeScript

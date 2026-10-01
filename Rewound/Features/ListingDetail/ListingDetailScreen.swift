@@ -19,7 +19,7 @@ struct ListingDetailScreen: View {
     @State private var openOffer: Offer?
     @State private var failed = false
     @State private var lightbox: LightboxContext?
-    /// The five grade definitions above the grades: shut until opened.
+    /// The Condition section's grade guide: shut until opened.
     @State private var showsGradeDefinitions = false
     @State private var showAuthenticationInfo = false
     @State private var showMakeOfferStub = false
@@ -360,46 +360,14 @@ struct ListingDetailScreen: View {
         }
     }
 
-    /// The five grades are defined above the table, always on show: a buyer
-    /// reading "Very Good" beside the dial should not have to go looking for
-    /// what Very Good means (Eytan, 2026-09-29).
+    /// The Condition section: the grade guide behind its button, the overall
+    /// grade, the parts against it, the seller's history answers, and the
+    /// assurance card (contracts, 2026-09-30, Part C). A listing with no grade
+    /// and no answers has none.
     @ViewBuilder
     private func conditionSection(_ listing: Listing) -> some View {
-        if let condition = listing.condition {
-            VStack(alignment: .leading, spacing: Space.m) {
-                // The five definitions open from "View grade guide" beside the
-                // heading, shut until then (Eytan, 2026-09-29: an arrow was not
-                // clear). The grades and the seller's notes stay on screen.
-                HStack(alignment: .firstTextBaseline, spacing: Space.m) {
-                    Text("Condition grading")
-                        .font(RewoundType.sectionTitle)
-                        .foregroundStyle(Color.rewound.foreground)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: 0)
-                    Button {
-                        Haptics.shared.play(.selection)
-                        withAnimation(Motion.easeFast) { showsGradeDefinitions.toggle() }
-                    } label: {
-                        Text(showsGradeDefinitions ? "Hide grade guide" : "View grade guide")
-                            .font(RewoundType.label)
-                            .foregroundStyle(Color.rewound.foreground)
-                            .padding(.horizontal, Space.m)
-                            .padding(.vertical, Space.xs + 2)
-                            .background(Color.rewound.card, in: Capsule())
-                            .overlay(Capsule().strokeBorder(Color.rewound.borderBright, lineWidth: 1))
-                            .fixedSize()
-                    }
-                    .buttonStyle(PressableStyle())
-                    .a11yExpandTarget(currentSize: 32)
-                    .accessibilityValue(showsGradeDefinitions ? "Expanded" : "Collapsed")
-                }
-
-                if showsGradeDefinitions {
-                    ConditionGradeDefinitionsView()
-                        .transition(.opacity)
-                }
-                ConditionGradingCard(condition: condition, notes: listing.conditionNotes ?? [:])
-            }
+        if ListingConditionSection.hasContent(listing) {
+            ListingConditionSection(listing: listing, showsGuide: $showsGradeDefinitions)
         }
     }
 

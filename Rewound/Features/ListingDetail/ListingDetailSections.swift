@@ -126,20 +126,10 @@ struct QuickSpecRow: View {
         tile("Box & papers", boxPapersText)
     }
 
+    /// The same phrase the Condition section's History table prints
+    /// (`BoxPapersPhrase`), so the two cannot say it two ways.
     private var boxPapersText: String {
-        if listing.boxIncluded != nil || listing.papersIncluded != nil || listing.bookletsIncluded != nil {
-            switch (listing.boxIncluded == true, listing.papersIncluded == true) {
-            case (true, true): return "Full set"
-            case (true, false): return "Box only"
-            case (false, true): return "Papers only"
-            case (false, false): return "Watch only"
-            }
-        }
-        return switch listing.boxPapers {
-        case true: "Full set"
-        case false: "Watch only"
-        default: "—"
-        }
+        BoxPapersPhrase.text(for: listing) ?? "—"
     }
 
     private func tile(_ label: String, _ value: String) -> some View {
@@ -378,9 +368,10 @@ struct ListingDetailsTable: View {
 
 // MARK: - Condition grading
 
-/// The five grades and what each one means, always on show above a listing's
-/// Condition grading table and inside the sell form's (?) on its Condition
-/// heading. The words are `ConditionGrades`, shared with the site.
+/// The five grades and what each one means, compact, inside the sell form's
+/// (?) on its Condition heading. The listing page's own guide, with the check
+/// lines and this watch's grade tinted, is `ConditionGradeGuide`. The words
+/// are `ConditionGrades`, shared with the site.
 ///
 /// A grade column and a meaning column until an accessibility size, where the
 /// meaning is given the full width under its grade instead of a sliver of it.
@@ -432,68 +423,6 @@ struct ConditionGradeDefinitionsView: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityHidden(true)
-    }
-}
-
-/// Per-part condition as status badges in a spec-list-styled card, with the
-/// seller's own few words under any part they wrote about.
-struct ConditionGradingCard: View {
-    let condition: ListingCondition
-    /// The seller's notes, keyed by the part names `condition` uses. Empty
-    /// when they wrote none, or when the payload did not carry them; a row
-    /// without a note is drawn exactly as it was before notes existed.
-    var notes: [String: String] = [:]
-
-    /// All eight parts, in the order the sell form asks for them — with the
-    /// overall grade first, because that is the one a buyer reads as the
-    /// summary. A part the seller left blank is simply not a row: nothing
-    /// here is filled in from a grade that belongs to something else.
-    private var rows: [(key: String, label: String, value: String)] {
-        [
-            ("overall", "Overall", condition.overall),
-            ("case", "Case", condition.caseCondition),
-            ("dial", "Dial", condition.dial),
-            ("bezel", "Bezel", condition.bezel),
-            ("crystal", "Crystal", condition.crystal),
-            ("bracelet", "Bracelet", condition.bracelet),
-            ("clasp", "Clasp", condition.clasp),
-            ("caseback", "Caseback", condition.caseback),
-        ].compactMap { key, label, value in
-            value.map { (key, label, $0) }
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ForEach(rows.indices, id: \.self) { index in
-                let row = rows[index]
-                ConditionGradeRow(label: row.label, grade: row.value, note: conditionNoteText(notes[row.key])) {
-                    StatusBadge(row.value, tone: Self.tone(for: row.value))
-                }
-                .padding(.horizontal, Space.l)
-                .padding(.vertical, Space.m)
-
-                // The same firm line as "The details" beside it.
-                if index < rows.count - 1 {
-                    Rectangle()
-                        .fill(Color.rewound.borderBright)
-                        .frame(height: 1)
-                }
-            }
-        }
-        .background(Color.rewound.card)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
-                .strokeBorder(Color.rewound.borderBright, lineWidth: 1)
-        )
-    }
-
-    // One tone for every grade, deliberately: distinct colors per grade read
-    // as if they meant something (a stoplight, a ranking) rather than just
-    // labeling a fact about the watch.
-    static func tone(for grade: String) -> StatusBadge.Tone {
-        .success
     }
 }
 
@@ -643,7 +572,7 @@ struct AuthenticationInfoSheet: View {
                     infoRow(
                         icon: "clock.badge.checkmark",
                         title: "Condition verified",
-                        message: "The listing's condition grading is confirmed part by part. If anything doesn't match, the sale doesn't proceed."
+                        message: "WPB Watch Co checks the seller's grades part by part before the watch ships. If it is not as described, it is settled first: a partial refund if you keep it, or it goes back to the seller."
                     )
                     infoRow(
                         icon: "wrench.and.screwdriver",

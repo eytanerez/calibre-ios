@@ -352,6 +352,25 @@ public struct ImportCompletionItem: Codable, Sendable, Identifiable {
     public let missing: [String]
 }
 
+/// A request field that can say "clear it" as well as "set it".
+///
+/// An optional payload property is left off the request when nil (the
+/// synthesized encoder uses `encodeIfPresent`), which on a PATCH means "leave
+/// it alone". Wrapped in this, `.some(.null)` is written as a JSON `null`,
+/// which the server reads as "clear it".
+public enum WireNullable<Value: Encodable & Sendable & Equatable>: Encodable, Sendable, Equatable {
+    case value(Value)
+    case null
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .value(let value): try container.encode(value)
+        case .null: try container.encodeNil()
+        }
+    }
+}
+
 /// Create/update body for `/account/listings` (draft wizard + partial PATCH).
 /// Optionals are omitted from the JSON, so the same struct drives partial
 /// updates and the submit-for-review status flip.
@@ -400,6 +419,17 @@ public struct ListingDraftPayload: Encodable, Sendable {
     public var boxIncluded: Bool?
     public var papersIncluded: Bool?
     public var bookletsIncluded: Bool?
+    /// The three history answers (contracts, 2026-09-30, Part A), in the
+    /// server's words. Nil leaves the key off, which leaves the stored answer
+    /// alone; the seller can change an answer but never un-give one.
+    public var polish: String?
+    public var originality: String?
+    /// What was replaced. Sent only beside `replaced` (the server clears it
+    /// under any other answer); `.null` clears a note the seller erased.
+    public var replacedPartsNote: WireNullable<String>?
+    public var serviceHistory: String?
+    /// Sent only beside `serviced`; `.null` clears a year the seller erased.
+    public var lastServiceYear: WireNullable<Int>?
     public var productionYear: Int?
     /// Whether this listing accepts returns. Changing either return field on
     /// an active listing sends it back through review.
@@ -432,6 +462,11 @@ public struct ListingDraftPayload: Encodable, Sendable {
         boxIncluded: Bool? = nil,
         papersIncluded: Bool? = nil,
         bookletsIncluded: Bool? = nil,
+        polish: String? = nil,
+        originality: String? = nil,
+        replacedPartsNote: WireNullable<String>? = nil,
+        serviceHistory: String? = nil,
+        lastServiceYear: WireNullable<Int>? = nil,
         productionYear: Int? = nil,
         returnsAccepted: Bool? = nil,
         returnWindowHours: Int? = nil,
@@ -459,6 +494,11 @@ public struct ListingDraftPayload: Encodable, Sendable {
         self.boxIncluded = boxIncluded
         self.papersIncluded = papersIncluded
         self.bookletsIncluded = bookletsIncluded
+        self.polish = polish
+        self.originality = originality
+        self.replacedPartsNote = replacedPartsNote
+        self.serviceHistory = serviceHistory
+        self.lastServiceYear = lastServiceYear
         self.productionYear = productionYear
         self.returnsAccepted = returnsAccepted
         self.returnWindowHours = returnWindowHours

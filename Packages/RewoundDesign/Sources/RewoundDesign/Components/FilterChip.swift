@@ -7,11 +7,22 @@ import SwiftUI
 public struct FilterChip: View {
     let title: String
     let isSelected: Bool
+    let minTapHeight: CGFloat?
     let action: () -> Void
 
-    public init(_ title: String, isSelected: Bool, action: @escaping () -> Void) {
+    /// - Parameter minTapHeight: Grows the tap target to this height around
+    ///   the drawn capsule, which stays the same size. Nil (the default, for
+    ///   the dense rails in the filter sheet) keeps the target the capsule.
+    ///   Pass `Space.touchTarget` where a row of chips is the page's control.
+    public init(
+        _ title: String,
+        isSelected: Bool,
+        minTapHeight: CGFloat? = nil,
+        action: @escaping () -> Void
+    ) {
         self.title = title
         self.isSelected = isSelected
+        self.minTapHeight = minTapHeight
         self.action = action
     }
 
@@ -35,10 +46,27 @@ public struct FilterChip: View {
                             lineWidth: 1
                         )
                 )
+                .modifier(ChipTapHeight(minHeight: minTapHeight))
         }
         .buttonStyle(PressableStyle())
         .animation(Motion.easeFast, value: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// The grown tap target, when one was asked for; nothing at all otherwise,
+/// so a chip in a dense rail lays out exactly as it always has.
+private struct ChipTapHeight: ViewModifier {
+    let minHeight: CGFloat?
+
+    func body(content: Content) -> some View {
+        if let minHeight {
+            content
+                .frame(minHeight: minHeight)
+                .contentShape(Rectangle())
+        } else {
+            content
+        }
     }
 }
 

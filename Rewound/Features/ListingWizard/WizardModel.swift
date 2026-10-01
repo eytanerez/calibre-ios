@@ -61,6 +61,150 @@ struct WizardInclusions: Equatable {
     var boxPapersAnswer: Bool? { boxAnswered && papersAnswered ? box && papers : nil }
 }
 
+// MARK: - The three history answers
+
+/// The seller's answers to the three history questions (polish, original
+/// parts, last service), as the sell form holds them while they are typed.
+///
+/// Required before a NEW listing goes anywhere; on an edit they start
+/// unselected where the listing has none and never block a save (contracts,
+/// 2026-09-30, Part B). A chosen answer can be changed but not taken back, so
+/// nil only ever means "not answered yet".
+struct WizardHistory: Equatable {
+    var polish: String?
+    var originality: String?
+    /// "What was replaced?", as typed. Only asked, and only sent, beside
+    /// `replaced`.
+    var replacedNote = ""
+    var serviceHistory: String?
+    /// "Year of the last service", as typed. Only asked, and only sent,
+    /// beside `serviced`.
+    var serviceYearText = ""
+
+    /// The server's column is 120 characters.
+    static let noteLimit = 120
+    static let earliestYear = 1900
+
+    init() {}
+
+    /// From what the listing holds. Nil is an answer nobody gave.
+    init(_ history: ListingHistory?) {
+        polish = history?.polish
+        originality = history?.originality
+        replacedNote = history?.replacedPartsNote ?? ""
+        serviceHistory = history?.serviceHistory
+        serviceYearText = history?.lastServiceYear.map(String.init) ?? ""
+    }
+
+    func answer(_ question: HistoryQuestion) -> String? {
+        switch question {
+        case .polish: polish
+        case .originality: originality
+        case .service: serviceHistory
+        }
+    }
+
+    mutating func setAnswer(_ value: String, for question: HistoryQuestion) {
+        switch question {
+        case .polish: polish = value
+        case .originality: originality = value
+        case .service: serviceHistory = value
+        }
+    }
+
+    /// All three answered.
+    var isComplete: Bool {
+        HistoryQuestion.allCases.allSatisfy { answer($0) != nil }
+    }
+
+    var unanswered: [HistoryQuestion] {
+        HistoryQuestion.allCases.filter { answer($0) == nil }
+    }
+
+    var asksNote: Bool { originality == "replaced" }
+    var asksYear: Bool { serviceHistory == "serviced" }
+
+    /// The note as it would be stored: trimmed, runs of whitespace collapsed.
+    var normalizedNote: String { ConditionNote.normalized(replacedNote) }
+
+    var noteTooLong: Bool {
+        asksNote && normalizedNote.unicodeScalars.count > Self.noteLimit
+    }
+
+    var noteError: String? {
+        noteTooLong ? "Keep it to \(Self.noteLimit) characters." : nil
+    }
+
+    /// The typed year, when it is a whole year the server will take.
+    func serviceYear(currentYear: Int) -> Int? {
+        let text = serviceYearText.trimmingCharacters(in: .whitespaces)
+        guard text.count == 4, let year = Int(text), (Self.earliestYear...currentYear).contains(year) else {
+            return nil
+        }
+        return year
+    }
+
+    /// Said once something has been typed that cannot be a year: the field is
+    /// optional, so an empty one is never wrong.
+    func yearError(currentYear: Int) -> String? {
+        guard asksYear, !serviceYearText.trimmingCharacters(in: .whitespaces).isEmpty,
+              serviceYear(currentYear: currentYear) == nil else { return nil }
+        return "Enter a year from \(Self.earliestYear) to \(currentYear)."
+    }
+
+    /// Nothing typed that the server would refuse.
+    func isValid(currentYear: Int) -> Bool {
+        !noteTooLong && yearError(currentYear: currentYear) == nil
+    }
+
+    /// The note for the request: sent beside `replaced` only (the server
+    /// clears it under any other answer), `.null` when the seller has left it
+    /// empty or erased it, and left off while it is too long, so one long note
+    /// cannot stop everything else from saving.
+    var notePayload: WireNullable<String>? {
+        guard asksNote, !noteTooLong else { return nil }
+        let note = normalizedNote
+        return note.isEmpty ? .null : .value(note)
+    }
+
+    /// The year for the request, on the same rules as the note: beside
+    /// `serviced` only, `.null` when empty, left off while it is not a year.
+    func yearPayload(currentYear: Int) -> WireNullable<Int>? {
+        guard asksYear else { return nil }
+        if serviceYearText.trimmingCharacters(in: .whitespaces).isEmpty { return .null }
+        return serviceYear(currentYear: currentYear).map { .value($0) }
+    }
+
+    /// The answers as the listing will print them, for the review step. Nil
+    /// answers stay nil here; the review says so in its own words.
+    func history(currentYear: Int) -> ListingHistory {
+        ListingHistory(
+            polish: polish,
+            originality: originality,
+            replacedPartsNote: asksNote && !normalizedNote.isEmpty ? normalizedNote : nil,
+            serviceHistory: serviceHistory,
+            lastServiceYear: asksYear ? serviceYear(currentYear: currentYear) : nil
+        )
+    }
+
+    /// The review step's rows: each question's row label and the words the
+    /// listing page will print, or "Not answered".
+    func reviewRows(currentYear: Int) -> [(label: String, value: String)] {
+        let history = history(currentYear: currentYear)
+        return [
+            (HistoryQuestion.polish.rowLabel, ListingHistoryWords.polishRow(history.polish)),
+            (
+                HistoryQuestion.originality.rowLabel,
+                ListingHistoryWords.originalityRow(history.originality, note: history.replacedPartsNote)
+            ),
+            (
+                HistoryQuestion.service.rowLabel,
+                ListingHistoryWords.serviceRow(history.serviceHistory, year: history.lastServiceYear)
+            ),
+        ].map { ($0.0, $0.1 ?? "Not answered") }
+    }
+}
+
 // MARK: - Wizard context (presentation identity)
 
 /// What the wizard opens onto — a fresh listing (optionally prefilled from a
@@ -128,6 +272,7 @@ struct ListingPrefill: Equatable {
 /// first offending field into view.
 enum WizardField: Hashable {
     case brand, year, condition(ConditionPart), conditionNote(ConditionPart), price
+    case history(HistoryQuestion), historyNote, historyYear
 }
 
 /// The eight grades, in the order the sell form asks for them — the same
@@ -289,6 +434,15 @@ struct WizardSnapshot: Codable {
     var boxIncluded: Bool? = nil
     var papersIncluded: Bool? = nil
     var bookletsIncluded: Bool? = nil
+    /// The three history answers, and the note and year as typed. Optional
+    /// for the same reason as the fields above: absent is a draft written
+    /// before the questions existed, which leaves the listing's own answers
+    /// standing.
+    var historyPolish: String? = nil
+    var historyOriginality: String? = nil
+    var historyReplacedNote: String? = nil
+    var historyServiceHistory: String? = nil
+    var historyServiceYear: String? = nil
     var updatedAt: Date
 }
 
@@ -413,6 +567,10 @@ final class WizardModel {
     // from "no".
     var inclusions = WizardInclusions()
 
+    // The watch's past: polish, original parts, last service. Asked on
+    // Details after the grades; see `WizardHistory`.
+    var history = WizardHistory()
+
     // Photos
     var slots: [ListingImageCategory: WizardPhotoSlot] = [:]
     var extraPhotos: [WizardPhotoSlot] = []
@@ -503,6 +661,29 @@ final class WizardModel {
             && (yearUnknown || InputValidation.productionYear(yearText) != nil)
             && ConditionPart.allCases.allSatisfy { conditions[$0] != nil }
             && conditionNotesValid
+            && historyReady
+    }
+
+    /// The year the service-year field is checked against.
+    var currentYear: Int { Calendar.current.component(.year, from: .now) }
+
+    /// The three history answers are required before a NEW listing goes
+    /// anywhere; an edit shows them unselected where the listing has none and
+    /// never blocks on them (contracts, 2026-09-30, Part B). Either way,
+    /// nothing typed may be something the server would refuse.
+    var historyReady: Bool {
+        history.isValid(currentYear: currentYear) && (isEdit || history.isComplete)
+    }
+
+    /// Said beside an unanswered question once Continue has been pressed, and
+    /// only on a new listing.
+    func historyError(_ question: HistoryQuestion) -> String? {
+        guard attempted(0), !isEdit, history.answer(question) == nil else { return nil }
+        return question.requiredMessage
+    }
+
+    var historyYearError: String? {
+        history.yearError(currentYear: currentYear)
     }
 
     /// Every note within the server's limit. Notes are optional, so an empty
@@ -534,6 +715,11 @@ final class WizardModel {
         for part in ConditionPart.allCases where ConditionNote.isTooLong(conditionNotes[part] ?? "") {
             missing.append("a shorter \(part.label.lowercased()) note")
         }
+        if !isEdit {
+            missing.append(contentsOf: history.unanswered.map(\.rowLabel))
+        }
+        if history.noteTooLong { missing.append("a shorter note on what was replaced") }
+        if historyYearError != nil { missing.append("the year of the last service") }
         return missing
     }
 
@@ -612,6 +798,11 @@ final class WizardModel {
             if let part = ConditionPart.allCases.first(where: { conditionNoteError($0) != nil }) {
                 return .conditionNote(part)
             }
+            if let question = HistoryQuestion.allCases.first(where: { historyError($0) != nil }) {
+                return .history(question)
+            }
+            if history.noteTooLong { return .historyNote }
+            if historyYearError != nil { return .historyYear }
             return nil
         case 2:
             return priceFieldError != nil ? .price : nil
@@ -752,6 +943,9 @@ final class WizardModel {
             }
             conditionNotesMayBeStored = !notes.isEmpty
         }
+        // Nil (a server that predates the questions, or a listing nobody asked)
+        // starts every answer unselected.
+        history = WizardHistory(listing.history)
     }
 
     private func restore(from snapshot: WizardSnapshot) {
@@ -779,6 +973,13 @@ final class WizardModel {
             papers: snapshot.papersIncluded,
             booklets: snapshot.bookletsIncluded
         )
+        // The same for the history answers: what the draft holds wins, and
+        // what it does not hold leaves the listing's answer standing.
+        if let polish = snapshot.historyPolish { history.polish = polish }
+        if let originality = snapshot.historyOriginality { history.originality = originality }
+        if let note = snapshot.historyReplacedNote { history.replacedNote = note }
+        if let service = snapshot.historyServiceHistory { history.serviceHistory = service }
+        if let year = snapshot.historyServiceYear { history.serviceYearText = year }
         step = min(max(snapshot.step, 0), 3)
         fulfillRequestID = snapshot.fulfillRequestID
         for (key, grade) in snapshot.conditions {
@@ -912,6 +1113,13 @@ final class WizardModel {
             boxIncluded: inclusions.boxAnswer,
             papersIncluded: inclusions.papersAnswer,
             bookletsIncluded: inclusions.bookletsAnswer,
+            // An answer not given yet is left off, which writes nothing; the
+            // note and the year follow their answer (`WizardHistory`).
+            polish: history.polish,
+            originality: history.originality,
+            replacedPartsNote: history.notePayload,
+            serviceHistory: history.serviceHistory,
+            lastServiceYear: history.yearPayload(currentYear: currentYear),
             productionYear: yearUnknown ? nil : InputValidation.productionYear(yearText),
             returnsAccepted: returnsAccepted,
             // The server requires a window when returns are accepted, and
@@ -996,6 +1204,11 @@ final class WizardModel {
             boxIncluded: inclusions.boxAnswer,
             papersIncluded: inclusions.papersAnswer,
             bookletsIncluded: inclusions.bookletsAnswer,
+            historyPolish: history.polish,
+            historyOriginality: history.originality,
+            historyReplacedNote: history.replacedNote,
+            historyServiceHistory: history.serviceHistory,
+            historyServiceYear: history.serviceYearText,
             updatedAt: .now
         ))
     }
@@ -1386,6 +1599,13 @@ final class WizardModel {
             if !conditionNotesValid {
                 parts.append("Keep each condition note to \(ConditionNote.limit) characters.")
             }
+            if !isEdit, !history.isComplete {
+                parts.append("Answer the polish, parts and service questions.")
+            }
+            if history.noteTooLong {
+                parts.append("Keep the note on what was replaced to \(WizardHistory.noteLimit) characters.")
+            }
+            if let yearError = historyYearError { parts.append(yearError) }
             submitError = parts.joined(separator: " ")
             return false
         }

@@ -8,7 +8,17 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
     public let title: String
     public let reference: String?
     public let priceText: String
+    /// The overall grade, drawn as a small pill under the title block.
     public let condition: String?
+    /// The seller's answers worth a buyer's glance, in the contract's order
+    /// (polish, originality, box): "Unpolished", "All original", "Full set".
+    /// Printed after the grade, joined with " · ", wrapping rather than ever
+    /// cut short. Empty prints nothing.
+    public let facts: [String]
+    /// "Bracelet: Good" when one graded part is worse than the overall grade,
+    /// "2 parts graded lower" when several are; nil when none is.
+    /// A warning-tinted chip under the facts.
+    public let partException: String?
     public let watcherCount: Int?
     public let imageURL: URL?
     /// Seller is a verified business — earns the dealer badge.
@@ -46,6 +56,8 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         reference: String? = nil,
         priceText: String,
         condition: String? = nil,
+        facts: [String] = [],
+        partException: String? = nil,
         watcherCount: Int? = nil,
         imageURL: URL? = nil,
         isVerifiedDealer: Bool = false,
@@ -60,6 +72,8 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         self.reference = reference
         self.priceText = priceText
         self.condition = condition
+        self.facts = facts
+        self.partException = partException
         self.watcherCount = watcherCount
         self.imageURL = imageURL
         self.isVerifiedDealer = isVerifiedDealer
@@ -67,6 +81,104 @@ public struct ListingCardModel: Identifiable, Hashable, Sendable {
         self.reason = reason
         self.reservesReasonLine = reservesReasonLine
     }
+}
+
+/// The overall grade as a small pill on the page ground, where a listing
+/// card's text block prints it: "Like New", ahead of the card's facts.
+///
+/// Not `ConditionPill`, which is the frosted plate that rides on a photograph.
+/// This one sits on the card's own ground, so it wears the accent fill rather
+/// than a plate that only reads over an image.
+public struct GradePill: View {
+    let grade: String
+
+    public init(_ grade: String) {
+        self.grade = grade
+    }
+
+    public var body: some View {
+        Text(grade)
+            .font(RewoundType.sans(.semiBold, 12, relativeTo: .caption))
+            .foregroundStyle(Color.rewound.accentForeground)
+            .padding(.horizontal, Space.s)
+            .padding(.vertical, 3)
+            .background(Color.rewound.accent, in: Capsule())
+            // A grade is two words at most and never breaks across lines.
+            .fixedSize()
+    }
+}
+
+/// "Bracelet: Good" when a part of the watch was graded apart from the whole,
+/// in the warning tint with an info mark: the one thing on a card a buyer
+/// should read before they tap.
+///
+/// Wraps rather than truncating; the corner is the chip radius, not a capsule,
+/// so a second line still looks like the same chip.
+public struct PartExceptionChip: View {
+    let text: String
+
+    public init(_ text: String) {
+        self.text = text
+    }
+
+    public var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 11, weight: .semibold))
+                .accessibilityHidden(true)
+            Text(text)
+                .font(RewoundType.sans(.semiBold, 12, relativeTo: .caption))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(Color.rewound.warning)
+        .padding(.horizontal, Space.s)
+        .padding(.vertical, 3)
+        .background(
+            Color.rewound.warning.opacity(0.12),
+            in: RoundedRectangle(cornerRadius: Radius.chip, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The grade pill and the facts after it, on as many lines as they need.
+///
+/// Each fact is its own piece so a line breaks between facts, never inside
+/// one; the separator rides at the end of the fact before it.
+public struct GradeFactsLine: View {
+    let grade: String?
+    let facts: [String]
+    let font: Font
+
+    public init(grade: String?, facts: [String], font: Font = RewoundType.caption) {
+        self.grade = grade
+        self.facts = facts
+        self.font = font
+    }
+
+    public var body: some View {
+        WrapLayout(spacing: Space.xs + 2, lineSpacing: Space.xs) {
+            if let grade {
+                GradePill(grade)
+            }
+            ForEach(Array(facts.enumerated()), id: \.offset) { index, fact in
+                Text(index < facts.count - 1 ? "\(fact) \u{00B7}" : fact)
+                    .font(font)
+                    .foregroundStyle(Color.rewound.secondaryForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(([grade].compactMap { $0 } + facts).joined(separator: ", "))
+    }
+}
+
+extension EnvironmentValues {
+    /// Set by a shelf or grid that gives each of its cards the height of the
+    /// tallest one: the card then holds its price at the bottom, so prices
+    /// stay level whatever the facts and chips above them come to. Off by
+    /// default, where a card is exactly as tall as its content.
+    @Entry public var listingCardPinsPrice: Bool = false
 }
 
 /// The dealer mark: a verified business is behind this listing. Small,
@@ -171,13 +283,18 @@ private struct SteadyReasonSlot<Content: View>: View {
 /// (REWOUND_FINAL_PUSH_CONTRACTS.md §4):
 ///
 ///     [ photo, bleeding to the card edge, square, radius = card ]
-///        ⌐ condition pill (top-left, over the photo)
 ///        ⌐ watcher count (top-right, over the photo)
 ///     BRAND                                          year
 ///     Model name
 ///     Ref. 0000000
+///     (Like New) Unpolished · All original · Full set
+///     [ ⓘ Bracelet: Good ]
 ///     [ reason, when supplied — its slot held for the whole shelf ]
 ///     $ price                        [ verified-dealer chip ]
+///
+/// The grade left the photograph for the line under the title block on
+/// 2026-09-30 (the condition card contracts, Part D): it now leads the
+/// seller's answers, and a part graded apart from the whole follows it.
 ///
 /// The dealer mark sits on the price row rather than on a line of its own —
 /// Eytan, 2026-08-30: *"make the dealer mark on the right of the listing cards
@@ -194,6 +311,7 @@ public struct ListingCard<ImageContent: View>: View {
     @ViewBuilder let image: (URL?) -> ImageContent
 
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.listingCardPinsPrice) private var pinsPrice
 
     public init(model: ListingCardModel, @ViewBuilder image: @escaping (URL?) -> ImageContent) {
         self.model = model
@@ -233,18 +351,13 @@ public struct ListingCard<ImageContent: View>: View {
                         .background(Color.rewound.secondary.opacity(0.5))
                         .clipped()
 
-                    if let condition = model.condition {
-                        ConditionPill(condition)
-                            .padding(Space.s)
-                    }
-
                     if let watchers = model.watcherCount, watchers > 0 {
                         WatcherPill(count: watchers)
                             .padding(Space.s)
                             .frame(maxWidth: .infinity, alignment: .topTrailing)
                     }
 
-                    // Bottom-left, under the condition pill and clear of the
+                    // Bottom-left, clear of the
                     // watcher count. Inside the square, so it adds nothing to
                     // the card's height and the shelf stays level.
                     if model.isInCart {
@@ -320,6 +433,19 @@ public struct ListingCard<ImageContent: View>: View {
                         .opacity(model.reference == nil ? 0 : 1)
                         .accessibilityHidden(model.reference == nil)
                 }
+                // The grade and the seller's answers, then any part graded
+                // apart from the whole (contracts, 2026-09-30, Part D). Both
+                // wrap rather than truncate, so a card that carries them can
+                // run taller than one that does not; a shelf that wants its
+                // prices level sets `listingCardPinsPrice`.
+                if model.condition != nil || !model.facts.isEmpty {
+                    GradeFactsLine(grade: model.condition, facts: model.facts)
+                        .padding(.top, 3)
+                }
+                if let exception = model.partException {
+                    PartExceptionChip(exception)
+                        .padding(.top, 2)
+                }
                 // The price is the one thing on this card that may never be
                 // lost. It keeps the leading edge of its row — the watcher
                 // count that used to share it (and truncate it to "$…" on a
@@ -356,6 +482,9 @@ public struct ListingCard<ImageContent: View>: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                }
+                if pinsPrice {
+                    Spacer(minLength: 0)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                     Text(model.priceText)

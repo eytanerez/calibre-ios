@@ -228,7 +228,9 @@ extension Listing {
             title: model ?? title,
             reference: referenceNumber,
             priceText: PriceFormatter.listing(price.value, currency: currency),
-            condition: condition?.overall,
+            condition: GradeScale.cleaned(condition?.overall),
+            facts: ListingHistoryWords.cardFacts(for: self),
+            partException: ConditionBreakdown(listing: self).cardChip,
             watcherCount: metrics?.watchers,
             imageURL: images.first?.url,
             isVerifiedDealer: seller?.isVerifiedDealer ?? false,
@@ -237,6 +239,19 @@ extension Listing {
     }
 
     var cardModel: ListingCardModel { cardModel(inCart: false) }
+
+    /// What VoiceOver reads for a card: the watch, its grade and the seller's
+    /// answers, any part graded apart, then the price.
+    var cardAccessibilityLabel: String {
+        let card = cardModel
+        return (
+            ["\(card.brand) \(card.title)", card.condition]
+                + card.facts
+                + [card.partException, card.priceText]
+        )
+        .compactMap { $0 }
+        .joined(separator: ", ")
+    }
 
     /// The listing's page on the web marketplace — used for sharing.
     var webURL: URL {
@@ -450,7 +465,10 @@ struct ListingGridCard: View {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
         }
-        .accessibilityLabel("\(listing.cardModel.brand) \(listing.cardModel.title), \(listing.cardModel.priceText)")
+        // A shelf or grid that sizes its cards to the tallest one gets level
+        // prices; one that does not is unaffected (`listingCardPinsPrice`).
+        .environment(\.listingCardPinsPrice, true)
+        .accessibilityLabel(listing.cardAccessibilityLabel)
     }
 
     private func toggleSaved() {

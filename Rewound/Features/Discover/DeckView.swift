@@ -310,6 +310,11 @@ struct DeckView: View {
         parts.append(listing.title)
         parts.append(PriceFormatter.listing(listing.price.value, currency: listing.currency))
         if let condition = listing.condition?.overall { parts.append(condition) }
+        parts.append(contentsOf: ListingHistoryWords.cardFacts(for: listing))
+        for part in ConditionBreakdown(listing: listing).worseParts {
+            parts.append(ConditionBreakdown.calloutTitle(part))
+            if let note = part.note { parts.append(note) }
+        }
         return parts.joined(separator: ", ")
     }
 }
