@@ -44,6 +44,8 @@ public struct ConditionPill: View {
         Text(condition)
             .font(RewoundType.caption)
             .foregroundStyle(Color.rewound.foreground)
+            // A grade is two words at most and never breaks across lines.
+            .lineLimit(1)
             .padding(.horizontal, Space.m)
             .padding(.vertical, 5)
             .background(Color.rewound.background.opacity(0.95), in: Capsule())

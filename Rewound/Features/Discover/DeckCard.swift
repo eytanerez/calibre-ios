@@ -10,21 +10,21 @@ import SwiftUI
 /// same one `ListingCard` uses, because §4 fixes that order across the whole
 /// product and the deck is the second listing-card shape:
 ///
-///     [ photo ]                              ⌐ watcher count top-right
+///     [ photo ]      ⌐ grade top-left ... watcher count top-right
 ///     BRAND                                          year
 ///     Model name
 ///     Ref. 0000000
-///     (Like New) (ⓘ Bracelet: Worn)
+///     Bracelet: Worn                (only when a part was graded lower)
 ///     Unpolished · All original · Full set
 ///     [ verified-dealer chip, only when true ]
 ///     $ price
 ///
-/// The grade left the photograph for the line under the title on 2026-09-30,
-/// and the two condition rows are the grid card's own (Option D, 2026-10-01):
-/// the grade pill with a neutral outlined pill beside it when a part was
-/// graded lower, then the seller's facts. One reading on every card shape.
-/// The deck is a single card with no neighbour to line up with, so it holds
-/// neither row when it has nothing to put in it.
+/// The grade left the photograph on 2026-09-30 and came back to it on
+/// 2026-10-02, the grid card's way (`CardPhotoBadges`): top-left, in a row with
+/// the watcher count, so a long grade is never cut off by it. Under the title
+/// stay the note on a part graded lower and the seller's facts. One reading on
+/// every card shape. The deck is a single card with no neighbour to line up
+/// with, so it holds neither row when it has nothing to put in it.
 ///
 /// The deck keeps `sectionTitle` for the model line where the grid card uses
 /// `bodyMedium` — §4 fixes the order, not the type size, and this card is the
@@ -97,14 +97,14 @@ struct DeckCard: View {
             .frame(width: width, height: height)
             .clipped()
 
-            // §4: the watcher count rides top-right over the photograph. The
-            // grade rode top-left until 2026-09-30, when it moved under the
-            // title to lead the seller's answers.
-            if let watchers = listing.metrics?.watchers, watchers > 0 {
-                WatcherPill(count: watchers)
-                    .padding(Space.m)
-                    .frame(maxWidth: .infinity, alignment: .topTrailing)
-            }
+            // §4: the grade rides top-left over the photograph and the watcher
+            // count top-right, as one row so neither can cut the other off.
+            CardPhotoBadges(
+                condition: GradeScale.cleaned(listing.condition?.overall),
+                watchers: listing.metrics?.watchers
+            )
+            .padding(Space.m)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(width: width, height: height)
     }
@@ -151,10 +151,8 @@ struct DeckCard: View {
                     .minimumScaleFactor(0.8)
             }
 
-            let grade = GradeScale.cleaned(listing.condition?.overall)
-            let part = breakdown.cardChip
-            if grade != nil || part != nil {
-                CardConditionRow(grade: grade, part: part, reserves: false)
+            if let part = breakdown.cardChip {
+                PartExceptionChip(part)
                     .padding(.top, Space.xs)
             }
             CardFactsLine(

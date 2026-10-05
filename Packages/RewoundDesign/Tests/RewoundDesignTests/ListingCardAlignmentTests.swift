@@ -305,7 +305,7 @@ final class ListingCardAlignmentTests: XCTestCase {
             id: "busy", brand: "Omega", year: "2020", title: "Speedmaster Professional",
             reference: "310.30.42", priceText: "$4,950", condition: "Very Good",
             facts: ["Unpolished", "All original", "Full set"],
-            partException: "2 parts graded lower"
+            partException: "2 parts below Very Good"
         )
         let gutter: CGFloat = 12
         let row = HStack(alignment: .top, spacing: gutter) {
@@ -356,9 +356,9 @@ final class ListingCardAlignmentTests: XCTestCase {
     /// Eytan, choosing Option D: "one has a bigger title than the other, still
     /// line everything up."
     ///
-    /// Three cards on one pinned shelf that differ in every way Option D can
-    /// differ: a long title with a part graded lower (wide enough that the
-    /// part pill has to take a second line at a lane card's width) and all
+    /// Three cards on one pinned shelf that differ in every way the card can
+    /// differ: a long title with a part graded lower (a note under the title
+    /// block that makes this card taller than its neighbours') and all
     /// three facts; a short card with a grade and the same facts but no part
     /// and no reference; and a card with no grade, no part, no facts and no
     /// reference. The grade row, the facts row
@@ -458,33 +458,32 @@ final class ListingCardAlignmentTests: XCTestCase {
     }
 
     @MainActor
-    func testOptionDRowsStandLevelOnAShelfOfCardsThatDiffer() {
+    func testRowsStandLevelOnAShelfOfCardsThatDiffer() {
         RewoundFonts.register()
         let scale = Int(Self.pixelScale)
         guard let image = shelfImage() else { return XCTFail("the shelf did not render") }
         let belowPhoto = Int(Self.laneCardWidth) * scale + 4 * scale
 
-        struct Read { let card: ShelfCard; let grade: Int?; let bands: [ClosedRange<Int>] }
+        struct Read { let card: ShelfCard; let accentBelowPhoto: Int?; let bands: [ClosedRange<Int>] }
         var reads: [Read] = []
         for (index, card) in ShelfCard.allCases.enumerated() {
             let x0 = Int((Self.laneCardWidth + Space.l) * CGFloat(index)) * scale
-            // The leading 55% of the card: the price, the facts and the pills
+            // The leading 55% of the card: the price, the facts and the note
             // live at the leading edge, and the dealer mark at the trailing one.
             let x1 = x0 + Int(Self.laneCardWidth * 0.55) * scale
             let rows = inkRows(image, xFrom: x0, xTo: x1, yFrom: belowPhoto)
             XCTAssertFalse(rows.isEmpty, "\(card) drew nothing under its photo; nothing was measured")
             reads.append(Read(
                 card: card,
-                grade: firstAccentRow(image, xFrom: x0, xTo: x0 + Int(Self.laneCardWidth) * scale, yFrom: belowPhoto),
+                accentBelowPhoto: firstAccentRow(image, xFrom: x0, xTo: x0 + Int(Self.laneCardWidth) * scale, yFrom: belowPhoto),
                 bands: bands(rows)
             ))
         }
-        print("OPTION-D " + reads.map { "\($0.card): grade=\($0.grade.map(String.init) ?? "none") bands=\($0.bands)" }.joined(separator: " | "))
+        print("ROWS " + reads.map { "\($0.card): bands=\($0.bands)" }.joined(separator: " | "))
 
         guard reads.count == ShelfCard.allCases.count,
               let busy = reads.first(where: { $0.card == .busy }),
-              let plain = reads.first(where: { $0.card == .plain }),
-              let bare = reads.first(where: { $0.card == .bare }) else {
+              let plain = reads.first(where: { $0.card == .plain }) else {
             return XCTFail("not every card was read")
         }
 
@@ -494,8 +493,8 @@ final class ListingCardAlignmentTests: XCTestCase {
         XCTAssertEqual(Set(prices).count, 1, "the prices stand on different lines: \(prices)")
 
         // The facts: the band directly above the price, on the two cards that
-        // have facts. The busy card's part pill took a second line; that line
-        // must not have pushed its facts below the plain card's.
+        // have facts. The busy card's part note took a line; that line must
+        // not have pushed its facts below the plain card's.
         guard busy.bands.count >= 2, plain.bands.count >= 2 else {
             return XCTFail("a card with facts drew fewer than two bands")
         }
@@ -506,25 +505,149 @@ final class ListingCardAlignmentTests: XCTestCase {
             "the facts rows stand \(busyFacts.lowerBound - plainFacts.lowerBound) device pixels apart"
         )
 
-        // The grade row: the top of the grade pill's fill, on the two cards
-        // that have a grade. The bare card has none, so it paints no fill.
-        guard let busyGrade = busy.grade, let plainGrade = plain.grade else {
-            return XCTFail("a graded card painted no grade pill")
+        // The grade is on the photograph now (Eytan, 2026-10-02), so the text
+        // block paints none of the grade pill's accent fill on any card.
+        for read in reads {
+            XCTAssertNil(read.accentBelowPhoto, "\(read.card) still paints a grade pill under its photo")
         }
-        XCTAssertEqual(busyGrade, plainGrade, "the grade rows stand \(busyGrade - plainGrade) device pixels apart")
-        XCTAssertNil(bare.grade, "the bare card painted a grade pill it does not have")
 
-        // The bare card holds both condition rows: on its own, unpinned, it is
-        // exactly as tall as the plain card that has a grade and facts. And
-        // the busy card really did wrap its part pill, or the shelf above
-        // proved nothing: it is a pill line taller than the plain card.
+        // The bare card holds the facts row: on its own, unpinned, it is
+        // exactly as tall as the plain card that has facts. And the busy card
+        // really did add its part note, or the shelf above proved nothing: it
+        // is a note line taller than the plain card.
         func height(_ card: ShelfCard) -> CGFloat {
             UIHostingController(rootView: ListingCard(model: card.model) { _ in Rectangle() })
                 .sizeThatFits(in: CGSize(width: Self.laneCardWidth, height: .greatestFiniteMagnitude)).height
         }
-        print("OPTION-D-HEIGHTS busy=\(height(.busy)) plain=\(height(.plain)) bare=\(height(.bare))")
+        print("ROW-HEIGHTS busy=\(height(.busy)) plain=\(height(.plain)) bare=\(height(.bare))")
         XCTAssertEqual(height(.bare), height(.plain), accuracy: 0.5, "the bare card does not hold the rows it has nothing for")
-        XCTAssertGreaterThan(height(.busy), height(.plain) + 12, "the busy card's part pill did not take a second line")
+        XCTAssertGreaterThan(height(.busy), height(.plain) + 12, "the busy card's part note did not add a line")
+    }
+
+    // MARK: - The photograph is as wide as its card
+
+    /// The width, in points, of the painted photograph at mid height of a card
+    /// drawn in `view`'s layout context. The photograph is flat blue so it is
+    /// the only thing of that colour on the card.
+    @MainActor
+    private func paintedPhotoWidth<V: View>(_ view: V) -> Int? {
+        let renderer = ImageRenderer(content: view.background(Color.white).environment(\.colorScheme, .light))
+        renderer.scale = 1
+        guard let image = renderer.uiImage?.cgImage else { return nil }
+        let w = image.width, h = image.height
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+        guard let context = CGContext(
+            data: &pixels, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        let y = 100
+        var first = w, last = -1
+        for x in 0..<min(w, Int(Self.laneCardWidth) + 2) {
+            let i = (y * w + x) * 4
+            if pixels[i + 2] > 200 && pixels[i] < 90 { first = min(first, x); last = max(last, x) }
+        }
+        return last < first ? nil : last - first + 1
+    }
+
+    /// Found by looking at the app: on Home the photograph was 148pt inside a
+    /// 168pt card, because with nothing to hold it open it was the most flexible
+    /// view in the card and gave way to the text block when the card was sized
+    /// from its content. It is measured in the layout contexts the app uses.
+    @MainActor
+    func testThePhotographIsAsWideAsItsCardWhateverSizesTheCard() {
+        RewoundFonts.register()
+        let model = ListingCardModel(
+            id: "x", brand: "Rolex", year: "2022", title: "Day-Date 40", reference: "228238",
+            priceText: "$44,900", condition: "Like New", watcherCount: 72
+        )
+        func card() -> some View {
+            ListingCard(model: model) { _ in Rectangle().fill(Color(red: 0.2, green: 0.4, blue: 0.9)) }
+        }
+        let width = Int(Self.laneCardWidth)
+        XCTAssertEqual(paintedPhotoWidth(card().frame(width: Self.laneCardWidth)), width, "alone")
+        XCTAssertEqual(
+            paintedPhotoWidth(card().frame(width: Self.laneCardWidth).environment(\.listingCardPinsPrice, true)),
+            width, "pinned, sized from its content"
+        )
+        let shelf = HStack(alignment: .top, spacing: Space.l) {
+            card().frame(width: Self.laneCardWidth).frame(maxHeight: .infinity, alignment: .top)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .environment(\.listingCardPinsPrice, true)
+        XCTAssertEqual(paintedPhotoWidth(shelf), width, "in a lane")
+    }
+
+    // MARK: - The badges on the photograph
+
+    /// A lane card's photograph is `laneCardWidth` wide and the badges sit in
+    /// `Space.s` of padding either side.
+    private static var badgeWidth: CGFloat { laneCardWidth - Space.s * 2 }
+
+    @MainActor
+    private func badgeSize(
+        condition: String?, watchers: Int?, signal: ListingCardSignal? = nil, width: CGFloat? = nil
+    ) -> CGSize {
+        RewoundFonts.register()
+        let view = CardPhotoBadges(condition: condition, watchers: watchers, signal: signal)
+        return UIHostingController(rootView: view)
+            .sizeThatFits(in: CGSize(width: width ?? Self.badgeWidth, height: .greatestFiniteMagnitude))
+    }
+
+    /// Eytan: "push it up to the top of the image like before just make sure
+    /// that the long ones don't cut off with the views." What cut off before was
+    /// a long grade lying under the watcher count, because each was placed on
+    /// its own. Measured at the real fonts: "Very Good" is 81pt, a count of 999
+    /// is 65pt, and a lane photograph leaves 152pt, so the longest grade and any
+    /// count up to 999 share one line.
+    @MainActor
+    func testALongGradeAndABigWatcherCountShareOneLine() {
+        let alone = badgeSize(condition: "Very Good", watchers: nil)
+        let together = badgeSize(condition: "Very Good", watchers: 999)
+        print("BADGES alone=\(alone) together=\(together)")
+        XCTAssertGreaterThan(alone.height, 15, "the grade pill measured as nothing")
+        XCTAssertEqual(together.height, alone.height, accuracy: 0.5, "the grade and the count did not fit one line")
+        XCTAssertLessThanOrEqual(together.width, Self.badgeWidth + 0.5)
+    }
+
+    /// Past 999 the two no longer fit one line (81 + 72 + the gap is 157pt
+    /// against 152). The count moves under the grade; it does not lie on it and
+    /// it is not shrunk or cut. The row grows by the count's own height.
+    @MainActor
+    func testAFourDigitCountDropsUnderTheGradeInsteadOfCoveringIt() {
+        let alone = badgeSize(condition: "Very Good", watchers: nil)
+        let crowded = badgeSize(condition: "Very Good", watchers: 1234)
+        print("BADGES grade=\(alone) withBigCount=\(crowded)")
+        XCTAssertGreaterThan(crowded.height, alone.height + 12, "the count did not move under the grade; it is lying on it")
+        XCTAssertLessThanOrEqual(crowded.width, Self.badgeWidth + 0.5)
+    }
+
+    /// A price chip is wider than a watcher count. When the grade and the chip
+    /// cannot share a line, the chip drops under the grade instead of lying on
+    /// it: the row is taller than one pill, and still no wider than the photo.
+    @MainActor
+    func testAWideChipDropsUnderTheGradeInsteadOfCoveringIt() {
+        let chip = ListingCardSignal(label: "Price drop \u{2212}12%", isPriceDrop: true)
+        let alone = badgeSize(condition: "Very Good", watchers: nil)
+        let stacked = badgeSize(condition: "Very Good", watchers: nil, signal: chip)
+        print("BADGES grade=\(alone) withChip=\(stacked)")
+        XCTAssertGreaterThan(stacked.height, alone.height + 12, "the chip did not move under the grade; it is lying on it")
+        XCTAssertLessThanOrEqual(stacked.width, Self.badgeWidth + 0.5)
+
+        // And on a photograph wide enough for both, they stand on one line.
+        let wide = badgeSize(condition: "Very Good", watchers: nil, signal: chip, width: 340)
+        XCTAssertEqual(wide.height, alone.height, accuracy: 0.5, "a wide photograph still stacked the badges")
+    }
+
+    /// Every grade the sell form can write fits one line next to a three-digit
+    /// count at the lane width: the badge is measured, not assumed.
+    @MainActor
+    func testEveryGradeFitsBesideAThreeDigitCount() {
+        let one = badgeSize(condition: "Good", watchers: nil).height
+        for grade in ["New", "Like New", "Very Good", "Good", "Worn"] {
+            let size = badgeSize(condition: grade, watchers: 999)
+            XCTAssertEqual(size.height, one, accuracy: 0.5, "\"\(grade)\" did not fit beside a three-digit count")
+        }
     }
 
     /// The facts never end in an ellipsis. One line is held by

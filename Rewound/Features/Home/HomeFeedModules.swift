@@ -117,7 +117,10 @@ extension HomeFeedCard {
             isVerifiedDealer: base.isVerifiedDealer,
             isInCart: base.isInCart,
             reason: base.reason,
-            reservesReasonLine: base.reservesReasonLine
+            reservesReasonLine: base.reservesReasonLine,
+            // Drawn by the card itself, in the same row as the grade, so a long
+            // grade and a "Price drop −12%" chip can never lie on each other.
+            signal: signal.map { ListingCardSignal(label: $0.label, isPriceDrop: $0.tone == "drop") }
         )
     }
 }
@@ -405,28 +408,15 @@ private struct FeedCardLane: View {
                         ) { url in
                             ListingImageWell(url: url)
                         }
-                        // The chip lands in the photograph's top-right corner,
-                        // which is where the watcher count sits — so
-                        // `laneCardModel` takes the count off any card that has
-                        // one. Two badges stacked in one corner is not a
-                        // composition, and a price cut is the sharper claim.
-                        // The grade used to ride top-left beside it; it lives
-                        // under the title now, so the corner is the chip's.
-                        .overlay(alignment: .topTrailing) {
-                            if let signal = card.signal {
-                                FeedSignalChip(signal: signal)
-                                    .padding(Space.s)
-                            }
-                        }
                     }
                     .buttonStyle(PressableStyle())
                     .matchedTransitionSource(id: sourceID, in: zoomNamespace)
                     .frame(width: cardWidth)
                     // Every card as tall as the tallest (the HStack below is
                     // sized to its tallest child). The card spends the extra
-                    // height between its grade row and its facts row, so a
-                    // part pill that took a second line on one card leaves
-                    // every other row on the shelf level.
+                    // height between its part note and its facts row, so a
+                    // note on one card leaves every other row on the shelf
+                    // level.
                     .frame(maxHeight: .infinity, alignment: .top)
                     .environment(\.listingCardPinsPrice, true)
                     .accessibilityLabel(

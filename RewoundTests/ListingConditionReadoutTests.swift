@@ -102,7 +102,7 @@ final class ListingConditionReadoutTests: XCTestCase {
 
         condition["clasp"] = "Worn"
         let two = ConditionBreakdown(listing: try listing(condition: condition))
-        XCTAssertEqual(two.cardChip, "2 parts graded lower")
+        XCTAssertEqual(two.cardChip, "2 parts below Very Good")
 
         var betterOnly = Self.allVeryGood
         betterOnly["crystal"] = "New"

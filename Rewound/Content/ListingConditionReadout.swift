@@ -181,14 +181,16 @@ struct ConditionBreakdown: Equatable {
         differing.filter { direction(of: $0) == .worse }
     }
 
-    /// The warning chip on a grid card: "Bracelet: Good" for one worse part,
-    /// "2 parts graded lower" for more, nil when no part is worse.
+    /// The note under a grid card's grade: "Bracelet: Good" for one worse part,
+    /// "2 parts below Very Good" for more, nil when no part is worse. The count
+    /// names the grade it is below, because "graded lower" on its own left a
+    /// reader asking lower than what.
     var cardChip: String? {
         let worse = worseParts
         switch worse.count {
         case 0: return nil
         case 1: return "\(worse[0].label): \(worse[0].grade)"
-        default: return "\(worse.count) parts graded lower"
+        default: return "\(worse.count) parts below \(overall ?? "the overall grade")"
         }
     }
 
