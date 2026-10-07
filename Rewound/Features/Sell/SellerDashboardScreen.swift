@@ -205,8 +205,9 @@ struct SellerDashboardScreen: View {
         // a seller sent here is not sent away from their own listings.
         .sheet(isPresented: $showSetup) {
             NavigationStack {
-                SellGateScreen(mode: .onboarding(onReadinessChange: { readiness in
-                    if readiness.canAccessDashboard { showSetup = false }
+                SellGateScreen(mode: .onboarding(playsFinish: false, onFinished: {
+                    showSetup = false
+                    Task { await load() }
                 }))
                 .navigationTitle("Finish setting up")
                 .navigationBarTitleDisplayMode(.inline)
@@ -555,11 +556,27 @@ struct SellerDashboardScreen: View {
 
     // MARK: - Setup still blocked
 
-    /// True when this seller cannot clear the setup gate but is on the shop
-    /// anyway, because `SellScreen` found inventory or a sale here worth
-    /// keeping in front of them.
+    /// True when payouts are what stands between this seller and a new
+    /// listing — still theirs to finish, or Stripe still switching them on.
+    ///
+    /// The second case is new to this screen: setup now hands a seller here
+    /// the moment their half is done (card included), so a seller whose only
+    /// wait is Stripe's verdict lands on the dashboard and this notice is
+    /// where that wait is said. A card-only blocker is the card banner's job.
     private var setupIsBlocked: Bool {
-        services.seller.readiness?.canAccessDashboard == false
+        guard let readiness = services.seller.readiness, !readiness.canList else { return false }
+        if let missing = readiness.missingRequirements {
+            return missing.contains("connect_onboarding") || missing.contains("payouts_enabled")
+        }
+        return !readiness.canAccessDashboard
+    }
+
+    /// Stripe has everything and is switching payouts on: nothing for the
+    /// seller to do. `payoutStep` calls `complete` "Verified", which is not
+    /// yet true while payouts are still off, so the notice says the wait.
+    private var waitingOnStripePayouts: Bool {
+        guard let connect = services.seller.readiness?.connect else { return false }
+        return connect.status == .complete && !connect.payoutsEnabled
     }
 
     /// What is still outstanding, at the top of the shop rather than instead of
@@ -578,9 +595,13 @@ struct SellerDashboardScreen: View {
     private var setupBlockedNotice: some View {
         if let step = services.seller.readiness?.connect.payoutStep {
             CalloutBand(
-                icon: "exclamationmark.circle",
-                title: step.title ?? "Finish setting up payouts",
-                message: step.body,
+                icon: waitingOnStripePayouts || step.status == .underReview ? "clock" : "exclamationmark.circle",
+                title: waitingOnStripePayouts
+                    ? "Stripe is switching your payouts on"
+                    : (step.title ?? "Finish setting up payouts"),
+                message: waitingOnStripePayouts
+                    ? "Your side of setup is done. New listings open the moment they finish."
+                    : step.body,
                 action: { showSetup = true }
             )
             .accessibilityElement(children: .combine)
@@ -861,7 +882,13 @@ struct SellerDashboardScreen: View {
         // asking to create a new listing routes to card repair instead of
         // letting the wizard fail after the seller has already filled a page.
         if case .new = kind, services.seller.readiness?.canList != true {
-            showSellerCard = true
+            // Whichever half is actually in the way: the card, or payouts
+            // (still the seller's to finish, or Stripe still verifying).
+            if setupIsBlocked {
+                showSetup = true
+            } else {
+                showSellerCard = true
+            }
             return
         }
         wizardContext = WizardContext(kind: kind)

@@ -80,14 +80,25 @@ struct SupportChatScreen: View {
         !session.isAuthenticated && services.support.guestToken == nil
     }
 
-    /// The named person on the Rewound side, once one is assigned. Everything
-    /// below falls back to the generic wording while this is nil.
+    /// The named person on the Rewound side. Everything below falls back to
+    /// the generic wording while this is nil.
     ///
-    /// Off the payload every time, and nowhere else. There is no list of names
-    /// in this app to go stale when the people change — adding, renaming or
-    /// reassigning a contact is the server's to do, and this screen finds out
-    /// the same way the customer does.
-    private var contactName: String? { conversation?.assignedContact?.name }
+    /// Off the server's payloads every time, and nowhere else: the
+    /// conversation's own contact once there is one, and before that — a new
+    /// chat — the contact stamped on the member's account. Reading only the
+    /// conversation left every new chat nameless for a member who has had a
+    /// named contact since the day the account was made. There is no list of
+    /// names in this app to go stale when the people change.
+    private var contact: SupportContact? {
+        SupportContact.shown(
+            onThread: conversation?.assignedContact,
+            account: session.user?.assignedContact,
+            isAuthenticated: session.isAuthenticated,
+            newestThread: services.support.threads.first?.assignedContact
+        )
+    }
+
+    private var contactName: String? { contact?.name }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -99,6 +110,9 @@ struct SupportChatScreen: View {
         .navigationTitle(conversation?.title() ?? "New conversation")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadAndPoll() }
+        // The account's contact is what a new chat names, and the copy of the
+        // user read at launch can be days old.
+        .task { await session.refreshUser() }
     }
 
     private var header: some View {
@@ -133,7 +147,7 @@ struct SupportChatScreen: View {
     /// are derived from the assigned contact's own name at render, so a
     /// renamed or reassigned contact needs nothing changed here.
     @ViewBuilder private var contactCard: some View {
-        if let contact = conversation?.assignedContact, let name = contact.name {
+        if let contact, let name = contact.name {
             HStack(spacing: Space.s) {
                 AvatarInitial(initials: contact.initials, size: .s)
                 VStack(alignment: .leading, spacing: 0) {
@@ -153,6 +167,9 @@ struct SupportChatScreen: View {
     /// or generic line.
     private var statusLine: String {
         guard let conversation else {
+            if let contactName {
+                return "\(contactName) typically replies within a day."
+            }
             return "We typically reply within a day."
         }
         switch conversation.status {
@@ -169,8 +186,10 @@ struct SupportChatScreen: View {
         case .closed:
             return "This conversation is closed. Write again any time and it reopens."
         case .open, .unknown:
-            if contactName != nil {
-                return "Messages come personally from them. We typically reply within a day."
+            // Named rather than "them": what a name does not say about the
+            // person is not this screen's to guess.
+            if let contactName {
+                return "Messages come personally from \(contactName), usually within a day."
             }
             return "We typically reply within a day."
         }

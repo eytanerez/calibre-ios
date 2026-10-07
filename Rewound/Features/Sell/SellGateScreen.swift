@@ -8,13 +8,22 @@ import SwiftUI
 /// A signed-in seller sees their setup instead of the pitch: payouts, then the
 /// card, with the payouts step rendering whichever of the backend's states they
 /// are actually in (`ConnectSetupStatus`). The card is only drawn where it is
-/// still something to do — see `setupSection`. Nothing here traps anyone: the
-/// tab bar stays put, every sheet dismisses, and the card step can be taken
-/// before or after payouts.
+/// still something to do — see `setupSection` — and is the step to take once
+/// payouts need nothing more from the seller. Nothing here traps anyone: the
+/// tab bar stays put and every sheet dismisses.
+///
+/// Setup ends on the dashboard (Eytan, 2026-10-06: "you do the card and
+/// straight to dashboard"). The moment the seller's half is done — Stripe has
+/// their details and a card is on file — `onFinished` hands them over, even
+/// while Stripe is still switching payouts on: the dashboard says that wait at
+/// its top. There is no "list your first watch" stop in between.
 struct SellGateScreen: View {
     enum Mode {
         case guest
-        case onboarding(onReadinessChange: (SellerReadiness) -> Void)
+        /// `playsFinish`: whether the save that completes setup plays the
+        /// finish before `onFinished`. The Sell tab's gate does; the
+        /// dashboard's own setup sheet does not — that seller has a shop.
+        case onboarding(playsFinish: Bool = true, onFinished: () -> Void)
     }
 
     let mode: Mode
@@ -30,7 +39,16 @@ struct SellGateScreen: View {
     @State private var showWebFallback = false
     @State private var refreshingReadiness = false
     @State private var showCardStep = false
-    @State private var sellerCard: SellerCardState?
+    /// Whether the card sheet should open straight onto Stripe's card form:
+    /// true only when it was opened by a return from Stripe's payout form.
+    @State private var cardStepOpensForm = false
+    /// The card the card step draws. Held, not assigned: a saved card is
+    /// drawn only once readiness has been re-read — see `SellerCardSaveHold`.
+    @State private var cardHold = SellerCardSaveHold()
+    private var sellerCard: SellerCardState? { cardHold.shown }
+    /// The saved card the finish is playing for, while it plays.
+    @State private var finishCard: SellerCardState?
+    @State private var finishRun = SellerSetupFinishRun()
     /// How far setup has got, held at its peak so the crown never winds back.
     @State private var setupProgress = SellerSetupProgress()
 
@@ -72,7 +90,7 @@ struct SellGateScreen: View {
                 publishableKey: item.key,
                 onExit: {
                     accountSession = nil
-                    Task { await refreshReadiness() }
+                    Task { await refreshReadiness(backFromStripe: true) }
                 },
                 onLoadFailure: { message in
                     accountSession = nil
@@ -86,9 +104,28 @@ struct SellGateScreen: View {
             )
         }
         .sheet(isPresented: $showCardStep) {
-            SellerCardScreen { saved in
-                sellerCard = saved
+            SellerCardScreen(
+                onSaved: { saved in cardSaved(saved) },
+                opensFormImmediately: cardStepOpensForm,
+                announcesSave: !SellerSetupFinishRule.wouldPlay(
+                    enabled: playsFinish,
+                    readiness: services.seller.readiness,
+                    cardBefore: sellerCard
+                )
+            )
+        }
+        // The finish plays over the gate, which stays exactly as it was
+        // underneath until the run resolves.
+        .overlay {
+            if let finishCard {
+                SellerSetupFinishView(card: finishCard) {
+                    resolveFinish(finishRun.endAnimation())
+                }
+                .transition(.opacity)
             }
+        }
+        .onChange(of: showCardStep) { _, showing in
+            if !showing { cardStepOpensForm = false }
         }
         .task(id: accountSession?.clientSecret) {
             // The Connect SDK needs the publishable key before it can present.
@@ -109,7 +146,7 @@ struct SellGateScreen: View {
             // The card gates listing, not payouts, so its absence is shown as
             // a step to take rather than as a blocked screen.
             if case .onboarding = mode {
-                sellerCard = try? await services.seller.sellerCard()
+                cardHold.show(try? await services.seller.sellerCard())
             }
         }
     }
@@ -247,8 +284,9 @@ struct SellGateScreen: View {
             // seller-setup link that there were two things to do when there
             // was one. `cardStepIsRedundant` keeps the expiring-card warning
             // out of that rule.
+            let payoutsDone = SellerSetupSteps.payoutsNeedNothingFromSeller(step)
             let showsCard = step.status != .rejected
-                && !SellerSetupSteps.cardStepIsRedundant(card: sellerCard, payoutsComplete: step.isComplete)
+                && !SellerSetupSteps.cardStepIsRedundant(card: sellerCard, payoutsComplete: payoutsDone)
             let stepsShown = showsCard ? 2 : 1
             VStack(alignment: .leading, spacing: Space.l) {
                 HStack(alignment: .center, spacing: Space.m) {
@@ -270,7 +308,7 @@ struct SellGateScreen: View {
 
                 payoutStepCard(step, of: stepsShown)
                 if showsCard {
-                    cardStepCard(payoutsComplete: step.isComplete)
+                    cardStepCard(payoutsComplete: payoutsDone)
                 }
 
                 // A rejected account is a dead end, and a promise about payout
@@ -459,7 +497,12 @@ struct SellGateScreen: View {
                     .foregroundStyle(Color.rewound.secondaryForeground)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if onFile {
+                if !payoutsComplete && sellerCard?.present != true {
+                    // One thing at a time: while Stripe still needs the
+                    // seller, this step says it is next rather than offering
+                    // a second button beside Stripe's.
+                    EmptyView()
+                } else if onFile {
                     // Still reachable, but as an option rather than an ask: a
                     // finished step with a full-width CTA under it reads as
                     // unfinished no matter what the marker says.
@@ -505,7 +548,7 @@ struct SellGateScreen: View {
 
     private var cardStepBody: String {
         guard let sellerCard, sellerCard.present else {
-            return "Sellers keep a credit card on file — credit only, no debit or prepaid. It is what an authentication charge would land on, and you can add it before or after payouts."
+            return "Sellers keep a credit card on file — credit only, no debit or prepaid. It is what an authentication charge would land on, and it is the last step: once it is on file, your dashboard opens."
         }
         if sellerCard.valid == false {
             return "\(sellerCard.displayName) can't be charged any more. Replacing it puts your listings back on the market."
@@ -589,24 +632,91 @@ struct SellGateScreen: View {
         }
     }
 
-    private func refreshReadiness() async {
+    private var playsFinish: Bool {
+        if case .onboarding(let plays, _) = mode { return plays }
+        return false
+    }
+
+    /// The card sheet saved a card.
+    ///
+    /// It used to be drawn here at once, while readiness still said the card
+    /// was owed: for the length of the re-read the card step behind the
+    /// closing sheet showed the finished card, and then the screen swapped to
+    /// the dashboard — the flash. Now it is held until readiness lands, and
+    /// when this card completes setup the finish covers the gate meanwhile.
+    private func cardSaved(_ saved: SellerCardState) {
+        let plays = SellerSetupFinishRule.playsFinish(
+            enabled: playsFinish,
+            readiness: services.seller.readiness,
+            cardBefore: sellerCard,
+            saved: saved
+        )
+        cardHold.cardSaved(saved)
+        if plays {
+            Haptics.shared.play(.success)
+            finishRun = SellerSetupFinishRun()
+            withAnimation(.easeOut(duration: 0.2)) { finishCard = saved }
+        }
+        Task { await refreshReadiness() }
+    }
+
+    /// One outcome of the finish run; only the first resolving one acts.
+    private func resolveFinish(_ outcome: SellerSetupFinishRun.Outcome) {
+        switch outcome {
+        case .wait:
+            break
+        case .openDashboard:
+            if case .onboarding(_, let onFinished) = mode { onFinished() }
+        case .returnToGate:
+            withAnimation(Motion.easeMedium) { finishCard = nil }
+        }
+    }
+
+    private func refreshReadiness(backFromStripe: Bool = false) async {
         refreshingReadiness = true
         defer { refreshingReadiness = false }
         do {
+            // The card first, then readiness, then both drawn in one change:
+            // there is no suspension between readiness landing in the store
+            // and the hold releasing the card, so no frame shows one without
+            // the other.
+            let cardRead = try? await services.seller.sellerCard()
             let readiness = try await services.seller.loadReadiness()
-            sellerCard = try? await services.seller.sellerCard()
-            if case .onboarding(let onReadinessChange) = mode {
-                onReadinessChange(readiness)
+            cardHold.readinessLanded(cardRead: cardRead)
+            let finished = SellerSetupSteps.finishedBySeller(readiness, card: sellerCard)
+            if finishCard != nil {
+                // The finish opens the dashboard, once, when it ends — not
+                // this re-read, mid-flourish.
+                resolveFinish(finishRun.readinessLanded(finished: finished))
+                return
             }
-            if readiness.canList {
+            // Straight to the dashboard once the seller's half is done. No
+            // "now list your first watch" stop: the dashboard has its own way
+            // to add a listing, and is where a pending Stripe check is said.
+            if case .onboarding(_, let onFinished) = mode,
+               SellerSetupSteps.finishedBySeller(readiness, card: sellerCard) {
                 Haptics.shared.play(.success)
-                toasts.show(
-                    title: "Payouts are ready",
-                    message: "Your storefront is open — list your first watch whenever you like.",
-                    tone: .success
-                )
+                // A title, not an errand: "list your first watch" is gone.
+                // While Stripe is still verifying, the dashboard's own notice
+                // says so, and a success toast here would contradict it.
+                if readiness.canList {
+                    toasts.show(title: "You're set up to sell", tone: .success)
+                }
+                onFinished()
+            } else if backFromStripe,
+                      readiness.connect.status != .rejected,
+                      SellerSetupSteps.payoutsNeedNothingFromSeller(readiness.connect.payoutStep),
+                      sellerCard?.present != true || sellerCard?.valid == false {
+                // Back from Stripe with nothing more owed there: the card is
+                // the one step left, so its form opens without a tap.
+                cardStepOpensForm = true
+                showCardStep = true
             }
         } catch {
+            cardHold.readinessLanded(cardRead: nil)
+            if finishCard != nil {
+                resolveFinish(finishRun.readinessLanded(finished: false))
+            }
             toasts.show(title: "Couldn't refresh your status", message: sellErrorMessage(error), tone: .error)
         }
     }
@@ -700,3 +810,192 @@ private struct ConnectPresentation: Identifiable {
     let key: String
     var id: String { session.clientSecret }
 }
+
+// MARK: - The finish
+
+/// The end of seller setup, played once the card that completes it is saved
+/// (Eytan, 2026-10-06: "collapse into the card and slide off the side of the
+/// screen, then open the dashboard, but first a nice 'welcome to selling on
+/// Rewound'"). The web's `SellerSetupFinish.tsx` is the authority on the
+/// sequence and its timing:
+///
+///   0.05–0.50s  the saved card settles in as the card sheet closes
+///   0.65–1.10s  it slides off the right edge with a slight tilt
+///   1.00–1.50s  "Welcome to selling on Rewound" rises in, copper rule above
+///   2.15–2.40s  the welcome settles out, and `onDone` opens the dashboard
+///
+/// Reduce Motion: no card and no travel, the welcome fades in and out, 1.5s.
+/// A tap anywhere skips to `onDone`. `onDone` may be called more than once
+/// (a tap and the timer); `SellerSetupFinishRun` acts on the first only.
+struct SellerSetupFinishView: View {
+    let card: SellerCardState
+    /// The DEBUG preview turns this off to hold on the welcome.
+    var autoFinish = true
+    let onDone: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var cardIn = false
+    @State private var cardGone = false
+    @State private var welcomeIn = false
+    @State private var welcomeOut = false
+
+    private static let easeOut = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 0.45)
+    private static let easeIn = Animation.timingCurve(0.55, 0, 0.75, 0.2, duration: 0.45)
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                Color.rewound.background.ignoresSafeArea()
+
+                if !reduceMotion {
+                    GuaranteeCard(
+                        brand: GuaranteeCard.Brand(stripeBrand: card.brand),
+                        last4: card.last4,
+                        expiry: card.expiryLabel,
+                        status: .onFile,
+                        size: .compact
+                    )
+                    // Sized outright: the drawing fills whatever it is
+                    // offered, and a GeometryReader offers the whole screen.
+                    .frame(
+                        width: min(300, proxy.size.width - Space.margin * 2),
+                        height: min(300, proxy.size.width - Space.margin * 2) / (85.60 / 53.98)
+                    )
+                    .scaleEffect(cardIn ? 1 : 1.12)
+                    .opacity(cardIn ? 1 : 0)
+                    .rotationEffect(.degrees(cardGone ? -6 : 0))
+                    .offset(x: cardGone ? proxy.size.width : 0)
+                    .position(x: proxy.size.width / 2, y: proxy.size.height * 0.42)
+                    .accessibilityHidden(true)
+                }
+
+                VStack(spacing: Space.m) {
+                    Rectangle()
+                        .fill(Color.rewound.primary)
+                        .frame(width: 40, height: 1)
+                        .accessibilityHidden(true)
+                    Text("Welcome to selling on Rewound")
+                        .font(RewoundType.display)
+                        .foregroundStyle(Color.rewound.foreground)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Your card is on file. Opening your seller dashboard.")
+                        .font(RewoundType.body)
+                        .foregroundStyle(Color.rewound.secondaryForeground)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, Space.margin)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .opacity(welcomeIn && !welcomeOut ? 1 : 0)
+                .offset(y: welcomeIn || reduceMotion ? 0 : 14)
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { onDone() }
+        .accessibilityAction(named: "Open your dashboard") { onDone() }
+        .task { await play() }
+    }
+
+    private func pause(_ seconds: Double) async -> Bool {
+        do {
+            try await Task.sleep(for: .milliseconds(Int(seconds * 1000)))
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func play() async {
+        if reduceMotion {
+            guard await pause(0.15) else { return }
+            withAnimation(.linear(duration: 0.3)) { welcomeIn = true }
+            guard autoFinish, await pause(1.1) else { return }
+            withAnimation(.linear(duration: 0.25)) { welcomeOut = true }
+            guard await pause(0.25) else { return }
+            onDone()
+            return
+        }
+        guard await pause(0.05) else { return }
+        withAnimation(Self.easeOut) { cardIn = true }
+        guard await pause(0.60) else { return }
+        withAnimation(Self.easeIn) { cardGone = true }
+        guard await pause(0.35) else { return }
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.5)) { welcomeIn = true }
+        guard autoFinish, await pause(1.15) else { return }
+        withAnimation(.linear(duration: 0.25)) { welcomeOut = true }
+        guard await pause(0.25) else { return }
+        onDone()
+    }
+}
+
+#if DEBUG
+/// The finish without a Stripe card: `-sellerSetupFinishPreview` launches
+/// straight into this. A beat of a stand-in card step, then the finish over
+/// it, then a stand-in dashboard; a tap on the dashboard plays it again.
+struct SellerSetupFinishPreviewScreen: View {
+    @State private var playing = false
+    @State private var finished = false
+    @State private var round = 0
+
+    private static let card: SellerCardState? = try? JSONDecoder().decode(
+        SellerCardState.self,
+        from: Data(#"{"present":true,"brand":"visa","last4":"4242","expMonth":4,"expYear":2030,"funding":"credit","valid":true,"expiringSoon":false}"#.utf8)
+    )
+
+    var body: some View {
+        ZStack {
+            Color.rewound.background.ignoresSafeArea()
+            if finished {
+                VStack(spacing: Space.m) {
+                    Text("Seller dashboard")
+                        .font(RewoundType.title)
+                        .foregroundStyle(Color.rewound.foreground)
+                    Text("Preview stand-in. Tap to play the finish again.")
+                        .font(RewoundType.caption)
+                        .foregroundStyle(Color.rewound.mutedForeground)
+                }
+                .transition(.opacity)
+                .onTapGesture { replay() }
+            } else {
+                VStack(alignment: .leading, spacing: Space.l) {
+                    Eyebrow("Setting up your storefront")
+                    Text("Card on file")
+                        .font(RewoundType.sectionTitle)
+                        .foregroundStyle(Color.rewound.foreground)
+                    RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                        .stroke(Color.rewound.border)
+                        .frame(height: 180)
+                }
+                .padding(Space.margin)
+                .frame(maxHeight: .infinity, alignment: .top)
+            }
+            if playing, let card = Self.card {
+                SellerSetupFinishView(card: card) {
+                    guard playing else { return }
+                    withAnimation(Motion.easeMedium) {
+                        playing = false
+                        finished = true
+                    }
+                }
+                .id(round)
+                .transition(.opacity)
+            }
+        }
+        .task(id: round) {
+            try? await Task.sleep(for: .milliseconds(900))
+            withAnimation(.easeOut(duration: 0.2)) { playing = true }
+        }
+    }
+
+    private func replay() {
+        finished = false
+        round += 1
+    }
+}
+
+#Preview("Seller setup finish") {
+    SellerSetupFinishPreviewScreen()
+}
+#endif

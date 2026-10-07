@@ -19,6 +19,25 @@ struct SupportThreadsScreen: View {
     @State private var errorText: String?
     @State private var openThread: SupportEntry?
 
+    /// Who answers, named on the list as well as inside a conversation.
+    ///
+    /// This screen used to name nobody: the contact was read only off a loaded
+    /// conversation, so Support opened on a list with no person on it although
+    /// every account has one stamped. The member's account answers for them;
+    /// a guest's newest thread answers for a guest. See `SupportContact.shown`.
+    private var contact: SupportContact? {
+        SupportContact.shown(
+            onThread: nil,
+            account: session.user?.assignedContact,
+            isAuthenticated: session.isAuthenticated,
+            newestThread: threads.first?.assignedContact
+        )
+    }
+
+    private var contactFirstName: String? {
+        contact?.name?.split(separator: " ").first.map(String.init)
+    }
+
     var body: some View {
         Group {
             if loading && threads.isEmpty {
@@ -35,9 +54,11 @@ struct SupportThreadsScreen: View {
             } else if threads.isEmpty {
                 EmptyState(
                     icon: "bubble.left.and.bubble.right",
-                    title: "How can we help?",
-                    message: "Ask us anything — about a watch, an order, selling, or your account. We read every message.",
-                    actionTitle: "New chat"
+                    title: contactFirstName.map { "Write to \($0)" } ?? "How can we help?",
+                    message: contactFirstName.map {
+                        "Ask anything about a watch, an order, selling, or your account. \($0) answers personally."
+                    } ?? "Ask us anything — about a watch, an order, selling, or your account. We read every message.",
+                    actionTitle: contactFirstName.map { "Message \($0)" } ?? "New chat"
                 ) { openThread = .newThread }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -65,11 +86,18 @@ struct SupportThreadsScreen: View {
                 .routeStackNode()
         }
         .task { await load() }
+        // The copy of the user read at launch can be days old; the name here
+        // is the server's current one.
+        .task { await session.refreshUser() }
     }
 
     private var list: some View {
         ScrollView {
             LazyVStack(spacing: Space.m) {
+                if let contact, let name = contact.name {
+                    SupportContactHeader(contact: contact, name: name)
+                }
+
                 Text("Write here or email support@shoprewound.com — it is the same conversation either way.")
                     .font(RewoundType.caption)
                     .foregroundStyle(Color.rewound.mutedForeground)
@@ -98,6 +126,28 @@ struct SupportThreadsScreen: View {
         } catch {
             errorText = (error as? APIError)?.errorDescription ?? "Something went wrong. Please try again."
         }
+    }
+}
+
+/// The person behind every conversation on the list, once, above it.
+private struct SupportContactHeader: View {
+    let contact: SupportContact
+    let name: String
+
+    var body: some View {
+        HStack(spacing: Space.s) {
+            AvatarInitial(initials: contact.initials, size: .s)
+            VStack(alignment: .leading, spacing: 0) {
+                Eyebrow("Your contact at Rewound")
+                Text(name)
+                    .font(RewoundType.bodySemiBold)
+                    .foregroundStyle(Color.rewound.foreground)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Your contact at Rewound, \(name)")
     }
 }
 

@@ -41,6 +41,29 @@ public struct SupportContact: Codable, Sendable, Equatable {
         let last = words[words.count - 1]
         return (String(first.prefix(1)) + String(last.prefix(1))).uppercased()
     }
+
+    /// Who a support screen names, before and after a conversation exists.
+    ///
+    /// The conversation on screen names its own contact, and that wins. With
+    /// none on screen — the Support list, a new chat — a signed-in member's
+    /// contact is the one stamped on their **account** (`/auth/me`), which is
+    /// the server's authority. It used to be read only off a loaded
+    /// conversation, so Support's list and every new chat showed no name at
+    /// all although the account carried one. Never the newest thread for a
+    /// member: that can be outreach an admin assigned to somebody else. A guest
+    /// has no account, so the newest thread they hold is the best answer, and
+    /// before their first message there is no name to show. The web's
+    /// `useSupportThread` follows the same order.
+    public static func shown(
+        onThread threadContact: SupportContact?,
+        account accountContact: SupportContact?,
+        isAuthenticated: Bool,
+        newestThread newestThreadContact: SupportContact?
+    ) -> SupportContact? {
+        if let threadContact, threadContact.name != nil { return threadContact }
+        let fallback = isAuthenticated ? accountContact : newestThreadContact
+        return fallback?.name != nil ? fallback : nil
+    }
 }
 
 public enum SupportSender: String, Codable, Sendable {

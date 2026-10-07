@@ -95,4 +95,108 @@ final class SupportContactTests: XCTestCase {
         let missing = try conversation(createdAt: "\"2026-09-07T12:00:00Z\"")
         XCTAssertNil(missing.assignedContact)
     }
+
+    // MARK: - Who a screen names before a conversation exists
+
+    private let chloe = SupportContact(key: "chloe", displayName: "Chloe")
+    private let julian = SupportContact(key: "julian", displayName: "Julian")
+
+    /// The conversation on screen names its own contact, whoever the account's is.
+    func testTheConversationsOwnContactWins() {
+        XCTAssertEqual(
+            SupportContact.shown(onThread: julian, account: chloe, isAuthenticated: true, newestThread: nil),
+            julian
+        )
+    }
+
+    /// Support's list and a new chat used to name nobody: the contact was read
+    /// only off a loaded conversation, although every account carries one.
+    func testAMemberWithNoConversationOnScreenIsShownTheirAccountsContact() {
+        XCTAssertEqual(
+            SupportContact.shown(onThread: nil, account: chloe, isAuthenticated: true, newestThread: nil),
+            chloe
+        )
+        // Never the newest thread for a member: it can be outreach an admin
+        // assigned to somebody else.
+        XCTAssertEqual(
+            SupportContact.shown(onThread: nil, account: chloe, isAuthenticated: true, newestThread: julian),
+            chloe
+        )
+        XCTAssertNil(
+            SupportContact.shown(onThread: nil, account: nil, isAuthenticated: true, newestThread: julian)
+        )
+    }
+
+    /// A guest has no account; the newest thread they hold is the answer, and
+    /// before their first message there is no name at all.
+    func testAGuestIsShownTheirNewestThreadsContactOrNobody() {
+        XCTAssertEqual(
+            SupportContact.shown(onThread: nil, account: chloe, isAuthenticated: false, newestThread: julian),
+            julian
+        )
+        XCTAssertNil(SupportContact.shown(onThread: nil, account: nil, isAuthenticated: false, newestThread: nil))
+    }
+
+    /// A blank name is not a name at any step: it falls through, never draws.
+    func testABlankNameFallsThroughToTheNextAnswer() {
+        let blank = SupportContact(key: "chloe", displayName: "  ")
+        XCTAssertEqual(
+            SupportContact.shown(onThread: blank, account: julian, isAuthenticated: true, newestThread: nil),
+            julian
+        )
+        XCTAssertNil(SupportContact.shown(onThread: nil, account: blank, isAuthenticated: true, newestThread: nil))
+    }
+
+    // MARK: - The account's copy is re-read, not kept from launch
+
+    private func meResponse(contactKey: String, name: String) -> Data {
+        Data("""
+        {"ok": true, "data": {"id": "u1", "email": "m@example.com", "username": "m", "roles": ["member"],
+         "assigned_contact": {"key": "\(contactKey)", "display_name": "\(name)"}}}
+        """.utf8)
+    }
+
+    /// The app reads the user once at launch and can sit in the background for
+    /// days; Support re-reads it so the name is the server's current one.
+    @MainActor
+    func testRefreshingTheUserPicksUpTheServersCurrentContact() async throws {
+        let body = meResponse(contactKey: "chloe", name: "Chloe")
+        MockURLProtocol.setHandler { request in
+            request.url?.path == "/auth/me" ? (200, body) : (404, Data("{}".utf8))
+        }
+        let session = AuthSession(
+            configuration: mockConfiguration(),
+            tokenStore: MemoryTokenStore(tokens: TokenPair(accessToken: "a", refreshToken: "r"))
+        )
+        session.replaceUser(with: CurrentUser(
+            id: "u1", email: "m@example.com", username: "m", roles: ["member"],
+            assignedContact: SupportContact(key: "moshe", displayName: "Moshe")
+        ))
+
+        await session.refreshUser()
+
+        XCTAssertEqual(session.user?.assignedContact, chloe)
+        XCTAssertTrue(session.isAuthenticated)
+    }
+
+    /// A read, not a check: a refusal leaves the session exactly as it was and
+    /// announces nothing. Ending a session is bootstrap's and refresh's call.
+    @MainActor
+    func testARefusedRefreshChangesNothing() async throws {
+        MockURLProtocol.setHandler { _ in (401, Data("{\"ok\": false, \"error\": \"expired\"}".utf8)) }
+        let pair = TokenPair(accessToken: "a", refreshToken: "r")
+        let store = MemoryTokenStore(tokens: pair)
+        let session = AuthSession(configuration: mockConfiguration(), tokenStore: store)
+        let before = CurrentUser(id: "u1", email: "m@example.com", username: "m", roles: [], assignedContact: chloe)
+        session.replaceUser(with: before)
+        let cleared = HitCounter()
+        session.onSessionCleared = { cleared.increment() }
+
+        await session.refreshUser()
+
+        XCTAssertEqual(session.user, before)
+        XCTAssertTrue(session.isAuthenticated)
+        XCTAssertEqual(store.load(), pair)
+        XCTAssertEqual(cleared.value, 0)
+    }
 }

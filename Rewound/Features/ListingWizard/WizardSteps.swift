@@ -8,6 +8,7 @@ import SwiftUI
 struct DetailsStep: View {
     @Bindable var model: WizardModel
     @Environment(\.dynamicTypeSize) private var typeSize
+    @State private var showsGradeScale = false
     /// Width of "Very Good" at the label's font — the widest grade. Scaled,
     /// because a fixed 84pt column holds about two characters of an
     /// accessibility-size grade and clipped the rest of the word.
@@ -122,20 +123,29 @@ struct DetailsStep: View {
             }
 
             VStack(alignment: .leading, spacing: Space.m) {
-                // The scale, and the five grades in the site's words. This
-                // replaces the "How we grade" sheet, which carried its own
-                // five definitions that the listing page did not share.
+                // The scale, in the site's words, one tap from the heading:
+                // a sheet with the grades at a glance and a "Detailed
+                // explanation" inside it (Eytan, 2026-10-06). It replaces the
+                // (?) bubble, which had no way to the longer version.
                 HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                     Text("Condition")
                         .font(RewoundType.sectionTitle)
                         .foregroundStyle(Color.rewound.foreground)
-                    InfoHint("How does grading work?") {
-                        VStack(alignment: .leading, spacing: Space.m) {
-                            InfoHintText(SellFieldHelp.grades)
-                            ConditionGradeDefinitionsView()
-                        }
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: Space.s)
+                    Button("Grading scale") {
+                        showsGradeScale = true
                     }
+                    .font(RewoundType.label)
+                    .foregroundStyle(Color.rewound.primary)
+                    .buttonStyle(.plain)
+                    .frame(minHeight: Space.touchTarget)
+                    .contentShape(Rectangle())
+                    .accessibilityHint("Shows what each condition grade means.")
                     .accessibilityIdentifier("wizard.condition.help")
+                }
+                .sheet(isPresented: $showsGradeScale) {
+                    GradeScaleSheet()
                 }
                 // Said once for all eight, so each row's field can carry a
                 // one-word label instead of "(optional)" eight times over.

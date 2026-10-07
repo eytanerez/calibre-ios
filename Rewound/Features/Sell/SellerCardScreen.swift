@@ -10,6 +10,14 @@ struct SellerCardScreen: View {
     /// Handed the fresh card state once one is successfully on file, so the
     /// dashboard banner and the sell gate can settle.
     var onSaved: (SellerCardState) -> Void = { _ in }
+    /// Raise Stripe's card form as soon as the screen is up, with no "Add
+    /// card" tap first — the seller has just come back from Stripe's payout
+    /// form and the card is the one thing left (Eytan, 2026-10-06: "when you
+    /// get back from Stripe just have the card input open").
+    var opensFormImmediately = false
+    /// Say "Card saved" when the card lands. Off when this save is about to
+    /// play setup's finish, whose welcome says it instead.
+    var announcesSave = true
 
     @Environment(AppServices.self) private var services
     @Environment(SellSession.self) private var sell
@@ -34,6 +42,12 @@ struct SellerCardScreen: View {
                 model = SellerCardModel(seller: services.seller, sell: sell)
             }
             await model?.load()
+            if opensFormImmediately, let model, model.card?.present != true {
+                // Let this sheet finish presenting before Stripe's goes over
+                // it; presenting mid-transition is refused by UIKit.
+                try? await Task.sleep(for: .milliseconds(450))
+                model.save()
+            }
         }
     }
 
@@ -67,11 +81,13 @@ struct SellerCardScreen: View {
             guard saved, let card = model.card else { return }
             onSaved(card)
             dismiss()
-            toasts.show(
-                title: "Card saved",
-                message: "\(card.displayName) is on file.",
-                tone: .success
-            )
+            if announcesSave {
+                toasts.show(
+                    title: "Card saved",
+                    message: "\(card.displayName) is on file.",
+                    tone: .success
+                )
+            }
         }
     }
 

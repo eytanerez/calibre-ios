@@ -10,10 +10,16 @@ public struct SellerReadiness: Codable, Sendable {
     /// file is valid. The gate reads this and nothing else — `connect.status`
     /// says how setup is going, never whether it is allowed to proceed.
     public let canList: Bool
+    /// Every reason listing would be refused, named by the server:
+    /// `connect_onboarding`, `payouts_enabled`, `seller_card`. Optional so a
+    /// server that predates the field still decodes; nil is "not said", not
+    /// "nothing missing".
+    public let missingRequirements: [String]?
 
-    public init(connect: ConnectStatus, canList: Bool) {
+    public init(connect: ConnectStatus, canList: Bool, missingRequirements: [String]? = nil) {
         self.connect = connect
         self.canList = canList
+        self.missingRequirements = missingRequirements
     }
 
     /// Payout onboarding owns the shop gate; card readiness owns only new

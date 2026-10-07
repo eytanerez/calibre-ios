@@ -16,7 +16,7 @@ struct ConditionGradeDefinition: Equatable, Sendable {
 ///
 /// Copied verbatim from `frontend/src/content/conditionGrades.ts`, which is the
 /// source for every surface that explains the scale: the listing's grade
-/// guide, the sell form's (?) on its Condition heading, and the site's
+/// guide, the sell form's grading-scale sheet (`GradeScaleSheet`), and the site's
 /// authentication page. The `check` lines are the contract's (2026-09-30,
 /// Part C). Change a sentence there and here together, never here alone. `SharedWordingParityTests` holds the two to each other.
 enum ConditionGrades {

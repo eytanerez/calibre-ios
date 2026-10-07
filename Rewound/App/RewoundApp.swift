@@ -62,6 +62,9 @@ struct RewoundApp: App {
                 ConsumerPageSwipeSmokeScreen()
             } else if ProcessInfo.processInfo.arguments.contains("-photoPickerSmokeTest") {
                 ListingPhotoPickerSmokeScreen()
+            } else if ProcessInfo.processInfo.arguments.contains("-sellerSetupFinishPreview") {
+                // Seller setup's finish, replayable without a Stripe card.
+                SellerSetupFinishPreviewScreen()
             } else {
                 RootView()
             }

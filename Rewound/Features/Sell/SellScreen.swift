@@ -55,10 +55,10 @@ struct SellScreen: View {
             case .guest:
                 SellGateScreen(mode: .guest)
             case .gate:
-                SellGateScreen(mode: .onboarding(onReadinessChange: { readiness in
-                    withAnimation(Motion.easeMedium) {
-                        if readiness.canAccessDashboard { phase = .dashboard }
-                    }
+                // The gate decides when the seller's half is done and says so;
+                // there is no stop between it and the dashboard.
+                SellGateScreen(mode: .onboarding(onFinished: {
+                    withAnimation(Motion.easeMedium) { phase = .dashboard }
                 }))
             case .dashboard:
                 SellerDashboardScreen()
@@ -86,12 +86,20 @@ struct SellScreen: View {
         }
         do {
             let readiness = try await services.seller.loadReadiness()
-            // Written out rather than as `canAccessDashboard || await …` so the
-            // probe below is only made when the answer is still open — a
-            // seller who can already reach their shop is not made to wait on
-            // two more requests to be shown it.
+            // Written out rather than as one `||` chain so each probe below is
+            // only made when the answer is still open — a seller who can
+            // already reach their shop is not made to wait on more requests
+            // to be shown it.
+            //
+            // The shop opens once the seller's half of setup is done: payouts
+            // handed to Stripe *and* a card on file. Payouts alone used to be
+            // enough (`canAccessDashboard`), which skipped the card and left
+            // it to a banner; the card is the last step of setup now, and
+            // finishing it is what opens the dashboard.
             let openDashboard: Bool
-            if readiness.canAccessDashboard {
+            if readiness.canList {
+                openDashboard = true
+            } else if await sellerFinishedSetup(readiness) {
                 openDashboard = true
             } else {
                 openDashboard = await hasWorkToProtect()
@@ -106,6 +114,16 @@ struct SellScreen: View {
                 phase = .failed(sellErrorMessage(error))
             }
         }
+    }
+
+    /// Whether payouts are with Stripe and a card is on file. The card is only
+    /// read when the readiness payload cannot answer it on its own.
+    private func sellerFinishedSetup(_ readiness: SellerReadiness) async -> Bool {
+        if readiness.missingRequirements != nil {
+            return SellerSetupSteps.finishedBySeller(readiness, card: nil)
+        }
+        let card = try? await services.seller.sellerCard()
+        return SellerSetupSteps.finishedBySeller(readiness, card: card)
     }
 
     /// Whether there is a shop underneath the onboarding worth keeping on

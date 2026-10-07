@@ -297,6 +297,25 @@ public final class AuthSession {
         }
     }
 
+    /// Re-reads `/auth/me` for a session that is already signed in, and takes
+    /// the answer when it is still the same session.
+    ///
+    /// The user is otherwise read once, at launch, and an app left in the
+    /// background keeps that copy for days — across a server change to who
+    /// the member's support contact is, for one. Support calls this when it
+    /// opens so the name it shows is the server's current one. Any failure
+    /// leaves the session exactly as it was: this is a read, not a check, and
+    /// ending a session is `bootstrap()`'s and the refresh path's to decide.
+    public func refreshUser() async {
+        guard isAuthenticated, let accessToken = tokens?.accessToken else { return }
+        let generation = sessionGeneration
+        guard let fresh = try? await sendAuthed(Endpoint<CurrentUser>(path: "/auth/me")) else { return }
+        guard ownsSession(generation: generation, accessToken: accessToken) else { return }
+        if fresh != user {
+            user = fresh
+        }
+    }
+
     // MARK: - Guest gating
 
     /// Runs `action` now when signed in; otherwise stores it as the pending
