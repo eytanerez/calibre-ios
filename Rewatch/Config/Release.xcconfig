@@ -1,4 +1,4 @@
-// TestFlight distribution — talks to the staging box at rewound-server.tailcad178.ts.net (Eytan, 2026-10-06: everything runs on the box). Switch to the shoprewatch.com lines once that domain serves the box.
+// TestFlight distribution — talks to the staging box at rewatch-server.tailcad178.ts.net (Eytan, 2026-10-06: everything runs on the box). Switch to the shoprewatch.com lines once that domain serves the box.
 // Routes sit under /api, not the origin root: nginx on the box fronts four
 // services on one port and strips the prefix before the backend sees it, so
 // the backend still serves the root contract in mobile-api.md. Safe because
@@ -9,8 +9,8 @@
 // The alternative is the box's own Tailscale Funnel hostname, which stays
 // serving until shoprewatch.com is confirmed live through the tunnel. To fall
 // back, swap these two pairs of lines:
-API_BASE_URL = https:/$()/rewound-server.tailcad178.ts.net/api
-MESSAGING_API_BASE_URL = https:/$()/rewound-server.tailcad178.ts.net/messaging
+API_BASE_URL = https:/$()/rewatch-server.tailcad178.ts.net/api
+MESSAGING_API_BASE_URL = https:/$()/rewatch-server.tailcad178.ts.net/messaging
 // API_BASE_URL = https:/$()/shoprewatch.com/api
 
 // The messaging service runs on the same box and nginx routes /messaging to
