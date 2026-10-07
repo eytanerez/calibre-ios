@@ -1,0 +1,1105 @@
+import RewatchDesign
+import RewatchKit
+import StripePaymentSheet
+import SwiftUI
+
+/// Destinations reachable from the You tab's account list. Kept local to the
+/// tab (they aren't cross-tab routes), resolved by a `navigationDestination`
+/// on the You screen.
+enum ProfileDestination: Hashable {
+    case profile
+    case addresses
+    case paymentMethod
+    case notifications
+    case changePassword
+    case deleteAccount
+}
+
+// MARK: - About
+
+/// About Rewatch — the quiet footer: what the marketplace is, version, and
+/// links to the web legal pages.
+struct AboutScreen: View {
+    private var version: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(v) (\(b))"
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.xl) {
+                VStack(alignment: .leading, spacing: Space.s) {
+                    RewatchWordmark(size: 32)
+                    Text("A marketplace for authenticated luxury watches. Every watch is inspected by WPB Watch Co in West Palm Beach, Florida before it reaches you.")
+                        .font(RewatchType.body)
+                        .foregroundStyle(Color.rewatch.mutedForeground)
+                }
+
+                VStack(spacing: 0) {
+                    NavigationLink {
+                        MarketplaceGuideScreen()
+                    } label: {
+                        aboutRow("How it works")
+                    }
+                    .buttonStyle(PressableStyle())
+                    Divider().overlay(Color.rewatch.border)
+                    Link(destination: URL(string: "https://shoprewatch.com/terms")!) {
+                        aboutRow("Terms of Service")
+                    }
+                    Divider().overlay(Color.rewatch.border)
+                    Link(destination: URL(string: "https://shoprewatch.com/privacy")!) {
+                        aboutRow("Privacy Policy")
+                    }
+                }
+                .background(Color.rewatch.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewatch.border, lineWidth: 1))
+
+                Text("Version \(version)")
+                    .font(RewatchType.caption)
+                    .foregroundStyle(Color.rewatch.placeholder)
+            }
+            .padding(Space.margin)
+        }
+        .rewatchPageBackground()
+        .navigationTitle("About")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func aboutRow(_ title: String) -> some View {
+        HStack {
+            Text(title).font(RewatchType.bodyMedium).foregroundStyle(Color.rewatch.foreground)
+            Spacer()
+            Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.rewatch.mutedForeground)
+        }
+        .padding(.horizontal, Space.l)
+        .frame(minHeight: Space.touchTarget + 8)
+        .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Profile (login info)
+
+/// Account overview and login information.
+struct ProfileScreen: View {
+    @Environment(AppServices.self) private var services
+    @Environment(AuthSession.self) private var session
+
+    @State private var profile: Profile?
+    @State private var failed = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.xl) {
+                if let profile {
+                    header(profile)
+                    SpecList([
+                        ("Email", profile.email),
+                        ("Username", "@\(profile.username)"),
+                        ("Phone", PhoneFormatter.display(profile.phone) ?? "—"),
+                        ("Member since", profile.createdAt?.formatted(date: .abbreviated, time: .omitted) ?? "—"),
+                    ])
+                } else if failed {
+                    EmptyState(
+                        icon: "person.crop.circle.badge.exclamationmark",
+                        title: "Couldn't load your profile",
+                        message: "Check your connection and try again.",
+                        actionTitle: "Try again"
+                    ) { await load() }
+                    .padding(.top, Space.xxl)
+                } else {
+                    RewatchLoadingView("Opening your profile")
+                }
+            }
+            .padding(Space.margin)
+        }
+        .rewatchPageBackground()
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await load() }
+    }
+
+    private func load() async {
+        failed = false
+        do {
+            profile = try await services.client.accountProfile()
+        } catch {
+            if profile == nil { failed = true }
+        }
+    }
+
+    private func header(_ profile: Profile) -> some View {
+        HStack(spacing: Space.l) {
+            AvatarInitial(name: profile.username, size: .l)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("@\(profile.username)").font(RewatchType.sectionTitle).foregroundStyle(Color.rewatch.foreground)
+                Text(profile.email).font(RewatchType.body).foregroundStyle(Color.rewatch.mutedForeground)
+            }
+        }
+    }
+}
+
+// MARK: - Addresses
+
+struct AddressesScreen: View {
+    @Environment(AppServices.self) private var services
+    @Environment(ToastCenter.self) private var toasts
+
+    @State private var addresses: [Address] = []
+    @State private var loaded = false
+    @State private var editing: Address?
+    @State private var showNew = false
+
+    var body: some View {
+        Group {
+            if addresses.isEmpty && loaded {
+                EmptyState(
+                    icon: "mappin.and.ellipse",
+                    title: "No addresses yet",
+                    message: "Add a shipping address so checkout is one tap.",
+                    actionTitle: "Add address"
+                ) { showNew = true }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: Space.m) {
+                        ForEach(addresses) { address in
+                            Button { editing = address } label: { AddressCard(address: address) }
+                                .buttonStyle(PressableStyle())
+                        }
+                    }
+                    .padding(Space.margin)
+                }
+            }
+        }
+        .rewatchPageBackground()
+        .navigationTitle("Addresses")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showNew = true } label: { Image(systemName: "plus") }
+                    .accessibilityLabel("Add address")
+            }
+        }
+        .sheet(isPresented: $showNew) {
+            AddressForm(existing: nil) { await reload() }
+        }
+        .sheet(item: $editing) { address in
+            AddressForm(existing: address) { await reload() }
+        }
+        .task { await reload() }
+    }
+
+    private func reload() async {
+        addresses = (try? await services.commerce.loadAddresses()) ?? []
+        loaded = true
+    }
+}
+
+private struct AddressCard: View {
+    let address: Address
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack {
+                Text(address.fullName ?? [address.firstName, address.lastName].compactMap { $0 }.joined(separator: " "))
+                    .font(RewatchType.bodyMedium).foregroundStyle(Color.rewatch.foreground)
+                Spacer()
+                if address.isDefaultShipping { StatusBadge("Default", tone: .info) }
+            }
+            Text(address.line1).font(RewatchType.body).foregroundStyle(Color.rewatch.mutedForeground)
+            Text([address.city, address.region, address.postalCode].compactMap { $0 }.joined(separator: ", "))
+                .font(RewatchType.body).foregroundStyle(Color.rewatch.mutedForeground)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Space.l)
+        .background(Color.rewatch.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.box, style: .continuous).strokeBorder(Color.rewatch.border, lineWidth: 1))
+    }
+}
+
+private struct AddressForm: View {
+    @Environment(AppServices.self) private var services
+    @Environment(ToastCenter.self) private var toasts
+    @Environment(\.dismiss) private var dismiss
+    let existing: Address?
+    let onSave: () async -> Void
+
+    @State private var fullName = ""
+    @State private var line1 = ""
+    @State private var line2 = ""
+    @State private var city = ""
+    @State private var region = ""
+    @State private var postalCode = ""
+    @State private var country = "US"
+    @State private var phone = ""
+    @State private var makeDefault = true
+    @State private var saving = false
+    @State private var confirmingDelete = false
+
+    var body: some View {
+        SheetScaffold(title: existing == nil ? "Add address" : "Edit address", detents: [.large]) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.l) {
+                    RewatchTextField("Full name", text: $fullName, kind: .fullName)
+                    AddressStreetField(label: "Street", text: $line1) { address in
+                        city = address.city
+                        region = address.state
+                        postalCode = address.postalCode
+                        country = "US"
+                    }
+                    RewatchTextField("Apt, suite (optional)", text: $line2, kind: .addressLine2)
+                    RewatchTextField("City", text: $city, kind: .city)
+                    HStack(spacing: Space.m) {
+                        RewatchTextField("State", text: $region, kind: .state)
+                        RewatchTextField("ZIP", text: $postalCode, kind: .postalCode)
+                    }
+                    RewatchTextField(
+                        "Country code",
+                        text: $country,
+                        placeholder: "2-letter, e.g. US",
+                        error: InputValidation.isISO2CountryCode(country) || country.isEmpty ? nil : "Use a 2-letter code like US or CA",
+                        kind: .country
+                    )
+                    RewatchTextField(
+                        "Phone",
+                        text: $phone,
+                        placeholder: "(415) 555-0134",
+                        error: InputValidation.isValidPhone(phone, required: false)
+                            ? nil
+                            : "Enter a valid phone number, or leave it blank.",
+                        kind: .phone
+                    )
+                    .phoneFormatted($phone)
+                    Toggle("Set as default shipping address", isOn: $makeDefault)
+                        .font(RewatchType.body).tint(Color.rewatch.primary)
+                    Button(saving ? "Saving…" : "Save address") { Task { await save() } }
+                        .buttonStyle(.rewatch(.primary, fullWidth: true))
+                        .disabled(!isValid || saving)
+                    if let existing {
+                        Button(role: .destructive) { confirmingDelete = true } label: {
+                            Text("Delete address").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.rewatch(.ghost, fullWidth: true))
+                        .foregroundStyle(Color.rewatch.destructive)
+                        .disabled(saving)
+                        .alert(
+                            "Delete this address?",
+                            isPresented: $confirmingDelete
+                        ) {
+                            Button("Delete", role: .destructive) {
+                                Task { await delete(existing) }
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("\(existing.line1), \(existing.city) is removed from your account.")
+                        }
+                    }
+                }
+                .padding(Space.margin)
+            }
+        }
+        .onAppear(perform: prefill)
+    }
+
+    private var isValid: Bool {
+        InputValidation.isNonBlank(fullName)
+            && InputValidation.isNonBlank(line1)
+            && InputValidation.isNonBlank(city)
+            && InputValidation.isNonBlank(postalCode)
+            && InputValidation.isISO2CountryCode(country)
+            && InputValidation.isValidPhone(phone, required: false)
+    }
+
+    private func prefill() {
+        guard let existing else { return }
+        fullName = existing.fullName ?? [existing.firstName, existing.lastName].compactMap { $0 }.joined(separator: " ")
+        line1 = existing.line1
+        line2 = existing.line2 ?? ""
+        city = existing.city
+        region = existing.region ?? ""
+        postalCode = existing.postalCode
+        country = existing.country
+        phone = existing.phone ?? ""
+        makeDefault = existing.isDefaultShipping
+    }
+
+    private func save() async {
+        guard isValid, !saving else { return }
+        saving = true
+        defer { saving = false }
+        let payload = AddressPayload(
+            fullName: InputValidation.trimmed(fullName),
+            phone: InputValidation.isNonBlank(phone)
+                ? (PhoneFormatter.nationalDigits(phone) ?? InputValidation.trimmed(phone))
+                : nil,
+            line1: InputValidation.trimmed(line1),
+            line2: InputValidation.isNonBlank(line2) ? InputValidation.trimmed(line2) : nil,
+            city: InputValidation.trimmed(city),
+            region: InputValidation.isNonBlank(region) ? InputValidation.trimmed(region) : nil,
+            postalCode: InputValidation.trimmed(postalCode),
+            country: InputValidation.trimmed(country).uppercased(),
+            isDefaultShipping: makeDefault
+        )
+        do {
+            if let existing {
+                _ = try await services.commerce.updateAddress(id: existing.id, payload)
+            } else {
+                _ = try await services.commerce.createAddress(payload)
+            }
+            await onSave()
+            Haptics.shared.play(.success)
+            dismiss()
+        } catch {
+            toasts.show(title: "Couldn't save address", message: error.orderMessage, tone: .error)
+        }
+    }
+
+    private func delete(_ address: Address) async {
+        guard !saving else { return }
+        saving = true
+        defer { saving = false }
+        do {
+            try await services.commerce.deleteAddress(id: address.id)
+            await onSave()
+            dismiss()
+        } catch {
+            toasts.show(title: "Couldn't delete", message: error.orderMessage, tone: .error)
+        }
+    }
+}
+
+// MARK: - Payment method
+
+struct PaymentMethodScreen: View {
+    @Environment(AppServices.self) private var services
+    @Environment(ToastCenter.self) private var toasts
+
+    @State private var cards: [WalletCard] = []
+    @State private var defaultCardID: String?
+    @State private var confirmRemove: WalletCard?
+    @State private var canRemove = true
+    @State private var removeBlockedReason: String?
+    @State private var loaded = false
+    @State private var loadFailed = false
+    @State private var isPreparingSetup = false
+    @State private var isSyncingAfterSetup = false
+    @State private var paymentSheet: PaymentSheet?
+
+    /// The hold an offer authorizes, from the marketplace config. No offer
+    /// exists at this point to read a real `hold.amount` from, and a
+    /// remembered figure is not an option — so without the config the
+    /// sentence simply loses its number.
+    private var offerHoldPrompt: String {
+        let base = "Add a card here, at checkout, or before making an offer"
+        guard let hold = services.config.offerHoldText else {
+            return "\(base) — placing an offer authorizes a refundable hold to confirm you're serious."
+        }
+        return "\(base) — placing an offer authorizes a refundable \(hold) hold to confirm you're serious."
+    }
+    /// Bumped by every operation that ends up writing `method`/`canRemove`/
+    /// `removeBlockedReason` — a late result from a superseded load, poll, or
+    /// removal checks this before committing so it can never clobber a newer
+    /// one (e.g. a slow post-setup poll finishing after the user already hit
+    /// Remove).
+    @State private var stateGeneration = 0
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.l) {
+                if !cards.isEmpty {
+                    // Cards, not rows: they need the air between them that
+                    // objects lying on a page need.
+                    VStack(alignment: .leading, spacing: Space.m) {
+                        ForEach(cards) { card in
+                            cardRow(card)
+                        }
+
+                        Button {
+                            Task { await startAddOrReplaceCard() }
+                        } label: {
+                            RewatchBusyLabel(
+                                "Add another card",
+                                busy: isPreparingSetup || isSyncingAfterSetup,
+                                tint: Color.rewatch.foreground
+                            )
+                        }
+                        .buttonStyle(.rewatch(.secondary, fullWidth: true))
+                        .disabled(isPreparingSetup || isSyncingAfterSetup)
+
+                        if let removeBlockedReason, !canRemove {
+                            Text(removeBlockedReason)
+                                .font(RewatchType.caption)
+                                .foregroundStyle(Color.rewatch.mutedForeground)
+                        }
+
+                        Text("Pick any saved card when you check out. Offer holds use your default.")
+                            .font(RewatchType.caption)
+                            .foregroundStyle(Color.rewatch.mutedForeground)
+                    }
+                } else if loadFailed {
+                    // Distinct from "no card on file" — a failed fetch used to
+                    // render identically to a genuinely empty account, with no
+                    // way to retry short of leaving and re-entering the screen.
+                    EmptyState(
+                        icon: "wifi.slash",
+                        title: "Couldn't load your cards",
+                        message: "Check your connection and try again.",
+                        actionTitle: "Try again"
+                    ) {
+                        await loadMethod()
+                    }
+                } else if loaded {
+                    EmptyState(
+                        icon: "creditcard",
+                        title: "No cards on file",
+                        message: offerHoldPrompt,
+                        actionTitle: isPreparingSetup || isSyncingAfterSetup ? nil : "Add card"
+                    ) {
+                        Task { await startAddOrReplaceCard() }
+                    }
+                }
+                CalloutBand(
+                    icon: "lock.shield",
+                    message: "Your card details are handled by Stripe. Rewatch never sees your full card number."
+                )
+            }
+            .padding(Space.margin)
+        }
+        .refreshable {
+            // While the post-setup poll owns the authoritative "did the
+            // webhook land yet" answer, a manual refresh must not race it —
+            // sharing `stateGeneration` would let a fast refresh silently
+            // invalidate a later `.ready` result and drop the "Card saved"
+            // confirmation. The poll is short (bounded backoff, seconds),
+            // and this screen already shows a spinner on the Replace/Add
+            // button while it runs, so ignoring a pull here isn't a dead end
+            // — refresh works again the moment the poll settles.
+            guard !isSyncingAfterSetup else { return }
+            await loadMethod()
+        }
+        .rewatchPageBackground()
+        .navigationTitle("Payment methods")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert(
+            "Remove this card?",
+            isPresented: Binding(
+                get: { confirmRemove != nil },
+                set: { if !$0 { confirmRemove = nil } }
+            ),
+            presenting: confirmRemove
+        ) { card in
+            Button("Remove", role: .destructive) {
+                Task { await removeCard(card) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { card in
+            Text("\(card.displayName) is detached from your account. You can add it again any time.")
+        }
+        .task {
+            await loadMethod()
+        }
+    }
+
+    /// One saved card, drawn as the card it is.
+    ///
+    /// It is the same `WalletCardFace` the buyer taps to choose a card at
+    /// checkout — one component, two contexts. This is the managing one, so
+    /// the card carries its own controls along its base: promoting it to
+    /// default, and removing it. A removal acted out on the drawing is the
+    /// removal of the thing being looked at, rather than of a row that
+    /// happened to describe it.
+    ///
+    /// The seller's guarantee card is deliberately not this drawing — see
+    /// `GuaranteeCard`, and `SellerCardScreen`, which is where it is managed.
+    /// Detaching a wallet card costs a buyer a re-typing; detaching that one
+    /// takes a seller's listings off the market, and two objects with
+    /// different consequences must not share a face.
+    private func cardRow(_ card: WalletCard) -> some View {
+        WalletCardFace(
+            brand: GuaranteeCard.Brand(stripeBrand: card.brand),
+            last4: card.last4,
+            expiry: card.expiryPrinted,
+            isDefault: card.id == defaultCardID,
+            context: .manage
+        ) {
+            HStack(spacing: Space.l) {
+                if card.id != defaultCardID {
+                    Button("Make default") {
+                        Task { await makeDefault(card) }
+                    }
+                    .font(RewatchType.label)
+                    .foregroundStyle(Color.rewatch.primary)
+                    .frame(minHeight: Space.touchTarget)
+                }
+                if canRemove || card.id != defaultCardID {
+                    Button("Remove") {
+                        confirmRemove = card
+                    }
+                    .font(RewatchType.label)
+                    .foregroundStyle(Color.rewatch.destructive)
+                    .frame(minHeight: Space.touchTarget)
+                    .accessibilityLabel("Remove \(card.displayName)")
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func loadMethod() async {
+        stateGeneration += 1
+        let generation = stateGeneration
+        loadFailed = false
+        do {
+            let info = try await services.commerce.wallet()
+            guard generation == stateGeneration else { return }
+            apply(info)
+        } catch {
+            guard generation == stateGeneration else { return }
+            loadFailed = true
+        }
+        guard generation == stateGeneration else { return }
+        loaded = true
+    }
+
+    private func apply(_ info: WalletInfo) {
+        cards = info.paymentMethods
+        defaultCardID = info.defaultPaymentMethodId
+        canRemove = info.canRemove
+        removeBlockedReason = info.removeBlockedReason
+        loadFailed = false
+    }
+
+    private func makeDefault(_ card: WalletCard) async {
+        do {
+            try await services.commerce.makeCardDefault(id: card.id)
+            defaultCardID = card.id
+            Haptics.shared.play(.selection)
+            await loadMethod()
+        } catch {
+            toasts.show(title: "Couldn't set that card", message: error.orderMessage, tone: .error)
+        }
+    }
+
+    /// Real Add/Replace: a SetupIntent from the same `/billing/setup-intent`
+    /// endpoint Checkout's PaymentIntent flow rides alongside, confirmed with
+    /// PaymentSheet's setup mode using the *mobile* CustomerSession — not a
+    /// locally fabricated card.
+    private func startAddOrReplaceCard() async {
+        guard !isPreparingSetup, !isSyncingAfterSetup else { return }
+        isPreparingSetup = true
+        defer { isPreparingSetup = false }
+        do {
+            let intent = try await services.commerce.setupIntent()
+            STPAPIClient.shared.publishableKey = intent.publishableKey
+            let configuration = RewatchStripe.configuration(
+                customerID: intent.customerId,
+                customerSessionClientSecret: intent.customerSessionMobile?.clientSecret
+            )
+            let sheet = PaymentSheet(
+                setupIntentClientSecret: intent.setupIntent.clientSecret,
+                configuration: configuration
+            )
+            paymentSheet = sheet
+            RewatchStripe.present(sheet) { result in
+                handleSetupResult(result)
+            }
+        } catch {
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't start adding a card", message: error.orderMessage, tone: .error)
+        }
+    }
+
+    private func handleSetupResult(_ result: PaymentSheetResult) {
+        switch result {
+        case .completed:
+            Task { await pollForConfirmedCard() }
+        case .canceled:
+            break
+        case .failed(let error):
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't add card", message: RewatchStripe.failureMessage(for: error), tone: .error)
+        }
+    }
+
+    /// PaymentSheet reporting `.completed` only means Stripe accepted the
+    /// card — the backend's webhook that actually records it as the buyer's
+    /// default lands asynchronously afterward. Poll with backoff for the
+    /// card to change rather than trusting an immediate re-fetch, which would
+    /// often still show the old (or no) card and falsely announce success.
+    private func pollForConfirmedCard() async {
+        stateGeneration += 1
+        let generation = stateGeneration
+        let knownIDs = Set(cards.map(\.id))
+        isSyncingAfterSetup = true
+        defer { isSyncingAfterSetup = false }
+
+        let outcome = await poll(
+            maxAttempts: 6,
+            delay: { attempt in .seconds(min(1 << attempt, 8)) },
+            fetch: { try await services.commerce.wallet() },
+            isReady: { info in
+                info.paymentMethods.contains { !knownIDs.contains($0.id) }
+            }
+        )
+
+        guard generation == stateGeneration else { return }
+        switch outcome {
+        case .ready(let info):
+            apply(info)
+            Haptics.shared.play(.save)
+            toasts.show(title: "Card saved", tone: .success)
+        case .timedOut(let info):
+            if let info { apply(info) }
+            toasts.show(
+                title: "Card submitted",
+                message: "It's still syncing on our end — pull to refresh in a moment, or check back shortly.",
+                tone: .neutral
+            )
+        }
+    }
+
+    private func removeCard(_ card: WalletCard) async {
+        stateGeneration += 1
+        let generation = stateGeneration
+        do {
+            try await services.commerce.deleteCard(id: card.id)
+            guard generation == stateGeneration else { return }
+            cards.removeAll { $0.id == card.id }
+            Haptics.shared.play(.selection)
+            toasts.show(title: "Card removed")
+            await loadMethod()
+        } catch {
+            guard generation == stateGeneration else { return }
+            toasts.show(title: "Couldn't remove card", message: error.orderMessage, tone: .error)
+        }
+    }
+}
+
+// MARK: - Notification settings
+
+struct NotificationSettingsScreen: View {
+    @Environment(AppServices.self) private var services
+    @Environment(ToastCenter.self) private var toasts
+
+    @State private var prefs: NotificationPreferences?
+    @State private var pushEnabled = false
+    @State private var pushDenied = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s) {
+                if !pushEnabled {
+                    pushPrimer
+                        .padding(.bottom, Space.m)
+                }
+                if let prefs {
+                    toggle("Offers", "Counters, accepts, and declines on your offers", prefs.offerUpdates) {
+                        NotificationPreferencesPatch(offerUpdates: $0)
+                    }
+                    toggle("Orders", "Purchases, authentication, and payouts", prefs.orderUpdates) {
+                        NotificationPreferencesPatch(orderUpdates: $0)
+                    }
+                    toggle("Tracking", "Shipping and delivery updates", prefs.trackingUpdates) {
+                        NotificationPreferencesPatch(trackingUpdates: $0)
+                    }
+                    toggle("Support", "Replies from Rewatch support", prefs.messageUpdates) {
+                        NotificationPreferencesPatch(messageUpdates: $0)
+                    }
+                    toggle("Saved watches", "Price drops on watches you've saved", prefs.watchlistAlerts) {
+                        NotificationPreferencesPatch(watchlistAlerts: $0)
+                    }
+                    toggle("Listing updates", "Approval decisions and changes needed for your listings", prefs.marketUpdates) {
+                        NotificationPreferencesPatch(marketUpdates: $0)
+                    }
+                    toggle("Security", "Sign-ins and account changes", prefs.securityAlerts) {
+                        NotificationPreferencesPatch(securityAlerts: $0)
+                    }
+                    Text("These control push notifications only. Whatever you switch off still lands in Alerts, so nothing goes missing.")
+                        .font(RewatchType.caption)
+                        .foregroundStyle(Color.rewatch.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, Space.s)
+                } else {
+                    RewatchLoadingView("Reading your notification settings")
+                }
+            }
+            .padding(Space.margin)
+        }
+        .rewatchPageBackground()
+        .navigationTitle("Notifications")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            prefs = try? await services.account.loadPreferences()
+            await refreshPushStatus()
+        }
+    }
+
+    /// Prompt to turn on system notifications — the category toggles below only
+    /// matter once push delivery is authorized.
+    private var pushPrimer: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text(pushDenied ? "Notifications are off" : "Turn on notifications")
+                .font(RewatchType.bodySemiBold)
+                .foregroundStyle(Color.rewatch.foreground)
+            Text(pushDenied
+                 ? "Enable notifications for Rewatch in Settings to know the moment a seller responds or an order moves."
+                 : "Know the second a seller responds, an order ships, or a saved watch drops in price.")
+                .font(RewatchType.caption)
+                .foregroundStyle(Color.rewatch.mutedForeground)
+            Button(pushDenied ? "Open Settings" : "Enable notifications") {
+                Task { await enablePush() }
+            }
+            .buttonStyle(.rewatch(.primary))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Space.l)
+        .background(Color.rewatch.accent.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+    }
+
+    private func refreshPushStatus() async {
+        let status = await services.push.authorizationStatus()
+        pushEnabled = status == .authorized || status == .provisional
+        pushDenied = status == .denied
+    }
+
+    private func enablePush() async {
+        if pushDenied {
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                await UIApplication.shared.open(url)
+            }
+            return
+        }
+        _ = await services.push.requestAuthorization()
+        await refreshPushStatus()
+    }
+
+    @ViewBuilder
+    private func toggle(_ title: String, _ subtitle: String, _ value: Bool, patch: @escaping (Bool) -> NotificationPreferencesPatch) -> some View {
+        Toggle(isOn: Binding(
+            get: { value },
+            set: { newValue in Task { await update(patch(newValue)) } }
+        )) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(RewatchType.bodyMedium).foregroundStyle(Color.rewatch.foreground)
+                Text(subtitle).font(RewatchType.caption).foregroundStyle(Color.rewatch.mutedForeground)
+            }
+        }
+        .tint(Color.rewatch.primary)
+        .padding(.vertical, Space.s)
+        Divider().overlay(Color.rewatch.border)
+    }
+
+    private func update(_ patch: NotificationPreferencesPatch) async {
+        do {
+            prefs = try await services.account.updatePreferences(patch)
+            Haptics.shared.play(.selection)
+        } catch {
+            toasts.show(title: "Couldn't update", message: error.orderMessage, tone: .error)
+            // Re-sync from the server, but never wipe the loaded prefs on a
+            // failed reload — that would strand the screen on a spinner.
+            if let fresh = try? await services.account.loadPreferences() {
+                prefs = fresh
+            }
+        }
+    }
+}
+
+// MARK: - Password (by emailed link only)
+
+/// A password is only ever set or changed through a link sent to the account's
+/// email. This screen used to take the current password and a new one in
+/// place: an unlocked phone is not proof of who is holding it, and a Google or
+/// Apple account has no current password to type, so it could never use it.
+/// The link lands on the reset screen (in the app or on the web), which holds
+/// the new password to the same rules as sign-up.
+struct ChangePasswordScreen: View {
+    @Environment(AppServices.self) private var services
+    @Environment(AuthSession.self) private var session
+
+    @State private var sending = false
+    @State private var sentTo: String?
+    @State private var errorText: String?
+
+    private var settingFirstPassword: Bool { session.user?.hasPassword == false }
+    private var title: String { settingFirstPassword ? "Set password" : "Reset password" }
+    private var email: String { session.user?.email ?? "" }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.l) {
+                if let sentTo {
+                    EmptyState(
+                        icon: "envelope",
+                        title: "Check your email",
+                        message: "We sent a link to \(sentTo). It works once and lasts 30 minutes. Using it signs you out on your other devices."
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, Space.xl)
+                    Button("Send again") { Task { await send() } }
+                        .buttonStyle(.rewatch(.secondary, fullWidth: true))
+                        .disabled(sending)
+                } else {
+                    Text(settingFirstPassword
+                        ? "You signed in with Google or Apple. Set a password to also sign in with your email."
+                        : "We'll email you a link to choose a new password.")
+                        .font(RewatchType.body)
+                        .foregroundStyle(Color.rewatch.mutedForeground)
+                    Text(email)
+                        .font(RewatchType.bodyMedium)
+                        .foregroundStyle(Color.rewatch.foreground)
+                    if let errorText {
+                        Text(errorText).font(RewatchType.caption).foregroundStyle(Color.rewatch.destructive)
+                    }
+                    Button {
+                        Task { await send() }
+                    } label: {
+                        RewatchBusyLabel("Email me a link", busy: sending)
+                    }
+                    .buttonStyle(.rewatch(.primary, fullWidth: true))
+                    .disabled(email.isEmpty || sending)
+                }
+            }
+            .padding(Space.margin)
+        }
+        .rewatchPageBackground()
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func send() async {
+        guard !email.isEmpty, !sending else { return }
+        sending = true
+        errorText = nil
+        defer { sending = false }
+        do {
+            let endpoint = try Endpoint<EmptyResponse>.json(
+                method: .post,
+                path: "/auth/password/forgot",
+                payload: ["email": email.lowercased()],
+                requiresAuth: false
+            )
+            _ = try await services.client.send(endpoint)
+            Haptics.shared.play(.success)
+            sentTo = email
+        } catch {
+            errorText = (error as? APIError)?.errorDescription ?? "Couldn't send the link. Try again in a moment."
+            Haptics.shared.play(.error)
+        }
+    }
+}
+
+// MARK: - Delete account
+
+struct DeleteAccountScreen: View {
+    @Environment(AppServices.self) private var services
+    @Environment(ToastCenter.self) private var toasts
+
+    @State private var confirming = false
+    @State private var working = false
+    @State private var state: AccountDeletionState?
+    @State private var currentPassword = ""
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.l) {
+                if let state, state.isPending {
+                    scheduled(state)
+                } else {
+                    request
+                }
+            }
+            .padding(Space.margin)
+        }
+        .rewatchPageBackground()
+        .navigationTitle("Delete account")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await loadState() }
+        .animation(Motion.easeFast, value: state?.isPending)
+        .animation(Motion.easeFast, value: state?.obligations.count)
+        .alert("Delete your Rewatch account?", isPresented: $confirming) {
+            Button("Delete my account", role: .destructive) { Task { await requestDeletion() } }
+            Button("Keep my account", role: .cancel) {}
+        } message: {
+            Text("You'll have 30 days to change your mind before it's permanent.")
+        }
+    }
+
+    /// Nothing asked for yet.
+    @ViewBuilder
+    private var request: some View {
+        Text("Delete your account")
+            .font(RewatchType.sectionTitle).foregroundStyle(Color.rewatch.foreground)
+        Text("Your account is scheduled for deletion after a 30-day grace period. Sign in any time within those 30 days to cancel and keep your account.")
+            .font(RewatchType.body).foregroundStyle(Color.rewatch.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+
+        if let state, !state.obligations.isEmpty {
+            obligations(state)
+        } else {
+            CalloutBand(
+                icon: "exclamationmark.triangle",
+                message: "Anything still in flight — a live order, a payout on its way, an active return, an accepted offer — has to finish before your account can be removed."
+            )
+        }
+
+        RewatchTextField(
+            "Current password",
+            text: $currentPassword,
+            kind: .password
+        )
+        Text("Password accounts must confirm before deletion. Apple and Google accounts can leave this blank after a recent sign-in.")
+            .font(RewatchType.caption)
+            .foregroundStyle(Color.rewatch.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+
+        Button(role: .destructive) { confirming = true } label: {
+            Text(working ? "Working…" : "Request account deletion").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.rewatch(.destructive, fullWidth: true))
+        .disabled(working)
+    }
+
+    /// A request already in flight — made here, or on another device, which is
+    /// why the screen reads the backend before it offers anything. The grace
+    /// window is the promise the other branch makes, so this is where it is
+    /// kept: the way out of it is a button, not a support ticket.
+    @ViewBuilder
+    private func scheduled(_ state: AccountDeletionState) -> some View {
+        Text("Deletion scheduled")
+            .font(RewatchType.sectionTitle).foregroundStyle(Color.rewatch.foreground)
+        // The date is the honest version and the one the backend nearly always
+        // sends; the grace window is what is left to say when it doesn't.
+        let removal = if let date = state.scheduledDate {
+            "on \(date.formatted(date: .abbreviated, time: .omitted))"
+        } else {
+            "once the 30-day grace period is up"
+        }
+        Text("Your account is due to be removed \(removal). Cancel any time before then to keep it.")
+            .font(RewatchType.body).foregroundStyle(Color.rewatch.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+
+        // A request can be accepted and still be waiting on something. Saying
+        // so here is the difference between "we're working on it" and the
+        // customer wondering whether it took at all.
+        if !state.obligations.isEmpty {
+            obligations(state)
+        }
+
+        Button { Task { await cancelDeletion() } } label: {
+            Text(working ? "Working…" : "Cancel deletion").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.rewatch(.primary, fullWidth: true))
+        .disabled(working)
+    }
+
+    /// Exactly what is outstanding, in the backend's own words. Deletion is
+    /// not refused here — it completes on its own once this list clears, so
+    /// the customer never has to come back and ask a second time.
+    private func obligations(_ state: AccountDeletionState) -> some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            Text("Still to finish first")
+                .font(RewatchType.bodyMedium)
+                .foregroundStyle(Color.rewatch.foreground)
+
+            VStack(spacing: 0) {
+                ForEach(Array(state.obligations.enumerated()), id: \.element.id) { index, obligation in
+                    HStack(alignment: .top, spacing: Space.m) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.rewatch.mutedForeground)
+                            .frame(width: 18)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(obligationTitle(obligation))
+                                .font(RewatchType.bodyMedium)
+                                .foregroundStyle(Color.rewatch.foreground)
+                            if let detail = obligation.detail, !detail.isEmpty {
+                                Text(detail)
+                                    .font(RewatchType.label)
+                                    .foregroundStyle(Color.rewatch.mutedForeground)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(Space.l)
+                    .accessibilityElement(children: .combine)
+
+                    if index < state.obligations.count - 1 {
+                        Rectangle().fill(Color.rewatch.border).frame(height: 1)
+                    }
+                }
+            }
+            .background(Color.rewatch.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                    .strokeBorder(Color.rewatch.border, lineWidth: 1)
+            )
+
+            Text("You don't have to ask again. Once these are settled your deletion completes on its own.")
+                .font(RewatchType.caption)
+                .foregroundStyle(Color.rewatch.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The backend's reference when it sends one, otherwise its `kind` in
+    /// plain words.
+    private func obligationTitle(_ obligation: AccountObligation) -> String {
+        let kind = obligation.kind
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+        if let reference = obligation.reference, !reference.isEmpty {
+            return "\(kind) · \(reference)"
+        }
+        return kind
+    }
+
+    private func loadState() async {
+        state = try? await services.account.deletionState()
+    }
+
+    private func requestDeletion() async {
+        guard !working else { return }
+        working = true
+        defer { working = false }
+        do {
+            state = try await services.account.requestDeletion(currentPassword: currentPassword)
+            toasts.show(title: "Deletion scheduled", message: "Sign in within 30 days to cancel.", tone: .success)
+        } catch {
+            // A blocked deletion isn't a failure — it's a list. The 409's
+            // envelope only carries flat strings, so the obligations come
+            // from a follow-up read.
+            if (error as? APIError)?.serverCode == "obligations_outstanding" {
+                await loadState()
+                // Not an error — a blocked deletion is information, and the
+                // list below already carries the detail.
+                toasts.show(
+                    title: "A few things are still open",
+                    message: "We've listed what has to finish first."
+                )
+                return
+            }
+            toasts.show(title: "Couldn't schedule deletion", message: error.orderMessage, tone: .error)
+        }
+    }
+
+    private func cancelDeletion() async {
+        guard !working else { return }
+        working = true
+        defer { working = false }
+        do {
+            try await services.account.cancelDeletion()
+        } catch {
+            Haptics.shared.play(.error)
+            toasts.show(title: "Couldn't cancel deletion", message: error.orderMessage, tone: .error)
+            return
+        }
+        // Read back rather than clear locally: the cancel is what was asked
+        // for, and a re-read that fails is a stale screen rather than a
+        // deletion that is still scheduled.
+        await loadState()
+        Haptics.shared.play(.success)
+        toasts.show(title: "Deletion canceled", message: "Welcome back — your account stays put.", tone: .success)
+    }
+}

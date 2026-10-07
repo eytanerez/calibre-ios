@@ -1,0 +1,464 @@
+import RewatchDesign
+import RewatchKit
+import SwiftUI
+
+// MARK: - Paging model
+
+/// One filtered, sorted, infinitely-scrolling slice of `/listings`.
+@MainActor
+@Observable
+final class ResultsModel {
+    private(set) var filters: BrowseFilters
+    private(set) var listings: [Listing] = []
+    private(set) var total: Int?
+    private(set) var isLoadingFirst = false
+    private(set) var isLoadingMore = false
+    private(set) var failed = false
+
+    @ObservationIgnored private let catalog: CatalogStore
+    @ObservationIgnored private var page = 1
+    @ObservationIgnored private var reachedEnd = false
+    @ObservationIgnored private var generation = 0
+
+    init(catalog: CatalogStore, filters: BrowseFilters) {
+        self.catalog = catalog
+        self.filters = filters
+    }
+
+    func loadFirstPageIfNeeded() async {
+        guard listings.isEmpty, !isLoadingFirst else { return }
+        await reload()
+    }
+
+    func reload(refresh: Bool = false) async {
+        generation += 1
+        let expected = generation
+        isLoadingFirst = true
+        failed = false
+        page = 1
+        reachedEnd = false
+        if refresh {
+            catalog.invalidateBrowseCache()
+        }
+        do {
+            let response = try await catalog.browse(filters.query(page: 1))
+            guard generation == expected else { return }
+            listings = response.results
+            total = response.pagination.total
+            reachedEnd = response.results.count < response.pagination.pageSize
+            trackSearchPerformed(resultsCount: total ?? response.results.count)
+        } catch {
+            guard generation == expected else { return }
+            if !(error is CancellationError) {
+                failed = true
+            }
+        }
+        if generation == expected {
+            isLoadingFirst = false
+        }
+    }
+
+    /// `search_performed` fires here rather than on the type-ahead in
+    /// `SearchScreen`: this is where a query has settled *and* the response
+    /// carries a real `pagination.total`. The type-ahead asks for six rows
+    /// with `includeTotal: false`, so its count would be a cap, not a count.
+    /// A first page only — paging is the same search, not a new one — and a
+    /// facet-only browse (no query text) is not a search at all.
+    private func trackSearchPerformed(resultsCount: Int) {
+        guard let search = filters.search?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !search.isEmpty else { return }
+        Analytics.searchPerformed(
+            query: search,
+            resultsCount: resultsCount,
+            filtersActive: filters.activeCount() > 0
+        )
+    }
+
+    func apply(_ newFilters: BrowseFilters) async {
+        guard newFilters != filters else { return }
+        filters = newFilters
+        listings = []
+        total = nil
+        await reload()
+    }
+
+    /// Call from a cell near the tail; pages in the next batch once.
+    func loadMoreIfNeeded(current listing: Listing) async {
+        guard !reachedEnd, !isLoadingMore, !isLoadingFirst else { return }
+        guard let index = listings.lastIndex(where: { $0.id == listing.id }),
+              index >= listings.count - 6 else { return }
+        isLoadingMore = true
+        let expected = generation
+        do {
+            let response = try await catalog.browse(filters.query(page: page + 1))
+            guard generation == expected else { return }
+            page += 1
+            // The backend can repeat rows across page boundaries when the
+            // sort ties; keep ids unique so ForEach stays stable.
+            let known = Set(listings.map(\.id))
+            listings.append(contentsOf: response.results.filter { !known.contains($0.id) })
+            if let total = response.pagination.total { self.total = total }
+            reachedEnd = response.results.count < response.pagination.pageSize
+        } catch {
+            // Quietly stop; the next approach retries.
+        }
+        if generation == expected {
+            isLoadingMore = false
+        }
+    }
+}
+
+// MARK: - Screen
+
+/// The filtered 2-column marketplace grid, arrived at from search or a lane's
+/// "view more". Owns a `ResultsModel` and the filter/sort controls.
+struct ResultsScreen: View {
+    @Environment(AppServices.self) private var services
+
+    let filters: BrowseFilters
+    let title: String
+
+    @State private var model: ResultsModel?
+
+    var body: some View {
+        Group {
+            if let model {
+                ResultsContent(model: model, lockedBrand: nil)
+            } else {
+                ResultsGridSkeleton()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .rewatchPageBackground()
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .browseStackNode()
+        .task {
+            if model == nil {
+                model = ResultsModel(catalog: services.catalog, filters: filters)
+            }
+            await model?.loadFirstPageIfNeeded()
+        }
+    }
+}
+
+// MARK: - Shared grid + controls
+
+/// Count line, filter button, sort menu and the paging grid — shared by
+/// `ResultsScreen` and `BrandScreen` (which locks the brand facet).
+struct ResultsContent: View {
+    @Environment(AppServices.self) private var services
+    @Environment(AuthSession.self) private var session
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The buy grid collapses to one column once the reader has asked for
+    /// accessibility text sizes — see `rewatchGridColumns`. Two cards side by
+    /// side leave roughly 160pt of text, which at AX5 truncates the reference
+    /// to "Ref. RO30…", breaks the price across two lines and squeezes the
+    /// brand out of the eyebrow row entirely. Every other listing grid in the
+    /// app already collapses; this one — the grid people actually shop in —
+    /// was the one that did not.
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    @Bindable var model: ResultsModel
+    /// Non-nil when the brand is fixed by the screen (BrandScreen): the
+    /// filter sheet hides the brand cascade and the badge ignores it.
+    let lockedBrand: String?
+    /// Slot rendered above the controls, inside the scroll (brand hero).
+    var header: AnyView?
+
+    @State private var showFilters = false
+    /// The "Can't find it?" capsule: shown once the reader is past about a
+    /// screen of watches or at the end of the grid, hidden again near the top
+    /// (`RequestPromptZone`).
+    @State private var showsRequestPrompt = false
+    @State private var showRequest = false
+    /// Which of the grid's two ways in opened the form: the capsule, or the
+    /// band under "No watches match".
+    @State private var requestEntry: WatchRequestEntryPoint = .browse
+    @Namespace private var zoomNamespace
+
+    private var countLine: String {
+        if let total = model.total {
+            return total == 1 ? "1 watch" : "\(total.formatted()) watches"
+        }
+        return model.isLoadingFirst ? "Counting the market…" : "Watches"
+    }
+
+    private var badgeCount: Int {
+        model.filters.activeCount(countingBrand: lockedBrand == nil)
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
+                if let header {
+                    header
+                }
+
+                controls
+                    .padding(.horizontal, Space.margin)
+                    .padding(.vertical, Space.m)
+
+                grid
+            }
+            // Room under the last row for the request capsule, so the final
+            // cards and the next-page placeholder can scroll clear of it.
+            .padding(.bottom, Space.xxl + RequestWatchCapsule.clearance)
+        }
+        .onScrollGeometryChange(for: RequestPromptZone.self) { geometry in
+            RequestPromptZone.zone(geometry)
+        } action: { _, zone in
+            let shows = zone.shows(whenCurrently: showsRequestPrompt)
+            guard shows != showsRequestPrompt else { return }
+            withAnimation(reduceMotion ? .easeOut(duration: Motion.fast) : Motion.easeMedium) {
+                showsRequestPrompt = shows
+            }
+        }
+        // Over the scroll view, inside its safe area: above the tab bar here,
+        // and above the brand rail on a brand page, whose `safeAreaInset`
+        // this sits inside of.
+        .overlay(alignment: .bottom) {
+            if showsRequestPrompt, !model.listings.isEmpty {
+                RequestWatchCapsule { openRequest(from: lockedBrand == nil ? .browse : .brand) }
+                    .padding(.bottom, Space.m)
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .opacity.combined(with: .offset(y: Space.l))
+                    )
+            }
+        }
+        .sheet(isPresented: $showRequest) {
+            NewRequestSheet(prefill: requestPrefill, entryPoint: requestEntry)
+        }
+        .refreshable {
+            await model.reload(refresh: true)
+        }
+        .sheet(isPresented: $showFilters) {
+            FilterSheet(
+                metadata: services.catalog.metadata,
+                filters: model.filters,
+                lockedBrand: lockedBrand
+            ) { applied in
+                Task { await model.apply(applied) }
+            }
+        }
+        .task {
+            // The sheet's cascading pickers need metadata; usually warm.
+            _ = try? await services.catalog.loadMetadata()
+        }
+    }
+
+    /// What the grid already knows about the watch: the brand page's brand or
+    /// the brand filter, and the search, split into brand and model or
+    /// reference against the catalog's own brand list.
+    private var requestPrefill: WatchRequestPrefill {
+        WatchRequestPrefill.browsing(
+            filters: model.filters,
+            lockedBrand: lockedBrand,
+            knownBrands: services.catalog.metadata?.options.byBrand.map(\.brand) ?? []
+        )
+    }
+
+    /// A guest signs in first; the form opens once the sign-in sheet has gone.
+    private func openRequest(from entry: WatchRequestEntryPoint) {
+        requestEntry = entry
+        let requestPresented = $showRequest
+        session.requireThenPresent("Sign in to request a watch") {
+            requestPresented.wrappedValue = true
+        }
+    }
+
+    private var controls: some View {
+        HStack(spacing: Space.s) {
+            Text(countLine)
+                .font(RewatchType.label)
+                .foregroundStyle(Color.rewatch.mutedForeground)
+                .contentTransition(.numericText())
+                .animation(Motion.easeMedium, value: model.total)
+
+            Spacer(minLength: Space.s)
+
+            Button {
+                Haptics.shared.play(.press)
+                showFilters = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Filter")
+                        .font(RewatchType.label)
+                    if badgeCount > 0 {
+                        Text("\(badgeCount)")
+                            .font(RewatchType.caption)
+                            .foregroundStyle(Color.rewatch.primaryForeground)
+                            .frame(minWidth: 18, minHeight: 18)
+                            .background(Color.rewatch.primary, in: Circle())
+                    }
+                }
+                .foregroundStyle(Color.rewatch.foreground)
+                .padding(.horizontal, Space.m)
+                .frame(minHeight: 36)
+                .background(Color.rewatch.card, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.rewatch.border, lineWidth: 1))
+                // A button is only tappable where its label is, so the 44pt
+                // frame outside it padded the row without widening the target:
+                // the capsule still drew at 36 and the top and bottom 4pt of
+                // the row swallowed the tap. Grow the label instead — the
+                // capsule stays centred at 36, so nothing moves.
+                .frame(minHeight: Space.touchTarget)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableStyle())
+            .frame(minHeight: Space.touchTarget)
+            .accessibilityLabel(badgeCount > 0 ? "Filter, \(badgeCount) active" : "Filter")
+
+            sortMenu
+        }
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort", selection: sortSelection) {
+                Text("Newest").tag(ListingQuery.Sort.createdDesc)
+                Text("Price low to high").tag(ListingQuery.Sort.priceAsc)
+                Text("Price high to low").tag(ListingQuery.Sort.priceDesc)
+                Text("Most popular").tag(ListingQuery.Sort.popular)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 13, weight: .medium))
+                Text("Sort")
+                    .font(RewatchType.label)
+            }
+            .foregroundStyle(Color.rewatch.foreground)
+            .padding(.horizontal, Space.m)
+            .frame(minHeight: 36)
+            .background(Color.rewatch.card, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.rewatch.border, lineWidth: 1))
+            // Same as Filter: the menu opens only from the label's own 36pt
+            // capsule, so the target is grown here rather than around it.
+            .frame(minHeight: Space.touchTarget)
+            .contentShape(Rectangle())
+        }
+        .frame(minHeight: Space.touchTarget)
+        .accessibilityLabel("Sort")
+    }
+
+    private var sortSelection: Binding<ListingQuery.Sort> {
+        Binding(
+            get: { model.filters.sort ?? .createdDesc },
+            set: { newSort in
+                Haptics.shared.play(.selection)
+                var filters = model.filters
+                filters.sort = newSort
+                Task { await model.apply(filters) }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var grid: some View {
+        if model.isLoadingFirst, model.listings.isEmpty {
+            gridSkeleton
+        } else if model.failed, model.listings.isEmpty {
+            EmptyState(
+                icon: "wifi.slash",
+                title: "The market is out of reach",
+                message: "We couldn't load these watches. Check your connection and try again.",
+                actionTitle: "Try again"
+            ) {
+                await model.reload()
+            }
+        } else if model.listings.isEmpty {
+            // Nothing here is the moment a request matters most, so the band
+            // Home closes on sits under the empty state, with the form
+            // started from the same search and filters. Clearing filters
+            // stays the empty state's own button: it is the cheaper thing to
+            // try first.
+            VStack(spacing: 0) {
+                EmptyState(
+                    icon: "magnifyingglass",
+                    title: "No watches match",
+                    message: badgeCount > 0
+                        ? "Nothing in the market fits these filters right now. Loosen one or two and look again."
+                        : "Nothing in the market matches this search right now. Try another brand, model, or reference.",
+                    actionTitle: badgeCount > 0 ? "Clear filters" : nil
+                ) {
+                    Task { await model.apply(model.filters.cleared(keepBrand: lockedBrand != nil)) }
+                }
+                RequestWatchBand(message: "Tell us the reference and our dealers will source it.") {
+                    openRequest(from: .noResults)
+                }
+            }
+        } else {
+            LazyVGrid(
+                columns: rewatchGridColumns(typeSize, spacing: Space.l),
+                alignment: .leading,
+                spacing: Space.xl
+            ) {
+                ForEach(model.listings) { listing in
+                    ListingGridCard(
+                        listing: listing,
+                        laneKey: "grid",
+                        zoomNamespace: zoomNamespace
+                    )
+                    // Where the grid gives a row the height of its tallest
+                    // card, the others take it and hold their prices level.
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .task {
+                        await model.loadMoreIfNeeded(current: listing)
+                    }
+                }
+            }
+            .padding(.horizontal, Space.margin)
+
+            if model.isLoadingMore {
+                // Same column count as the grid it is extending, so the
+                // next-page placeholder lands where the next cards will.
+                LazyVGrid(
+                    columns: rewatchGridColumns(typeSize, spacing: Space.l),
+                    spacing: Space.xl
+                ) {
+                    ListingCardSkeleton()
+                    ListingCardSkeleton()
+                }
+                .padding(.horizontal, Space.margin)
+                .padding(.top, Space.xl)
+            }
+        }
+    }
+
+    private var gridSkeleton: some View {
+        LazyVGrid(
+            columns: rewatchGridColumns(typeSize, spacing: Space.l),
+            spacing: Space.xl
+        ) {
+            ForEach(0..<6, id: \.self) { _ in
+                ListingCardSkeleton()
+            }
+        }
+        .padding(.horizontal, Space.margin)
+    }
+}
+
+/// Bare skeleton shown for the breath before the model exists.
+struct ResultsGridSkeleton: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(
+                columns: rewatchGridColumns(typeSize, spacing: Space.l),
+                spacing: Space.xl
+            ) {
+                ForEach(0..<6, id: \.self) { _ in
+                    ListingCardSkeleton()
+                }
+            }
+            .padding(Space.margin)
+        }
+        .disabled(true)
+    }
+}

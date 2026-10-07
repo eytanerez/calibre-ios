@@ -1,9 +1,0 @@
-{
- "ok": true,
- "data": {
-  "status": "requires_action",
-  "client_secret": "pi_3PxRewound001_secret_abc",
-  "requires_action": true,
-  "funding": "credit"
- }
-}

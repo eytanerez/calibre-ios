@@ -1,0 +1,380 @@
+import RewatchDesign
+import RewatchKit
+import SwiftUI
+
+/// Step 1 — where the watch ships. Saved addresses as radio cards with the
+/// default preselected; "Use a different address" expands the inline form.
+/// No saved addresses puts the form front and center.
+struct CheckoutShippingStep: View {
+    @Bindable var model: CheckoutModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.l) {
+                EyebrowProgress(steps: ["Shipping", "Payment", "Review"], currentIndex: 0)
+
+                Text("Where should it ship?")
+                    .font(RewatchType.title)
+                    .foregroundStyle(Color.rewatch.foreground)
+
+                switch model.phase {
+                case .loading:
+                    loadingSkeleton
+                case .failed(let message):
+                    VStack(spacing: Space.l) {
+                        EmptyState(
+                            icon: "wifi.exclamationmark",
+                            title: "We couldn't load checkout",
+                            message: message,
+                            actionTitle: "Try again",
+                            retry: { await model.load() }
+                        )
+                    }
+                case .ready:
+                    content
+                }
+            }
+            .padding(.horizontal, Space.margin)
+            .padding(.top, Space.m)
+            .padding(.bottom, Space.xxl)
+        }
+        .rewatchPageBackground()
+        .navigationTitle("Checkout")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { CheckoutCloseButton() }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if case .ready = model.phase {
+                Button {
+                    Haptics.shared.play(.press)
+                    model.continueFromShipping()
+                } label: {
+                    Text("Continue to payment")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.rewatch(.primary, fullWidth: true))
+                .disabled(model.selectedAddressID == nil)
+                .padding(.horizontal, Space.margin)
+                .padding(.vertical, Space.m)
+                .background(Color.rewatch.background.opacity(0.97))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        VStack(alignment: .leading, spacing: Space.m) {
+            ForEach(model.addresses) { address in
+                AddressRadioCard(
+                    address: address,
+                    isSelected: model.selectedAddressID == address.id
+                ) {
+                    Haptics.shared.play(.selection)
+                    model.selectedAddressID = address.id
+                }
+            }
+
+            if !model.addresses.isEmpty {
+                Button {
+                    withAnimation(Motion.easeMedium) {
+                        model.showAddressForm.toggle()
+                    }
+                } label: {
+                    Label(
+                        model.showAddressForm ? "Never mind — use a saved address" : "Use a different address",
+                        systemImage: model.showAddressForm ? "chevron.up" : "plus"
+                    )
+                    .font(RewatchType.bodyMedium)
+                }
+                .buttonStyle(.rewatchGhost)
+            }
+
+            if model.showAddressForm {
+                AddressForm(model: model)
+                    .transition(.opacity.combined(with: .offset(y: -6)))
+            }
+        }
+        .animation(Motion.easeMedium, value: model.showAddressForm)
+    }
+
+    private var loadingSkeleton: some View {
+        VStack(spacing: Space.m) {
+            ForEach(0..<2, id: \.self) { _ in
+                Rectangle()
+                    .frame(height: 88)
+                    .shimmer()
+            }
+        }
+    }
+}
+
+/// One saved address as a selectable radio card.
+private struct AddressRadioCard: View {
+    let address: Address
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(alignment: .top, spacing: Space.m) {
+                Image(systemName: isSelected ? "inset.filled.circle" : "circle")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(isSelected ? Color.rewatch.primary : Color.rewatch.borderBright)
+                    .padding(.top, 1)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: Space.s) {
+                        Text(displayName)
+                            .font(RewatchType.bodyMedium)
+                            .foregroundStyle(Color.rewatch.foreground)
+                        if address.isDefaultShipping {
+                            StatusBadge("Default", tone: .info)
+                        }
+                    }
+                    Text(addressLines)
+                        .font(RewatchType.label)
+                        .foregroundStyle(Color.rewatch.mutedForeground)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(Space.l)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isSelected ? Color.rewatch.primary.opacity(0.06) : Color.rewatch.card,
+                in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                    .strokeBorder(
+                        isSelected ? Color.rewatch.primary.opacity(0.5) : Color.rewatch.border,
+                        lineWidth: 1
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .animation(Motion.easeFast, value: isSelected)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var displayName: String {
+        if let name = address.fullName, !name.isEmpty { return name }
+        let joined = [address.firstName, address.lastName].compactMap(\.self).joined(separator: " ")
+        return joined.isEmpty ? (address.label ?? "Shipping address") : joined
+    }
+
+    private var addressLines: String {
+        var lines = [address.line1]
+        if let line2 = address.line2, !line2.isEmpty { lines.append(line2) }
+        let cityLine = [address.city, address.region, address.postalCode]
+            .compactMap(\.self)
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+        lines.append(cityLine)
+        lines.append(address.country)
+        return lines.joined(separator: "\n")
+    }
+}
+
+/// The inline new-address form. Saves via POST /account/addresses and
+/// auto-selects the result. The street line offers Apple Maps suggestions as
+/// it is typed (`AddressStreetField`), and every field carries its native
+/// autofill content type, so the keyboard's own address AutoFill works too.
+private struct AddressForm: View {
+    @Bindable var model: CheckoutModel
+
+    @State private var fullName = ""
+    @State private var street = ""
+    @State private var apartment = ""
+    @State private var city = ""
+    @State private var state = ""
+    @State private var zip = ""
+    @State private var country = "US"
+    @State private var phone = ""
+    @State private var attempted = false
+
+    /// Most "different addresses" are a small edit of one already on file —
+    /// a work suite, a parent's place on the same street. Start from one
+    /// instead of retyping it.
+    private var quickFillMenu: some View {
+        Menu {
+            ForEach(model.addresses) { address in
+                Button {
+                    fill(from: address)
+                } label: {
+                    Text("\(address.line1), \(address.city)")
+                }
+            }
+        } label: {
+            Label("Start from a saved address", systemImage: "square.on.square")
+                .font(RewatchType.bodyMedium)
+                .foregroundStyle(Color.rewatch.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minHeight: Space.touchTarget)
+                .contentShape(Rectangle())
+        }
+    }
+
+    private func fill(from address: Address) {
+        Haptics.shared.play(.selection)
+        fullName = address.fullName
+            ?? [address.firstName, address.lastName].compactMap { $0 }.joined(separator: " ")
+        street = address.line1
+        apartment = address.line2 ?? ""
+        city = address.city
+        state = address.region ?? ""
+        zip = address.postalCode
+        country = address.country
+        phone = address.phone ?? ""
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.l) {
+            // A tester who has to invent a street address before they can see
+            // checkout will either invent a bad one and report the validator as
+            // a bug, or stop. Neither is the feedback the beta is for.
+            BetaFillButton { person in
+                fullName = "\(person.address.firstName) \(person.address.lastName)"
+                street = person.address.line1
+                apartment = person.address.line2
+                city = person.address.city
+                state = person.address.region
+                zip = person.address.postalCode
+                country = person.address.country
+                phone = person.address.phone
+            }
+
+            if !model.addresses.isEmpty {
+                quickFillMenu
+            }
+
+            RewatchTextField(
+                "Full name",
+                text: $fullName,
+                placeholder: "First and last name",
+                error: fieldError(fullName, "Enter the recipient's name."),
+                kind: .fullName
+            )
+
+            AddressStreetField(
+                label: "Street address",
+                text: $street,
+                placeholder: "Street and number",
+                error: fieldError(street, "Enter a street address.")
+            ) { address in
+                city = address.city
+                state = address.state
+                zip = address.postalCode
+                country = "US"
+            }
+
+            RewatchTextField("Apt, suite, unit (optional)", text: $apartment, kind: .addressLine2)
+
+            RewatchTextField(
+                "City",
+                text: $city,
+                error: fieldError(city, "Enter a city."),
+                kind: .city
+            )
+
+            HStack(alignment: .top, spacing: Space.m) {
+                RewatchTextField(
+                    "State",
+                    text: $state,
+                    placeholder: "e.g. NY",
+                    error: fieldError(state, "Required."),
+                    kind: .state
+                )
+
+                RewatchTextField(
+                    "ZIP",
+                    text: $zip,
+                    error: fieldError(zip, "Required."),
+                    kind: .postalCode
+                )
+            }
+
+            RewatchTextField(
+                "Country",
+                text: $country,
+                error: countryError,
+                kind: .country
+            )
+
+            RewatchTextField(
+                "Phone (optional)",
+                text: $phone,
+                placeholder: "(415) 555-0134",
+                error: phoneError,
+                kind: .phone
+            )
+            .phoneFormatted($phone)
+
+            if let error = model.addressFormError {
+                InlineErrorLine(message: error)
+            }
+
+            Button {
+                attempted = true
+                guard isValid else { return }
+                Haptics.shared.play(.press)
+                Task { await save() }
+            } label: {
+                BusyLabel(title: "Save and use this address", busy: model.savingAddress)
+            }
+            .buttonStyle(.rewatch(.secondary, fullWidth: true))
+            .disabled(model.savingAddress)
+        }
+        .padding(Space.l)
+        .background(Color.rewatch.card, in: RoundedRectangle(cornerRadius: Radius.box, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.box, style: .continuous)
+                .strokeBorder(Color.rewatch.border, lineWidth: 1)
+        )
+        .animation(Motion.easeFast, value: model.addressFormError)
+    }
+
+    private var isValid: Bool {
+        ![fullName, street, city, state, zip].contains { trimmed($0).isEmpty }
+            && InputValidation.isISO2CountryCode(country)
+            && InputValidation.isValidPhone(phone, required: false)
+    }
+
+    private var countryError: String? {
+        guard attempted || InputValidation.isNonBlank(country) else { return nil }
+        return InputValidation.isISO2CountryCode(country) ? nil : "Use a 2-letter code like US."
+    }
+
+    private var phoneError: String? {
+        InputValidation.isValidPhone(phone, required: false)
+            ? nil
+            : "Enter a valid phone number, or leave it blank."
+    }
+
+    private func fieldError(_ value: String, _ message: String) -> String? {
+        attempted && trimmed(value).isEmpty ? message : nil
+    }
+
+    private func trimmed(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func save() async {
+        guard isValid, !model.savingAddress else { return }
+        let payload = AddressPayload(
+            fullName: trimmed(fullName),
+            phone: trimmed(phone).isEmpty ? nil : (PhoneFormatter.nationalDigits(phone) ?? trimmed(phone)),
+            line1: trimmed(street),
+            line2: trimmed(apartment).isEmpty ? nil : trimmed(apartment),
+            city: trimmed(city),
+            region: trimmed(state),
+            postalCode: trimmed(zip),
+            country: trimmed(country).uppercased(),
+            isDefaultShipping: model.addresses.isEmpty ? true : nil
+        )
+        await model.createAddress(payload)
+    }
+}

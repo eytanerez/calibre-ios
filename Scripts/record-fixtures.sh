@@ -1,10 +1,10 @@
 #!/bin/bash
-# Records real API responses from the local backend into RewoundKit test
+# Records real API responses from the local backend into RewatchKit test
 # fixtures. Re-run whenever the API shape changes. Requires the local docker
 # backend on :8000 with seeded demo data.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-FIXTURES=Packages/RewoundKit/Tests/RewoundKitTests/Fixtures
+FIXTURES=Packages/RewatchKit/Tests/RewatchKitTests/Fixtures
 BASE=http://localhost:8000
 # Test account registered against the local dev DB (register-or-login).
 BUYER_EMAIL="iosbuyer.rewound@gmail.com"
@@ -30,7 +30,7 @@ grab listings-home GET "/listings/home"
 grab market-reference-prices GET "/market/reference-prices"
 # Public and unauthenticated. The whole beta hangs on this decoding: a
 # throw here is read by BetaStore as "no beta", with nothing on screen.
-# The local backend has the programme OFF unless REWOUND_BETA_PROGRAM=true,
+# The local backend has the programme OFF unless REWATCH_BETA_PROGRAM=true,
 # and off records {"enabled": false} - a fixture that proves nothing.
 # BetaConfigFixtureTests fails on that rather than passing it.
 grab beta-config GET "/beta/config"

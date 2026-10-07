@@ -1,0 +1,86 @@
+import SwiftUI
+
+/// Circular monogram avatar for sellers and buyers without a photo — warm
+/// accent circle with serif initials. Initials are true initials (capital
+/// letters), not a styled uppercase treatment.
+public struct AvatarInitial: View {
+    /// Fixed avatar sizes: s = 28pt (inline rows), m = 40pt (list rows),
+    /// l = 56pt (profile headers).
+    public enum Size {
+        case s, m, l
+
+        var diameter: CGFloat {
+            switch self {
+            case .s: 28
+            case .m: 40
+            case .l: 56
+            }
+        }
+
+        var fontSize: CGFloat {
+            switch self {
+            case .s: 12
+            case .m: 16
+            case .l: 22
+            }
+        }
+    }
+
+    let initials: String
+    let size: Size
+    private let accessibilityName: String?
+    /// The monogram already grows with Dynamic Type — `RewatchType.serif` is
+    /// declared `relativeTo: .body` — but the circle around it did not, so the
+    /// letters ran into their own edge and clipped. Identical at the default
+    /// size, where `ScaledMetric` hands back the value it was given; the same
+    /// treatment `DealerBadge` gives its seal.
+    @ScaledMetric private var diameter: CGFloat
+
+    /// Exact initials, e.g. `AvatarInitial(initials: "GW")`.
+    public init(initials: String, size: Size = .m) {
+        self.initials = initials
+        self.size = size
+        self.accessibilityName = nil
+        _diameter = ScaledMetric(wrappedValue: size.diameter)
+    }
+
+    /// Derives up to two initials from a display name
+    /// ("Geneva Watch Co." → "GW").
+    public init(name: String, size: Size = .m) {
+        let words = name.split(separator: " ").prefix(2)
+        self.initials = words.compactMap { $0.first.map(String.init) }.joined().uppercased()
+        self.size = size
+        self.accessibilityName = name
+        _diameter = ScaledMetric(wrappedValue: size.diameter)
+    }
+
+    public var body: some View {
+        Text(initials)
+            .font(RewatchType.serif(.medium, size.fontSize))
+            .foregroundStyle(Color.rewatch.accentForeground)
+            .frame(width: diameter, height: diameter)
+            .background(Color.rewatch.accent, in: Circle())
+            .accessibilityLabel(accessibilityName ?? initials)
+    }
+}
+
+#Preview("Avatars — light", traits: .sizeThatFitsLayout) {
+    HStack(spacing: Space.l) {
+        AvatarInitial(name: "Geneva Watch Co.", size: .s)
+        AvatarInitial(name: "Geneva Watch Co.", size: .m)
+        AvatarInitial(name: "Eytan Erez", size: .l)
+    }
+    .padding()
+    .background(Color.rewatch.background)
+}
+
+#Preview("Avatars — dark", traits: .sizeThatFitsLayout) {
+    HStack(spacing: Space.l) {
+        AvatarInitial(name: "Geneva Watch Co.", size: .s)
+        AvatarInitial(name: "Geneva Watch Co.", size: .m)
+        AvatarInitial(name: "Eytan Erez", size: .l)
+    }
+    .padding()
+    .background(Color.rewatch.background)
+    .preferredColorScheme(.dark)
+}

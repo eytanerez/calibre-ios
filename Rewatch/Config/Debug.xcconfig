@@ -1,0 +1,51 @@
+// Local development — the simulator shares the Mac's loopback interface, while
+// a physical device reaches the same backend over the LAN. Plaintext to a
+// private address is admitted by NSAllowsLocalNetworking in Info.plist, so the
+// device build needs no tunnel and no certificate. If the Mac's IP moves,
+// re-check `ipconfig getifaddr en0` — the previous quick tunnel here had gone
+// dead and was still pointed at the retired :8000 compose stack.
+// Routes are served at the origin root (no /api prefix).
+API_BASE_URL[sdk=iphonesimulator*] = http:/$()/127.0.0.1:8010
+API_BASE_URL[sdk=iphoneos*] = http:/$()/192.168.86.50:8010
+
+// rewatch-messaging — a separate service (buyer↔seller messaging + the
+// contact guard), own port, own dev process. Same simulator/device split as
+// API_BASE_URL above, same reason.
+MESSAGING_API_BASE_URL[sdk=iphonesimulator*] = http:/$()/127.0.0.1:8020
+MESSAGING_API_BASE_URL[sdk=iphoneos*] = http:/$()/192.168.86.50:8020
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+
+// Shows Apple Pay in the payment sheet. Rewatch.entitlements now carries
+// com.apple.developer.in-app-payments for merchant.com.shoprewatch.rewatch, so
+// this flag no longer stands alone; the remaining half is portal work, and it
+// is not code. The merchant id has to exist on team KVXR84LZH3, Apple Pay has
+// to be enabled as a capability on the com.shoprewatch.rewatch App ID, and the
+// merchant has to be paired with a payment-processing certificate in Stripe.
+// Until all three exist a tap opens no sheet and CheckoutModel says so out
+// loud rather than sitting there silently, which is what it used to do.
+//
+// Keep the flag. It is the only way to hide the button for a build signed by
+// a team that cannot carry the entitlement.
+APPLE_PAY_ENABLED = YES
+
+// Product analytics (PostHog). Deliberately EMPTY in the tracked config — an
+// empty key disables analytics entirely: the SDK is never configured and every
+// capture is a no-op. Supply a real project key in a local override or CI
+// build setting to turn it on. The host has a working default because it is
+// not a secret; only the key gates the feature.
+REWATCH_POSTHOG_KEY =
+REWATCH_POSTHOG_HOST = https:/$()/us.i.posthog.com
+
+// Crash/error reporting (Sentry) and log shipping (Better Stack). Empty on
+// Debug on purpose — see Release.xcconfig and Rewatch/App/Observability.swift
+// for what an empty value does (nothing: no SDK start, no network call, no
+// crash). Paste a DSN/token here only to exercise the wiring locally.
+REWATCH_SENTRY_DSN =
+REWATCH_BETTERSTACK_TOKEN =
+REWATCH_BETTERSTACK_HOST = s2743596.us-west-2a.betterstackdata.com
+
+// Real keys live in Secrets.xcconfig beside this file — untracked and
+// gitignored, so nothing secret is ever committed. The `?` makes the include
+// optional: without the file the keys above stay empty and every service is off.
+#include? "Secrets.xcconfig"

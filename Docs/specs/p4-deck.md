@@ -2,7 +2,7 @@
 
 First read Docs/specs/shared-rules.md. Your simulator: **iPhone 17**. Derived data: /tmp/dd-p4. Screenshots: scratchpad/p4/.
 
-You own: Rewound/Features/Discover/ only. Replace P2's placeholder root in place.
+You own: Rewatch/Features/Discover/ only. Replace P2's placeholder root in place.
 
 Kit surface: CatalogStore.browse (view=card, sort popular), CommerceStore watchlist toggle, LocalSignals (pass-list + saved exclusion), AuthSession.require, Nuke ImagePrefetcher.
 
@@ -10,7 +10,7 @@ Kit surface: CatalogStore.browse (view=card, sort popular), CommerceStore watchl
 
 **DiscoverScreen** (tab root) — full-screen card-stack browsing; the signature "its own thing" surface:
 
-- **Stack**: ZStack of top 3 cards; card = large rounded (Radius.overlay) image-forward layout — watch photo fills ~70% (LazyImage, downsampled), bottom panel: Eyebrow brand·year, serif title, price (RewoundType.price), condition pill. Under-cards at scale 0.97/0.94, offset 10/20pt, slightly dimmed.
+- **Stack**: ZStack of top 3 cards; card = large rounded (Radius.overlay) image-forward layout — watch photo fills ~70% (LazyImage, downsampled), bottom panel: Eyebrow brand·year, serif title, price (RewatchType.price), condition pill. Under-cards at scale 0.97/0.94, offset 10/20pt, slightly dimmed.
 - **Feed**: DeckFeed model paging /listings (view=card, page_size=24, sort=popular), excluding LocalSignals passed ids and current watchlist ids; refill fetch when ≤8 unseen remain; loop pages until exhausted → warm EmptyState ("You've seen every watch currently live. Check Fresh Arrivals on Home.") with a Reset passes button.
 - **Gesture physics** (DragGesture on top card): translation follows finger; rotation = width/20 clamped ±8°; SAVE affordance (top-left, success-tinted capsule) / PASS (top-right, muted capsule) fade in past 40% of commit threshold; commit at |x| > 0.35×width OR predicted end velocity > 800; fly-off 420ms Motion.ease along drag vector; below threshold snap back 220ms. Ease-out ONLY — zero bounce. Next card scales up in sync. Reduce Motion: crossfade instead of fly.
 - **Haptics**: .armed (light) exactly once when crossing threshold per drag; .save (medium) on right commit; .pass (soft) on left commit. One haptic per gesture.

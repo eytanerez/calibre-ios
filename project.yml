@@ -1,47 +1,47 @@
-name: Rewound
+name: Rewatch
 options:
-  bundleIdPrefix: com.shoprewound
+  bundleIdPrefix: com.shoprewatch
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
 
 packages:
-  RewoundKit:
-    path: Packages/RewoundKit
-  RewoundDesign:
-    path: Packages/RewoundDesign
+  RewatchKit:
+    path: Packages/RewatchKit
+  RewatchDesign:
+    path: Packages/RewatchDesign
   StripeiOS:
     url: https://github.com/stripe/stripe-ios
     exactVersion: 26.2.0
   Nuke:
     url: https://github.com/kean/Nuke
     from: 13.0.6
-  # Product analytics. App target only — RewoundKit stays dependency-free, so
-  # the seam that wraps this lives in Rewound/App/Analytics.swift.
+  # Product analytics. App target only — RewatchKit stays dependency-free, so
+  # the seam that wraps this lives in Rewatch/App/Analytics.swift.
   PostHog:
     url: https://github.com/PostHog/posthog-ios
     exactVersion: 3.69.6
   # Crash/error reporting. App target only, like PostHog, and wired from
-  # Rewound/App/Observability.swift. Pinned to the same sentry-cocoa version
+  # Rewatch/App/Observability.swift. Pinned to the same sentry-cocoa version
   # the admin app pins (admin-ios/project.yml) so one Sentry project sees one
-  # SDK version across every Rewound client.
+  # SDK version across every Rewatch client.
   Sentry:
     url: https://github.com/getsentry/sentry-cocoa
     exactVersion: 8.58.4
 
 configFiles:
-  Debug: Rewound/Config/Debug.xcconfig
-  Release: Rewound/Config/Release.xcconfig
+  Debug: Rewatch/Config/Debug.xcconfig
+  Release: Rewatch/Config/Release.xcconfig
 
 targets:
-  Rewound:
+  Rewatch:
     type: application
     platform: iOS
     sources:
-      - path: Rewound
+      - path: Rewatch
     dependencies:
-      - package: RewoundKit
-      - package: RewoundDesign
+      - package: RewatchKit
+      - package: RewatchDesign
       - package: StripeiOS
         products:
           # PaymentSheet still drives offer holds and label purchases.
@@ -60,19 +60,19 @@ targets:
       - package: Sentry
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.shoprewound.rewound
-        MARKETING_VERSION: 1.0.23
-        CURRENT_PROJECT_VERSION: 56
+        PRODUCT_BUNDLE_IDENTIFIER: com.shoprewatch.rewatch
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 1
         TARGETED_DEVICE_FAMILY: 1
         SWIFT_VERSION: 6.0
-        CODE_SIGN_ENTITLEMENTS: Rewound/Config/Rewound.entitlements
+        CODE_SIGN_ENTITLEMENTS: Rewatch/Config/Rewatch.entitlements
         ENABLE_USER_SCRIPT_SANDBOXING: YES
     info:
-      path: Rewound/Config/Info.plist
+      path: Rewatch/Config/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        CFBundleDisplayName: Rewound
+        CFBundleDisplayName: Rewatch
         # Portrait only. This used to be an `INFOPLIST_KEY_…` build setting,
         # which Xcode merges into a *generated* Info.plist and ignores
         # entirely when the target names its own `INFOPLIST_FILE` — as this
@@ -93,63 +93,63 @@ targets:
         UILaunchScreen:
           UIColorName: LaunchBackground
         ITSAppUsesNonExemptEncryption: false
-        NSCameraUsageDescription: Rewound uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
-        NSPhotoLibraryUsageDescription: Rewound lets you choose existing photos of your watch when creating a listing.
-        NSFaceIDUsageDescription: Rewound uses Face ID to keep your vault private, so only you can see the watches you own.
+        NSCameraUsageDescription: Rewatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
+        NSPhotoLibraryUsageDescription: Rewatch lets you choose existing photos of your watch when creating a listing.
+        NSFaceIDUsageDescription: Rewatch uses Face ID to keep your vault private, so only you can see the watches you own.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         CFBundleURLTypes:
           - CFBundleURLSchemes:
-              - rewound
-        RewoundAPIBaseURL: $(API_BASE_URL)
-        RewoundMessagingBaseURL: $(MESSAGING_API_BASE_URL)
-        RewoundApplePayEnabled: $(APPLE_PAY_ENABLED)
-        RewoundPostHogKey: $(REWOUND_POSTHOG_KEY)
-        RewoundPostHogHost: $(REWOUND_POSTHOG_HOST)
+              - rewatch
+        RewatchAPIBaseURL: $(API_BASE_URL)
+        RewatchMessagingBaseURL: $(MESSAGING_API_BASE_URL)
+        RewatchApplePayEnabled: $(APPLE_PAY_ENABLED)
+        RewatchPostHogKey: $(REWATCH_POSTHOG_KEY)
+        RewatchPostHogHost: $(REWATCH_POSTHOG_HOST)
         # Empty in both tracked xcconfigs. Observability.swift reads these and
         # starts nothing when the value is blank — see Config/Release.xcconfig.
-        RewoundSentryDSN: $(REWOUND_SENTRY_DSN)
-        RewoundBetterStackToken: $(REWOUND_BETTERSTACK_TOKEN)
-        RewoundBetterStackHost: $(REWOUND_BETTERSTACK_HOST)
-  RewoundUITests:
+        RewatchSentryDSN: $(REWATCH_SENTRY_DSN)
+        RewatchBetterStackToken: $(REWATCH_BETTERSTACK_TOKEN)
+        RewatchBetterStackHost: $(REWATCH_BETTERSTACK_HOST)
+  RewatchUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - path: RewoundUITests
+      - path: RewatchUITests
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - target: Rewound
+      - target: Rewatch
 
   # Unit tests for the app target's own models — the router and the checkout
-  # machine live here rather than in RewoundKit, and until this target existed
+  # machine live here rather than in RewatchKit, and until this target existed
   # neither could be tested at all: a UI test can only reach them through a
-  # screen, and RewoundKit's tests cannot see them.
-  RewoundTests:
+  # screen, and RewatchKit's tests cannot see them.
+  RewatchTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: RewoundTests
+      - path: RewatchTests
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - target: Rewound
+      - target: Rewatch
 
 schemes:
-  Rewound:
+  Rewatch:
     build:
       targets:
-        Rewound: all
+        Rewatch: all
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - RewoundTests
-        - RewoundUITests
-        - package: RewoundKit/RewoundKitTests
-        - package: RewoundDesign/RewoundDesignTests
+        - RewatchTests
+        - RewatchUITests
+        - package: RewatchKit/RewatchKitTests
+        - package: RewatchDesign/RewatchDesignTests
     archive:
       config: Release

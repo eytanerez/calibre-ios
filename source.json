@@ -1,22 +1,22 @@
 {
-  "name": "Rewound (Personal)",
-  "identifier": "com.shoprewound.rewound.source",
-  "sourceURL": "https://raw.githubusercontent.com/eytanerez/rewound-ios/main/source.json",
+  "name": "Rewatch (Personal)",
+  "identifier": "com.shoprewatch.rewatch.source",
+  "sourceURL": "https://raw.githubusercontent.com/eytanerez/rewatch-ios/main/source.json",
   "apps": [
     {
-      "name": "Rewound",
-      "bundleIdentifier": "com.shoprewound.rewound",
+      "name": "Rewatch",
+      "bundleIdentifier": "com.shoprewatch.rewatch",
       "developerName": "Eytan Erez",
       "localizedDescription": "A native iOS marketplace for discovering, buying, and selling watches.",
-      "iconURL": "https://raw.githubusercontent.com/eytanerez/rewound-ios/main/icon.png",
+      "iconURL": "https://raw.githubusercontent.com/eytanerez/rewatch-ios/main/icon.png",
       "permissions": [
         {
           "type": "camera",
-          "usageDescription": "Rewound uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents."
+          "usageDescription": "Rewatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents."
         },
         {
           "type": "photos",
-          "usageDescription": "Rewound lets you choose existing photos of your watch when creating a listing."
+          "usageDescription": "Rewatch lets you choose existing photos of your watch when creating a listing."
         }
       ],
       "versions": [
@@ -24,7 +24,7 @@
           "version": "1.0",
           "date": "2026-07-12",
           "localizedDescription": "Initial SideStore release (build 1).",
-          "downloadURL": "https://github.com/eytanerez/rewound-ios/releases/download/v1.0-b1/Rewound.ipa",
+          "downloadURL": "https://github.com/eytanerez/rewatch-ios/releases/download/v1.0-b1/Rewatch.ipa",
           "size": 13818075,
           "minOSVersion": "18.0"
         }
