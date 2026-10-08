@@ -69,18 +69,6 @@ enum GoogleAuthError {
     }
 }
 
-/// The serif Rewatch wordmark used on the login screen and intro.
-struct RewatchWordmark: View {
-    var size: CGFloat = 34
-
-    var body: some View {
-        Text("Rewatch")
-            .font(RewatchType.serif(.semiBold, size, relativeTo: .largeTitle))
-            .foregroundStyle(Color.rewatch.foreground)
-            .accessibilityAddTraits(.isHeader)
-    }
-}
-
 /// Quiet "or" divider between credential and social sign-in.
 struct AuthDivider: View {
     var body: some View {

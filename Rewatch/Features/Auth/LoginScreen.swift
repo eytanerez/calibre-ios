@@ -126,7 +126,9 @@ struct LoginScreen: View {
     private var header: some View {
         VStack(spacing: Space.m) {
             SigningInMark(turning: busy)
-            RewatchWordmark()
+            // The site's sign-in pages: the wordmark 24 tall.
+            RewatchWordmark(height: 24)
+                .accessibilityAddTraits(.isHeader)
             Text("Welcome back. Sign in to pick up where you left off.")
                 .font(RewatchType.body)
                 .foregroundStyle(Color.rewatch.mutedForeground)

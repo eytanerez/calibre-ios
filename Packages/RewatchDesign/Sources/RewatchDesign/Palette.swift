@@ -28,6 +28,8 @@ public struct RewatchPalette: Sendable {
     public let primary = dynamic(light: 0x7D5440, dark: 0xC79274)
     /// Pressed/darkened state of `primary`.
     public let primaryDeep = dynamic(light: 0x6A4636, dark: 0xB58063)
+    /// The wordmark: chocolate on light, cream on dark (the site's `--wordmark`).
+    public let wordmark = dynamic(light: 0x3B2317, dark: 0xEDE7DC)
     /// Text/icons on `primary` fills.
     public let primaryForeground = dynamic(light: 0xFAF8F4, dark: 0x1B1512)
     /// Subtle fills, image wells, row hover. Dark is the same `--surface` the

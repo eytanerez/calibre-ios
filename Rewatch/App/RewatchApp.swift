@@ -127,6 +127,11 @@ struct RootView: View {
         bootstrapped && services.auth.needsProfileCompletion
     }
 
+    #if DEBUG
+    /// `-signInPreview`: the sign-in screen, for screenshots.
+    @State private var debugSignInPreview = false
+    #endif
+
     /// The one sheet the root can present. A reset link outranks the mid-action
     /// sign-in sheet; consolidating into a single `.sheet(item:)` avoids the
     /// chained double-sheet trap.
@@ -252,6 +257,11 @@ struct RootView: View {
                 serverAlerts: services.serverAlerts
             )
         }
+        #if DEBUG
+        .fullScreenCover(isPresented: $debugSignInPreview) {
+            NavigationStack { LoginScreen(context: .modal) }
+        }
+        #endif
         // Environment injection stays OUTERMOST so sheet content (presented
         // from a node above the injection point otherwise) inherits it too.
         .environment(services)
@@ -269,6 +279,15 @@ struct RootView: View {
             Task { await services.beta.load() }
             await services.auth.bootstrap()
             bootstrapped = true
+            #if DEBUG
+            // Screenshot hook: open the sign-in sheet as a guest would meet it.
+            if ProcessInfo.processInfo.arguments.contains("-signInPreview"), !services.auth.isAuthenticated {
+                Task {
+                    try? await Task.sleep(for: .seconds(1.5))
+                    debugSignInPreview = true
+                }
+            }
+            #endif
             // Tokens survived but /auth/me never answered — the session is
             // being kept on faith (see `bootstrap`), and that is worth a line
             // when someone is looking at why a launch behaved oddly.
@@ -344,7 +363,7 @@ private enum RootSheet: Identifiable, Equatable {
 /// Shown only for the breath it takes `bootstrap()` to restore a session.
 private struct BootSplash: View {
     var body: some View {
-        RewatchWordmark(size: 40)
+        RewatchWordmark(height: 40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .rewatchPageBackground()
     }
