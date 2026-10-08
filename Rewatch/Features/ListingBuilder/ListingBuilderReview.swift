@@ -188,6 +188,10 @@ struct BuilderReviewStep: View {
                 Button(action: onApprove) {
                     BusyLabel(title: approveLabel, busy: model.isSubmitting)
                 }
+                .onScrollVisibilityChange(threshold: 0.01) { visible in
+                    model.inlineApproveVisibilityChanged(visible)
+                }
+                .onDisappear { model.inlineApproveVisibilityChanged(false) }
                 .buttonStyle(.rewatch(.primary, fullWidth: true))
                 .disabled(model.isSubmitting)
                 .accessibilityIdentifier("builder.approve")
@@ -228,6 +232,13 @@ struct BuilderApproveBar: View {
     let model: ListingBuilderModel
     let onApprove: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Mounted below the screen, then slid up, so the same motion can take it
+    /// away again when the inline button comes into view.
+    @State private var entered = false
+
+    private var hidden: Bool { !entered || model.approveBarHidden }
+
     private var figure: Decimal? { model.estimatedPayout ?? model.keep }
 
     /// While it waits on photos, the bar says how far they are.
@@ -266,6 +277,14 @@ struct BuilderApproveBar: View {
         .overlay(alignment: .top) {
             Rectangle().fill(Color.rewatch.border).frame(height: 1)
         }
+        // Stays mounted and keeps its room in the inset either way, so the
+        // page under it never moves; while hidden it cannot be reached.
+        .offset(y: hidden && !reduceMotion ? 120 : 0)
+        .opacity(hidden ? 0 : 1)
+        .allowsHitTesting(!hidden)
+        .accessibilityHidden(hidden)
+        .animation(reduceMotion ? .easeOut(duration: 0.2) : Motion.ease(0.38), value: hidden)
+        .onAppear { entered = true }
     }
 }
 

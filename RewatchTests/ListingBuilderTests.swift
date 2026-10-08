@@ -347,6 +347,24 @@ final class ListingBuilderTests: XCTestCase {
         XCTAssertEqual(model.sendError?.message, "Required condition grades missing: Clasp.")
     }
 
+    // MARK: The pinned approve bar
+
+    func testThePinnedBarStepsAsideWhileTheInlineApproveIsOnScreen() throws {
+        let (model, _) = try builder()
+        XCTAssertTrue(model.approveBarHidden, "No bar before the review")
+        model.answers.priceText = "12,450"
+        model.answers.returns = .hours48
+        model.previewJump(to: .review)
+        XCTAssertFalse(model.approveBarHidden, "Up while the page's own Approve is out of sight")
+        model.inlineApproveVisibilityChanged(true)
+        XCTAssertTrue(model.approveBarHidden, "Two identical buttons at once is one too many")
+        model.inlineApproveVisibilityChanged(false)
+        XCTAssertFalse(model.approveBarHidden, "Back when the inline button scrolls away")
+        model.inlineApproveVisibilityChanged(true)
+        model.edit(.price)
+        XCTAssertTrue(model.approveBarHidden, "Off the review there is no bar")
+    }
+
     // MARK: The plan, on its own
 
     func testThePlanSendsOnlyFilesNotAlreadySent() {

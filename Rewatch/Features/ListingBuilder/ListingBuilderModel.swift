@@ -776,6 +776,20 @@ final class ListingBuilderModel {
 
     var isSubmitting: Bool { submitPhase != nil }
 
+    /// Whether the review's own "Approve and submit" is on screen. The pinned
+    /// bar steps aside while it is: two identical buttons one above the other
+    /// is one too many (the site's c9279c9).
+    private(set) var inlineApproveVisible = false
+
+    func inlineApproveVisibilityChanged(_ visible: Bool) {
+        guard visible != inlineApproveVisible else { return }
+        inlineApproveVisible = visible
+    }
+
+    /// The pinned "You make $X · Approve" bar is hidden (still in place, out
+    /// of reach) while the inline button can be seen, and off the review.
+    var approveBarHidden: Bool { step != .review || inlineApproveVisible }
+
     /// Approve and submit: the photos are (nearly) all up already, so this is
     /// the remaining answers and the move to review. Waits, with the count on
     /// screen, if photos are still going.
