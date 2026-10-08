@@ -171,8 +171,21 @@ struct SellerDashboardScreen: View {
             }
         }
         .fullScreenCover(item: $wizardContext) { context in
-            ListingWizardScreen(context: context) {
-                Task { await load() }
+            // A new listing and a draft to finish are the listing builder,
+            // as on the site; editing a listed watch stays on the edit form.
+            switch context.kind {
+            case .new(let prefill):
+                ListingBuilderCover(kind: .new(prefill: prefill)) {
+                    Task { await load() }
+                }
+            case .finishDraft(let listing):
+                ListingBuilderCover(kind: .finishDraft(listing)) {
+                    Task { await load() }
+                }
+            case .edit:
+                ListingWizardScreen(context: context) {
+                    Task { await load() }
+                }
             }
         }
         .fullScreenCover(item: saleDetailItem) { item in

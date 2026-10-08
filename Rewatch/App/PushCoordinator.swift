@@ -675,6 +675,22 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate {
     /// coordinator. Retain that callback until the live root is ready.
     private static var pendingDeviceToken: Data?
 
+    /// iOS woke the app because listing photos it was sending in the
+    /// background finished (or failed) while the app was away. The transport
+    /// recreates its session to hear them, and calls this handler back once
+    /// every event has been delivered, so iOS can take its snapshot and
+    /// suspend the app again.
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        let done = UncheckedHandler(completionHandler)
+        BackgroundUploadTransport.handleEvents(forSession: identifier) {
+            done.call()
+        }
+    }
+
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
@@ -719,4 +735,11 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate {
         Observability.log(.warning, "APNs device registration failed")
         #endif
     }
+}
+
+/// iOS's background-session completion handler, carried to the main queue
+/// where it is called. The handler is UIKit's and has no Sendable promise.
+private struct UncheckedHandler: @unchecked Sendable {
+    let call: () -> Void
+    init(_ call: @escaping () -> Void) { self.call = call }
 }

@@ -1,0 +1,224 @@
+[
+  {
+    "name": "matched watch, parts differ, notes everywhere, replaced and serviced, 48-hour returns, Vault link",
+    "needsCustomsFields": false,
+    "answers": {
+      "brand": " Rolex ",
+      "model": "Submariner  Date",
+      "reference": "126610LN",
+      "year": "2021",
+      "sku": " A-1042 ",
+      "grade": "Very Good",
+      "partsMatch": false,
+      "parts": {
+        "case": "Good",
+        "dial": "Like New",
+        "bezel": "Very Good",
+        "crystal": "Very Good",
+        "bracelet": "Good",
+        "clasp": "Very Good",
+        "caseback": "Very Good"
+      },
+      "conditionNotes": {
+        "overall": "Worn gently,  never polished",
+        "case": " Light desk marks on the lugs ",
+        "bracelet": "Slight stretch,\nall links",
+        "crystal": "   "
+      },
+      "box": {
+        "box": true,
+        "papers": true,
+        "booklets": false
+      },
+      "notes": " Comes with an extra strap. ",
+      "history": {
+        "polish": "polished",
+        "originality": "replaced",
+        "serviceHistory": "serviced"
+      },
+      "replaced": " the crown   and the crystal ",
+      "serviceYear": "2023",
+      "priceText": "12,450.50",
+      "returns": "48",
+      "customs": {
+        "country": "",
+        "hts": ""
+      },
+      "vaultWatchId": "7d1c2f0e-5b7a-4c1e-9a43-2f6a1d0b9c11"
+    },
+    "expected": {
+      "title": "Rolex Submariner Date 126610LN",
+      "brand": "Rolex",
+      "model": "Submariner  Date",
+      "reference": "126610LN",
+      "description": "Comes with an extra strap.",
+      "price": 12450.5,
+      "currency": "USD",
+      "condition_case": "Good",
+      "condition_dial": "Like New",
+      "condition_bezel": "Very Good",
+      "condition_crystal": "Very Good",
+      "condition_bracelet": "Good",
+      "condition_clasp": "Very Good",
+      "condition_caseback": "Very Good",
+      "condition_overall": "Very Good",
+      "condition_notes": {
+        "case": "Light desk marks on the lugs",
+        "bracelet": "Slight stretch, all links",
+        "overall": "Worn gently, never polished"
+      },
+      "seller_sku": "A-1042",
+      "box_papers": true,
+      "box_included": true,
+      "papers_included": true,
+      "booklets_included": false,
+      "polish": "polished",
+      "originality": "replaced",
+      "replaced_parts_note": "the crown and the crystal",
+      "service_history": "serviced",
+      "last_service_year": 2023,
+      "production_year": 2021,
+      "returns_accepted": true,
+      "return_window_hours": 48,
+      "vault_watch_id": "7d1c2f0e-5b7a-4c1e-9a43-2f6a1d0b9c11"
+    }
+  },
+  {
+    "name": "all parts match, year unknown, no returns, watch only, stale part note and follow-ups not sent",
+    "needsCustomsFields": false,
+    "answers": {
+      "brand": "Omega",
+      "model": "Speedmaster Professional",
+      "reference": "310.30.42.50.01.001",
+      "year": "unknown",
+      "sku": "",
+      "grade": "New",
+      "partsMatch": true,
+      "parts": {},
+      "conditionNotes": {
+        "overall": "",
+        "dial": "a note from before the seller said every part matches"
+      },
+      "box": {
+        "box": false,
+        "papers": false,
+        "booklets": false
+      },
+      "notes": "",
+      "history": {
+        "polish": "unknown",
+        "originality": "all_original",
+        "serviceHistory": "never"
+      },
+      "replaced": "left over from Some parts replaced",
+      "serviceYear": "2019",
+      "priceText": "100",
+      "returns": "none",
+      "customs": {
+        "country": "",
+        "hts": ""
+      },
+      "vaultWatchId": null
+    },
+    "expected": {
+      "title": "Omega Speedmaster Professional 310.30.42.50.01.001",
+      "brand": "Omega",
+      "model": "Speedmaster Professional",
+      "reference": "310.30.42.50.01.001",
+      "description": "",
+      "price": 100,
+      "currency": "USD",
+      "condition_case": "New",
+      "condition_dial": "New",
+      "condition_bezel": "New",
+      "condition_crystal": "New",
+      "condition_bracelet": "New",
+      "condition_clasp": "New",
+      "condition_caseback": "New",
+      "condition_overall": "New",
+      "condition_notes": {},
+      "box_papers": false,
+      "box_included": false,
+      "papers_included": false,
+      "booklets_included": false,
+      "polish": "unknown",
+      "originality": "all_original",
+      "replaced_parts_note": null,
+      "service_history": "never",
+      "last_service_year": null,
+      "returns_accepted": false
+    }
+  },
+  {
+    "name": "a dealer outside the US: customs details, 72-hour returns, replaced and serviced with nothing typed",
+    "needsCustomsFields": true,
+    "answers": {
+      "brand": "Tudor",
+      "model": "Black Bay 58",
+      "reference": "79030N",
+      "year": "2019",
+      "sku": "TB-58",
+      "grade": "Like New",
+      "partsMatch": true,
+      "parts": {},
+      "conditionNotes": {
+        "overall": "Barely worn"
+      },
+      "box": {
+        "box": true,
+        "papers": false,
+        "booklets": true
+      },
+      "notes": "Full kit.\nSecond line of notes.",
+      "history": {
+        "polish": "unpolished",
+        "originality": "replaced",
+        "serviceHistory": "serviced"
+      },
+      "replaced": "",
+      "serviceYear": "",
+      "priceText": "3,450",
+      "returns": "72",
+      "customs": {
+        "country": "ch",
+        "hts": " 9102.11 "
+      },
+      "vaultWatchId": null
+    },
+    "expected": {
+      "title": "Tudor Black Bay 58 79030N",
+      "brand": "Tudor",
+      "model": "Black Bay 58",
+      "reference": "79030N",
+      "description": "Full kit.\nSecond line of notes.",
+      "price": 3450,
+      "currency": "USD",
+      "condition_case": "Like New",
+      "condition_dial": "Like New",
+      "condition_bezel": "Like New",
+      "condition_crystal": "Like New",
+      "condition_bracelet": "Like New",
+      "condition_clasp": "Like New",
+      "condition_caseback": "Like New",
+      "condition_overall": "Like New",
+      "condition_notes": {
+        "overall": "Barely worn"
+      },
+      "seller_sku": "TB-58",
+      "box_papers": false,
+      "box_included": true,
+      "papers_included": false,
+      "booklets_included": true,
+      "polish": "unpolished",
+      "originality": "replaced",
+      "replaced_parts_note": null,
+      "service_history": "serviced",
+      "last_service_year": null,
+      "country_of_origin": "CH",
+      "hts_code": "9102.11",
+      "production_year": 2019,
+      "returns_accepted": true,
+      "return_window_hours": 72
+    }
+  }
+]

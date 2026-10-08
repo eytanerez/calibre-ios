@@ -81,6 +81,42 @@ public final class SellerStore {
         return listing
     }
 
+    /// Create a listing from the site's own body (`SellListingBody`). The
+    /// server makes every new listing a draft; review is a separate step.
+    @discardableResult
+    public func createListing(body: SellListingBody) async throws -> Listing {
+        let listing: Listing = try await client.send(
+            try Endpoint.json(method: .post, path: "/account/listings", payload: body)
+        )
+        myListings.insert(listing, at: 0)
+        return listing
+    }
+
+    /// Replace a listing's answers with the site's own body.
+    @discardableResult
+    public func updateListing(id: String, body: SellListingBody) async throws -> Listing {
+        try await patchListing(id: id, payload: body)
+    }
+
+    /// The move to review on its own, as the site makes it after the body:
+    /// `{"status": "pending_review"}`.
+    @discardableResult
+    public func moveToReview(listingID: String) async throws -> Listing {
+        try await patchListing(id: listingID, payload: ListingStatusPatch(.pendingReview))
+    }
+
+    private func patchListing(id: String, payload: some Encodable & Sendable) async throws -> Listing {
+        let listing: Listing = try await client.send(
+            try Endpoint.json(method: .patch, path: "/account/listings/\(id)", payload: payload)
+        )
+        if let index = myListings.firstIndex(where: { $0.id == id }) {
+            myListings[index] = listing
+        } else {
+            myListings.insert(listing, at: 0)
+        }
+        return listing
+    }
+
     public func deleteListing(id: String) async throws {
         let _: EmptyResponse = try await client.send(Endpoint(method: .delete, path: "/account/listings/\(id)"))
         myListings.removeAll { $0.id == id }

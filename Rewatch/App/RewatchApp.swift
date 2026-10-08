@@ -18,7 +18,8 @@ struct RewatchApp: App {
         // Must precede any screen that could emit.
         #if DEBUG
         if !ProcessInfo.processInfo.arguments.contains("-photoPickerSmokeTest"),
-           !ProcessInfo.processInfo.arguments.contains("-pageSwipeSmokeTest") {
+           !ProcessInfo.processInfo.arguments.contains("-pageSwipeSmokeTest"),
+           !ProcessInfo.processInfo.arguments.contains("-listingBuilderPreview") {
             Observability.start()
         }
         #else
@@ -62,6 +63,9 @@ struct RewatchApp: App {
                 ConsumerPageSwipeSmokeScreen()
             } else if ProcessInfo.processInfo.arguments.contains("-photoPickerSmokeTest") {
                 ListingPhotoPickerSmokeScreen()
+            } else if ProcessInfo.processInfo.arguments.contains("-listingBuilderPreview") {
+                // The listing builder on its demo backend: nothing written.
+                ListingBuilderPreviewHarness()
             } else if ProcessInfo.processInfo.arguments.contains("-sellerSetupFinishPreview") {
                 // Seller setup's finish, replayable without a Stripe card.
                 SellerSetupFinishPreviewScreen()

@@ -24,7 +24,14 @@ final class SellSession {
         let board = UploadProgressBoard()
         self.board = board
         self.ops = SellerOpsStore(client: services.client)
-        self.uploads = UploadQueue(client: services.client, auth: services.auth, board: board)
+        // Listing photos go through the background session, so a seller who
+        // leaves the photo step and then leaves the app does not lose them.
+        self.uploads = UploadQueue(
+            client: services.client,
+            auth: services.auth,
+            board: board,
+            transport: BackgroundUploadTransport.shared()
+        )
         Task { [uploads] in
             await uploads.resumePersisted()
         }

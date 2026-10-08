@@ -36,6 +36,31 @@ public final class CatalogStore {
         try await client.send(Endpoint(path: "/catalog/cascade", query: query.queryItems))
     }
 
+    /// Catalog rows matching brand, model and reference typed together
+    /// (`GET /catalog/references`), scoped to the brand and model when given.
+    /// The site's sell forms ask this once all three are filled, and a row is
+    /// the watch only when all three match it on the server's own key
+    /// (`CatalogReference.matches`). Capped at
+    /// `CatalogReference.searchMaxLimit` rows.
+    public func references(
+        matching text: String,
+        limit: Int = CatalogReference.searchMaxLimit,
+        brand: String? = nil,
+        model: String? = nil
+    ) async throws -> CatalogReferenceSearch {
+        var query = [
+            URLQueryItem(name: "q", value: text),
+            URLQueryItem(name: "limit", value: String(min(max(limit, 1), CatalogReference.searchMaxLimit))),
+        ]
+        if let brand = brand?.trimmingCharacters(in: .whitespacesAndNewlines), !brand.isEmpty {
+            query.append(URLQueryItem(name: "brand", value: brand))
+        }
+        if let model = model?.trimmingCharacters(in: .whitespacesAndNewlines), !model.isEmpty {
+            query.append(URLQueryItem(name: "model", value: model))
+        }
+        return try await client.send(Endpoint(path: "/catalog/references", query: query))
+    }
+
     // MARK: - Browse
 
     /// One page of `/listings` for the given filters. Pages are cached
