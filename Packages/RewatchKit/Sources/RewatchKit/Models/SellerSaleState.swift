@@ -27,13 +27,13 @@ import Foundation
 public enum SellerPayoutState: String, Sendable, Equatable, CaseIterable {
     /// Priced and waiting on its release trigger.
     case scheduled
-    /// Money Rewatch is holding rather than sending — bank details outstanding,
+    /// Money ReWatch is holding rather than sending — bank details outstanding,
     /// or a payment under review. The row's own status line says which.
     case held
-    /// Sent. It has left Rewatch; where it is after that is the bank's answer,
+    /// Sent. It has left ReWatch; where it is after that is the bank's answer,
     /// never this app's.
     case released
-    /// Rewatch could not send it, or the bank sent it back. Different people to
+    /// ReWatch could not send it, or the bank sent it back. Different people to
     /// call, same answer to "am I still owed this": yes.
     case failed
     /// Canceled, refunded or reversed. Nothing further is coming on this sale.
@@ -84,7 +84,7 @@ public enum SellerPayoutState: String, Sendable, Equatable, CaseIterable {
 /// rules: `sellerActionState` is the server saying the seller owes something,
 /// and it is the only thing that puts a sale on the seller's own list.
 public struct SellerSaleStep: Sendable, Equatable {
-    /// "Waiting on you" / "Waiting on the buyer" / "Waiting on Rewatch" /
+    /// "Waiting on you" / "Waiting on the buyer" / "Waiting on ReWatch" /
     /// "Nothing needed from you".
     public let who: String
     /// The one line under it.
@@ -123,7 +123,7 @@ public extension Order {
         if sellerActionState == "sold_awaiting_label_creation" {
             return SellerSaleStep(
                 who: "Waiting on you",
-                what: "Add the shipping details and Rewatch buys the label.",
+                what: "Add the shipping details and ReWatch buys the label.",
                 needsShippingDetails: true
             )
         }
@@ -136,10 +136,10 @@ public extension Order {
         if status == .cancelled || status == .refunded {
             return SellerSaleStep(who: "Nothing needed from you", what: "This sale is closed.")
         }
-        return SellerSaleStep(who: "Waiting on Rewatch", what: sellerRewatchLine)
+        return SellerSaleStep(who: "Waiting on ReWatch", what: sellerRewatchLine)
     }
 
-    /// What Rewatch is doing with the watch, where the order status is the only
+    /// What ReWatch is doing with the watch, where the order status is the only
     /// thing that knows. `.unknown` is a status word this build has not been
     /// taught, so it says that the sale is moving and nothing more precise.
     private var sellerRewatchLine: String {
@@ -149,7 +149,7 @@ public extension Order {
         case .authPass: "Authenticated. It goes out to the buyer next."
         case .authFail: "It didn't pass authentication. Someone here is in touch."
         case .toBuyer: "On its way to the buyer."
-        case .awaitingWire, .delivered, .cancelled, .refunded, .unknown: "This sale is with Rewatch."
+        case .awaitingWire, .delivered, .cancelled, .refunded, .unknown: "This sale is with ReWatch."
         }
     }
 }

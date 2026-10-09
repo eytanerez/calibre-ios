@@ -34,7 +34,7 @@ struct BuilderReviewStep: View {
 
                     CalloutBand(
                         icon: "checkmark.shield",
-                        title: "Authenticated by Rewatch",
+                        title: "Authenticated by ReWatch",
                         message: "Examined at WPB Watch Co in West Palm Beach, Florida, before it ships, with a 1-year mechanical warranty."
                     )
 
@@ -204,7 +204,7 @@ struct BuilderReviewStep: View {
                         Text("You can leave the app: the photos keep uploading.")
                             .foregroundStyle(Color.rewatch.mutedForeground)
                     } else {
-                        Text("Rewatch checks every listing before it goes live.")
+                        Text("ReWatch checks every listing before it goes live.")
                             .foregroundStyle(Color.rewatch.mutedForeground)
                     }
                 }

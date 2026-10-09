@@ -151,7 +151,7 @@ final class SellerSaleStateTests: XCTestCase {
     /// line claims nothing about where the watch is.
     func testAnUnknownStatusStillNamesWhoHasIt() throws {
         let sale = try order(status: "escheated")
-        XCTAssertEqual(sale.sellerNextStep.who, "Waiting on Rewatch")
+        XCTAssertEqual(sale.sellerNextStep.who, "Waiting on ReWatch")
         XCTAssertFalse(sale.sellerNextStep.what.isEmpty)
     }
 

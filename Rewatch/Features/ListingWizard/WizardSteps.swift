@@ -1085,8 +1085,8 @@ struct PriceStep: View {
     }
 
     private var commissionLabel: String {
-        guard let preview = model.preview else { return "Rewatch commission" }
-        return "Rewatch commission (\(percentText(preview.commission.percent.value))%)"
+        guard let preview = model.preview else { return "ReWatch commission" }
+        return "ReWatch commission (\(percentText(preview.commission.percent.value))%)"
     }
 
     private var commissionText: String {
@@ -1121,10 +1121,10 @@ struct PriceStep: View {
     private var payoutNotes: [String] {
         guard let preview = model.preview else { return [] }
         // The shipping figure is priced from a standard box nobody has
-        // measured yet, and it binds nothing: Rewatch buys the real label
+        // measured yet, and it binds nothing: ReWatch buys the real label
         // after the sale and the actual cost is what comes off the payout.
         var notes: [String] = [
-            "The shipping figure is an estimate, priced from a standard box. It commits you to nothing \u{2014} after the sale you give us the real dimensions, Rewatch buys the label, and what it actually costs is what comes off your payout."
+            "The shipping figure is an estimate, priced from a standard box. It commits you to nothing \u{2014} after the sale you give us the real dimensions, ReWatch buys the label, and what it actually costs is what comes off your payout."
         ]
         if preview.commission.minimumApplied {
             let minimum = PriceFormatter.format(preview.commission.minimum.value, currency: preview.currency)

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Quiet trust/info band — "Authenticated by Rewatch", buyer protection,
+/// Quiet trust/info band — "Authenticated by ReWatch", buyer protection,
 /// shipping notes. Accent-at-40% fill with a hairline border, a small tile
 /// holding a brand-colored icon, and body copy. Pass an action to make the
 /// band tappable (adds a chevron and press feedback).
@@ -78,7 +78,7 @@ public struct CalloutBand: View {
     VStack(spacing: Space.m) {
         CalloutBand(
             icon: "checkmark.shield",
-            title: "Authenticated by Rewatch",
+            title: "Authenticated by ReWatch",
             message: "Every watch is inspected by our in-house watchmakers before it ships to you.",
             action: {}
         )
@@ -94,7 +94,7 @@ public struct CalloutBand: View {
 #Preview("Callout band — dark", traits: .sizeThatFitsLayout) {
     CalloutBand(
         icon: "checkmark.shield",
-        title: "Authenticated by Rewatch",
+        title: "Authenticated by ReWatch",
         message: "Every watch is inspected by our in-house watchmakers before it ships to you.",
         action: {}
     )

@@ -7,7 +7,7 @@ import SwiftUI
 /// taking one off for good.
 ///
 /// This replaced a form that asked for an `https://` address and said, in the
-/// form, that Rewatch did not store pictures for watches in a vault. It does
+/// form, that ReWatch did not store pictures for watches in a vault. It does
 /// now, so the link form is gone rather than kept beside the picker — two ways
 /// to set one photograph is how a surface ends up with copy explaining which
 /// one is real.
@@ -143,7 +143,7 @@ struct VaultPhotographsSheet: View {
             }
             Button("Keep it", role: .cancel) { pendingDeletion = nil }
         } message: { _ in
-            Text("It is removed from Rewatch for good. There is no undo.")
+            Text("It is removed from ReWatch for good. There is no undo.")
         }
         .task { await load() }
     }

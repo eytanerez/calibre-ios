@@ -76,7 +76,7 @@ public struct GalleryScreen: View {
     private var typographySection: some View {
         section("Typography") {
             VStack(alignment: .leading, spacing: Space.m) {
-                Text("Rewatch").font(RewatchType.display)
+                Text("ReWatch").font(RewatchType.display)
                 Text("Submariner Date").font(RewatchType.title)
                 Text("Recent sales").font(RewatchType.sectionTitle)
                 Text("$12,400").font(RewatchType.priceLarge).foregroundStyle(Color.rewatch.foreground)
@@ -254,7 +254,7 @@ public struct GalleryScreen: View {
             VStack(alignment: .leading, spacing: Space.m) {
                 CalloutBand(
                     icon: "checkmark.shield",
-                    title: "Authenticated by Rewatch",
+                    title: "Authenticated by ReWatch",
                     message: "Every watch is inspected by our in-house watchmakers before it ships to you.",
                     action: {}
                 )

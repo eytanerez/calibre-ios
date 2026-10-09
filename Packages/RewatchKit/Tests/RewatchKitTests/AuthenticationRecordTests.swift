@@ -101,7 +101,7 @@ final class AuthenticationRecordTests: XCTestCase {
         XCTAssertEqual(decoded.status, .purchased)
     }
 
-    /// Both parties are shown both figures, and Rewatch's remainder is in
+    /// Both parties are shown both figures, and ReWatch's remainder is in
     /// neither payload. A `rewatch_take` appearing here would be a leak, and
     /// the model has nowhere to put it — this asserts the shape stays that way.
     func testTheProposalCarriesBothSidesAndNotRewatchsRemainder() throws {

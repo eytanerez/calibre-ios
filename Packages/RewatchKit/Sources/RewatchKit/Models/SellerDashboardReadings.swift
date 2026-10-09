@@ -37,7 +37,7 @@ public extension SellerDashboardMetrics {
     /// The gap between the two money figures the server sent.
     ///
     /// Deliberately not called commission: `net_sales` is the payout, and the
-    /// payout has Rewatch's commission, the to-authentication label Rewatch
+    /// payout has ReWatch's commission, the to-authentication label ReWatch
     /// bought and any refund already taken out of it (see
     /// `compute_order_base_payout_amount`). This is all of that together, and
     /// whatever shows it has to say so.

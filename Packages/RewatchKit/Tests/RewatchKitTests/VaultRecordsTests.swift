@@ -2,17 +2,17 @@ import Foundation
 import XCTest
 @testable import RewatchKit
 
-/// The vault's two quiet contracts: what Rewatch will say about a watch's
+/// The vault's two quiet contracts: what ReWatch will say about a watch's
 /// worth, and what the owner's own edits put on the wire.
 ///
 /// Both are places where a wrong answer is silent. An estimate state folded
 /// into a neighbouring one puts a sentence about evidence under somebody's
-/// watch that Rewatch never said; a PATCH that writes an absent key where it
+/// watch that ReWatch never said; a PATCH that writes an absent key where it
 /// meant a null leaves a note on a row the owner just cleared, and one that
 /// names a key it means nothing by wipes a column nobody asked it to touch.
 final class VaultRecordsTests: XCTestCase {
 
-    // MARK: - What Rewatch will say about a figure
+    // MARK: - What ReWatch will say about a figure
 
     private func watch(estimate: String?) throws -> VaultWatch {
         let block = estimate.map { ", \"estimate\": \($0)" } ?? ""
@@ -56,14 +56,14 @@ final class VaultRecordsTests: XCTestCase {
 
     // MARK: - The stamp on the vault detail
 
-    /// The mark asserts that Rewatch stands behind this watch, so it is gated
+    /// The mark asserts that ReWatch stands behind this watch, so it is gated
     /// on the server's own answer to that and on nothing that merely tends to
     /// travel with it.
     func testTheStampFollowsTheServersFlag() throws {
         XCTAssertNotNil(try stampable(authenticated: true).authenticationMarkKey)
         XCTAssertNil(
             try stampable(authenticated: false, source: "manual").authenticationMarkKey,
-            "a watch somebody typed in is a watch nobody at Rewatch has held"
+            "a watch somebody typed in is a watch nobody at ReWatch has held"
         )
     }
 
@@ -196,7 +196,7 @@ final class VaultRecordsTests: XCTestCase {
     /// The one key an edit from this app must never carry.
     ///
     /// `photo_url` is a live column the server still accepts a write to, and a
-    /// watch that arrived from a Rewatch order keeps the seller's photograph
+    /// watch that arrived from a ReWatch order keeps the seller's photograph
     /// in it. The link form is gone, so nothing here means anything by that
     /// column — and a PATCH that named it while meaning nothing would wipe the
     /// seller's picture, leaving the card with no cover at all the moment the

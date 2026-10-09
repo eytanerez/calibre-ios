@@ -133,7 +133,7 @@ final class ReturnFlowModel {
             // authority, so a closed window here ends the flow honestly.
             if let window = fetched.window, !window.open {
                 phase = .closed(
-                    "The return window on this order has closed, so a return can't be started now. If something isn't right with the watch, your Rewatch contact can help."
+                    "The return window on this order has closed, so a return can't be started now. If something isn't right with the watch, your ReWatch contact can help."
                 )
                 return
             }
@@ -489,7 +489,7 @@ func returnErrorMessage(_ error: Error) -> String {
     case "return_photos_missing":
         return "Some of the six photos are still missing."
     case "return_label_unavailable":
-        return "We couldn't produce the return label just now. Please try again in a moment, or your Rewatch contact can sort it out for you."
+        return "We couldn't produce the return label just now. Please try again in a moment, or your ReWatch contact can sort it out for you."
     default:
         return "Something went wrong. Please try again."
     }
@@ -873,7 +873,7 @@ private struct ReturnQuoteView: View {
         if let outbound = quote.outboundLabelDeduction {
             rows.append(("Original shipping label", "− " + money(outbound)))
         }
-        // Rewatch's return label is deducted from the refund too, and the
+        // ReWatch's return label is deducted from the refund too, and the
         // buyer sees it here rather than discovering it afterwards.
         if let returnLabel = quote.returnLabelDeduction {
             rows.append(("Return label", "− " + money(returnLabel)))
@@ -992,7 +992,7 @@ struct ReturnCaseBody: View {
                     .buttonStyle(.rewatch(shippedButtonVariant, fullWidth: true))
                     .disabled(model.busy)
 
-                    Text("Telling us buys a short grace period for the carrier's first scan. If no scan follows, the original clock resumes and your Rewatch contact takes the case from there.")
+                    Text("Telling us buys a short grace period for the carrier's first scan. If no scan follows, the original clock resumes and your ReWatch contact takes the case from there.")
                         .font(RewatchType.caption)
                         .foregroundStyle(Color.rewatch.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)

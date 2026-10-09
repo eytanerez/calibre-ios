@@ -1,6 +1,6 @@
-# Rewatch for iOS
+# ReWatch for iOS
 
-Native iOS client for Rewatch, including its SideStore distribution source.
+Native iOS client for ReWatch, including its SideStore distribution source.
 
 ## SideStore
 

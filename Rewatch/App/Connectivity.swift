@@ -71,7 +71,7 @@ struct ConnectionBar: View {
                 band(
                     icon: "wifi.slash",
                     title: "You're offline",
-                    detail: "Rewatch will load again when you're back.",
+                    detail: "ReWatch will load again when you're back.",
                     tint: Color.rewatch.foreground,
                     ink: Color.rewatch.background
                 )

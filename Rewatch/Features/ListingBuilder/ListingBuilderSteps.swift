@@ -51,7 +51,7 @@ struct BuilderWatchStep: View {
         if let watch = model.watch {
             VStack(alignment: .leading, spacing: Space.m) {
                 BuilderNote {
-                    (Text("Matched to the Rewatch catalog").font(RewatchType.bodySemiBold)
+                    (Text("Matched to the ReWatch catalog").font(RewatchType.bodySemiBold)
                         + Text(": \(watch.displayName).").font(RewatchType.body))
                         .foregroundStyle(Color.rewatch.foreground)
                         .fixedSize(horizontal: false, vertical: true)
@@ -314,7 +314,7 @@ private struct BuilderCatalogField: View {
         if !rows.isEmpty || failed || response != nil {
             VStack(alignment: .leading, spacing: 0) {
                 if failed {
-                    note("We could not reach the Rewatch catalog just now. Type it in full and carry on. Your listing is still matched when it goes to review.")
+                    note("We could not reach the ReWatch catalog just now. Type it in full and carry on. Your listing is still matched when it goes to review.")
                 } else if rows.isEmpty {
                     if response?.truncated == true {
                         note("More of the catalog than fits here came back: type a little more and this narrows to it.")
@@ -352,7 +352,7 @@ private struct BuilderCatalogField: View {
 
     private var emptyCopy: String {
         switch field {
-        case .brand: "No brand in the Rewatch catalog matches that yet."
+        case .brand: "No brand in the ReWatch catalog matches that yet."
         case .model: "No \(model.answers.brand) model in the catalog matches that yet."
         case .reference: "No \(model.answers.model) reference in the catalog matches that yet."
         }

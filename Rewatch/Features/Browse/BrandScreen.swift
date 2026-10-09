@@ -47,7 +47,7 @@ struct BrandScreen: View {
                 .font(RewatchType.title)
                 .foregroundStyle(Color.rewatch.foreground)
             if let count = brandGroup?.liveTotal ?? model?.total {
-                Text(count == 1 ? "1 watch live on Rewatch." : "\(count.formatted()) watches live on Rewatch.")
+                Text(count == 1 ? "1 watch live on ReWatch." : "\(count.formatted()) watches live on ReWatch.")
                     .font(RewatchType.body)
                     .foregroundStyle(Color.rewatch.mutedForeground)
             }

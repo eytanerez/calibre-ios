@@ -348,7 +348,7 @@ struct DraftFinishingQueueScreen: View {
             Text("Photos")
                 .font(RewatchType.label)
                 .foregroundStyle(Color.rewatch.secondaryForeground)
-            Text("A spreadsheet can\u{2019}t carry pictures, so all six are taken here. Tap a slot and shoot it \u{2014} the same six angles every Rewatch listing carries.")
+            Text("A spreadsheet can\u{2019}t carry pictures, so all six are taken here. Tap a slot and shoot it \u{2014} the same six angles every ReWatch listing carries.")
                 .font(RewatchType.caption)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)

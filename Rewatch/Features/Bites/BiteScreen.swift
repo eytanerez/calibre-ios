@@ -56,7 +56,7 @@ struct BiteScreen: View {
         .toolbar {
             if let bite {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: bite.webURL, message: Text("\(bite.title) — from Rewatch.")) {
+                    ShareLink(item: bite.webURL, message: Text("\(bite.title) — from ReWatch.")) {
                         Image(systemName: "square.and.arrow.up")
                     }
                     .accessibilityLabel("Share this bite")

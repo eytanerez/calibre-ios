@@ -181,7 +181,7 @@ struct SaleDetailScreen: View {
                             path.append(.shippingDetails)
                         }
                         .buttonStyle(.rewatch(.primary, fullWidth: true))
-                        Text("Tell us the box you are sending and Rewatch buys the label to WPB Watch Co in West Palm Beach, Florida, prepaid and insured for the full sale price. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
+                        Text("Tell us the box you are sending and ReWatch buys the label to WPB Watch Co in West Palm Beach, Florida, prepaid and insured for the full sale price. You pay nothing now; the actual cost comes off your payout, and you see the figure before you confirm.")
                             .font(RewatchType.caption)
                             .foregroundStyle(Color.rewatch.mutedForeground)
                             .multilineTextAlignment(.center)
@@ -233,7 +233,7 @@ struct SaleDetailScreen: View {
 
     /// The payout ledger, from the order's own `payout.breakdown`: sale
     /// price, commission (with its rate and whether the minimum applied), the
-    /// label Rewatch bought, and the payout. Not one figure is arithmetic done
+    /// label ReWatch bought, and the payout. Not one figure is arithmetic done
     /// here, and no money figure is ever shortened to fit.
     ///
     /// When the payload predates the breakdown the legacy rows stand in, and
@@ -303,12 +303,12 @@ struct SaleDetailScreen: View {
                         Spacer(minLength: 0)
                     }
                     .accessibilityElement(children: .combine)
-                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Rewatch contact takes it from there.")
+                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your ReWatch contact takes it from there.")
                         .font(RewatchType.caption)
                         .foregroundStyle(Color.rewatch.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if outboundDeclaration != nil {
-                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your Rewatch contact takes it from there.")
+                    Text("Thank you — noted. We'll watch for the carrier's first scan. If no scan follows, the original clock resumes and your ReWatch contact takes it from there.")
                         .font(RewatchType.caption)
                         .foregroundStyle(Color.rewatch.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
@@ -575,7 +575,7 @@ struct SaleDetailScreen: View {
                 .font(RewatchType.sectionTitle)
                 .foregroundStyle(Color.rewatch.foreground)
 
-            Text("You pay nothing on a return, and the watch comes back to you. Rewatch's label is insured for the full sale price on every leg.")
+            Text("You pay nothing on a return, and the watch comes back to you. ReWatch's label is insured for the full sale price on every leg.")
                 .font(RewatchType.body)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)

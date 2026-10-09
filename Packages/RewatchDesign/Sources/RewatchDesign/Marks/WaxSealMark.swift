@@ -89,7 +89,7 @@ struct WaxSealMark: View {
         Color.rewatch.waxHighlight.mix(with: .white, by: 0.45, in: .device)
     }
 
-    /// The die: the Rewatch mark, taken from `RewatchLogoMark` and shrunk about
+    /// The die: the ReWatch mark, taken from `RewatchLogoMark` and shrunk about
     /// its own jewel until it sits inside the wax. The jewel's filled center is
     /// left out — a die presses its raised parts in, and the center is the part
     /// the wax fills back up.

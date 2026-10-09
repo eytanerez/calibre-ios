@@ -3,7 +3,7 @@ import RewatchKit
 import SwiftUI
 
 /// One reference from the board: the published price, the chart drawn from
-/// its change-points, what Rewatch knows about the watch itself, and a way to
+/// its change-points, what ReWatch knows about the watch itself, and a way to
 /// go find the real thing on the marketplace.
 struct MarketDetailSheet: View {
     let price: MarketReferencePrice
@@ -57,7 +57,7 @@ struct MarketDetailSheet: View {
                     ShareLink(
                         item: URL(string: "https://shoprewatch.com/community?room=market&reference=\(price.slug)")
                             ?? URL(string: "https://shoprewatch.com/community?room=market")!,
-                        message: Text("\(price.brand) \(title) (Ref. \(price.reference)) on Rewatch.")
+                        message: Text("\(price.brand) \(title) (Ref. \(price.reference)) on ReWatch.")
                     ) {
                         Image(systemName: "square.and.arrow.up")
                     }
@@ -107,9 +107,9 @@ struct MarketDetailSheet: View {
 
     private var publishedLine: String {
         if let day = MarketFormat.day(iso: price.setAt) {
-            return "Rewatch reference price \u{00B7} set \(day)"
+            return "ReWatch reference price \u{00B7} set \(day)"
         }
-        return "Rewatch reference price"
+        return "ReWatch reference price"
     }
 
     @ViewBuilder

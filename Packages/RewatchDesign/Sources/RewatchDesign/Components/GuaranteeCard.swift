@@ -4,10 +4,10 @@ import UIKit
 /// The card a seller keeps on file, drawn as the object it is.
 ///
 /// Stripe returns four facts about a saved card — brand, last four, expiry,
-/// funding — and no image, so the card is drawn here in Rewatch's own stock.
+/// funding — and no image, so the card is drawn here in ReWatch's own stock.
 /// It is drawn at all because a row of key-value text reads as a billing line,
 /// and this is not a billing line: it is what makes "we will make the buyer
-/// whole" something Rewatch can do rather than something it hopes for. It is
+/// whole" something ReWatch can do rather than something it hopes for. It is
 /// never charged for a normal sale.
 ///
 /// `last4` is the only number that exists on the client and the only one this
@@ -349,7 +349,7 @@ private enum Stock {
 /// API carries no imagery for payment cards. Each is the simplest drawing that
 /// is unmistakably the network — a wordmark, or the geometry where the mark
 /// *is* geometry — and each keeps the network's own colors, the one thing on
-/// this card that is not Rewatch's to restyle.
+/// this card that is not ReWatch's to restyle.
 ///
 /// The marks are printed at a fixed size. They do not answer to Dynamic Type,
 /// because the brand is also spoken in the card's accessibility label, where

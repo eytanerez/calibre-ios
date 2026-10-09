@@ -138,7 +138,7 @@ enum CheckoutCopy {
     static func refusalMessage(_ refusal: CardRefusal) -> String {
         switch refusal.code {
         case "prepaid_not_accepted":
-            return "Prepaid cards are not accepted anywhere on Rewatch. Wire transfer is available at any price."
+            return "Prepaid cards are not accepted anywhere on ReWatch. Wire transfer is available at any price."
         case "debit_not_accepted_in_state":
             return "Only credit cards are accepted here, in every state. Wire transfer is available at any price."
         case "card_funding_not_accepted", "card_funding_unknown":
@@ -176,7 +176,7 @@ enum CheckoutCopy {
     /// before anything is committed. This wording is fixed and identical on
     /// web, iOS and Android \u{2014} it is what decides a dispute.
     static let wireHoldDisclosure =
-        "Choosing wire places a refundable $250 authorization on your card. It\u{2019}s released as soon as your transfer arrives. If the transfer isn\u{2019}t sent by the deadline, the $250 is charged and split between the seller and Rewatch."
+        "Choosing wire places a refundable $250 authorization on your card. It\u{2019}s released as soon as your transfer arrives. If the transfer isn\u{2019}t sent by the deadline, the $250 is charged and split between the seller and ReWatch."
 
     /// Said again on the instructions screen, where the buyer is looking at
     /// the authorization on their statement.
@@ -241,7 +241,7 @@ enum CheckoutCopy {
             }
         }
 
-        lines.append("Rewatch's return label is deducted from your refund.")
+        lines.append("ReWatch's return label is deducted from your refund.")
         if breakdown.paymentDisclosures?.cardFeeNonrefundable == true {
             lines.append("The card fee is not refunded.")
         }

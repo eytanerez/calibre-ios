@@ -379,7 +379,7 @@ struct CaptureScreen: View {
                     .font(RewatchType.sectionTitle)
                     .foregroundStyle(Color(white: 1))
                 Text(camera.deniedAccess
-                    ? "Camera access is off for Rewatch. You can allow it in Settings, or pick a photo from your library."
+                    ? "Camera access is off for ReWatch. You can allow it in Settings, or pick a photo from your library."
                     : "No camera here — pick a photo from your library instead.")
                     .font(RewatchType.body)
                     .foregroundStyle(Color(white: 0.72))

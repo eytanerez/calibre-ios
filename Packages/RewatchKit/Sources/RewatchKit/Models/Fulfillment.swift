@@ -1,7 +1,7 @@
 import Foundation
 
 // The seller's part of fulfillment, start to finish. The seller no longer
-// buys their own label: they say how big the box is, Rewatch buys the label,
+// buys their own label: they say how big the box is, ReWatch buys the label,
 // and what it actually cost comes off their payout. The four label-checkout
 // endpoints this replaced are gone from the API.
 
@@ -66,9 +66,9 @@ public struct FulfillmentShippingQuote: Decodable, Sendable {
 // MARK: - Submit
 
 /// `POST /orders/{id}/fulfillment/shipping-details` — the form, submitted.
-/// Rewatch buys the label immediately and the order starts moving to
+/// ReWatch buys the label immediately and the order starts moving to
 /// authentication. Idempotent: an order that already has a to-auth label
-/// answers with that label and `alreadyCreated: true`, and Rewatch never buys
+/// answers with that label and `alreadyCreated: true`, and ReWatch never buys
 /// a second one.
 public struct FulfillmentShippingDetails: Decodable, Sendable {
     public struct Label: Decodable, Sendable {

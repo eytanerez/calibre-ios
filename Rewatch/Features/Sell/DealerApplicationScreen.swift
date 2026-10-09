@@ -6,11 +6,11 @@ import SwiftUI
 /// registered under and its country — then the embedded verification step,
 /// which collects the EIN on Stripe's own form. If Stripe confirms a
 /// registered company, dealer status is granted straight away; if it cannot,
-/// a person at Rewatch reviews the application and decides.
+/// a person at ReWatch reviews the application and decides.
 ///
 /// This is the one seller-facing screen that names Stripe, because naming the
 /// verifier is the honest way to say where the business details go and why
-/// Rewatch never sees the banking side of them.
+/// ReWatch never sees the banking side of them.
 struct DealerApplicationScreen: View {
     let application: DealerApplication?
     /// Called once the seller has finished (or left) the verification step, so
@@ -102,13 +102,13 @@ struct DealerApplicationScreen: View {
                 collected(
                     icon: "number",
                     title: "Your EIN",
-                    detail: "Entered on the next step, on Stripe's own secure form. Stripe verifies it — Rewatch never sees your banking details, they stay with Stripe."
+                    detail: "Entered on the next step, on Stripe's own secure form. Stripe verifies it — ReWatch never sees your banking details, they stay with Stripe."
                 )
             }
 
             CalloutBand(
                 icon: "checkmark.seal",
-                message: "If Stripe confirms a registered company, dealer status is granted straight away; if it cannot, someone at Rewatch reviews the application and decides."
+                message: "If Stripe confirms a registered company, dealer status is granted straight away; if it cannot, someone at ReWatch reviews the application and decides."
             )
 
             if let benefits = benefitsLine {

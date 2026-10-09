@@ -85,7 +85,7 @@ struct BuilderPayoutBreakdown: View {
                 row("Estimated payout", emphasized: true) {
                     RollingMoney(value: model.estimatedPayout, font: RewatchType.bodySemiBold)
                 }
-                Text("An estimate from a standard box that binds nothing. Rewatch buys the real label when the watch sells, and its actual cost comes off your payout.")
+                Text("An estimate from a standard box that binds nothing. ReWatch buys the real label when the watch sells, and its actual cost comes off your payout.")
                     .font(RewatchType.caption)
                     .foregroundStyle(Color.rewatch.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -130,9 +130,9 @@ struct BuilderPayoutBreakdown: View {
     /// "(minimum)" when the minimum is what was charged, the percent when the
     /// percent was.
     private var commissionLabel: String {
-        guard let preview else { return "Rewatch\u{2019}s commission" }
+        guard let preview else { return "ReWatch\u{2019}s commission" }
         let rate = preview.commission.minimumApplied ? "minimum" : "\(feePercentText(preview.commission.percent.value))%"
-        return "Rewatch\u{2019}s commission (\(rate))"
+        return "ReWatch\u{2019}s commission (\(rate))"
     }
 
     private var keepNote: String? {

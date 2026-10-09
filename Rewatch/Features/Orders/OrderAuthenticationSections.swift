@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - The hold
 
-/// A watch a person at Rewatch is looking at more closely.
+/// A watch a person at ReWatch is looking at more closely.
 ///
 /// What this replaces printed the bench's own notes under "Authentication
 /// issue", and only ever appeared on `auth_pass` or `auth_fail` — so on the one
@@ -12,8 +12,8 @@ import SwiftUI
 /// a misrepresentation never reaches `auth_fail`.
 ///
 /// The reason for the hold is not named. It is private to the two parties while
-/// it is open, and naming it would be Rewatch's finding announced before
-/// Rewatch has finished making it.
+/// it is open, and naming it would be ReWatch's finding announced before
+/// ReWatch has finished making it.
 struct AuthenticationHoldCard: View {
     let record: OrderAuthentication
     /// The seller is told their payout is paused; the buyer is not told that.
@@ -278,7 +278,7 @@ struct AuthenticationReportScreen: View {
         return parts.isEmpty ? "Filed by WPB Watch Co in West Palm Beach, Florida" : parts.joined(separator: " · ")
     }
 
-    /// Rewatch stands behind the watch and has no filed document to open for
+    /// ReWatch stands behind the watch and has no filed document to open for
     /// it. What goes here is the route the owner actually has, rather than a
     /// "Try again" that can never work.
     private var noFiledReport: some View {
@@ -715,7 +715,7 @@ private extension View {
 ///
 /// Both figures go to both parties. That is deliberate and it is the opposite
 /// of the obvious choice: an asymmetric offer collapses the moment either side
-/// screenshots it. Rewatch's own remainder is in neither payload.
+/// screenshots it. ReWatch's own remainder is in neither payload.
 ///
 /// There is no countdown here and no default. Silence decides nothing.
 struct AuthCaseCard: View {
@@ -751,7 +751,7 @@ struct AuthCaseCard: View {
             Text(
                 payload.summary
                     ?? "WPB Watch Co found something that does not match how this watch was described. "
-                    + "A person at Rewatch is working out what should happen."
+                    + "A person at ReWatch is working out what should happen."
             )
             .font(RewatchType.body)
             .foregroundStyle(Color.rewatch.mutedForeground)
@@ -812,7 +812,7 @@ struct AuthCaseCard: View {
                     }
                 }
                 if (discrepancy.notes ?? "").isEmpty, photos.isEmpty, (discrepancy.faultTypes ?? []).isEmpty {
-                    Text("The written findings are still being put together. Your Rewatch contact will send them through.")
+                    Text("The written findings are still being put together. Your ReWatch contact will send them through.")
                         .font(RewatchType.caption)
                         .foregroundStyle(Color.rewatch.mutedForeground)
                 }
@@ -844,7 +844,7 @@ struct AuthCaseCard: View {
                 .font(RewatchType.bodyMedium)
                 .foregroundStyle(Color.rewatch.foreground)
             } else if proposal.declinedBy != nil {
-                Text("This proposal was declined. Your Rewatch contact will come back with another way forward.")
+                Text("This proposal was declined. Your ReWatch contact will come back with another way forward.")
                     .font(RewatchType.body)
                     .foregroundStyle(Color.rewatch.mutedForeground)
             } else if proposal.canRespond == true {
@@ -865,7 +865,7 @@ struct AuthCaseCard: View {
 
     private func headline(_ payload: AuthCaseProposalPayload) -> String {
         if payload.status != "open" { return "This was settled" }
-        return payload.proposal == nil ? "We are looking at this watch" : "A proposal from Rewatch"
+        return payload.proposal == nil ? "We are looking at this watch" : "A proposal from ReWatch"
     }
 
     private func money(_ amount: String?, _ currency: String?) -> String {
@@ -892,7 +892,7 @@ struct AuthCaseCard: View {
             payload = try? await services.client.authCaseProposal(caseID: caseID)
             onAnswered()
             if !accept {
-                toasts.show(title: "We have recorded that", message: "Your Rewatch contact will come back to you with another way forward.")
+                toasts.show(title: "We have recorded that", message: "Your ReWatch contact will come back to you with another way forward.")
             } else if response.settlement?.status == "settled" {
                 toasts.show(title: "Agreed", message: "Both sides have accepted and this is settled.")
             } else {

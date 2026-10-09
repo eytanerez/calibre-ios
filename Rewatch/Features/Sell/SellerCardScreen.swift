@@ -237,7 +237,7 @@ struct SellerCardScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("Your card details go straight to our payments partner. Rewatch stores the brand, the last four digits and the expiry date, and nothing more.")
+            Text("Your card details go straight to our payments partner. ReWatch stores the brand, the last four digits and the expiry date, and nothing more.")
                 .font(RewatchType.caption)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -368,7 +368,7 @@ final class SellerCardModel {
             } else {
                 // The server detached it. Say why plainly and leave the screen
                 // ready for another card.
-                error = "That wasn't a credit card, so it wasn't kept. Rewatch needs a credit card on file — debit and prepaid cards can't be used. Please try another card."
+                error = "That wasn't a credit card, so it wasn't kept. ReWatch needs a credit card on file — debit and prepaid cards can't be used. Please try another card."
                 Haptics.shared.play(.warning)
             }
         } catch {

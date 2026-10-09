@@ -528,7 +528,7 @@ struct RegisterScreen: View {
             }
             Haptics.shared.play(.success)
             toasts.show(
-                title: "Welcome to Rewatch",
+                title: "Welcome to ReWatch",
                 message: "Your account is ready.",
                 tone: .success
             )

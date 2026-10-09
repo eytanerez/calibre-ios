@@ -241,9 +241,9 @@ struct CheckoutReviewStep: View {
     /// sentence loses its number rather than gaining a guess.
     private var offerForfeitureText: String {
         if let hold = model.offerHoldText {
-            return "This is payment on an accepted offer. If it isn't completed in time, the \(hold) hold is forfeited and split between the seller and Rewatch."
+            return "This is payment on an accepted offer. If it isn't completed in time, the \(hold) hold is forfeited and split between the seller and ReWatch."
         }
-        return "This is payment on an accepted offer. If it isn't completed in time, your hold is forfeited and split between the seller and Rewatch."
+        return "This is payment on an accepted offer. If it isn't completed in time, your hold is forfeited and split between the seller and ReWatch."
     }
 
     // MARK: - Test mode

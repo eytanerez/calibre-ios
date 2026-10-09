@@ -2,7 +2,7 @@ import RewatchDesign
 import RewatchKit
 import SwiftUI
 
-/// "Start selling on Rewatch" — the Sell tab root until Connect payouts are
+/// "Start selling on ReWatch" — the Sell tab root until Connect payouts are
 /// ready. Guests see the same story with a sign-in gate on the CTA.
 ///
 /// A signed-in seller sees their setup instead of the pitch: payouts, then the
@@ -155,7 +155,7 @@ struct SellGateScreen: View {
 
     private var pitch: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            Text("Start selling on Rewatch")
+            Text("Start selling on ReWatch")
                 .font(RewatchType.title)
                 .foregroundStyle(Color.rewatch.foreground)
             Text("List your watch in minutes. Every sale is authenticated before it reaches the buyer, we handle the buyer for you, and your money goes straight to your bank account.")
@@ -244,7 +244,7 @@ struct SellGateScreen: View {
     private var guestCTA: some View {
         VStack(spacing: Space.m) {
             Button {
-                session.require("Sign in to start selling on Rewatch") {}
+                session.require("Sign in to start selling on ReWatch") {}
             } label: {
                 Text("Set up payouts")
             }
@@ -256,7 +256,7 @@ struct SellGateScreen: View {
 
     private var payoutDisclosures: some View {
         VStack(spacing: Space.s) {
-            Text("You verify your details once with our payments partner. Rewatch never sees your banking information.")
+            Text("You verify your details once with our payments partner. ReWatch never sees your banking information.")
             // Disclosed during onboarding, not after the first sale.
             Text("Your first payout may take about two weeks while your account is established. After that, payouts arrive on the normal schedule.")
         }
@@ -816,12 +816,12 @@ private struct ConnectPresentation: Identifiable {
 /// The end of seller setup, played once the card that completes it is saved
 /// (Eytan, 2026-10-06: "collapse into the card and slide off the side of the
 /// screen, then open the dashboard, but first a nice 'welcome to selling on
-/// Rewatch'"). The web's `SellerSetupFinish.tsx` is the authority on the
+/// ReWatch'"). The web's `SellerSetupFinish.tsx` is the authority on the
 /// sequence and its timing:
 ///
 ///   0.05–0.50s  the saved card settles in as the card sheet closes
 ///   0.65–1.10s  it slides off the right edge with a slight tilt
-///   1.00–1.50s  "Welcome to selling on Rewatch" rises in, copper rule above
+///   1.00–1.50s  "Welcome to selling on ReWatch" rises in, copper rule above
 ///   2.15–2.40s  the welcome settles out, and `onDone` opens the dashboard
 ///
 /// Reduce Motion: no card and no travel, the welcome fades in and out, 1.5s.
@@ -874,7 +874,7 @@ struct SellerSetupFinishView: View {
                         .fill(Color.rewatch.primary)
                         .frame(width: 40, height: 1)
                         .accessibilityHidden(true)
-                    Text("Welcome to selling on Rewatch")
+                    Text("Welcome to selling on ReWatch")
                         .font(RewatchType.display)
                         .foregroundStyle(Color.rewatch.foreground)
                         .multilineTextAlignment(.center)

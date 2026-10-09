@@ -9,7 +9,7 @@ import SwiftUI
 /// The row used to be `NavigationLink { VaultWatchDetailScreen(…) }`, a
 /// destination view, which SwiftUI holds as navigation state rather than as an
 /// element of the path. That is fine until something re-parents the app: a
-/// watch Rewatch authenticated plays the Vault film the moment it opens, the
+/// watch ReWatch authenticated plays the Vault film the moment it opens, the
 /// moment host swaps the whole app into its staging layer, every
 /// `NavigationStack` under it is built afresh — and a push the path never knew
 /// about is not restored. The screen appeared and was thrown back to the list
@@ -28,7 +28,7 @@ struct VaultWatchLink: Hashable {
 }
 
 /// The Vault tab: every watch the member owns, led by their own photograph of
-/// it. Rewatch purchases arrive automatically on delivery — authenticated,
+/// it. ReWatch purchases arrive automatically on delivery — authenticated,
 /// with their Passport — and manual adds cover the rest of the drawer.
 ///
 /// A collection is not a shopfront. What a row carries is the picture, what
@@ -75,7 +75,7 @@ struct CollectionScreen: View {
                 EmptyState(
                     icon: "latch.2.case",
                     title: "Your vault lives here",
-                    message: "Sign in and every watch you buy on Rewatch arrives in your vault authenticated — plus anything else you own.",
+                    message: "Sign in and every watch you buy on ReWatch arrives in your vault authenticated — plus anything else you own.",
                     actionTitle: "Sign in"
                 ) {
                     services.auth.require("Sign in to see your vault") {}
@@ -95,7 +95,7 @@ struct CollectionScreen: View {
                 EmptyState(
                     icon: "latch.2.case",
                     title: "No watches yet",
-                    message: "Buy on Rewatch and your watch lands in your vault authenticated — or add what you already own to keep the whole drawer in one place.",
+                    message: "Buy on ReWatch and your watch lands in your vault authenticated — or add what you already own to keep the whole drawer in one place.",
                     actionTitle: "Add a watch"
                 ) {
                     openAddSheet()
@@ -383,7 +383,7 @@ private struct CollectionWatchRow: View {
                         VStack(alignment: .leading, spacing: Space.xs) {
                             // One chip, whichever it is, and the server's flag
                             // is the only thing that decides which. A watch
-                            // somebody typed in is a watch nobody at Rewatch
+                            // somebody typed in is a watch nobody at ReWatch
                             // has held, however good its photograph looks.
                             if watch.authenticated {
                                 AuthenticatedBadge()
@@ -410,7 +410,7 @@ private struct CollectionWatchRow: View {
 
                             // What they paid, where they have told us. Nothing
                             // is invented for a watch with no figure on it —
-                            // and this is never Rewatch's estimate, which is
+                            // and this is never ReWatch's estimate, which is
                             // settled as a number no owner is shown.
                             if let acquired = acquiredText {
                                 Text(acquired)
@@ -470,7 +470,7 @@ private struct CollectionWatchRow: View {
     }
 }
 
-/// "Authenticated by Rewatch", driven by the server's own flag, never by
+/// "Authenticated by ReWatch", driven by the server's own flag, never by
 /// re-reading `source`.
 struct AuthenticatedBadge: View {
     var body: some View {
@@ -481,7 +481,7 @@ struct AuthenticatedBadge: View {
             .padding(.horizontal, Space.s)
             .padding(.vertical, Space.xs)
             .background(Color.rewatch.primary.opacity(0.1), in: Capsule())
-            .accessibilityLabel("Authenticated by Rewatch")
+            .accessibilityLabel("Authenticated by ReWatch")
     }
 }
 

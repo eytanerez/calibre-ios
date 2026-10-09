@@ -1,6 +1,6 @@
 import Foundation
 
-/// What Rewatch decided about a seller's listing, in the seller's own copy of
+/// What ReWatch decided about a seller's listing, in the seller's own copy of
 /// the record.
 ///
 /// This exists because the letters stopped carrying it. A review outcome used
@@ -68,7 +68,7 @@ extension Listing {
             )
         case .rejected:
             // Deliberately not "fix it and resubmit": a rejection is the
-            // outcome for a watch Rewatch will not carry, and the honest next
+            // outcome for a watch ReWatch will not carry, and the honest next
             // step is a person rather than another round of the queue.
             return ListingReview(
                 outcome: .rejected,

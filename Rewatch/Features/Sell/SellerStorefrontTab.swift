@@ -40,7 +40,7 @@ struct SellerStorefrontTab: View {
         .sellRow()
         .task {
             // The line sits beside a verified-business badge, so there is no
-            // version of it for a seller Rewatch has not verified — and the
+            // version of it for a seller ReWatch has not verified — and the
             // endpoint refuses them. Don't ask on their behalf.
             guard isVerifiedDealer, bio == nil else { return }
             await loadBio()
@@ -87,9 +87,9 @@ struct SellerStorefrontTab: View {
     /// What a buyer is reading right now — the last words that cleared
     /// review, never whatever the dealer has typed since. Set in the hand,
     /// the same way the storefront sets it, because this is the one place on
-    /// Rewatch where a seller speaks in their own voice.
+    /// ReWatch where a seller speaks in their own voice.
     ///
-    /// A verified dealer with nothing live gets Rewatch describing an
+    /// A verified dealer with nothing live gets ReWatch describing an
     /// absence, in the sans: putting that sentence in the hand would put
     /// words in their mouth. A seller who is not a dealer has no line to be
     /// missing.
@@ -189,7 +189,7 @@ struct SellerStorefrontTab: View {
                     .foregroundStyle(Color.rewatch.foreground)
 
                 // One line, and the button is the route. The EIN / Stripe /
-                // Rewatch-never-sees-it story is told on the application
+                // ReWatch-never-sees-it story is told on the application
                 // screen, beside the field that asks for it — a card whose
                 // whole job is "apply?" does not need to retell it before the
                 // seller has decided.

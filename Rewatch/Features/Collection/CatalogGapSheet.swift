@@ -86,7 +86,7 @@ struct CatalogGapSheet: View {
                             if value.count > 2_000 { notes = String(value.prefix(2_000)) }
                         }
 
-                    Button(saving ? "Sending\u{2026}" : "Send to Rewatch") {
+                    Button(saving ? "Sending\u{2026}" : "Send to ReWatch") {
                         Task { await submit() }
                     }
                     .buttonStyle(.rewatch(.primary, fullWidth: true))
@@ -144,7 +144,7 @@ struct CatalogGapSheet: View {
             onSubmit()
             Haptics.shared.play(.success)
             toasts.show(
-                title: "Sent to Rewatch",
+                title: "Sent to ReWatch",
                 message: "We'll take a look and add it to the catalog.",
                 tone: .success
             )

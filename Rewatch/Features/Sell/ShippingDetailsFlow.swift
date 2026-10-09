@@ -6,7 +6,7 @@ import SwiftUI
 /// what that box costs, what it leaves them, and then the label.
 ///
 /// The seller no longer buys their own label — there is no checkout here and
-/// nothing is charged to them. They give the real dimensions, Rewatch buys
+/// nothing is charged to them. They give the real dimensions, ReWatch buys
 /// the label, and what it actually cost is what comes off the payout. That is
 /// why the form shows the consequence next to the cause before the button
 /// does anything.
@@ -95,7 +95,7 @@ struct ShippingDetailsFlow: View {
             Text("How big is the box?")
                 .font(RewatchType.sectionTitle)
                 .foregroundStyle(Color.rewatch.foreground)
-            Text("Measure the box you are actually sending. Rewatch buys the label \u{2014} you pay nothing now, and what the label costs comes off your payout.")
+            Text("Measure the box you are actually sending. ReWatch buys the label \u{2014} you pay nothing now, and what the label costs comes off your payout.")
                 .font(RewatchType.body)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -171,7 +171,7 @@ struct ShippingDetailsFlow: View {
                     .font(RewatchType.sectionTitle)
                     .foregroundStyle(Color.rewatch.foreground)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Rewatch buys the label. The actual cost comes off your payout \u{2014} here is what that leaves.")
+                Text("ReWatch buys the label. The actual cost comes off your payout \u{2014} here is what that leaves.")
                     .font(RewatchType.body)
                     .foregroundStyle(Color.rewatch.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -344,7 +344,7 @@ struct ShippingDetailsFlow: View {
     }
 }
 
-/// The label Rewatch bought: the PDF, tracking, where it is going, the ship-by
+/// The label ReWatch bought: the PDF, tracking, where it is going, the ship-by
 /// clock, and what that label did to the payout.
 struct LabelReadyScreen: View {
     let order: Order
@@ -353,7 +353,7 @@ struct LabelReadyScreen: View {
 
     private var shipment: Shipment? { order.toAuthShipment ?? order.latestShipment }
 
-    /// The fact the carton announces: Rewatch has bought this order's label.
+    /// The fact the carton announces: ReWatch has bought this order's label.
     /// Nil on a payload that does not carry the timestamp, and nothing is
     /// drawn for nil.
     private var labelKey: String? {
@@ -516,7 +516,7 @@ struct LabelReadyScreen: View {
     /// `company_name` on the company line (`ShippingClient._ifs_create_label`), and
     /// serves the same dict here as `auth_center_address`. A seller copies this
     /// card onto a box, so it prints what the label prints and never a name of
-    /// its own: this card used to say "Rewatch Authentication Center", a name
+    /// its own: this card used to say "ReWatch Authentication Center", a name
     /// that was on no label.
     private var recipientLines: [String] {
         guard let address = order.authCenterAddress else { return [] }

@@ -7,7 +7,7 @@ import UIKit
 /// One place that turns crash reporting, log shipping and the analytics
 /// identity on — started once from `RewatchApp.init()`, mirroring
 /// `admin-ios/RewatchAdmin/App/Observability.swift` so one set of keys and one
-/// mental model serves every Rewatch client.
+/// mental model serves every ReWatch client.
 ///
 /// ## Where a person pastes the keys
 ///

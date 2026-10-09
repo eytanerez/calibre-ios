@@ -83,7 +83,7 @@ final class OrderStateTests: XCTestCase {
         XCTAssertEqual(try step(labelOnly, "Shipped to authentication").state, .now)
         XCTAssertEqual(try step(labelOnly, "Order placed").state, .done)
 
-        // And the actor: it is the seller's move, not Rewatch's.
+        // And the actor: it is the seller's move, not ReWatch's.
         XCTAssertEqual(labelOnly.nextStep().actor, .seller)
         XCTAssertEqual(labelOnly.nextStep().actor?.label, "With the seller")
 
@@ -126,7 +126,7 @@ final class OrderStateTests: XCTestCase {
         XCTAssertFalse(passed.authenticationFailed)
         XCTAssertEqual(try step(passed, "Authentication").state, .done)
         XCTAssertEqual(try step(passed, "Authentication").line, "Passed")
-        XCTAssertEqual(passed.nextStep().headline, "Authenticated by Rewatch")
+        XCTAssertEqual(passed.nextStep().headline, "Authenticated by ReWatch")
 
         // A missing record is not a negative one. Every order served by a
         // deployment predating the record has none, and none of them failed.
@@ -169,7 +169,7 @@ final class OrderStateTests: XCTestCase {
     ///
     /// The rule this protects is the whole reason `next` is optional: a client
     /// that fills the gap with a sentence of its own has made a promise on
-    /// Rewatch's behalf that nobody at Rewatch made.
+    /// ReWatch's behalf that nobody at ReWatch made.
     func testNextIsNilWhereNothingHonestCanBeSaid() throws {
         // Delivered, with no return window open: there is nothing left to say.
         let delivered = try order(status: "delivered")
@@ -286,7 +286,7 @@ final class OrderStateTests: XCTestCase {
     func testTheActorIsNamedByOneTable() {
         XCTAssertEqual(OrderActor.you.label, "Waiting on you")
         XCTAssertEqual(OrderActor.seller.label, "With the seller")
-        XCTAssertEqual(OrderActor.rewatch.label, "With Rewatch")
+        XCTAssertEqual(OrderActor.rewatch.label, "With ReWatch")
     }
 
     /// The clauses above the status switch outrank whatever the status says.
@@ -365,7 +365,7 @@ final class OrderStateTests: XCTestCase {
     ///
     /// Not a `disputed` order status: there is no such status on this backend,
     /// so a clause reading for one could never fire and the word would never
-    /// appear. A case is the record saying a person at Rewatch is looking at
+    /// appear. A case is the record saying a person at ReWatch is looking at
     /// this watch, which is the fact the word is for.
     func testUnderReviewComesFromAnOpenCaseAndNotFromAStatus() throws {
         let reviewed = try order(

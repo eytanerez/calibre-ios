@@ -224,7 +224,7 @@ enum ListingDetailRows {
         // carried no specs at all and prose was the only thing there was to
         // read. Which meant the app showed whichever facts a seller happened to
         // type, in whatever words they used, and never the ten (now sixteen)
-        // fields Rewatch actually keeps.
+        // fields ReWatch actually keeps.
         rows.append(contentsOf: specRows(listing.specs))
         return rows
     }
@@ -430,7 +430,7 @@ struct ConditionGradeDefinitionsView: View {
 /// name, when the seller wrote one, their own few words about why.
 ///
 /// The note is quoted in the body face, as the site sets it: the quotation
-/// marks say these are the seller's words, not Rewatch's (the grade is checked
+/// marks say these are the seller's words, not ReWatch's (the grade is checked
 /// against the watch at authentication; the note is what the seller said).
 /// Eytan's call, 2026-09-25: plain text, never the hand, for these notes.
 /// It runs the full width of the row under the name rather than squeezing
@@ -510,7 +510,7 @@ struct SellerCard: View {
                         }
                     }
                     if let reputation = seller.reputation {
-                        Text(reputation.salesCount == 1 ? "1 sale on Rewatch" : "\(reputation.salesCount) sales on Rewatch")
+                        Text(reputation.salesCount == 1 ? "1 sale on ReWatch" : "\(reputation.salesCount) sales on ReWatch")
                             .font(RewatchType.caption)
                             .foregroundStyle(Color.rewatch.mutedForeground)
                     }
@@ -547,26 +547,26 @@ struct SellerCard: View {
 
 // MARK: - Authentication info sheet
 
-/// Static editorial content behind the "Authenticated by Rewatch" callout.
+/// Static editorial content behind the "Authenticated by ReWatch" callout.
 ///
 /// WPB Watch Co is named where the watch is examined, as everywhere a customer
 /// reads about it (Eytan, 2026-09-29): "WPB Watch Co, our authentication
 /// partner in West Palm Beach, Florida" the first time on this sheet, "WPB
-/// Watch Co" after. The "Authenticated by" title stays Rewatch's, as on the
+/// Watch Co" after. The "Authenticated by" title stays ReWatch's, as on the
 /// report. Name and city only, and no credential the row does not hold.
 struct AuthenticationInfoSheet: View {
     var body: some View {
         SheetScaffold(title: "Inspected before it ships", detents: [.medium, .large]) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    Text("Every watch sold on Rewatch travels to WPB Watch Co, our authentication partner in West Palm Beach, Florida, before it travels to you. Nothing ships buyer-direct.")
+                    Text("Every watch sold on ReWatch travels to WPB Watch Co, our authentication partner in West Palm Beach, Florida, before it travels to you. Nothing ships buyer-direct.")
                         .font(RewatchType.body)
                         .foregroundStyle(Color.rewatch.secondaryForeground)
                         .lineSpacing(5)
 
                     infoRow(
                         icon: "checkmark.shield",
-                        title: "Authenticated by Rewatch",
+                        title: "Authenticated by ReWatch",
                         message: "Movement, case, dial, and papers are examined against the reference's factory specification, under a 72-hour commitment from arrival to verdict."
                     )
                     infoRow(
@@ -577,7 +577,7 @@ struct AuthenticationInfoSheet: View {
                     infoRow(
                         icon: "wrench.and.screwdriver",
                         title: "1-year mechanical warranty",
-                        message: "Every watch that passes authentication includes a one-year mechanical warranty in Rewatch's name."
+                        message: "Every watch that passes authentication includes a one-year mechanical warranty in ReWatch's name."
                     )
                     infoRow(
                         icon: "shippingbox",
@@ -593,11 +593,11 @@ struct AuthenticationInfoSheet: View {
                             .font(RewatchType.label)
                             .foregroundStyle(Color.rewatch.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("If a watch is genuine but not as described, your Rewatch contact treats it as urgent and settles it case by case: either a partial refund, or the watch goes back.")
+                        Text("If a watch is genuine but not as described, your ReWatch contact treats it as urgent and settles it case by case: either a partial refund, or the watch goes back.")
                             .font(RewatchType.label)
                             .foregroundStyle(Color.rewatch.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("If authentication runs past its commitment, you hear from your Rewatch contact before you have to ask.")
+                        Text("If authentication runs past its commitment, you hear from your ReWatch contact before you have to ask.")
                             .font(RewatchType.label)
                             .foregroundStyle(Color.rewatch.mutedForeground)
                             .fixedSize(horizontal: false, vertical: true)

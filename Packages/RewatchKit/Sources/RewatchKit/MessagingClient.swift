@@ -1,7 +1,7 @@
 import Foundation
 
 /// Transport for `rewatch-messaging` — a separate service from the main
-/// Rewatch Backend, so it earns its own client rather than overloading
+/// ReWatch Backend, so it earns its own client rather than overloading
 /// `APIClient`.
 ///
 /// The difference is the wire contract, not the domain. `APIClient` decodes

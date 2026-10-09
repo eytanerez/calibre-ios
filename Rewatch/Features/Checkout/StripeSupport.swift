@@ -8,7 +8,7 @@ import StripePayments
 import SwiftUI
 import UIKit
 
-/// One place that shapes Stripe PaymentSheet like Rewatch: warm cream/ink
+/// One place that shapes Stripe PaymentSheet like ReWatch: warm cream/ink
 /// (or their dark equivalents), Radius.control corners, Geist type.
 ///
 /// PaymentSheet drives every payment now — offer holds, seller label
@@ -19,7 +19,7 @@ import UIKit
 /// needs (the frontmost presenter, an authentication context for 3-D Secure)
 /// live here too, beside the merchant id and the entitlement gate they share.
 enum RewatchStripe {
-    static let merchantDisplayName = "Rewatch"
+    static let merchantDisplayName = "ReWatch"
     static let returnURL = "rewatch://stripe-redirect"
     static let applePayMerchantID = "merchant.com.shoprewatch.rewatch"
 
@@ -133,7 +133,7 @@ enum RewatchStripe {
         return configuration
     }
 
-    /// Maps the Rewatch tokens onto PaymentSheet. Colors come straight from
+    /// Maps the ReWatch tokens onto PaymentSheet. Colors come straight from
     /// the palette (each already adapts light/dark); type is Geist via UIFont.
     private static func appearance() -> PaymentSheet.Appearance {
         var appearance = PaymentSheet.Appearance()

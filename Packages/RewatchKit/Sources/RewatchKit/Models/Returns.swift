@@ -173,7 +173,7 @@ public struct ReturnQuote: Decodable, Sendable {
     public let returnFee: Fee
     /// The original outbound label, deducted from the refund.
     public let outboundLabelDeduction: APIDecimal?
-    /// Rewatch's return label — signature required, insured for the full sale
+    /// ReWatch's return label — signature required, insured for the full sale
     /// price — whose cost is deducted from the refund. Nil on payloads that
     /// predate the field, in which case the row is simply not drawn.
     public let returnLabelDeduction: APIDecimal?
@@ -293,7 +293,7 @@ public struct OrderReturn: Decodable, Sendable {
     }
 }
 
-/// Rewatch's return label: signature required, insured for the full sale
+/// ReWatch's return label: signature required, insured for the full sale
 /// price, and its cost deducted from the refund.
 public struct ReturnLabel: Decodable, Sendable {
     public let shipmentId: String?
@@ -368,7 +368,7 @@ public struct OrderPayout: Codable, Sendable {
     /// Set when a payout failed — the actual reason, to show as-is.
     public let failureReason: String?
     /// The four lines the transfer is built from — sale price, commission,
-    /// the label Rewatch bought, payout. No client assembles these itself.
+    /// the label ReWatch bought, payout. No client assembles these itself.
     public let breakdown: PayoutBreakdown?
 
     enum CodingKeys: String, CodingKey {
@@ -397,7 +397,7 @@ public struct OrderPayout: Codable, Sendable {
 public struct PayoutBreakdown: Codable, Sendable {
     public let salePrice: APIDecimal?
     public let commission: Commission?
-    /// The actual cost of the to-auth label Rewatch bought.
+    /// The actual cost of the to-auth label ReWatch bought.
     public let shippingLabel: APIDecimal?
     /// What the seller receives.
     public let amount: APIDecimal?

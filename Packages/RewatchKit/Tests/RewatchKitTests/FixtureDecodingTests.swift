@@ -800,7 +800,7 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(quote.returnFee.minimum.value, Decimal(string: "250.00"))
         XCTAssertEqual(quote.returnFee.amount.value, Decimal(string: "700.00"))
         XCTAssertEqual(quote.outboundLabelDeduction?.value, Decimal(string: "150.00"))
-        // Rewatch's own return label is deducted from the refund too, and the
+        // ReWatch's own return label is deducted from the refund too, and the
         // client renders the server's figure rather than inferring one.
         XCTAssertEqual(quote.returnLabelDeduction?.value, Decimal(string: "35.00"))
         XCTAssertEqual(quote.processingWithholdingBasis, "card_fee_never_refunded")

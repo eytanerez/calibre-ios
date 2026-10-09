@@ -2,12 +2,12 @@ import RewatchDesign
 import RewatchKit
 import SwiftUI
 
-/// Reference-level market board: every reference Rewatch publishes a price
+/// Reference-level market board: every reference ReWatch publishes a price
 /// for, filterable and sortable, with a tap-through to the reference's own
 /// chart and spec sheet.
 ///
 /// The set is whatever `/market/reference-prices` says it is. A reference
-/// only publishes once there is enough of Rewatch's own trade behind it, so
+/// only publishes once there is enough of ReWatch's own trade behind it, so
 /// an empty board is a real answer — "nothing published yet" — and reads as
 /// one rather than as a screen that failed to load.
 struct MarketBoardView: View {
@@ -117,7 +117,7 @@ struct MarketBoardView: View {
                 EmptyState(
                     icon: "chart.line.uptrend.xyaxis",
                     title: "No prices published yet",
-                    message: "Rewatch publishes a reference price once there's enough of its own trade behind it. Nothing is published today \u{2014} check back."
+                    message: "ReWatch publishes a reference price once there's enough of its own trade behind it. Nothing is published today \u{2014} check back."
                 )
             } else {
                 board
@@ -193,7 +193,7 @@ struct MarketBoardView: View {
             }
             if let updated = MarketFormat.day(iso: asOf) {
                 statTile(label: "Last updated", value: updated, tone: .neutral) {
-                    Text("Rewatch's own trade")
+                    Text("ReWatch's own trade")
                         .font(RewatchType.caption)
                         .foregroundStyle(Color.rewatch.mutedForeground)
                 }
@@ -276,7 +276,7 @@ struct MarketBoardView: View {
                 .padding(.vertical, Space.xxl)
             }
 
-            Text("Reference-level estimates drawn from what watches actually sell for on Rewatch.")
+            Text("Reference-level estimates drawn from what watches actually sell for on ReWatch.")
                 .font(RewatchType.caption)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .padding(.top, Space.s)

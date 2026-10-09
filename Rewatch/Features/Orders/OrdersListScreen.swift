@@ -370,7 +370,7 @@ extension Order {
         case .awaitingWire: "Complete your wire transfer to secure this watch."
         case .purchased: "Paid. The seller is preparing to ship it to authentication."
         case .toAuth: "On its way to WPB Watch Co in West Palm Beach, Florida."
-        case .authPass: "Authenticated by Rewatch. Shipping to you next."
+        case .authPass: "Authenticated by ReWatch. Shipping to you next."
         case .authFail: "We found an issue during authentication. Our team will follow up by email."
         case .toBuyer: "Shipped to you and on the way."
         case .delivered: "Delivered. We hope you love it."

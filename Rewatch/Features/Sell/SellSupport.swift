@@ -65,7 +65,7 @@ enum SellerStatusDisplay {
         case "cancelled": ("Canceled", .neutral)
         case "disputed": ("Disputed", .danger)
         case "rejected": ("Needs changes", .danger)
-        // Rewatch took this one down, not the seller. Never folded into
+        // ReWatch took this one down, not the seller. Never folded into
         // "archived": archiving is a deliberate seller action, and this one
         // returns to the market by itself once a valid credit card is on file.
         case "paused_card": ("Paused \u{2014} card lapsed", .warning)
@@ -201,7 +201,7 @@ struct SellRowSkeleton: View {
 
 /// The four lines a payout is made of, exactly as the server states them:
 /// sale price, commission (with its rate, and a plain note when the
-/// marketplace minimum applied instead), the label Rewatch bought, and what
+/// marketplace minimum applied instead), the label ReWatch bought, and what
 /// is left. Nothing here is arithmetic — a figure the payload omits is simply
 /// not a row, because a payout figure we can't stand behind is worse than
 /// none at all.
@@ -258,8 +258,8 @@ struct PayoutLedger: View {
             rows.append(Row(label: "Sale price", value: money(sale), emphasized: false))
         }
         if let commission = breakdown.commission, let amount = commission.amount?.value {
-            let label = commission.percent.map { "Rewatch\u{2019}s commission (\(feePercentText($0.value))%)" }
-                ?? "Rewatch\u{2019}s commission"
+            let label = commission.percent.map { "ReWatch\u{2019}s commission (\(feePercentText($0.value))%)" }
+                ?? "ReWatch\u{2019}s commission"
             rows.append(Row(label: label, value: "\u{2212} " + money(amount), emphasized: false))
         }
         if let label = breakdown.shippingLabel?.value {

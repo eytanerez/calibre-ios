@@ -3,9 +3,9 @@
     "data": {
         "enabled": true,
         "welcome": {
-            "title": "Thank you for trying Rewatch",
+            "title": "Thank you for trying ReWatch",
             "body": [
-                "Thank you so much for trying out our new platform, Rewatch.",
+                "Thank you so much for trying out our new platform, ReWatch.",
                 "This is the app and website for you to try and test out. We've provided a dummy credit card so you can create an account, buy watches, and use every feature. As you're playing around with it we would love to get your feedback on the clearness of the message, the features, any questions, or anything else \u2014 the more genuine the feedback, the better.",
                 "Anywhere we ask you to fill something in \u2014 signing up, your address, listing a watch \u2014 there's a button that fills it in for you, so you never have to make up a phone number or an address to keep going. Use your own details instead any time you'd rather.",
                 "To give feedback on the site, click the beta bar at the top of the page. In the app, take a screenshot, tap the screenshot, press the checkmark, and an option to provide beta feedback will show up.",
@@ -14,7 +14,7 @@
             "signoff": "Moshe & Eytan"
         },
         "bar": {
-            "text": "You're testing a beta of Rewatch.",
+            "text": "You're testing a beta of ReWatch.",
             "action": "Give feedback"
         },
         "test_card": {
@@ -22,7 +22,7 @@
             "expiry": "10/29",
             "cvc": "207",
             "caption": "Your demo credit card",
-            "note": "Not a real card. Use it anywhere Rewatch asks for payment."
+            "note": "Not a real card. Use it anywhere ReWatch asks for payment."
         },
         "form": {
             "catalogue_version": "1",
@@ -235,7 +235,7 @@
                                     },
                                     {
                                         "value": "rewatch_ios_app",
-                                        "label": "Rewatch iOS app"
+                                        "label": "ReWatch iOS app"
                                     },
                                     {
                                         "value": "other",
@@ -284,13 +284,13 @@
                                 "optional": true,
                                 "id": "first_impression",
                                 "type": "longtext",
-                                "prompt": "What was the first thing you thought Rewatch was when you opened the site?"
+                                "prompt": "What was the first thing you thought ReWatch was when you opened the site?"
                             },
                             {
                                 "optional": true,
                                 "id": "biggest_advantage",
                                 "type": "longtext",
-                                "prompt": "What do you think is Rewatch's biggest advantage over other watch marketplaces?"
+                                "prompt": "What do you think is ReWatch's biggest advantage over other watch marketplaces?"
                             },
                             {
                                 "optional": true,
@@ -302,13 +302,13 @@
                                 "optional": true,
                                 "id": "blocker_high_value",
                                 "type": "longtext",
-                                "prompt": "What, if anything, would stop you from purchasing a $5,000\u2013$15,000 watch through Rewatch?"
+                                "prompt": "What, if anything, would stop you from purchasing a $5,000\u2013$15,000 watch through ReWatch?"
                             },
                             {
                                 "optional": true,
                                 "id": "trust_more",
                                 "type": "longtext",
-                                "prompt": "What would make you trust Rewatch more?"
+                                "prompt": "What would make you trust ReWatch more?"
                             },
                             {
                                 "optional": true,
@@ -332,7 +332,7 @@
                                 "optional": true,
                                 "id": "would_use_at_launch",
                                 "type": "single",
-                                "prompt": "If Rewatch launched tomorrow, would you use it?",
+                                "prompt": "If ReWatch launched tomorrow, would you use it?",
                                 "options": [
                                     {
                                         "value": "yes_definitely",
@@ -360,7 +360,7 @@
                                 "optional": true,
                                 "id": "recommend_score",
                                 "type": "scale",
-                                "prompt": "Would you recommend Rewatch to someone looking for a watch?",
+                                "prompt": "Would you recommend ReWatch to someone looking for a watch?",
                                 "min": 0,
                                 "max": 10,
                                 "min_label": "Not at all likely",
@@ -629,7 +629,7 @@
                                 "optional": true,
                                 "id": "overall_rating",
                                 "type": "scale",
-                                "prompt": "Overall, how would you rate Rewatch?",
+                                "prompt": "Overall, how would you rate ReWatch?",
                                 "min": 1,
                                 "max": 10,
                                 "min_label": "Poor",
@@ -639,7 +639,7 @@
                                 "optional": true,
                                 "id": "clarity",
                                 "type": "scale",
-                                "prompt": "How easy was it to understand what Rewatch is and why you would use it?",
+                                "prompt": "How easy was it to understand what ReWatch is and why you would use it?",
                                 "min": 1,
                                 "max": 5,
                                 "min_label": "Not at all",
@@ -659,7 +659,7 @@
                                 "optional": true,
                                 "id": "trust",
                                 "type": "scale",
-                                "prompt": "How trustworthy did Rewatch feel?",
+                                "prompt": "How trustworthy did ReWatch feel?",
                                 "min": 1,
                                 "max": 5,
                                 "min_label": "Not at all",
@@ -679,7 +679,7 @@
                                 "optional": true,
                                 "id": "purchase_likelihood",
                                 "type": "scale",
-                                "prompt": "If you were actually shopping for a watch today, how likely would you be to buy through Rewatch?",
+                                "prompt": "If you were actually shopping for a watch today, how likely would you be to buy through ReWatch?",
                                 "min": 0,
                                 "max": 10,
                                 "min_label": "Not at all likely",
@@ -695,13 +695,13 @@
                                 "optional": true,
                                 "id": "first_impression",
                                 "type": "longtext",
-                                "prompt": "What was the first thing you thought Rewatch was when you opened the site?"
+                                "prompt": "What was the first thing you thought ReWatch was when you opened the site?"
                             },
                             {
                                 "optional": true,
                                 "id": "biggest_advantage",
                                 "type": "longtext",
-                                "prompt": "What do you think is Rewatch's biggest advantage over other watch marketplaces?"
+                                "prompt": "What do you think is ReWatch's biggest advantage over other watch marketplaces?"
                             },
                             {
                                 "optional": true,
@@ -713,13 +713,13 @@
                                 "optional": true,
                                 "id": "blocker_high_value",
                                 "type": "longtext",
-                                "prompt": "What, if anything, would stop you from purchasing a $5,000\u2013$15,000 watch through Rewatch?"
+                                "prompt": "What, if anything, would stop you from purchasing a $5,000\u2013$15,000 watch through ReWatch?"
                             },
                             {
                                 "optional": true,
                                 "id": "trust_more",
                                 "type": "longtext",
-                                "prompt": "What would make you trust Rewatch more?"
+                                "prompt": "What would make you trust ReWatch more?"
                             },
                             {
                                 "optional": true,
@@ -809,7 +809,7 @@
                                 "optional": true,
                                 "id": "missing_feature",
                                 "type": "longtext",
-                                "prompt": "What feature is missing that would make you significantly more likely to use Rewatch?"
+                                "prompt": "What feature is missing that would make you significantly more likely to use ReWatch?"
                             }
                         ]
                     },
@@ -1066,7 +1066,7 @@
                                     },
                                     {
                                         "value": "rewatch_ios_app",
-                                        "label": "Rewatch iOS app"
+                                        "label": "ReWatch iOS app"
                                     },
                                     {
                                         "value": "other",
@@ -1090,7 +1090,7 @@
                                 "optional": true,
                                 "id": "brand_words",
                                 "type": "multi",
-                                "prompt": "Choose up to three words that describe Rewatch",
+                                "prompt": "Choose up to three words that describe ReWatch",
                                 "max_select": 3,
                                 "options": [
                                     {
@@ -1171,7 +1171,7 @@
                                 "optional": true,
                                 "id": "reminds_of",
                                 "type": "single",
-                                "prompt": "Which marketplace does Rewatch currently remind you of most?",
+                                "prompt": "Which marketplace does ReWatch currently remind you of most?",
                                 "options": [
                                     {
                                         "value": "none",
@@ -1219,7 +1219,7 @@
                                 "optional": true,
                                 "id": "reason_to_exist",
                                 "type": "single",
-                                "prompt": "Does Rewatch feel like it has a reason to exist beyond being another place to buy watches?",
+                                "prompt": "Does ReWatch feel like it has a reason to exist beyond being another place to buy watches?",
                                 "options": [
                                     {
                                         "value": "definitely",
@@ -1259,7 +1259,7 @@
                                 "optional": true,
                                 "id": "would_use_at_launch",
                                 "type": "single",
-                                "prompt": "If Rewatch launched tomorrow, would you use it?",
+                                "prompt": "If ReWatch launched tomorrow, would you use it?",
                                 "options": [
                                     {
                                         "value": "yes_definitely",
@@ -1287,7 +1287,7 @@
                                 "optional": true,
                                 "id": "recommend_score",
                                 "type": "scale",
-                                "prompt": "Would you recommend Rewatch to someone looking for a watch?",
+                                "prompt": "Would you recommend ReWatch to someone looking for a watch?",
                                 "min": 0,
                                 "max": 10,
                                 "min_label": "Not at all likely",

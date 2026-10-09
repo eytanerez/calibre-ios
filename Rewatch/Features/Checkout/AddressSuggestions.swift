@@ -14,7 +14,7 @@ struct SuggestedAddress: Equatable, Sendable {
     var state: String
     var postalCode: String
 
-    /// Where Rewatch ships: the states and DC, and the territories USPS treats
+    /// Where ReWatch ships: the states and DC, and the territories USPS treats
     /// as states. MapKit gives each territory its own country code, and for
     /// those the code is also the two-letter state.
     static let shippableCountryCodes: Set<String> = ["US", "PR", "GU", "VI", "AS", "MP"]
@@ -350,7 +350,7 @@ struct AddressStreetField: View {
     private func pick(_ suggestion: AddressSuggestion) {
         Task {
             guard let address = await suggester.resolve(suggestion) else {
-                // Offline, or a place Rewatch cannot ship to: the list goes
+                // Offline, or a place ReWatch cannot ship to: the list goes
                 // and what the reader typed stays.
                 suggester.clear()
                 return

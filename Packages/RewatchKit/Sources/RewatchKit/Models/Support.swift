@@ -2,9 +2,9 @@ import Foundation
 
 public enum SupportConversationStatus: String, Codable, Sendable {
     case open
-    /// The customer wrote last; their Rewatch contact owes a reply.
+    /// The customer wrote last; their ReWatch contact owes a reply.
     case waitingOnRewatch = "waiting_on_rewatch"
-    /// Rewatch wrote last.
+    /// ReWatch wrote last.
     case waitingOnCustomer = "waiting_on_customer"
     case closed
     case unknown
@@ -14,7 +14,7 @@ public enum SupportConversationStatus: String, Codable, Sendable {
     }
 }
 
-/// The named person on the Rewatch side of this conversation. Messages come
+/// The named person on the ReWatch side of this conversation. Messages come
 /// personally from them, and writing to help@shoprewatch.com lands in the
 /// same thread.
 public struct SupportContact: Codable, Sendable, Equatable {
@@ -221,7 +221,7 @@ public struct SupportPostResult: Codable, Sendable {
     public let guestToken: String?
 }
 
-/// Who opened the conversation. Rewatch writes first when it is reaching out
+/// Who opened the conversation. ReWatch writes first when it is reaching out
 /// about an order rather than answering a question.
 public enum SupportThreadOrigin: String, Codable, Sendable {
     case customer
@@ -234,7 +234,7 @@ public enum SupportThreadOrigin: String, Codable, Sendable {
 }
 
 /// One row of `GET /support/threads` — the customer's list of their own
-/// conversations with Rewatch.
+/// conversations with ReWatch.
 public struct SupportThreadSummary: Codable, Sendable, Identifiable {
     public let id: String
     public let status: SupportConversationStatus

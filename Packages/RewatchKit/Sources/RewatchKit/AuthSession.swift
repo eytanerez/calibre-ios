@@ -27,7 +27,7 @@ public struct CurrentUser: Codable, Sendable, Equatable {
     /// flag sends, and a member on that backend must not be held behind a gate
     /// nothing can satisfy.
     public let profileComplete: Bool?
-    /// The member's named Rewatch contact. Optional for compatibility with
+    /// The member's named ReWatch contact. Optional for compatibility with
     /// older API deployments and accounts that have not been assigned yet.
     public let assignedContact: SupportContact?
     /// `false` for an account made through Google or Apple that has never set

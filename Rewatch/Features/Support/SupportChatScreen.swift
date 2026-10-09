@@ -80,7 +80,7 @@ struct SupportChatScreen: View {
         !session.isAuthenticated && services.support.guestToken == nil
     }
 
-    /// The named person on the Rewatch side. Everything below falls back to
+    /// The named person on the ReWatch side. Everything below falls back to
     /// the generic wording while this is nil.
     ///
     /// Off the server's payloads every time, and nowhere else: the
@@ -151,14 +151,14 @@ struct SupportChatScreen: View {
             HStack(spacing: Space.s) {
                 AvatarInitial(initials: contact.initials, size: .s)
                 VStack(alignment: .leading, spacing: 0) {
-                    Eyebrow("Your contact at Rewatch")
+                    Eyebrow("Your contact at ReWatch")
                     Text(name)
                         .font(RewatchType.bodySemiBold)
                         .foregroundStyle(Color.rewatch.foreground)
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Your contact at Rewatch, \(name)")
+            .accessibilityLabel("Your contact at ReWatch, \(name)")
         }
     }
 
@@ -630,7 +630,7 @@ struct SupportChatScreen: View {
 
 private struct SupportBubble: View {
     let message: SupportMessage
-    /// Who the Rewatch side of this thread is, when a contact is assigned.
+    /// Who the ReWatch side of this thread is, when a contact is assigned.
     /// Nil falls back to the house name rather than to a name of its own.
     let contactName: String?
     /// Where a chip goes. The reference serialises to `rewatch://order/<id>`,
@@ -645,7 +645,7 @@ private struct SupportBubble: View {
             if isCustomer { Spacer(minLength: 40) }
             VStack(alignment: isCustomer ? .trailing : .leading, spacing: 3) {
                 if !isCustomer {
-                    Text(contactName ?? "Rewatch")
+                    Text(contactName ?? "ReWatch")
                         .font(RewatchType.caption)
                         .foregroundStyle(Color.rewatch.mutedForeground)
                 }

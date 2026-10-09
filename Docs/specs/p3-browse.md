@@ -9,7 +9,7 @@ Kit surface: CatalogStore (browse/metadata/home/detail/storefront/similar), Comm
 ## Screens
 
 1. **HomeScreen** (tab root) — the listings-first home the user demanded (never a pitch):
-   - Header row: serif "Rewatch" wordmark small + bag (cart) button with count badge → CartSheet; search field (tap → SearchScreen push).
+   - Header row: serif "ReWatch" wordmark small + bag (cart) button with count badge → CartSheet; search field (tap → SearchScreen push).
    - Signed-in greeting line when authed ("Good evening, {firstName}." — time-aware, quiet).
    - Content rows, each horizontally scrolling ListingCards (LazyImage): "For you" (home feed recommended lane; fall back to popular for guests), "Fresh arrivals" (fresh lane), "Popular right now" (popular), "Recently viewed" (LocalSignals ids → fetch, only when non-empty). Brand chip rail (ChipRail from metadata top brands) → BrandScreen. One quiet Journal teaser card (latest article, editorial styling) → JournalArticleScreen.
    - Staggered fade-up on first load; ListingCardSkeleton rows while loading; pull-to-refresh.

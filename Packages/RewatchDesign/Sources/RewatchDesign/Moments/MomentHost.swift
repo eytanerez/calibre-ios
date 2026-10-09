@@ -142,7 +142,7 @@ struct MomentHost: ViewModifier {
 /// Everything that lives in that tree rather than in a store went with it: a
 /// `NavigationStack`'s pushes, every screen's `@State`.
 ///
-/// It surfaced in the Vault. Opening a watch Rewatch authenticated plays a
+/// It surfaced in the Vault. Opening a watch ReWatch authenticated plays a
 /// film on arrival, the film re-parented the app, the pushed screen was gone
 /// before it had drawn — and the Passport, which is a button on that screen,
 /// could not be reached at all. It read as the tap doing nothing.

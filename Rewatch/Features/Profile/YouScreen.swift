@@ -88,7 +88,7 @@ struct YouScreen: View {
                     }.buttonStyle(PressableStyle())
                     divider
                     NavigationLink { MarketplaceGuideScreen() } label: {
-                        rowLabel(icon: "map", label: "How Rewatch works")
+                        rowLabel(icon: "map", label: "How ReWatch works")
                     }.buttonStyle(PressableStyle())
                     divider
                     NavigationLink { FeeBreakdownScreen() } label: {
@@ -102,7 +102,7 @@ struct YouScreen: View {
                     }.buttonStyle(PressableStyle())
                     divider
                     NavigationLink { AboutScreen() } label: {
-                        rowLabel(icon: "info.circle", label: "About Rewatch")
+                        rowLabel(icon: "info.circle", label: "About ReWatch")
                     }.buttonStyle(PressableStyle())
                 }
 
@@ -143,7 +143,7 @@ struct YouScreen: View {
             BetaFeedbackSheet()
         }
         .alert(
-            "Sign out of Rewatch?",
+            "Sign out of ReWatch?",
             isPresented: $confirmSignOut
         ) {
             Button("Sign Out", role: .destructive) {

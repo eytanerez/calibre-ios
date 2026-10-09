@@ -18,7 +18,7 @@ import SwiftUI
 /// three platforms share: the page order, the stamp rule, the fixed-zone
 /// dates and the turn. Only the gesture is ours.
 ///
-/// The split is the whole design. Everything Rewatch states about the watch —
+/// The split is the whole design. Everything ReWatch states about the watch —
 /// what it is, that it was authenticated, that it sold — is set in the sans,
 /// because it is a fact on a record. Only the entry a person wrote themselves
 /// is in the hand. A booklet where the printing and the handwriting look the
@@ -212,7 +212,7 @@ struct PassportScreen: View {
         VStack(spacing: Space.m) {
             RewatchLogoMark(size: 34)
 
-            Eyebrow("Rewatch Passport", color: Kraft.coverInkMuted)
+            Eyebrow("ReWatch Passport", color: Kraft.coverInkMuted)
 
             Text(passport.title)
                 .font(RewatchType.serif(.semiBold, 26, relativeTo: .title))
@@ -263,7 +263,7 @@ struct PassportScreen: View {
         VStack(alignment: .leading, spacing: Space.xl) {
             runningHead("The watch")
             specTable(watchSpecs(passport))
-            Text("The permanent record of this specific watch on Rewatch — every authentication, sale, and owner-added service entry, carried with the watch for life.")
+            Text("The permanent record of this specific watch on ReWatch — every authentication, sale, and owner-added service entry, carried with the watch for life.")
                 .font(RewatchType.body)
                 .foregroundStyle(Kraft.inkMuted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -401,7 +401,7 @@ struct PassportScreen: View {
             if let listing = activeListing(passport) {
                 VStack(alignment: .leading, spacing: Space.m) {
                     Rule()
-                    Text("This watch is on Rewatch right now.")
+                    Text("This watch is on ReWatch right now.")
                         .font(RewatchType.bodyMedium)
                         .foregroundStyle(Kraft.ink)
                     Button {
@@ -592,7 +592,7 @@ struct PassportScreen: View {
                         leafView(leaf, passport, scrolls: false)
                     }
 
-                    Text("Every watch sold on Rewatch passes physical authentication before delivery.")
+                    Text("Every watch sold on ReWatch passes physical authentication before delivery.")
                         .font(RewatchType.caption)
                         .foregroundStyle(Kraft.inkMuted)
                         .multilineTextAlignment(.center)

@@ -5,7 +5,7 @@ import Foundation
 /// site-feedback one exists to be worth reading.
 ///
 /// Declaration order is asking order. The watch question leads because it is
-/// the one a collector came for, which leaves the question about Rewatch
+/// the one a collector came for, which leaves the question about ReWatch
 /// reading as a follow-up rather than as the toll for being here.
 public enum CommunityPromptKind: String, CaseIterable, Sendable, Hashable {
     case watch
@@ -17,7 +17,7 @@ public enum CommunityPromptKind: String, CaseIterable, Sendable, Hashable {
 /// How a lane introduces itself.
 ///
 /// Each lane is a different invitation — the watch one is for fun, the
-/// Rewatch one is product input — and a reader who cannot tell which they are
+/// ReWatch one is product input — and a reader who cannot tell which they are
 /// answering will answer them all in the same voice. Kept beside the model
 /// rather than in a screen because every consumer surface asks the same
 /// questions and the words have to match across them.
@@ -55,10 +55,10 @@ public struct CommunityPromptVoice: Equatable, Sendable {
             )
         case .siteFeedback:
             return CommunityPromptVoice(
-                eyebrow: "Today's Rewatch question",
-                invitation: "About Rewatch itself — what you say here shapes what we build.",
-                closedEyebrow: "Asked earlier · Rewatch",
-                emptyLane: "Today's Rewatch question is being wound. Check back soon."
+                eyebrow: "Today's ReWatch question",
+                invitation: "About ReWatch itself — what you say here shapes what we build.",
+                closedEyebrow: "Asked earlier · ReWatch",
+                emptyLane: "Today's ReWatch question is being wound. Check back soon."
             )
         case nil:
             return unknown
@@ -110,9 +110,9 @@ public struct CommunityPrompt: Decodable, Equatable, Hashable, Sendable, Identif
         let mine = options.first { $0.key == myVote }?.label
             ?? results?.options.first { $0.key == myVote }?.label
         if let mine {
-            return "I said \"\(mine)\" to this on Rewatch: \(question) — what are your thoughts?"
+            return "I said \"\(mine)\" to this on ReWatch: \(question) — what are your thoughts?"
         }
-        return "\(question) — what do you think? Answered on Rewatch."
+        return "\(question) — what do you think? Answered on ReWatch."
     }
 
     public var shareURL: URL {

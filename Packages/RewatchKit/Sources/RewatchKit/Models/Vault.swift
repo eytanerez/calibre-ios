@@ -1,12 +1,12 @@
 import Foundation
 
-/// A watch in the member's Collection. Rewatch purchases arrive automatically
+/// A watch in the member's Collection. ReWatch purchases arrive automatically
 /// on delivery (authenticated, with their Passport); manual adds cover the
 /// rest of the drawer.
 public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     public let id: String
     public let source: String
-    /// Server-computed. The rule ("it came from a Rewatch order") lives on the
+    /// Server-computed. The rule ("it came from a ReWatch order") lives on the
     /// server; re-deriving it from `source` here would be a second copy of a
     /// rule that decides whether a watch claims to be authenticated.
     public let authenticated: Bool
@@ -20,7 +20,7 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     public let nickname: String?
     public let notes: String?
     /// The raw link column, kept and served for the row's own sake — a watch
-    /// that arrived from a Rewatch order carries the seller's photograph here.
+    /// that arrived from a ReWatch order carries the seller's photograph here.
     ///
     /// **Nothing draws this.** `coverUrl` is what a surface renders; a client
     /// that keeps drawing the link shows the seller's picture after the owner
@@ -84,10 +84,10 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     }
 
     /// The stamp's key on the vault detail, and the fact it stands for. Nil
-    /// where Rewatch does not vouch for this watch, and nil is the whole gate.
+    /// where ReWatch does not vouch for this watch, and nil is the whole gate.
     ///
     /// Read `authenticated` literally. It is the server's own answer to "does
-    /// Rewatch stand behind this watch" (`_is_authenticated` in
+    /// ReWatch stand behind this watch" (`_is_authenticated` in
     /// `app/api/views/vault.py`), computed there precisely so the claim cannot
     /// come to mean three slightly different things on three platforms — and
     /// re-deriving it here from `source` would be that second copy. It is
@@ -128,7 +128,7 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
     }
 }
 
-/// What Rewatch will say about a watch's worth, or why it will not.
+/// What ReWatch will say about a watch's worth, or why it will not.
 ///
 /// The server keeps the states apart because they are different sentences to
 /// whoever reads them, and only `ok` carries a figure — so an absence can
@@ -139,7 +139,7 @@ public struct VaultWatch: Decodable, Equatable, Sendable, Identifiable {
 /// away or being folded into a neighbouring state that says something else.
 public struct VaultEstimate: Decodable, Equatable, Sendable {
     public let state: String
-    /// Carried only by `ok`. No Rewatch surface prints it.
+    /// Carried only by `ok`. No ReWatch surface prints it.
     public let value: String?
     public let asOf: String?
     public let scope: String?
@@ -163,7 +163,7 @@ public enum VaultEstimateState: String, Sendable {
 public extension VaultEstimate {
     /// The sentence an owner is shown, or none.
     ///
-    /// Rewatch's estimate of somebody's own watch is never printed as a figure
+    /// ReWatch's estimate of somebody's own watch is never printed as a figure
     /// — that decision is settled and this property does not reopen it. What
     /// these sentences do is explain an ABSENCE the owner can already see, and
     /// only the two refusals have an absence to explain:
@@ -174,7 +174,7 @@ public extension VaultEstimate {
     ///   Fresh or stale is a distinction about a number nobody sees.
     /// - `notEstimated` — nobody has looked yet, so there is nothing to explain.
     /// - an unrecognised state — this build cannot know what it means, and a
-    ///   guess would be a sentence about somebody's watch that Rewatch never
+    ///   guess would be a sentence about somebody's watch that ReWatch never
     ///   said.
     ///
     /// The two that speak must never collapse into one line: not knowing WHICH
@@ -185,7 +185,7 @@ public extension VaultEstimate {
     /// So the two sentences are built to stay apart in the reading, not only in
     /// the switch:
     ///
-    /// - `unidentified` names the failure — Rewatch could not tell which watch
+    /// - `unidentified` names the failure — ReWatch could not tell which watch
     ///   this is from the brand and reference on it — and says the consequence,
     ///   that it has not been valued. Nothing in it claims the reference is
     ///   known, because it is not.
@@ -198,7 +198,7 @@ public extension VaultEstimate {
     var note: String? {
         switch kind {
         case .unidentified:
-            "Rewatch could not tell which watch this is from the brand and reference on it, so it has not been valued."
+            "ReWatch could not tell which watch this is from the brand and reference on it, so it has not been valued."
         case .insufficientEvidence:
             "We know this reference, but too few have sold to show a price yet."
         case .ok, .stale, .notEstimated, .none:
@@ -209,7 +209,7 @@ public extension VaultEstimate {
 
 /// One photograph the owner took of their own watch.
 ///
-/// `url` is a path Rewatch serves behind the member's session, never a signed
+/// `url` is a path ReWatch serves behind the member's session, never a signed
 /// address anyone can open — see `VaultCoverSource` for what that costs a
 /// client that wants to draw it. It is nil rather than a public fallback when
 /// the stored object cannot be addressed at all, and a nil there means the
@@ -287,10 +287,10 @@ public struct VaultGalleryAddition: Decodable, Equatable, Sendable {
 /// A `cover_url` can be any of three things, and they are not interchangeable:
 ///
 /// - The owner's own photograph, served at `/secure-media/vault_photos/…` by
-///   Rewatch itself, behind the member's session. A plain image loader gets a
+///   ReWatch itself, behind the member's session. A plain image loader gets a
 ///   401 and draws nothing, so these have to be fetched by the app's
 ///   authenticated client and handed to the view as bytes.
-/// - Rewatch's own **public** media — `/media/…` on the same host, which is
+/// - ReWatch's own **public** media — `/media/…` on the same host, which is
 ///   what a seeded demo watch and a listing's own photographs are. Nothing
 ///   guards those, so nothing needs to send a credential to them, and they go
 ///   through the ordinary image pipeline like every other picture in the app.
@@ -308,12 +308,12 @@ public struct VaultGalleryAddition: Decodable, Equatable, Sendable {
 /// filename, an off-origin `http:` — resolves to nothing: none of them is a
 /// photograph, and the app will not load them.
 public enum VaultCoverSource: Equatable, Sendable {
-    /// Rewatch's own object, readable only with the member's credential.
+    /// ReWatch's own object, readable only with the member's credential.
     case privateMedia(URL)
     /// A picture anyone may fetch. No credential.
     case link(URL)
 
-    /// The prefix Rewatch serves permission-checked objects under
+    /// The prefix ReWatch serves permission-checked objects under
     /// (`register_private_media_resolver`). Everything behind it is somebody's
     /// in particular; everything outside it is not.
     static let privatePrefix = "/secure-media/"
@@ -339,7 +339,7 @@ public enum VaultCoverSource: Equatable, Sendable {
         if PrivateMediaLoader.isSameOrigin(url, as: apiOrigin) {
             return url.path.hasPrefix(privatePrefix) ? .privateMedia(url) : .link(url)
         }
-        // Off Rewatch's own host, so no credential — and then only over https,
+        // Off ReWatch's own host, so no credential — and then only over https,
         // because a page-level http link is one the app will not load and
         // storing it renders as nothing.
         return scheme == "https" ? .link(url) : nil
@@ -383,7 +383,7 @@ public struct VaultMatch: Decodable, Equatable, Sendable, Identifiable {
     }
 }
 
-/// The spec sheet Rewatch keeps for a reference, in the order a sheet is
+/// The spec sheet ReWatch keeps for a reference, in the order a sheet is
 /// read in. Every field is optional because the catalog fills up over time —
 /// an unfilled field is not a fact, so it is left out rather than shown empty.
 public struct WatchReferenceSpecs: Decodable, Equatable, Sendable {
@@ -424,7 +424,7 @@ public struct WatchReferenceSpecs: Decodable, Equatable, Sendable {
     public var isEmpty: Bool { rows.isEmpty }
 }
 
-/// The catalog row a vault watch resolves to, if Rewatch has one.
+/// The catalog row a vault watch resolves to, if ReWatch has one.
 ///
 /// `inCatalog` is narrower than "a row exists": a row with no spec filled in
 /// is a name and nothing else. It can still carry a published price, so the

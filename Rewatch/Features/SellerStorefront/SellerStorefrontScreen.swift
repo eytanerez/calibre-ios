@@ -108,7 +108,7 @@ struct SellerStorefrontScreen: View {
         }
     }
 
-    /// The one place on Rewatch where a seller speaks in their own voice
+    /// The one place on ReWatch where a seller speaks in their own voice
     /// rather than through a listing form, so it is set in their hand.
     ///
     /// The server sends the line a buyer is allowed to read — the last words
@@ -116,7 +116,7 @@ struct SellerStorefrontScreen: View {
     /// renders what arrives and never reasons about approval itself.
     ///
     /// A verified dealer who has not written one gets a plain sentence in the
-    /// sans instead: that is Rewatch describing an absence, not the dealer
+    /// sans instead: that is ReWatch describing an absence, not the dealer
     /// talking, and putting it in the hand would put words in their mouth.
     /// A seller who is not a dealer has no line to be missing.
     @ViewBuilder

@@ -405,7 +405,7 @@ final class MarkDrawingTests: XCTestCase {
     }
 
     /// The one that matters most: what comes down on the passport is the
-    /// Rewatch mark. A tick, or any other borrowed glyph, has none of the
+    /// ReWatch mark. A tick, or any other borrowed glyph, has none of the
     /// logo's traced points anywhere near it.
     func testTheStampPressesTheRewatchMarkAndNotAGlyph() {
         let drawn = vertices(StampMark.head)

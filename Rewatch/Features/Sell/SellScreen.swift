@@ -134,7 +134,7 @@ struct SellScreen: View {
     /// nothing it could be covering. A seller who already has inventory or a
     /// sale — setup went stale, Stripe reopened a requirement — must still
     /// reach their listings, offers, sales and storefront; replacing all of it
-    /// with "Start selling on Rewatch" is what reads as having lost the
+    /// with "Start selling on ReWatch" is what reads as having lost the
     /// account. Listing stays blocked either way; that is the readiness
     /// payload's call, not this one's, and the dashboard says so at the top.
     ///

@@ -205,7 +205,7 @@ struct BetaFeedbackSheet: View {
             answers["bug_device"] = .text(idiom == .pad ? "ipad_tablet" : "iphone")
         }
         if answers["bug_browser"] == nil {
-            // Not a browser at all. The catalog offers "Rewatch iOS app" for
+            // Not a browser at all. The catalog offers "ReWatch iOS app" for
             // exactly this, and it is the true answer.
             answers["bug_browser"] = .text("rewatch_ios_app")
         }

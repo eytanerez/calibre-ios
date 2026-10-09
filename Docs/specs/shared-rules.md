@@ -1,4 +1,4 @@
-# Shared rules for all Rewatch iOS feature-track agents
+# Shared rules for all ReWatch iOS feature-track agents
 
 Repo: /Users/eytanerez/Documents/GitHub/ios (git; committed baseline includes design system, RewatchKit, shell + auth). Backend contract: /Users/eytanerez/Documents/GitHub/Backend/docs/mobile-api.md. Local backend: http://localhost:8000 (live, seeded, real Stripe TEST keys). Test account: iosbuyer.rewound@gmail.com / iosbuyer / RewoundiOS123!.
 

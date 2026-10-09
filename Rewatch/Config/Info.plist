@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Rewatch</string>
+	<string>ReWatch</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -53,11 +53,11 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Rewatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.</string>
+	<string>ReWatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Rewatch uses Face ID to keep your vault private, so only you can see the watches you own.</string>
+	<string>ReWatch uses Face ID to keep your vault private, so only you can see the watches you own.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Rewatch lets you choose existing photos of your watch when creating a listing.</string>
+	<string>ReWatch lets you choose existing photos of your watch when creating a listing.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

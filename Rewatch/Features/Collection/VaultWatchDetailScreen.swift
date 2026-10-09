@@ -3,7 +3,7 @@ import RewatchKit
 import SwiftUI
 
 /// One watch in the member's vault: their photograph of it, the records that
-/// belong to it, what Rewatch knows about the reference, and what the owner
+/// belong to it, what ReWatch knows about the reference, and what the owner
 /// recorded themselves.
 ///
 /// A pushed route rather than a sheet — it is a page about a thing, it can be
@@ -19,7 +19,7 @@ import SwiftUI
 ///     are worse than one absence;
 ///   • the reference isn't ours yet — the catalog-gap form.
 ///
-/// What Rewatch thinks this particular watch is worth is not printed here in
+/// What ReWatch thinks this particular watch is worth is not printed here in
 /// any state. `VaultEstimate.note` explains the two absences that have an
 /// explanation and stays quiet for the rest.
 struct VaultWatchDetailScreen: View {
@@ -275,12 +275,12 @@ struct VaultWatchDetailScreen: View {
                 }
                 .padding(.top, Space.xs)
             } else {
-                // A watch somebody typed in is a watch nobody at Rewatch has
+                // A watch somebody typed in is a watch nobody at ReWatch has
                 // held, however handsome its card. The flag is the server's,
                 // not this screen's reading of `source`.
                 VStack(alignment: .leading, spacing: Space.xs) {
                     StatusBadge("Unverified", tone: .neutral)
-                    Text("Rewatch hasn't inspected this watch. It's here because you said you own it.")
+                    Text("ReWatch hasn't inspected this watch. It's here because you said you own it.")
                         .font(RewatchType.caption)
                         .foregroundStyle(Color.rewatch.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
@@ -344,7 +344,7 @@ struct VaultWatchDetailScreen: View {
                     .buttonStyle(.rewatch(.secondary, fullWidth: true))
                 }
 
-                // Offered wherever Rewatch stands behind the watch. The vault
+                // Offered wherever ReWatch stands behind the watch. The vault
                 // payload carries nothing about the document, so nothing here
                 // claims one exists — the route answers for itself, and its
                 // not-found branch offers the way on rather than a dead end.
@@ -390,7 +390,7 @@ struct VaultWatchDetailScreen: View {
             note(
                 icon: "chart.line.uptrend.xyaxis",
                 title: "No published price yet",
-                message: "Rewatch publishes a reference price once there's enough of its own trade behind it. This reference isn't there yet."
+                message: "ReWatch publishes a reference price once there's enough of its own trade behind it. This reference isn't there yet."
             )
         }
     }
@@ -493,7 +493,7 @@ struct VaultWatchDetailScreen: View {
                 note(
                     icon: "questionmark.circle",
                     title: "We don't have this watch yet",
-                    message: "Rewatch has nothing on file for this reference. Tell us what it is and we'll add it to the catalog \u{2014} it's how the catalog grows."
+                    message: "ReWatch has nothing on file for this reference. Tell us what it is and we'll add it to the catalog \u{2014} it's how the catalog grows."
                 ) {
                     Button("Tell us about it") {
                         Haptics.shared.play(.press)

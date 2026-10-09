@@ -17,7 +17,7 @@ import SwiftUI
 /// owner has since photographed themselves.
 ///
 /// The two kinds of address behind that one field are not fetched the same
-/// way, which is what `VaultCoverSource` is for — Rewatch's own objects need
+/// way, which is what `VaultCoverSource` is for — ReWatch's own objects need
 /// the member's credential and somebody else's host must never be sent it.
 ///
 /// **The placeholder is never a picture of a watch.** Not a stock image, not
@@ -29,7 +29,7 @@ import SwiftUI
 ///
 /// A cover a device cannot load falls back to the same ground rather than to a
 /// broken glyph. A link points somewhere else, so it can stop resolving
-/// without anybody at Rewatch or at the keyboard doing anything.
+/// without anybody at ReWatch or at the keyboard doing anything.
 struct VaultPhotoFrame: View {
     enum Variant {
         /// In the collection.
@@ -102,7 +102,7 @@ struct VaultPhotoFrame: View {
     }
 
     /// Everything anyone may fetch goes through Nuke — a seller's link, and
-    /// Rewatch's own public `/media/` files alike. What does not is the
+    /// ReWatch's own public `/media/` files alike. What does not is the
     /// owner's own photograph: the proxy answers `Cache-Control: private,
     /// no-store` and Nuke's pipeline here is backed by an app-owned disk
     /// cache, so those are fetched and held by `PrivateMediaLoader` instead —
@@ -158,7 +158,7 @@ struct VaultPhotoFrame: View {
     /// Whose picture it is, then whose watch — the watch is theirs either way,
     /// and their name for it is theirs and leads the description.
     ///
-    /// A Rewatch purchase arrives carrying the seller's photographs of that
+    /// A ReWatch purchase arrives carrying the seller's photographs of that
     /// exact watch: taken by them, checked against the watch on the bench, and
     /// shipped with it. So the picture is of the owner's watch without being
     /// the owner's picture. Calling it theirs would be a small lie told only to
@@ -166,7 +166,7 @@ struct VaultPhotoFrame: View {
     /// tell it to.
     ///
     /// Which of the two it is, is now a fact rather than a guess from
-    /// `source`: an owner's uploaded photograph is served from Rewatch's own
+    /// `source`: an owner's uploaded photograph is served from ReWatch's own
     /// origin and a seller's is not, and that is exactly the distinction
     /// `VaultCoverSource` draws.
     private var accessibilityLabel: String {

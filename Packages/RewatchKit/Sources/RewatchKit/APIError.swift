@@ -1,6 +1,6 @@
 import Foundation
 
-/// Every failure surface of the Rewatch API, normalized. Server errors carry
+/// Every failure surface of the ReWatch API, normalized. Server errors carry
 /// the backend's human-readable message — show it; don't invent copy.
 public enum APIError: Error, LocalizedError, Sendable {
     /// Backend returned `{ok: false}` — message is the server's plain-English error.
@@ -18,7 +18,7 @@ public enum APIError: Error, LocalizedError, Sendable {
         case .server(let message, _, _, _): message
         case .sessionExpired: "Your session has expired. Please sign in again."
         case .rateLimited: "Too many requests — please try again in a moment."
-        case .network: "Couldn't reach Rewatch. Check your connection and try again."
+        case .network: "Couldn't reach ReWatch. Check your connection and try again."
         case .decoding: "Something went wrong reading the response."
         case .invalidResponse: "Something went wrong. Please try again."
         }

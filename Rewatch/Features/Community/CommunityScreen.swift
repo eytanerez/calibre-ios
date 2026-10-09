@@ -3,7 +3,7 @@ import RewatchKit
 import SwiftUI
 
 /// The Community tab's quiet rooms: Today (the day's two questions — one about
-/// watches, one about Rewatch), Market (reference-level pricing), and Bites
+/// watches, one about ReWatch), Market (reference-level pricing), and Bites
 /// (the desk's short, sourced notes). Guests can read everything; voting
 /// funnels through the sign-in gate.
 ///

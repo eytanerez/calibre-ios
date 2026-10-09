@@ -6,7 +6,7 @@ import SwiftUI
 /// that oscillates while a movement runs, and the only mark allowed to loop,
 /// because looping is the thing it is saying. Everywhere this app used to
 /// raise a system `ProgressView` it was borrowing Apple's vocabulary for a
-/// sentence Rewatch already had a word for.
+/// sentence ReWatch already had a word for.
 ///
 /// Three shapes, and no fourth:
 ///

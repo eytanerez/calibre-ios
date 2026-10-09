@@ -7,7 +7,7 @@ import Foundation
 /// lifecycle and screen-view capture off (see `Analytics.start()`), so a
 /// person reading listings on the phone is invisible to it until they tap one
 /// of the schema's own events. This answers a different question — how many
-/// people are on Rewatch right now — for the admin overview alone, and it
+/// people are on ReWatch right now — for the admin overview alone, and it
 /// emits nothing PostHog would recognize.
 ///
 /// Three rules, all of them the endpoint's

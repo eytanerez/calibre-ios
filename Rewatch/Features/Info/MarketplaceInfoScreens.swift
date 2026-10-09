@@ -42,7 +42,7 @@ struct MarketplaceGuideScreen: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: Space.s) {
-            Text("How Rewatch works")
+            Text("How ReWatch works")
                 .font(RewatchType.title)
                 .foregroundStyle(Color.rewatch.foreground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -76,7 +76,7 @@ struct MarketplaceGuideScreen: View {
             guideRow(
                 icon: "shippingbox",
                 title: "It ships insured, on every leg",
-                message: "Every label requires a direct signature and is insured for the full sale price. Rewatch buys the inbound label to WPB Watch Co once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
+                message: "Every label requires a direct signature and is insured for the full sale price. ReWatch buys the inbound label to WPB Watch Co once the seller submits their shipping details, and what it actually costs comes off the seller\u{2019}s payout. The buyer pays outbound at checkout."
             )
         }
         .infoCard()
@@ -86,7 +86,7 @@ struct MarketplaceGuideScreen: View {
         CalloutBand(
             icon: "person.crop.circle",
             title: "One person, start to finish",
-            message: "Every customer has one named Rewatch contact, and messages come personally from them at help@shoprewatch.com. Email there or write to us in the app — it is the same conversation either way."
+            message: "Every customer has one named ReWatch contact, and messages come personally from them at help@shoprewatch.com. Email there or write to us in the app — it is the same conversation either way."
         )
     }
 
@@ -243,7 +243,7 @@ struct FeeBreakdownScreen: View {
                 .font(RewatchType.title)
                 .foregroundStyle(Color.rewatch.foreground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Rewatch shows the final dollar breakdown before you list and before you pay. These are the rules behind those numbers.")
+            Text("ReWatch shows the final dollar breakdown before you list and before you pay. These are the rules behind those numbers.")
                 .font(RewatchType.body)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -252,7 +252,7 @@ struct FeeBreakdownScreen: View {
 
     private var sellerRates: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            feeSection("Selling on Rewatch") {
+            feeSection("Selling on ReWatch") {
                 feeRateRow(
                     title: "Private seller",
                     rate: "\(PolicyCopy.sellerRate(config, dealer: false)) seller fee",
@@ -417,7 +417,7 @@ struct AuthenticationGuideScreen: View {
                 .font(RewatchType.title)
                 .foregroundStyle(Color.rewatch.foreground)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Every watch sold on Rewatch travels to WPB Watch Co in West Palm Beach, Florida before it travels to the buyer. WPB Watch Co is a third-party partner, not part of Rewatch, and the inspection is theirs.")
+            Text("Every watch sold on ReWatch travels to WPB Watch Co in West Palm Beach, Florida before it travels to the buyer. WPB Watch Co is a third-party partner, not part of ReWatch, and the inspection is theirs.")
                 .font(RewatchType.body)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -441,7 +441,7 @@ struct AuthenticationGuideScreen: View {
             checkRow(
                 icon: "wrench.and.screwdriver",
                 title: "1-year mechanical warranty",
-                message: "Every watch that passes authentication includes a one-year mechanical warranty in Rewatch's name."
+                message: "Every watch that passes authentication includes a one-year mechanical warranty in ReWatch's name."
             )
             divider
             checkRow(
@@ -457,7 +457,7 @@ struct AuthenticationGuideScreen: View {
         CalloutBand(
             icon: "clock",
             title: "72 hours, committed",
-            message: "Authentication runs on a 72-hour commitment from arrival to verdict. If it runs long, the buyer hears from their Rewatch contact before having to ask."
+            message: "Authentication runs on a 72-hour commitment from arrival to verdict. If it runs long, the buyer hears from their ReWatch contact before having to ask."
         )
     }
 
@@ -574,7 +574,7 @@ struct ReturnsPolicyScreen: View {
             )
             PolicyDivider()
             PolicyRow(
-                "Rewatch generates the label",
+                "ReWatch generates the label",
                 "The return label requires a direct signature and is insured for the full sale price, and its cost is deducted from the refund. The watch goes back to WPB Watch Co in West Palm Beach, Florida and is re-authenticated before anything is refunded."
             )
         }
@@ -617,12 +617,12 @@ struct ReturnsPolicyScreen: View {
             PolicyDivider()
             PolicyRow(
                 "If the returned watch fails re-authentication",
-                "If the wrong watch comes back, or it is damaged, or it turns out to be counterfeit: there is no refund, the seller is paid as though the sale completed, the watch is held, and the buyer's Rewatch contact takes the case over urgently."
+                "If the wrong watch comes back, or it is damaged, or it turns out to be counterfeit: there is no refund, the seller is paid as though the sale completed, the watch is held, and the buyer's ReWatch contact takes the case over urgently."
             )
             PolicyDivider()
             PolicyRow(
                 "If a watch is lost on the way back",
-                "A watch lost or damaged on the return leg is Rewatch's to claim and settle on both sides. Neither customer deals with a carrier."
+                "A watch lost or damaged on the return leg is ReWatch's to claim and settle on both sides. Neither customer deals with a carrier."
             )
         }
     }
@@ -698,7 +698,7 @@ struct SellerPayoutsGuideScreen: View {
         CalloutBand(
             icon: "checkmark.shield",
             title: "A dispute after payout is ours",
-            message: "If a buyer disputes a sale after you have been paid, that is Rewatch's problem to work through, not yours. You keep your money."
+            message: "If a buyer disputes a sale after you have been paid, that is ReWatch's problem to work through, not yours. You keep your money."
         )
     }
 }
@@ -714,7 +714,7 @@ struct DealerProgramGuideScreen: View {
     var body: some View {
         PolicyScaffold(
             title: "The dealer program",
-            intro: "A dealer on Rewatch is a verified business. You apply with your business details, Stripe collects and verifies your EIN and entity type — Rewatch never sees them, and your banking stays with Stripe too — and if it confirms a registered company your dealer status is granted straight away. If it cannot, someone here reads the application and decides. You hear either way.",
+            intro: "A dealer on ReWatch is a verified business. You apply with your business details, Stripe collects and verifies your EIN and entity type — ReWatch never sees them, and your banking stays with Stripe too — and if it confirms a registered company your dealer status is granted straight away. If it cannot, someone here reads the application and decides. You hear either way.",
             navigationTitle: "Dealer program"
         ) {
             howToApply
@@ -728,7 +728,7 @@ struct DealerProgramGuideScreen: View {
     /// How it is applied for, once.
     ///
     /// A "What we collect, and why" row stood under this one and told the same
-    /// EIN / Stripe / Rewatch-never-sees-it story a second time, on the same
+    /// EIN / Stripe / ReWatch-never-sees-it story a second time, on the same
     /// screen. The intro above tells it, and the application screen itself
     /// tells it beside the field that asks — which is the one place a reader
     /// is actually about to act on it. Saying it a third time here taught
@@ -777,7 +777,7 @@ struct DealerProgramGuideScreen: View {
     }
 
     private var footnote: some View {
-        Text("Nothing else about how you sell on Rewatch changes with dealer status.")
+        Text("Nothing else about how you sell on ReWatch changes with dealer status.")
             .font(RewatchType.caption)
             .foregroundStyle(Color.rewatch.mutedForeground)
             .fixedSize(horizontal: false, vertical: true)

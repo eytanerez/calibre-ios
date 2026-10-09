@@ -3,10 +3,10 @@ import XCTest
 
 /// The half of the change that lives in the app.
 ///
-/// Rewatch's letters used to carry the explanation for every decision it made —
+/// ReWatch's letters used to carry the explanation for every decision it made —
 /// why a listing did not go live, what the bench found, why a return was
 /// refused — and the app carried none of it. Eytan reversed that: the letter
-/// states that something happened and says to open Rewatch, and what it says
+/// states that something happened and says to open ReWatch, and what it says
 /// when you open it is what these tests read.
 ///
 /// What is worth pinning is not the wording. It is that **the explanation is
@@ -56,7 +56,7 @@ final class DetailLivesInTheAppTests: XCTestCase {
     }
 
     func testARejectionDoesNotOfferAResubmissionItCannotPromise() throws {
-        let row = try listing(status: "rejected", events: "[\(event("rejected", "Not a watch Rewatch carries."))]")
+        let row = try listing(status: "rejected", events: "[\(event("rejected", "Not a watch ReWatch carries."))]")
 
         XCTAssertEqual(row.review?.outcome, .rejected)
         XCTAssertNotNil(row.review?.next)
@@ -121,10 +121,10 @@ final class DetailLivesInTheAppTests: XCTestCase {
 
     func testAFailureWithNothingWrittenPointsAtAPersonRatherThanInventingOne() throws {
         // Every failure recorded before this build has no such sentence, and
-        // deriving one from the verdict would be a claim Rewatch never made.
+        // deriving one from the verdict would be a claim ReWatch never made.
         let step = try order(authResult: failedResult(nil)).nextStep()
 
-        XCTAssertEqual(step.next, "Your Rewatch contact has the detail of what we found and will go through it with you.")
+        XCTAssertEqual(step.next, "Your ReWatch contact has the detail of what we found and will go through it with you.")
     }
 
     func testAPassingOrderHasNoFinding() throws {
@@ -158,6 +158,6 @@ final class DetailLivesInTheAppTests: XCTestCase {
         """
         let step = try order(authResult: "null", returnSummary: refused).nextStep()
 
-        XCTAssertEqual(step.next, "Someone from Rewatch will contact you directly about what happens next.")
+        XCTAssertEqual(step.next, "Someone from ReWatch will contact you directly about what happens next.")
     }
 }

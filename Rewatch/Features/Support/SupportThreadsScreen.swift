@@ -3,7 +3,7 @@ import RewatchKit
 import SwiftUI
 
 /// Support opens here: the list of this customer's own conversations with
-/// Rewatch, newest activity first, with a New chat button.
+/// ReWatch, newest activity first, with a New chat button.
 ///
 /// It used to open straight onto a composer, because the backend could hold
 /// exactly one conversation per customer and the New-chat control was wired to
@@ -138,7 +138,7 @@ private struct SupportContactHeader: View {
         HStack(spacing: Space.s) {
             AvatarInitial(initials: contact.initials, size: .s)
             VStack(alignment: .leading, spacing: 0) {
-                Eyebrow("Your contact at Rewatch")
+                Eyebrow("Your contact at ReWatch")
                 Text(name)
                     .font(RewatchType.bodySemiBold)
                     .foregroundStyle(Color.rewatch.foreground)
@@ -147,7 +147,7 @@ private struct SupportContactHeader: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Your contact at Rewatch, \(name)")
+        .accessibilityLabel("Your contact at ReWatch, \(name)")
     }
 }
 

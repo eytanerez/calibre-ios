@@ -4,7 +4,7 @@ import SwiftUI
 /// `adminGlass` so the two houses use one material rather than two that drift.
 ///
 /// **The fallback is the product here, not a courtesy.** The admin app is
-/// pinned to iOS 26, so its `#available` branch is documentation. Rewatch
+/// pinned to iOS 26, so its `#available` branch is documentation. ReWatch
 /// deploys to iOS 18, which means most people holding a phone will see the
 /// second branch and nothing else — so it is designed rather than degraded: a
 /// warm ground under the frost so it does not read as gray system chrome, a
@@ -55,7 +55,7 @@ public extension View {
 /// Three layers, in the order they are painted: the ultra-thin material, which
 /// is what actually blurs; a wash of the card token OVER it, because the
 /// material's own light is neutral and a neutral tray on a cream page reads as
-/// gray plastic — the wash is what makes it Rewatch's glass rather than the
+/// gray plastic — the wash is what makes it ReWatch's glass rather than the
 /// system's; and a hairline so the edge does not dissolve into a light
 /// background. The shadow is what says "floating"; without it the material
 /// alone reads as a flat panel in light mode.

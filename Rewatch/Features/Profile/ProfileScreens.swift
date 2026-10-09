@@ -17,7 +17,7 @@ enum ProfileDestination: Hashable {
 
 // MARK: - About
 
-/// About Rewatch — the quiet footer: what the marketplace is, version, and
+/// About ReWatch — the quiet footer: what the marketplace is, version, and
 /// links to the web legal pages.
 struct AboutScreen: View {
     private var version: String {
@@ -462,7 +462,7 @@ struct PaymentMethodScreen: View {
                 }
                 CalloutBand(
                     icon: "lock.shield",
-                    message: "Your card details are handled by Stripe. Rewatch never sees your full card number."
+                    message: "Your card details are handled by Stripe. ReWatch never sees your full card number."
                 )
             }
             .padding(Space.margin)
@@ -704,7 +704,7 @@ struct NotificationSettingsScreen: View {
                     toggle("Tracking", "Shipping and delivery updates", prefs.trackingUpdates) {
                         NotificationPreferencesPatch(trackingUpdates: $0)
                     }
-                    toggle("Support", "Replies from Rewatch support", prefs.messageUpdates) {
+                    toggle("Support", "Replies from ReWatch support", prefs.messageUpdates) {
                         NotificationPreferencesPatch(messageUpdates: $0)
                     }
                     toggle("Saved watches", "Price drops on watches you've saved", prefs.watchlistAlerts) {
@@ -744,7 +744,7 @@ struct NotificationSettingsScreen: View {
                 .font(RewatchType.bodySemiBold)
                 .foregroundStyle(Color.rewatch.foreground)
             Text(pushDenied
-                 ? "Enable notifications for Rewatch in Settings to know the moment a seller responds or an order moves."
+                 ? "Enable notifications for ReWatch in Settings to know the moment a seller responds or an order moves."
                  : "Know the second a seller responds, an order ships, or a saved watch drops in price.")
                 .font(RewatchType.caption)
                 .foregroundStyle(Color.rewatch.mutedForeground)
@@ -918,7 +918,7 @@ struct DeleteAccountScreen: View {
         .task { await loadState() }
         .animation(Motion.easeFast, value: state?.isPending)
         .animation(Motion.easeFast, value: state?.obligations.count)
-        .alert("Delete your Rewatch account?", isPresented: $confirming) {
+        .alert("Delete your ReWatch account?", isPresented: $confirming) {
             Button("Delete my account", role: .destructive) { Task { await requestDeletion() } }
             Button("Keep my account", role: .cancel) {}
         } message: {

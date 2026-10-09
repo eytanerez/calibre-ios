@@ -613,7 +613,7 @@ final class OfferDetailModel {
         guard let offer, let hold = offer.hold else { return nil }
         let noun = offerHoldNoun(offerHoldText(offer, config: config))
         if offerSettledForfeit(offer) != nil || hold.capturedAt != nil {
-            return "\(noun) forfeited and split between the seller and Rewatch"
+            return "\(noun) forfeited and split between the seller and ReWatch"
         }
         if hold.releasedAt != nil { return "\(noun) released" }
         if hold.authorizedAt != nil || hold.status == "requires_capture" {
@@ -645,7 +645,7 @@ final class OfferDetailModel {
     /// the exact amount at stake.
     var backOutMessage: String {
         let noun = offerHoldNoun(offerHoldText(offer, config: config))
-        return "You agreed to buy this watch. If you back out now, your \(noun) is forfeited and split between the seller and Rewatch."
+        return "You agreed to buy this watch. If you back out now, your \(noun) is forfeited and split between the seller and ReWatch."
     }
 
     var acceptDialogTitle: String {

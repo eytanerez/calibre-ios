@@ -166,7 +166,7 @@ struct ProfileCompletionView: View {
         // with; saying so out loud keeps a later change to a sheet from
         // quietly reopening the door.
         .interactiveDismissDisabled()
-        .alert("Sign out of Rewatch?", isPresented: $confirmSignOut) {
+        .alert("Sign out of ReWatch?", isPresented: $confirmSignOut) {
             Button("Sign Out", role: .destructive) {
                 Task {
                     let signingOutUserID = session.user?.id
@@ -231,7 +231,7 @@ struct ProfileCompletionView: View {
                 .accessibilityAddTraits(.isHeader)
             Text(
                 step == .address
-                    ? "We use your address for shipping estimates, checkout totals, and delivery details. Rewatch ships within the United States."
+                    ? "We use your address for shipping estimates, checkout totals, and delivery details. ReWatch ships within the United States."
                     : "We're missing a few details we need before you can buy or sell. Your username is the name other members see; your number is only ever used for an order."
             )
                 .font(RewatchType.body)

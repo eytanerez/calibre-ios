@@ -24,7 +24,7 @@ packages:
   # Crash/error reporting. App target only, like PostHog, and wired from
   # Rewatch/App/Observability.swift. Pinned to the same sentry-cocoa version
   # the admin app pins (admin-ios/project.yml) so one Sentry project sees one
-  # SDK version across every Rewatch client.
+  # SDK version across every ReWatch client.
   Sentry:
     url: https://github.com/getsentry/sentry-cocoa
     exactVersion: 8.58.4
@@ -72,7 +72,7 @@ targets:
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        CFBundleDisplayName: Rewatch
+        CFBundleDisplayName: ReWatch
         # Portrait only. This used to be an `INFOPLIST_KEY_…` build setting,
         # which Xcode merges into a *generated* Info.plist and ignores
         # entirely when the target names its own `INFOPLIST_FILE` — as this
@@ -93,9 +93,9 @@ targets:
         UILaunchScreen:
           UIColorName: LaunchBackground
         ITSAppUsesNonExemptEncryption: false
-        NSCameraUsageDescription: Rewatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
-        NSPhotoLibraryUsageDescription: Rewatch lets you choose existing photos of your watch when creating a listing.
-        NSFaceIDUsageDescription: Rewatch uses Face ID to keep your vault private, so only you can see the watches you own.
+        NSCameraUsageDescription: ReWatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents.
+        NSPhotoLibraryUsageDescription: ReWatch lets you choose existing photos of your watch when creating a listing.
+        NSFaceIDUsageDescription: ReWatch uses Face ID to keep your vault private, so only you can see the watches you own.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         CFBundleURLTypes:

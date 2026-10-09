@@ -153,7 +153,7 @@ final class VaultGalleryTests: XCTestCase {
             ),
             .privateMedia(URL(string: "https://mock.rewatch.test/secure-media/vault_photos/v1/one.jpg")!)
         )
-        // Rewatch's own host, but public media — a seeded demo watch, a
+        // ReWatch's own host, but public media — a seeded demo watch, a
         // listing's own photographs. Nothing guards these, so nothing sends a
         // credential to them and they go through the ordinary image pipeline.
         XCTAssertEqual(
@@ -168,7 +168,7 @@ final class VaultGalleryTests: XCTestCase {
             .link(URL(string: "https://seller.example/tudor.jpg")!)
         )
         // A different port on the same host is a different origin, so the
-        // prefix alone does not make it Rewatch's.
+        // prefix alone does not make it ReWatch's.
         XCTAssertEqual(
             VaultCoverSource.resolve(
                 URL(string: "https://mock.rewatch.test:8443/secure-media/vault_photos/v1/one.jpg"),
@@ -338,7 +338,7 @@ final class VaultGalleryTests: XCTestCase {
     {"ok": true, "data": {"results": [], "cover_url": "https://seller.example/tudor.jpg"}}
     """.utf8)
 
-    /// A watch that came from a Rewatch order: the seller's photograph is on
+    /// A watch that came from a ReWatch order: the seller's photograph is on
     /// the row as a link, and the owner has not photographed it themselves.
     private static let listWithOneLinkedWatch = Data("""
     {"ok": true, "data": {"results": [

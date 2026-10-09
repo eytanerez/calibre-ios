@@ -599,7 +599,7 @@ struct SellerDashboardScreen: View {
     /// payload's call and nothing on this screen overrides it. What changed is
     /// that a seller who already has inventory, offers, sales and a storefront
     /// keeps all of it in front of them while they finish, rather than being
-    /// handed a page headed "Start selling on Rewatch" that reads as having
+    /// handed a page headed "Start selling on ReWatch" that reads as having
     /// lost the account.
     ///
     /// Both lines are the payout step's own words, so this notice cannot
@@ -646,7 +646,7 @@ struct SellerDashboardScreen: View {
 
     private func sellerCardBannerMessage(_ card: SellerCardState) -> String {
         if !card.present {
-            return "Selling on Rewatch needs a credit card on file. It takes a minute, and nothing is charged to it now."
+            return "Selling on ReWatch needs a credit card on file. It takes a minute, and nothing is charged to it now."
         }
         if card.valid == false {
             return "\(card.displayName) isn't working any more. Replace it so nothing interrupts a sale."

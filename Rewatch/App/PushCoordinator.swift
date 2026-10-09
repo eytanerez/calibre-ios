@@ -487,8 +487,8 @@ final class PushCoordinator: NSObject {
     private static func removeDelivered(_ sync: ClearedSync) async {
         let center = UNUserNotificationCenter.current()
         guard !sync.clearedAll else {
-            // Everything of Rewatch's, because the payload cannot carry the
-            // list. This app's notification center holds only Rewatch's own.
+            // Everything of ReWatch's, because the payload cannot carry the
+            // list. This app's notification center holds only ReWatch's own.
             center.removeAllDeliveredNotifications()
             return
         }
@@ -514,7 +514,7 @@ final class PushCoordinator: NSObject {
         let route = userInfo["route"] as? String
         let aps = userInfo["aps"] as? [AnyHashable: Any]
         let alert = aps?["alert"] as? [AnyHashable: Any]
-        let title = (alert?["title"] as? String) ?? "Rewatch"
+        let title = (alert?["title"] as? String) ?? "ReWatch"
         let body = (alert?["body"] as? String) ?? ""
         let category = (userInfo["category"] as? String) ?? unknownCategory
         return DecodedPush(

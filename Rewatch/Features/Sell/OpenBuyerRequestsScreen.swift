@@ -48,7 +48,7 @@ struct OpenBuyerRequestsScreen: View {
                     EmptyState(
                         icon: "sparkle.magnifyingglass",
                         title: "No open requests",
-                        message: "When a buyer asks Rewatch to source a watch, it shows up here for you to list against."
+                        message: "When a buyer asks ReWatch to source a watch, it shows up here for you to list against."
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {

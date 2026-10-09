@@ -110,7 +110,7 @@ public final class CommerceStore {
 
     // MARK: - Cart
     //
-    // The backend allows multiple cart rows; Rewatch's one-watch cart swap
+    // The backend allows multiple cart rows; ReWatch's one-watch cart swap
     // ("replace what's in your cart?") is a UI decision layered on top.
 
     @discardableResult

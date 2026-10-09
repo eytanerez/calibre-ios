@@ -135,12 +135,12 @@ struct ListingDetailScreen: View {
                     buyBox(listing)
                     actionStack(listing)
 
-                    // Rewatch authenticates; WPB Watch Co is where the watch is
+                    // ReWatch authenticates; WPB Watch Co is where the watch is
                     // examined, named with its city on the screen's first mention
-                    // (Eytan, 2026-09-29). Every "Authenticated by" says Rewatch.
+                    // (Eytan, 2026-09-29). Every "Authenticated by" says ReWatch.
                     CalloutBand(
                         icon: "checkmark.shield",
-                        title: "Authenticated by Rewatch",
+                        title: "Authenticated by ReWatch",
                         message: "Examined at WPB Watch Co in West Palm Beach, Florida, before it ships, with a 1-year mechanical warranty."
                     ) {
                         showAuthenticationInfo = true
@@ -764,7 +764,7 @@ struct ListingDetailScreen: View {
 ///
 /// `RewatchButtonStyle.makeBody` reads `configuration.isPressed` and nothing
 /// else — there is no `\.isEnabled` branch anywhere in it — so `.disabled(true)`
-/// on a Rewatch button produces a control that is pixel-identical to a live one
+/// on a ReWatch button produces a control that is pixel-identical to a live one
 /// and simply ignores taps. Item 1.6 asks for these to be **greyed out** and to
 /// say why, and an inert button that still looks tappable is the worse half of
 /// both: the buyer taps it, nothing happens, and they conclude the app is

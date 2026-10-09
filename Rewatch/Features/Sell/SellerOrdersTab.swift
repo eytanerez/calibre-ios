@@ -10,7 +10,7 @@ import SwiftUI
 /// sale screen prints. Nothing here is a second order system.
 ///
 /// Two rules it holds to. Nothing infers that money reached a bank: a released
-/// payout has left Rewatch and carries the server's expected arrival, and no
+/// payout has left ReWatch and carries the server's expected arrival, and no
 /// line here says it landed. And a payout with nothing on the payload to
 /// describe it says its state is unclear rather than falling back to
 /// "Scheduled", which is a promise of money on its way.
@@ -163,7 +163,7 @@ private struct SaleCard: View {
     }
 
     /// Only a failed payout is an alarm. Everything else is a state, including
-    /// a hold — money Rewatch has not sent yet is not money that went wrong.
+    /// a hold — money ReWatch has not sent yet is not money that went wrong.
     private var payoutTone: StatusBadge.Tone {
         switch payoutState {
         case .failed: .danger
@@ -220,7 +220,7 @@ private struct SaleCard: View {
 
     /// The dates a payout actually has.
     ///
-    /// A released payout has left Rewatch and has an estimated arrival; nothing
+    /// A released payout has left ReWatch and has an estimated arrival; nothing
     /// here has seen it land anywhere. A payout that did not go through gets no
     /// arrival date at all rather than one already contradicted, and a closed
     /// or unrecognised one is never told it is "not released yet" — that is a

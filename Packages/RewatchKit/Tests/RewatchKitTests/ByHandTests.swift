@@ -234,11 +234,11 @@ final class PassportTests: XCTestCase {
         )
     }
 
-    /// Everything Rewatch states about the watch happened when it was
+    /// Everything ReWatch states about the watch happened when it was
     /// recorded, and only the owner's entry carries a date of its own.
     func testRewatchsOwnLinesAreNeitherHandwrittenNorRedated() throws {
         let passport = try decode(events: """
-        [{"kind": "authenticated", "summary": "Authenticated at the Rewatch authentication center.",
+        [{"kind": "authenticated", "summary": "Authenticated at the ReWatch authentication center.",
           "occurred_at": "2025-01-09T12:00:00Z",
           "details": {"grades": {"crystal": "Like New", "bezel": "Very Good", "clasp": null},
                       "box_papers": true, "report_pdf_url": "/media/reports/abc.pdf"}}]

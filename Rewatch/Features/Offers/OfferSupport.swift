@@ -477,7 +477,7 @@ func offerPlacementDisclosure(
     An accepted offer is a sale, with the same fees and the same return terms as any purchase, and payment \
     is due within \(offerPaymentDuePhrase(paymentDueHours)) of acceptance. If your payment fails you have \
     \(offerGracePhrase(graceHours)) to resolve it. If you do not, your \(offerHoldNoun(holdText)) is \
-    forfeited and split between the seller and Rewatch.
+    forfeited and split between the seller and ReWatch.
     """
 }
 
@@ -502,7 +502,7 @@ func offerAcceptanceDisclosure(
         purchase. The listing is reserved while \(buyerName) pays, and payment is due within \(due).
 
         If their payment fails they have \(grace) to resolve it. If they do not, their \(holdNoun) is \
-        forfeited and split between you and Rewatch.
+        forfeited and split between you and ReWatch.
         """
     }
 
@@ -511,7 +511,7 @@ func offerAcceptanceDisclosure(
     and the same return terms as any purchase, and payment is due within \(due).
 
     If your payment fails you have \(grace) to resolve it. If you do not, your \(holdNoun) is forfeited and \
-    split between the seller and Rewatch.
+    split between the seller and ReWatch.
     """
 }
 
@@ -556,14 +556,14 @@ func offerResolutionNotice(
         var message: String
         if viewerIsSeller {
             message = "The payment was not resolved in time, so the buyer's \(holdNoun) was forfeited and "
-                + "split between you and Rewatch."
+                + "split between you and ReWatch."
             if let sellerAmount = forfeit.sellerAmount {
                 let net = PriceFormatter.format(sellerAmount.value, currency: offerHoldCurrency(offer))
                 message += " You received \(net)."
             }
         } else {
             message = "The payment was not resolved in time, so your \(holdNoun) was forfeited and split "
-                + "between the seller and Rewatch."
+                + "between the seller and ReWatch."
         }
         return OfferResolutionNotice(
             emphasis: .settled,
@@ -586,15 +586,15 @@ func offerResolutionNotice(
     if viewerIsSeller {
         message = stillRunning
             ? "The buyer has \(grace) from the failed payment to resolve it. If they do not, their "
-                + "\(holdNoun) is forfeited and split between you and Rewatch."
+                + "\(holdNoun) is forfeited and split between you and ReWatch."
             : "The buyer had \(grace) to resolve it. If it stays unresolved, their \(holdNoun) is "
-                + "forfeited and split between you and Rewatch."
+                + "forfeited and split between you and ReWatch."
     } else {
         message = stillRunning
             ? "You have \(grace) from the failed payment to resolve it. If you do not, your \(holdNoun) "
-                + "is forfeited and split between the seller and Rewatch."
+                + "is forfeited and split between the seller and ReWatch."
             : "You had \(grace) to resolve it. If it stays unresolved, your \(holdNoun) is forfeited and "
-                + "split between the seller and Rewatch."
+                + "split between the seller and ReWatch."
     }
 
     return OfferResolutionNotice(

@@ -290,7 +290,7 @@ extension ConnectStatus {
         PayoutSetupStep(
             status: status,
             title: nil,
-            body: "Verify your details once with Stripe. Rewatch never sees your banking information.",
+            body: "Verify your details once with Stripe. ReWatch never sees your banking information.",
             tone: .calm,
             itemsTitle: nil,
             items: [],

@@ -137,7 +137,7 @@ struct LoginScreen: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// "New to Rewatch?" and the way in. One line while the two fit side by
+    /// "New to ReWatch?" and the way in. One line while the two fit side by
     /// side — which is every normal text size — and stacked once they don't,
     /// rather than the link running off the right edge of the screen.
     private var signUpPrompt: some View {
@@ -154,7 +154,7 @@ struct LoginScreen: View {
     }
 
     private var signUpLead: some View {
-        Text("New to Rewatch?")
+        Text("New to ReWatch?")
             .font(RewatchType.body)
             .foregroundStyle(Color.rewatch.mutedForeground)
     }
@@ -194,7 +194,7 @@ struct LoginScreen: View {
     }
 }
 
-/// The Rewatch mark above the wordmark, turning while the sign-in request is
+/// The ReWatch mark above the wordmark, turning while the sign-in request is
 /// in flight: a slow, continuous turn that runs down onto upright once the
 /// response lands.
 ///

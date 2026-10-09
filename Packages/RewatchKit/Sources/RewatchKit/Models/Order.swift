@@ -101,8 +101,8 @@ public struct Order: Codable, Sendable, Identifiable {
     public let fulfillmentDeadlineAt: Date?
     public let sellerLabelPaidAt: Date?
     public let sellerLabelCreatedAt: Date?
-    /// What Rewatch actually paid the carrier for the to-auth label. Deducted
-    /// from the payout; `seller_label_paid_at` now means "Rewatch paid".
+    /// What ReWatch actually paid the carrier for the to-auth label. Deducted
+    /// from the payout; `seller_label_paid_at` now means "ReWatch paid".
     public let sellerLabelPriceTotal: APIDecimal?
     /// The box the seller measured, in the `box_*_in` names the order has
     /// always stored. Empty until the shipping form is submitted.
@@ -274,12 +274,12 @@ extension Order {
     ///
     /// Nil-safe rather than nil-blind: a failure with no written sentence gets
     /// a line pointing at a person, because inventing one from the verdict
-    /// would be a claim Rewatch did not make.
+    /// would be a claim ReWatch did not make.
     public var authenticationFinding: String? {
         guard let result = authResult, result.outcome != "pass" else { return nil }
         let written = (result.buyerSummary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if !written.isEmpty { return written }
-        return "Your Rewatch contact has the detail of what we found and will go through it with you."
+        return "Your ReWatch contact has the detail of what we found and will go through it with you."
     }
 }
 

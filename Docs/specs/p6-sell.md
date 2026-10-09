@@ -9,8 +9,8 @@ Kit surface: SellerStore (readiness/dashboard/listings/images/estimate/requests/
 ## Screens
 
 ### 1. SellGate (tab root when seller-readiness.can_list == false)
-"Start selling on Rewatch" — warm explainer (fee line: "Private sellers keep 92%. Dealers keep 95%."), steps row (Connect payouts → List your watch → Ship when it sells), CTA begins onboarding:
-- **SSN step (native)**: masked SecureField auto-formatting 123-45-6789, exact reassurance copy: "Your SSN is sent securely to Stripe to verify your identity. Rewatch never stores it — only a one-way fingerprint that keeps previously banned sellers off the marketplace." → POST /stripe/connect/account-session {ssn} (handle error codes: ssn_required, seller_onboarding_blocked, phone_required → human messages).
+"Start selling on ReWatch" — warm explainer (fee line: "Private sellers keep 92%. Dealers keep 95%."), steps row (Connect payouts → List your watch → Ship when it sells), CTA begins onboarding:
+- **SSN step (native)**: masked SecureField auto-formatting 123-45-6789, exact reassurance copy: "Your SSN is sent securely to Stripe to verify your identity. ReWatch never stores it — only a one-way fingerprint that keeps previously banned sellers off the marketplace." → POST /stripe/connect/account-session {ssn} (handle error codes: ssn_required, seller_onboarding_blocked, phone_required → human messages).
 - **Stripe Connect onboarding**: StripeConnect SDK — EmbeddedComponentManager with the account-session client secret → AccountOnboardingViewController wrapped in UIViewControllerRepresentable, appearance tinted to tokens where the SDK allows. onExit → re-fetch readiness; can_list flips → dashboard. NOTE: this SDK screen may fail in simulator without full provisioning — implement completely, and if it errors at runtime, show a warm fallback ("Finish setting up payouts on the web — your progress is saved.") and report the behavior observed.
 
 ### 2. SellerDashboard (tab root when can_list)
@@ -25,7 +25,7 @@ Step eyebrow (Details → Photos → Price → Review), draft-first: create draf
 
 ### 4. SaleDetail + Fulfillment
 - **SaleDetailScreen** (route .sale(orderID)): sale summary (listing, buyer name from shipping address, order StatusBadge, deadlines as CountdownChips), financials SpecList (sale price, commission w/ keep %, estimated payout, payout status + released date), CTA **Get shipping label** when awaiting label.
-- **LabelPurchaseFlow**: package details form (L/W/H in + weight lb, carrier-limit validation with human messages, notes) → live quote (debounced) → pay via PaymentSheet on the seller-label PaymentIntent (mobile-api.md) → finalize → **LabelReadyScreen**: Download label PDF (ShareLink/QuickLook), tracking number + copy button, carrier, "Destination: Rewatch Authentication Center" address card, fulfillment deadline CountdownChip.
+- **LabelPurchaseFlow**: package details form (L/W/H in + weight lb, carrier-limit validation with human messages, notes) → live quote (debounced) → pay via PaymentSheet on the seller-label PaymentIntent (mobile-api.md) → finalize → **LabelReadyScreen**: Download label PDF (ShareLink/QuickLook), tracking number + copy button, carrier, "Destination: ReWatch Authentication Center" address card, fulfillment deadline CountdownChip.
 
 ### 5. BulkImportStatus (from dashboard overflow)
 Jobs list (GET /account/listing-imports): filename, StatusBadge, progress ("Row X of Y" polling 1.5s while processing), results summary (created/updated/need attention); CalloutBand "Upload and column-map your CSV on the web — then finish drafts here."; **Draft-finishing queue** (completion-queue endpoint): one listing at a time — shows what's missing (photos → CaptureScreen slots; condition; year), "Save & next" rhythm, skip leaves draft.

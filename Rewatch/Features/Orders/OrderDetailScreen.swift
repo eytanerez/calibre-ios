@@ -308,7 +308,7 @@ struct OrderDetailScreen: View {
                 .font(RewatchType.caption)
                 .foregroundStyle(Color.rewatch.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
-            Button("Talk to your Rewatch contact") {
+            Button("Talk to your ReWatch contact") {
                 Haptics.shared.play(.press)
                 routePush(.supportChat)
             }
@@ -354,7 +354,7 @@ struct OrderDetailScreen: View {
     /// The amount is the payload's own — never a remembered $250.
     private func wireHoldLine(_ hold: OrderWireHold) -> String {
         let amount = hold.amount.map { PriceFormatter.format($0.value) } ?? "The"
-        return "\(amount) authorization placed \u{2014} released when your transfer arrives. If the transfer isn\u{2019}t sent by the deadline it is charged and split between the seller and Rewatch."
+        return "\(amount) authorization placed \u{2014} released when your transfer arrives. If the transfer isn\u{2019}t sent by the deadline it is charged and split between the seller and ReWatch."
     }
 
     // MARK: - Cards
@@ -420,7 +420,7 @@ struct OrderDetailScreen: View {
 
     /// The one thing the verdict card said that the lead does not.
     ///
-    /// What it replaces re-announced the verdict — "Authenticated by Rewatch",
+    /// What it replaces re-announced the verdict — "Authenticated by ReWatch",
     /// or the whole refund paragraph — directly under a lead that had just
     /// said the same thing, because the lead could not say it before. This is
     /// the remainder: a note about the watch itself, not about the outcome.
@@ -484,7 +484,7 @@ struct OrderDetailScreen: View {
     ///
     /// The only conversation this screen offered was Support, and a buyer with
     /// a question about their own watch — which links came in the box, what it
-    /// was serviced with — was being sent to Rewatch staff to ask it. Those are
+    /// was serviced with — was being sent to ReWatch staff to ask it. Those are
     /// the seller's answers. Support keeps its place further down for the order
     /// itself; this is for the watch.
     ///
@@ -787,7 +787,7 @@ struct OrderDetailScreen: View {
                     acceptedReturnsCard(order, terms)
                 } else {
                     returnsNote(
-                        "This watch was listed without returns, so this order can't be sent back. If something isn't right with it, your Rewatch contact will help — they're one message away."
+                        "This watch was listed without returns, so this order can't be sent back. If something isn't right with it, your ReWatch contact will help — they're one message away."
                     )
                 }
             }
@@ -843,7 +843,7 @@ struct OrderDetailScreen: View {
             .cardSurface()
         } else if order.status == .delivered {
             returnsNote(
-                "The return window on this order has closed. If something isn't right with the watch, your Rewatch contact will help."
+                "The return window on this order has closed. If something isn't right with the watch, your ReWatch contact will help."
             )
         } else {
             returnsNote(pendingWindowDetail(terms))
@@ -1107,7 +1107,7 @@ struct OrderDetailScreen: View {
                     .markAnnounces(order.transitMarkKey)
             )
         case .stamp:
-            // Rewatch's bench passed this specific watch. Gated on the verdict
+            // ReWatch's bench passed this specific watch. Gated on the verdict
             // and never on how far along the journey is: the step a failed
             // order stops on is the step a passed one completes.
             guard let verdict = order.verdictMarkKey else { return nil }

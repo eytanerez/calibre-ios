@@ -14,12 +14,12 @@ enum PrivateImagePhase {
     case failed
 }
 
-/// Draws an object Rewatch serves behind the member's own session.
+/// Draws an object ReWatch serves behind the member's own session.
 ///
 /// Nuke cannot be pointed at these: the address needs a bearer token, and the
 /// token is fetched asynchronously from the session that may be mid-refresh.
 /// So the bytes come from `PrivateMediaLoader`, which holds the credential and
-/// refuses to send it anywhere but Rewatch's own origin, and the decode
+/// refuses to send it anywhere but ReWatch's own origin, and the decode
 /// happens here.
 ///
 /// The decode is a thumbnail, not the whole picture. Eight photographs of one

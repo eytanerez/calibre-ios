@@ -172,8 +172,8 @@ public final class SellerOpsStore {
     }
 
     /// `POST /orders/{id}/fulfillment/shipping-details` — the seller confirms
-    /// the box, Rewatch buys the label, and the order moves to authentication.
-    /// `confirm` is explicit because pressing this spends Rewatch's money and
+    /// the box, ReWatch buys the label, and the order moves to authentication.
+    /// `confirm` is explicit because pressing this spends ReWatch's money and
     /// takes the payout down by whatever the carrier charged.
     @discardableResult
     public func submitShippingDetails(

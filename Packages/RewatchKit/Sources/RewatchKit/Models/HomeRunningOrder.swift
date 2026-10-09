@@ -10,7 +10,7 @@ import Foundation
 /// file keeps listing ids and nothing else. Drawing either from what is on
 /// hand would mean inventing the comparison, so they are skipped rather than
 /// approximated. The hero, the brand marquee, the budget bands, the market
-/// pulse, "Why Rewatch" and "How it works" are the site's furniture and have
+/// pulse, "Why ReWatch" and "How it works" are the site's furniture and have
 /// no counterpart on the phone.
 public enum HomeSection: Hashable, Sendable {
     /// The lane skeleton, drawn while the first load settles. Takes the

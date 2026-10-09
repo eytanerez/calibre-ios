@@ -53,7 +53,7 @@ public enum OrderActor: String, Sendable, Equatable, CaseIterable {
         switch self {
         case .you: "Waiting on you"
         case .seller: "With the seller"
-        case .rewatch: "With Rewatch"
+        case .rewatch: "With ReWatch"
         }
     }
 }
@@ -153,7 +153,7 @@ public extension Order {
         }
     }
 
-    /// A person at Rewatch is looking at this watch more closely.
+    /// A person at ReWatch is looking at this watch more closely.
     ///
     /// A state of the RECORD, not of the order: the order sits at `to_auth`
     /// throughout, which is why nothing keyed to the status can see one.
@@ -183,7 +183,7 @@ enum OrderDay {
 }
 
 private extension Order {
-    /// When Rewatch expects to be finished with the watch.
+    /// When ReWatch expects to be finished with the watch.
     ///
     /// The server's own forecast first, the bench's expected-out date second.
     /// Nil when neither is known, which is the case a sentence must not paper
@@ -236,7 +236,7 @@ public extension Order {
                         + "issued. It is being held securely at WPB Watch Co in West Palm Beach, Florida while we look "
                         + "into it.",
                     next: written.isEmpty
-                        ? "Someone from Rewatch will contact you directly about what happens next."
+                        ? "Someone from ReWatch will contact you directly about what happens next."
                         : written
                 )
             }
@@ -334,7 +334,7 @@ public extension Order {
                 // can carry this status beside a verdict that turned the watch
                 // down, and the neutral sentence is true either way.
                 headline: authentication?.verdict == authenticatedVerdict
-                    ? "Authenticated by Rewatch"
+                    ? "Authenticated by ReWatch"
                     : "Authentication complete",
                 next: expectedDeliveryLabel.map { "We are preparing your shipment, due \($0)." }
                     ?? "We are preparing your shipment."
@@ -367,7 +367,7 @@ public extension Order {
                 body: "WPB Watch Co in West Palm Beach, Florida could not authenticate it, so the sale is off. You are being "
                     + "refunded in full, including the card processing fee, and you owe nothing.",
                 // What we found, here, rather than a promise to send it. This
-                // read "Your Rewatch contact will write to you with what we
+                // read "Your ReWatch contact will write to you with what we
                 // found" — the screen pointing at the letter while the letter
                 // carried the finding. Eytan turned that round, so the order
                 // is where the finding has to be.
@@ -485,7 +485,7 @@ public extension Order {
     /// "Under review" is keyed to an open case rather than to a `disputed`
     /// order status: this backend's order statuses do not include one, so a
     /// clause reading for it would never fire. A case is the record saying a
-    /// person at Rewatch is looking at this watch, which is the fact the word
+    /// person at ReWatch is looking at this watch, which is the fact the word
     /// is for.
     private var authenticationLine: String? {
         guard let record = authentication else { return nil }

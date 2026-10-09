@@ -117,7 +117,7 @@ public struct SellerSetupProgress: Equatable, Sendable {
 // MARK: - The finish
 
 /// Whether saving a card should play setup's finish: the card collapses into
-/// itself, leaves the screen, and "Welcome to selling on Rewatch" plays before
+/// itself, leaves the screen, and "Welcome to selling on ReWatch" plays before
 /// the dashboard opens (Eytan, 2026-10-06). The web's `startFinish` in
 /// `SellerStripeOnboarding.tsx` is the authority.
 ///

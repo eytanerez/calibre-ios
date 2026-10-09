@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Rewatch mark itself, as geometry.
+/// The ReWatch mark itself, as geometry.
 ///
 /// Not one of the vocabulary marks and not a ninth one — this is the logo, and
 /// it is here because it is where the vocabulary's grid, stroke weight and cap

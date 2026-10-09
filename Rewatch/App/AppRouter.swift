@@ -134,7 +134,7 @@ final class AppRouter {
     /// watch, which carries the photograph's frame into the screen it opens),
     /// and a homogeneous `[Route]` can hold only one of the two.
     ///
-    /// It is also what keeps a watch open. A watch that Rewatch authenticated
+    /// It is also what keeps a watch open. A watch that ReWatch authenticated
     /// plays a film on arrival; the moment host used to re-parent the whole app
     /// to do that, every `NavigationStack` in it was rebuilt, and a push that
     /// was not IN the path is state a rebuild does not carry — the detail

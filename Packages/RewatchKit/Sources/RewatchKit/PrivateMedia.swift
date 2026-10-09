@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reads the bytes of an object Rewatch serves behind the member's own
+/// Reads the bytes of an object ReWatch serves behind the member's own
 /// credential.
 ///
 /// Kept as a protocol so a view can be driven from a stub, and so the one
@@ -19,7 +19,7 @@ public protocol PrivateMediaFetching: Sendable {
 ///
 /// - **The credential never leaves the API's own origin.** `data(for:)`
 ///   refuses an address that is not the configured host, scheme and port, so
-///   the bearer token cannot be walked off Rewatch by a URL that arrived in a
+///   the bearer token cannot be walked off ReWatch by a URL that arrived in a
 ///   payload. `VaultCoverSource` makes the same distinction when it decides
 ///   what a cover *is*; this refuses it again at the moment a request would
 ///   actually be built, because that is the only place it can be enforced.
@@ -130,7 +130,7 @@ public actor PrivateMediaLoader: PrivateMediaFetching {
             throw APIError.sessionExpired
         }
         guard (200..<300).contains(http.statusCode) else {
-            // The proxy answers a bare status here, not Rewatch's JSON
+            // The proxy answers a bare status here, not ReWatch's JSON
             // envelope, so there is no server sentence to carry up. The
             // status is what a caller can tell apart: 404 means this
             // photograph is not the caller's, and every retry of it is a

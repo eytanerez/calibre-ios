@@ -1,10 +1,10 @@
 {
-  "name": "Rewatch (Personal)",
+  "name": "ReWatch (Personal)",
   "identifier": "com.shoprewatch.rewatch.source",
   "sourceURL": "https://raw.githubusercontent.com/eytanerez/rewatch-ios/main/source.json",
   "apps": [
     {
-      "name": "Rewatch",
+      "name": "ReWatch",
       "bundleIdentifier": "com.shoprewatch.rewatch",
       "developerName": "Eytan Erez",
       "localizedDescription": "A native iOS marketplace for discovering, buying, and selling watches.",
@@ -12,11 +12,11 @@
       "permissions": [
         {
           "type": "camera",
-          "usageDescription": "Rewatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents."
+          "usageDescription": "ReWatch uses the camera to photograph watches you list for sale and, during seller verification, to capture identity documents."
         },
         {
           "type": "photos",
-          "usageDescription": "Rewatch lets you choose existing photos of your watch when creating a listing."
+          "usageDescription": "ReWatch lets you choose existing photos of your watch when creating a listing."
         }
       ],
       "versions": [

@@ -232,7 +232,7 @@ struct RootView: View {
             // Stripe gets first refusal. Redirect-based methods (Cash App Pay,
             // Klarna, bank redirects) return through `rewatch://stripe-redirect`,
             // and if the SDK never sees that callback the payment hangs on a
-            // spinner forever. Everything it doesn't claim is a Rewatch link.
+            // spinner forever. Everything it doesn't claim is a ReWatch link.
             guard !StripeAPI.handleURLCallback(with: url) else { return }
             services.router.handle(url: url)
         }
@@ -385,7 +385,7 @@ final class AppServices {
     let content: ContentStore
     let config: ConfigStore
     let vault: VaultStore
-    /// The bytes behind Rewatch's own private objects — today, the owner's
+    /// The bytes behind ReWatch's own private objects — today, the owner's
     /// photographs of the watches in their Vault. Those are served behind the
     /// member's session rather than as public files, so a plain image loader
     /// gets a 401 and draws nothing; this is what holds the credential.

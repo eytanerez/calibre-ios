@@ -127,7 +127,7 @@ struct SellerInsightsTab: View {
                             SellFigureRow(
                                 label: "Commission, labels and refunds",
                                 value: "\u{2212} " + PriceFormatter.format(metrics.withheldFromSales),
-                                caption: "Rewatch\u{2019}s commission on each sale, the to-authentication label Rewatch bought for it, and anything refunded."
+                                caption: "ReWatch\u{2019}s commission on each sale, the to-authentication label ReWatch bought for it, and anything refunded."
                             )
                             Rectangle().fill(Color.rewatch.border).frame(height: 1)
                         }
@@ -213,7 +213,7 @@ struct SellerInsightsTab: View {
     private var demand: some View {
         VStack(alignment: .leading, spacing: Space.m) {
             Eyebrow("Demand signals")
-            SellSectionHeader("Interest on Rewatch")
+            SellSectionHeader("Interest on ReWatch")
 
             Text("References buyers here are watching and searching for, set against how many are listed. These are on-site counts, not a valuation and not a market read.")
                 .font(RewatchType.label)

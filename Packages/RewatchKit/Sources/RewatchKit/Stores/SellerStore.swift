@@ -323,7 +323,7 @@ public final class SellerStore {
 
     // MARK: - Card on file
 
-    /// The credit card Rewatch keeps on file for sellers, and whether it
+    /// The credit card ReWatch keeps on file for sellers, and whether it
     /// still works. Listing readiness fails with `seller_card_required`
     /// until one is present.
     public func sellerCard() async throws -> SellerCardState {
@@ -339,7 +339,7 @@ public final class SellerStore {
     /// Reports the SetupIntent the SDK just confirmed, and gets the settled
     /// card back.
     ///
-    /// Without this the only thing that tells Rewatch a card was saved is the
+    /// Without this the only thing that tells ReWatch a card was saved is the
     /// `setup_intent.succeeded` webhook, and re-reading `sellerCard()` the
     /// instant the sheet closes races it. Losing that race does not read as
     /// "not yet" anywhere in the UI — it reads as *no card*, which the screen
@@ -366,7 +366,7 @@ public final class SellerStore {
     // MARK: - Pricing guidance
 
     /// "Watches like this listed at $X–Y and sold in ~N days" — computed from
-    /// Rewatch's own listings and sales. Returns `available == false` when the
+    /// ReWatch's own listings and sales. Returns `available == false` when the
     /// comparable sample is too thin to be honest about.
     public func pricingGuidance(
         brand: String,

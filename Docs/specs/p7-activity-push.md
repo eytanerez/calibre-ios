@@ -22,7 +22,7 @@ Local inbox of received push payloads (persist last 100 in a small store in your
 - **Verify with simulated pushes**: xcrun simctl push <sim> com.shoprewatch.rewatch payload.json for each route type (offer/{id}, order/{id}, listing/{id}, support, alerts) — cold, background, foreground; confirm routing + inbox capture.
 
 ### 5. Support chat
-**SupportChatScreen** (route .supportChat; entries: You tab row + "Contact us" spots): bubble thread (customer trailing/primary-tint, Rewatch leading/card + "Rewatch · {time}" caption), composer (TextField ≤4000, send button, Enter sends), poll every 20s while visible; **guest support works**: email capture field on first message ("So we can reply"), persist guest token (UserDefaults) per contract; signed-in uses the user thread. Header: "Message Rewatch — we typically reply within a day."
+**SupportChatScreen** (route .supportChat; entries: You tab row + "Contact us" spots): bubble thread (customer trailing/primary-tint, ReWatch leading/card + "ReWatch · {time}" caption), composer (TextField ≤4000, send button, Enter sends), poll every 20s while visible; **guest support works**: email capture field on first message ("So we can reply"), persist guest token (UserDefaults) per contract; signed-in uses the user thread. Header: "Message ReWatch — we typically reply within a day."
 
 ### 6. Watch sourcing requests (buyer side)
 **RequestsScreen** (You tab row): list (brand/model/ref/year/budget, Active/Sourced StatusBadge, "View match" when fulfilled → listing route, delete w/ confirm) + **New request** sheet (Brand required, Model, Reference, Year, Max budget, Notes → POST) with warm intro line ("Tell us what you're hunting. Sellers see open requests and list against them.").
