@@ -104,10 +104,10 @@ public struct GalleryScreen: View {
     private var marksSection: some View {
         section("Marks") {
             VStack(alignment: .leading, spacing: Space.xl) {
-                Text("The logo the vocabulary is measured from.")
+                Text("The wordmark is the only ReWatch mark. The stamp and the seal press it.")
                     .font(RewatchType.caption)
                     .foregroundStyle(Color.rewatch.mutedForeground)
-                RewatchLogoMark(size: 96)
+                RewatchWordmark(height: 36)
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: Space.l)], spacing: Space.xl) {
                     mark("balanceWheel") { RewatchMark.balanceWheel(size: 88) }

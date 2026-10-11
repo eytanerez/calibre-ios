@@ -96,14 +96,11 @@ struct VaultStampFilm: View {
             Canvas { context, _ in
                 context.scaleBy(x: scale, y: scale)
                 context.stroke(
-                    StampMark.head,
+                    StampMark.rim,
                     with: .color(Color.rewatch.primary),
                     style: MarkGrid.style
                 )
-                context.fill(
-                    RewatchLogoMark.jewelCentre.applying(StampMark.die),
-                    with: .color(Color.rewatch.primary)
-                )
+                context.pressWordmark(in: StampMark.word, ink: Color.rewatch.primary)
                 drawFlecks(into: &context)
             }
             .frame(width: side78, height: side78)

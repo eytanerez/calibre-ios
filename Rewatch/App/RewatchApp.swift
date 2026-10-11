@@ -95,13 +95,22 @@ struct RootView: View {
 
     @State private var services = AppServices()
     @State private var bootstrapped = false
+    /// The opening has played and rested (see `RewatchOpening`). The boot
+    /// screen holds for it as well as for `bootstrap()`, so the opening is
+    /// never cut off mid-slide; whichever finishes last hands over.
+    @State private var openingPlayed = false
+    /// The phase as of the last change, read while the next change is being
+    /// animated — it is how the hand-off out of the opening gets its own
+    /// timing. Updated after the fact by `onChange`, so during the body pass
+    /// that carries a change it still holds the phase being left.
+    @State private var settledPhase: Phase = .booting
     @AppStorage("hasSeenIntro") private var hasSeenIntro = false
     @AppStorage("appearancePreference") private var appearancePreference: AppearancePreference = .system
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
     private var phase: Phase {
-        if !bootstrapped { return .booting }
+        if !bootstrapped || !openingPlayed { return .booting }
         // A restored session skips the intro. The Keychain outlives deleting
         // the app while `hasSeenIntro` does not, so a returning member can
         // arrive with the flag cleared — and being introduced to an app you
@@ -124,7 +133,7 @@ struct RootView: View {
     /// above it goes. Non-dismissable follows from that; there is no gesture
     /// and no control that could close it, only the sign-out on the screen.
     private var showsProfileGate: Bool {
-        bootstrapped && services.auth.needsProfileCompletion
+        phase != .booting && services.auth.needsProfileCompletion
     }
 
     #if DEBUG
@@ -136,6 +145,9 @@ struct RootView: View {
     /// sign-in sheet; consolidating into a single `.sheet(item:)` avoids the
     /// chained double-sheet trap.
     private var activeSheet: RootSheet? {
+        // Nothing comes up over the opening. A reset link that cold-launched
+        // the app waits in the router until the word has handed over.
+        guard phase != .booting else { return nil }
         if let token = services.router.passwordResetToken {
             return .resetPassword(token)
         }
@@ -161,8 +173,11 @@ struct RootView: View {
 
             switch phase {
             case .booting:
-                BootSplash()
-                    .transition(phaseTransition)
+                BootSplash { openingPlayed = true }
+                    .transition(.opacity)
+                    // Above whatever comes in, so leaving is a cross-fade
+                    // over the app rather than the app fading in over it.
+                    .zIndex(2)
             case .intro:
                 IntroPager {
                     hasSeenIntro = true
@@ -184,7 +199,8 @@ struct RootView: View {
                     .accessibilityAddTraits(.isModal)
             }
         }
-        .animation(Motion.easeSlow, value: phase)
+        .animation(settledPhase == .booting ? Self.openingHandOff : Motion.easeSlow, value: phase)
+        .onChange(of: phase) { _, newPhase in settledPhase = newPhase }
         .animation(Motion.easeMedium, value: showsProfileGate)
         // One window-level recogniser covers every screen and sheet: tapping
         // off a field closes the keyboard and drops focus.
@@ -342,9 +358,18 @@ struct RootView: View {
     }
 
     /// Opacity plus a 0.98 scale breath; plain crossfade under Reduce Motion.
+    ///
+    /// Out of the opening the incoming screen is simply there, under the boot
+    /// screen, and the boot screen fades away over it (`zIndex` above): that
+    /// is the 250 ms cross-fade §3 asks for, with no dip through the ground in
+    /// the middle the way two opposite fades would make.
     private var phaseTransition: AnyTransition {
-        reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98))
+        if settledPhase == .booting { return .identity }
+        return reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98))
     }
+
+    /// The opening's hand-off into the app: a 250 ms cross-fade.
+    private static let openingHandOff = Animation.easeInOut(duration: 0.25)
 }
 
 /// Everything the root can present modally, as one identity.
@@ -360,10 +385,20 @@ private enum RootSheet: Identifiable, Equatable {
     }
 }
 
-/// Shown only for the breath it takes `bootstrap()` to restore a session.
+/// The boot screen: the opening, on the launch screen's own ground.
+///
+/// The ground is `Color.rewatch.background`, which is the `LaunchBackground`
+/// colour set value for value (#FBFAF7 light, #0E0D0B dark), so the system's
+/// launch screen hands over to the opening without a seam — the opening's
+/// first frame is that ground with nothing on it yet. It holds until the
+/// opening has played and `bootstrap()` has restored the session, whichever
+/// is later; a slow restore leaves the finished word resting until it is
+/// ready.
 private struct BootSplash: View {
+    let onOpeningPlayed: @MainActor () -> Void
+
     var body: some View {
-        RewatchWordmark(height: 40)
+        RewatchOpening(width: 176, onPlayed: onOpeningPlayed)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .rewatchPageBackground()
     }

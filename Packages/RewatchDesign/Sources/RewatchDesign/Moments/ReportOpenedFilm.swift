@@ -272,11 +272,8 @@ struct ReportOpenedFilm: View {
         let scale = side / MarkGrid.side
         return Canvas { context, _ in
             context.scaleBy(x: scale, y: scale)
-            context.stroke(StampMark.head, with: .color(Color.rewatch.primary), style: MarkGrid.style)
-            context.fill(
-                RewatchLogoMark.jewelCentre.applying(StampMark.die),
-                with: .color(Color.rewatch.primary)
-            )
+            context.stroke(StampMark.rim, with: .color(Color.rewatch.primary), style: MarkGrid.style)
+            context.pressWordmark(in: StampMark.word, ink: Color.rewatch.primary)
         }
         .frame(width: side, height: side)
         .scaleEffect(Self.stampSize.value(at: progress))

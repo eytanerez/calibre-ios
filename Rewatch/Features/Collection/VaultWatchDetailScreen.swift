@@ -661,8 +661,9 @@ struct VaultWatchDetailScreen: View {
     }
 }
 
-/// A small house mark arriving beside the authentication claim. It confirms
-/// the relationship without covering the watch or delaying navigation.
+/// The wordmark, small, arriving beside the authentication claim. It confirms
+/// whose authentication it was without covering the watch or delaying
+/// navigation. The word rather than an initial: there is no other ReWatch mark.
 private struct VaultAuthenticationLogo: View {
     let trigger: String
 
@@ -670,7 +671,7 @@ private struct VaultAuthenticationLogo: View {
     @State private var arrived = false
 
     var body: some View {
-        RewatchLogoMark(size: 28)
+        RewatchWordmark(height: 15)
             .offset(y: reduceMotion || arrived ? 0 : -7)
             .opacity(reduceMotion || arrived ? 1 : 0.35)
             .accessibilityHidden(true)

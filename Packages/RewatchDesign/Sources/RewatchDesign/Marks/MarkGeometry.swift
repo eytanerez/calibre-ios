@@ -1,14 +1,13 @@
 import SwiftUI
 import UIKit
 
-/// The grid every mark is drawn on, taken off the logo rather than chosen.
-/// A mark is authored at 120 × 120 and the whole drawing is scaled to the size
-/// it is asked for, so the stroke stays in proportion at every size and a mark
-/// standing next to the logo still matches it.
+/// The grid every mark is drawn on. A mark is authored at 120 × 120 and the
+/// whole drawing is scaled to the size it is asked for, so the stroke stays in
+/// proportion at every size and every mark in the set matches the others.
 enum MarkGrid {
     /// The square the geometry is written against.
     static let side: CGFloat = 120
-    /// The one stroke weight in the system, measured off the logo's centerline.
+    /// The one stroke weight in the system.
     static let stroke: CGFloat = 4.55
     /// Center of the grid.
     static let center = CGPoint(x: 60, y: 60)
@@ -40,7 +39,7 @@ extension Path {
     /// Appends an elliptical arc, emitted as cubic Béziers.
     ///
     /// SwiftUI's `Path` draws circular arcs and nothing else — there is no
-    /// elliptical form on it, and the logo's arc is an ellipse. So the arc is
+    /// elliptical form on it, and a traced arc can be an ellipse. So the arc is
     /// built on a unit circle and pushed through the ellipse's own transform,
     /// which lands the drawn centerline on the fitted ellipse rather than near
     /// it. Building the curves by hand also sidesteps the flipped-y reading of

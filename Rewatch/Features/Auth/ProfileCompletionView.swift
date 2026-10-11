@@ -224,7 +224,7 @@ struct ProfileCompletionView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            RewatchWordmark(height: 24)
+            RewatchWordmark(height: 21)
             Text(step == .address ? "Where should watches ship?" : "One more thing")
                 .font(RewatchType.title)
                 .foregroundStyle(Color.rewatch.foreground)

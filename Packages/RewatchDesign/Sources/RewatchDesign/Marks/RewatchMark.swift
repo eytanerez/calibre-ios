@@ -18,7 +18,7 @@ import SwiftUI
 public enum RewatchMark {
     /// The square a mark renders on when the caller does not say. The geometry
     /// is authored on the same square, so this is also the size at which the
-    /// stroke is exactly the logo's.
+    /// stroke is exactly `MarkGrid.stroke`.
     public static let defaultSize: CGFloat = MarkGrid.side
 
     /// Work in progress — any loading state.

@@ -137,8 +137,9 @@ struct HomeScreen: View {
 
     private var headerRow: some View {
         HStack {
-            // The site's header: the wordmark 28 tall.
-            RewatchWordmark(height: 28)
+            // 24 tall: the Playfair word on its tight box carries the weight
+            // the old 28-point wordmark did (matched by ink, then by eye).
+            RewatchWordmark(height: 24)
                 .accessibilityAddTraits(.isHeader)
 
             Spacer()

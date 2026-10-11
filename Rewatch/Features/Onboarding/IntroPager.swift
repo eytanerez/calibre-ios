@@ -38,7 +38,7 @@ struct IntroPager: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                RewatchWordmark(height: 20)
+                RewatchWordmark(height: 17)
                 Spacer()
                 Button("Skip") {
                     finish()

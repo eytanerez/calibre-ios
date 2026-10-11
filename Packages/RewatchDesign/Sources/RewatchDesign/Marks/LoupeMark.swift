@@ -6,7 +6,7 @@ import SwiftUI
 ///
 /// The glass used to move on and leave the finding behind. Rendered beside the
 /// rest of the set, what it left was a dot in a ring — the same silhouette as
-/// the jewel that already sits inside several of the others. And it is the only
+/// the jewel the dial arc already carries at its pivot. And it is the only
 /// frame anyone with reduced motion ever sees, because that is the end state,
 /// so the mark spent its whole life as a bullet point.
 ///
@@ -83,8 +83,8 @@ struct LoupeMark: View {
     }
 
     /// Lens and handle. The handle is the whole reason this is not another set
-    /// of concentric rings: rings on rings are the stamp, and a jewel already
-    /// sits inside several of the other marks.
+    /// of concentric rings: rings on rings read as the stamp's rim, and the
+    /// dial arc already carries a jewel.
     static var glass: Path {
         Path { path in
             path.addEllipse(in: CGRect(
@@ -97,9 +97,9 @@ struct LoupeMark: View {
 
     static let lens: CGFloat = 30
 
-    /// The logo's own jewel, sitting under the glass. What the loupe is for,
-    /// and what it leaves behind — drawn at the size the logo draws it and
-    /// grown into the lens, because magnified means larger than it was.
+    /// A movement's jewel, sitting under the glass. What the loupe is for,
+    /// and what it leaves behind — drawn at its resting size and grown into
+    /// the lens, because magnified means larger than it was.
     private var jewel: some View {
         ZStack {
             Self.centred(10.71).stroke(Color.rewatch.primary, style: MarkGrid.style)
@@ -107,8 +107,8 @@ struct LoupeMark: View {
         }
     }
 
-    /// `r 10.71` around `r 4.88` is the logo's jewel out of §3, on the grid's
-    /// own center rather than the logo's slightly-off-center one.
+    /// `r 10.71` around `r 4.88`, on the grid's own center. (The proportions
+    /// are the vocabulary's first jewel; the jewel is a watch's, not a logo.)
     static func centred(_ radius: CGFloat) -> Path {
         Path(ellipseIn: CGRect(
             x: MarkGrid.center.x - radius, y: MarkGrid.center.y - radius,

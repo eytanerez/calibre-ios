@@ -125,9 +125,9 @@ struct LoginScreen: View {
 
     private var header: some View {
         VStack(spacing: Space.m) {
-            SigningInMark(turning: busy)
-            // The site's sign-in pages: the wordmark 24 tall.
-            RewatchWordmark(height: 24)
+            // The wordmark alone, and it is also what shows the request is
+            // in flight: it breathes until the answer lands.
+            SigningInWordmark(breathing: busy)
                 .accessibilityAddTraits(.isHeader)
             Text("Welcome back. Sign in to pick up where you left off.")
                 .font(RewatchType.body)
@@ -194,75 +194,80 @@ struct LoginScreen: View {
     }
 }
 
-/// The ReWatch mark above the wordmark, turning while the sign-in request is
-/// in flight: a slow, continuous turn that runs down onto upright once the
-/// response lands.
+/// The wordmark, breathing while the sign-in request is in flight: its
+/// opacity eases 1 → 0.55 → 1 over 1.4 s for as long as the request is out,
+/// and once the answer lands it eases back to full and stops. A word cannot
+/// turn the way the old mark did, and a breath is the one motion that still
+/// reads as "working" on letters.
 ///
-/// Purely visual. It reads `turning` and nothing reads it back — the request
-/// is awaited in `signIn()`, the dismiss follows the session, and neither
-/// waits on a frame of this — so it cannot delay a sign-in by a tick.
+/// Purely visual. It reads `breathing` and nothing reads it back — the
+/// request is awaited in `signIn()`, the dismiss follows the session, and
+/// neither waits on a frame of this — so it cannot delay a sign-in by a tick.
 ///
-/// Driven by a `.task` loop against `ContinuousClock` in this one leaf rather
-/// than by `TimelineView` or a `repeatForever` animation: the timeline
-/// redraws whatever holds it, and a forever animation cannot be eased out of
-/// — retargeting it either unwinds the mark or leaves the loop running
-/// underneath. The arithmetic of the turn is `LogoTurn`'s: it winds in, holds,
-/// and once the answer lands carries on to the last upright it can ease onto
-/// and rests there — a failed sign-in leaves this screen up, and the mark is
-/// oriented, so it cannot be left standing wherever its speed ran out. The
-/// loop ends with the rest, so nothing ticks on an idle screen.
+/// Driven by explicit state and `withAnimation` from a `.task` in this one
+/// leaf rather than by `TimelineView` or a `repeatForever` animation: the
+/// timeline redraws whatever holds it, and a forever animation cannot be
+/// eased out of — retargeting it either jumps or leaves the loop running
+/// underneath. Each half-breath is its own eased animation, so ending one
+/// mid-way is just one more, back to full; the loop ends with the request,
+/// so nothing ticks on an idle screen.
 ///
-/// Reduce Motion, from either signal, is a still mark standing upright: no
-/// loop is started, and one already running is stood up rather than left on a
-/// mid frame or spun to rest.
-private struct SigningInMark: View {
-    let turning: Bool
+/// Reduce Motion, from either signal, is the word standing still at full
+/// opacity: no loop is started, and one already running is stood up.
+private struct SigningInWordmark: View {
+    let breathing: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Where the turn has got to, carried across the flip from turning to
-    /// settling and across a retry.
-    @State private var turn = LogoTurn()
+    @State private var dimmed = false
 
-    private static let tick: Duration = .milliseconds(16)
+    /// Half a breath: 1.4 s in and out.
+    private static let half: Duration = .milliseconds(700)
+    private static let breath = Animation.easeInOut(duration: 0.7)
+    private static let lowest = 0.55
 
     private var motionIsUnwelcome: Bool {
         reduceMotion || UIAccessibility.isReduceMotionEnabled
     }
 
-    private static func seconds(_ duration: Duration) -> TimeInterval {
-        let parts = duration.components
-        return TimeInterval(parts.seconds) + TimeInterval(parts.attoseconds) / 1e18
-    }
-
     var body: some View {
-        RewatchLogoMark(size: 48)
-            .rotationEffect(.degrees(turn.angle))
-            .task(id: turning) { await run() }
+        RewatchWordmark(height: 30)
+            .opacity(dimmed ? Self.lowest : 1)
+            .task(id: breathing) { await run() }
             .onChange(of: motionIsUnwelcome) { _, unwelcome in
-                if unwelcome { turn.stop() }
+                if unwelcome { standStill() }
             }
     }
 
     private func run() async {
-        guard !motionIsUnwelcome else {
-            turn.stop()
+        guard breathing, !motionIsUnwelcome else {
+            settle()
             return
         }
-        // Nothing to do on a screen whose mark already stands upright.
-        guard turning || !turn.isAtRest else { return }
-        let clock = ContinuousClock()
-        var last = clock.now
-
         while !Task.isCancelled {
-            guard (try? await clock.sleep(for: Self.tick)) != nil else { return }
+            withAnimation(Self.breath) { dimmed = true }
+            guard (try? await Task.sleep(for: Self.half)) != nil else { return }
+            withAnimation(Self.breath) { dimmed = false }
+            guard (try? await Task.sleep(for: Self.half)) != nil else { return }
             if motionIsUnwelcome {
-                turn.stop()
+                standStill()
                 return
             }
-            let now = clock.now
-            turn.advance(by: Self.seconds(now - last), turning: turning)
-            last = now
-            if turn.isAtRest { return }
         }
+    }
+
+    /// The answer landed: back to full, eased, from wherever the breath was.
+    private func settle() {
+        guard dimmed else { return }
+        if motionIsUnwelcome {
+            standStill()
+        } else {
+            withAnimation(.easeOut(duration: 0.35)) { dimmed = false }
+        }
+    }
+
+    private func standStill() {
+        var still = Transaction(animation: nil)
+        still.disablesAnimations = true
+        withTransaction(still) { dimmed = false }
     }
 }

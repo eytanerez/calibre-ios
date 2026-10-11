@@ -57,16 +57,21 @@ struct WaxSealMark: View {
                 }
             }
         }
-        .markCanvas(size)
+        .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
 
     private func render(_ frame: Frame) -> some View {
         ZStack {
             flecks(frame)
-            seal
-                .scaleEffect(1 + frame.lift * 0.1)
-                .offset(y: -frame.lift * 20)
+                .markCanvas(size)
+            ZStack {
+                seal
+                    .markCanvas(size)
+                WordmarkDie(rect: Self.word, size: size, ink: Self.struck)
+            }
+            .scaleEffect(1 + frame.lift * 0.1)
+            .offset(y: -frame.lift * 20 * size / MarkGrid.side)
         }
     }
 
@@ -75,13 +80,12 @@ struct WaxSealMark: View {
             Self.halo.stroke(Color.rewatch.wax.opacity(0.3), style: MarkGrid.style)
             Self.wax.fill(Color.rewatch.wax)
             Self.wax.stroke(Color.rewatch.waxHighlight, style: MarkGrid.style)
-            Self.impression.stroke(Self.struck, style: MarkGrid.style)
         }
     }
 
     /// The die stands proud of the wax and catches the light, so it is struck
     /// as a highlight of the lit edge rather than in the body color: at the
-    /// body color the monogram is a shape you can only find by looking for it,
+    /// body color the word is a shape you can only find by looking for it,
     /// and whose seal it is was the whole point of pressing one. White here is
     /// light rather than a palette color — it is what a raised edge catches,
     /// in either appearance.
@@ -89,17 +93,11 @@ struct WaxSealMark: View {
         Color.rewatch.waxHighlight.mix(with: .white, by: 0.45, in: .device)
     }
 
-    /// The die: the ReWatch mark, taken from `RewatchLogoMark` and shrunk about
-    /// its own jewel until it sits inside the wax. The jewel's filled center is
-    /// left out — a die presses its raised parts in, and the center is the part
-    /// the wax fills back up.
-    static var impression: Path {
-        RewatchLogoMark.strokes.applying(
-            CGAffineTransform(translationX: 60, y: 60)
-                .scaledBy(x: 0.62, y: 0.62)
-                .translatedBy(x: -60.48, y: -58.52)
-        )
-    }
+    /// The die: the wordmark, centred in the wax. A little wider than the
+    /// stamp's word, as the old die was a little larger than the stamp's, and
+    /// still clear of the lobed edge at its corners — a press that runs into
+    /// the edge reads as a crop.
+    static let word = WordmarkDie.centred(width: 60)
 
     /// The ring of thinner wax that spreads past the seal under the press.
     private static var halo: Path {

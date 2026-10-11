@@ -200,7 +200,7 @@ struct PassportScreen: View {
 
     // MARK: Cover
 
-    /// The front of the booklet: the house mark, what the watch is, its
+    /// The front of the booklet: the wordmark, what the watch is, its
     /// number, and the stamp.
     ///
     /// The stamp is the one illustrated moment on this screen — a passport
@@ -210,7 +210,9 @@ struct PassportScreen: View {
     /// leaf underneath rather than on the stamp itself.
     private func coverLeaf(_ passport: WatchPassport) -> some View {
         VStack(spacing: Space.m) {
-            RewatchLogoMark(size: 34)
+            // Decoration here: the eyebrow under it already says "ReWatch".
+            RewatchWordmark(height: 20)
+                .accessibilityHidden(true)
 
             Eyebrow("ReWatch Passport", color: Kraft.coverInkMuted)
 

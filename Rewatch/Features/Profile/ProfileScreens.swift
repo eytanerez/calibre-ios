@@ -30,7 +30,7 @@ struct AboutScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.s) {
-                    RewatchWordmark(height: 28)
+                    RewatchWordmark(height: 24)
                         .accessibilityAddTraits(.isHeader)
                     Text("A marketplace for authenticated luxury watches. Every watch is inspected by WPB Watch Co in West Palm Beach, Florida before it reaches you.")
                         .font(RewatchType.body)

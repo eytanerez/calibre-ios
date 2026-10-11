@@ -280,11 +280,13 @@ final class DesignSystemContractTests: XCTestCase {
     }
 }
 
-/// The logo's arc is an ellipse, and the difference between it and the circle
-/// it nearly is decides the shape of the opening. These check the drawn
-/// centerline lands where the traced original says it does.
+/// The elliptical-arc helper, checked against a traced arc that is an ellipse
+/// a couple of percent off round — the case where substituting a circle would
+/// be wrong and hard to see. The fixture is the pre-rebrand mark's arc, which
+/// is the drawing the helper was written for; the mark itself is gone, and
+/// these only hold the helper to where the traced endpoints say it lands.
 final class MarkGeometryTests: XCTestCase {
-    func testLogoArcMeetsTheTracedEndpoints() {
+    func testEllipticalArcMeetsTheTracedEndpoints() {
         var arc = Path()
         arc.addEllipticalArc(
             center: CGPoint(x: 61.2149, y: 58.1656),
@@ -324,7 +326,7 @@ final class MarkGeometryTests: XCTestCase {
     /// shape, and a circle substituted for it would read as a re-trace by eye.
     /// Pinning the departure catches both mistakes: a circle collapses it to
     /// nothing, a re-fit moves it.
-    func testLogoArcStaysOnTheEllipseAndNotOnACircle() {
+    func testEllipticalArcStaysOnTheEllipseAndNotOnACircle() {
         var arc = Path()
         arc.addEllipticalArc(
             center: CGPoint(x: 61.2149, y: 58.1656),
@@ -354,15 +356,6 @@ final class MarkGeometryTests: XCTestCase {
         XCTAssertEqual(offCircle, 0.405, accuracy: 0.02)
     }
 
-    /// The center the endpoint-to-center conversion derives has to agree with
-    /// the jewel the mark is drawn around. They are independent numbers in §3,
-    /// so them landing together is what says the conversion is right.
-    func testDerivedArcCentreAgreesWithTheJewel() {
-        let derived = CGPoint(x: 61.2149, y: 58.1656)
-        let jewel = CGPoint(x: 60.48, y: 58.52)
-        XCTAssertLessThan(hypot(derived.x - jewel.x, derived.y - jewel.y), 1)
-    }
-
     /// A quarter turn of the unit circle, drawn by the same helper the marks
     /// use for their gauge tracks.
     func testCircularArcTracksItsRadius() {
@@ -386,7 +379,7 @@ final class MarkGeometryTests: XCTestCase {
 /// The vocabulary's drawings, checked at the level the divergence happened at:
 /// what each mark actually is. Every defect §11 records was invisible to a test
 /// and obvious in a render, so these assert the thing a render would show —
-/// that the stamp presses the mark and not a tick, that the reserve is a spring
+/// that the stamp presses the word and not a tick, that the reserve is a spring
 /// and not a second gauge, that the parcel is a parcel.
 final class MarkDrawingTests: XCTestCase {
     /// Endpoints of every straight and curved segment on a path, which is
@@ -404,41 +397,50 @@ final class MarkDrawingTests: XCTestCase {
         return points
     }
 
-    /// The one that matters most: what comes down on the passport is the
-    /// ReWatch mark. A tick, or any other borrowed glyph, has none of the
-    /// logo's traced points anywhere near it.
-    func testTheStampPressesTheRewatchMarkAndNotAGlyph() {
-        let drawn = vertices(StampMark.head)
-        // The traced arc's two ends, §3, carried through the same shrink the
-        // drawing uses. Both have to land on the head.
-        for tip in [CGPoint(x: 94.52, y: 85.34), CGPoint(x: 94.67, y: 31.55)] {
-            let expected = tip.applying(StampMark.die)
-            let nearest = drawn.map { hypot($0.x - expected.x, $0.y - expected.y) }.min() ?? .infinity
-            XCTAssertLessThan(nearest, 0.05, "the logo's arc is not on the stamp")
-        }
-
-        // And it sits inside the rim rather than over it.
-        let monogram = RewatchLogoMark.strokes.applying(StampMark.die).boundingRect
-        XCTAssertGreaterThan(monogram.minX, 24)
-        XCTAssertLessThan(monogram.maxX, 96)
+    /// The four corners of a rectangle.
+    private func corners(_ rect: CGRect) -> [CGPoint] {
+        [
+            CGPoint(x: rect.minX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.minY),
+            CGPoint(x: rect.minX, y: rect.maxY), CGPoint(x: rect.maxX, y: rect.maxY),
+        ]
     }
 
-    /// The seal carries the monogram, which is what earned it the canon. Two
-    /// concentric rings would leave the bounding box centred and the arc's ends
-    /// nowhere.
-    func testTheSealPressesTheSameMarkAtItsOwnScale() {
-        let drawn = vertices(WaxSealMark.impression)
-        let expected = CGPoint(x: 94.52, y: 85.34).applying(
-            CGAffineTransform(translationX: 60, y: 60)
-                .scaledBy(x: 0.62, y: 0.62)
-                .translatedBy(x: -60.48, y: -58.52)
-        )
-        let nearest = drawn.map { hypot($0.x - expected.x, $0.y - expected.y) }.min() ?? .infinity
-        XCTAssertLessThan(nearest, 0.05, "the wax is not carrying the monogram")
+    /// The one that matters most: what comes down on the passport is the
+    /// wordmark, and nothing else — no initial, no monogram, no tick. The word
+    /// is the asset itself (`WordmarkAssetTests` holds that), so what is left
+    /// to hold here is where it is pressed: centred in the rim, at the word's
+    /// own proportion, wide enough to read as a word across the rim, and clear
+    /// of the rim's inner edge at every corner by a stroke — a word touching
+    /// the rim reads as a crop.
+    func testTheStampPressesTheWordInsideTheRim() {
+        let word = StampMark.word
+        XCTAssertEqual(word.midX, MarkGrid.center.x, accuracy: 0.001)
+        XCTAssertEqual(word.midY, MarkGrid.center.y, accuracy: 0.001)
+        XCTAssertEqual(word.width / word.height, 3821.0 / 796.0, accuracy: 0.0001)
 
-        // The die stays clear of the wax's edge, or the press reads as a crop.
-        XCTAssertTrue(WaxSealMark.wax.boundingRect.insetBy(dx: 4, dy: 4)
-            .contains(WaxSealMark.impression.boundingRect))
+        let rim = StampMark.rim.boundingRect
+        XCTAssertGreaterThan(word.width, rim.width * 0.7, "too small to read as a word across the rim")
+        let clear = rim.width / 2 - MarkGrid.stroke / 2 - MarkGrid.stroke
+        for corner in corners(word) {
+            XCTAssertLessThan(hypot(corner.x - 60, corner.y - 60), clear, "the word runs into the rim")
+        }
+    }
+
+    /// The seal presses the same word at its own, slightly larger scale, and
+    /// keeps it clear of the lobed edge at its narrowest — a press that runs
+    /// into the edge reads as a crop.
+    func testTheSealPressesTheSameWordAtItsOwnScale() {
+        let word = WaxSealMark.word
+        XCTAssertEqual(word.midX, MarkGrid.center.x, accuracy: 0.001)
+        XCTAssertEqual(word.midY, MarkGrid.center.y, accuracy: 0.001)
+        XCTAssertEqual(word.width / word.height, 3821.0 / 796.0, accuracy: 0.0001)
+        XCTAssertGreaterThan(word.width, StampMark.word.width)
+
+        let narrowest = vertices(WaxSealMark.wax).map { hypot($0.x - 60, $0.y - 60) }.min() ?? 0
+        let clear = narrowest - MarkGrid.stroke / 2 - MarkGrid.stroke
+        for corner in corners(word) {
+            XCTAssertLessThan(hypot(corner.x - 60, corner.y - 60), clear, "the word runs into the wax's edge")
+        }
     }
 
     /// Wax spreads unevenly; a true circle here is a button. The lobes are
@@ -561,8 +563,8 @@ final class MarkDrawingTests: XCTestCase {
 /// Which marks carry a fill, checked by looking rather than by declaring it.
 ///
 /// The rule is a shape rule: single ink, arcs and circles, and a fill only
-/// where the material is the point — the die's jewel, the wax, the finding
-/// under the glass, the kraft. Nothing in a `View` says whether it filled
+/// where the material is the point — the word the die presses, the wax, the
+/// finding under the glass, the kraft. Nothing in a `View` says whether it filled
 /// anything, so this renders each mark and samples a place where only a fill
 /// could have put ink, and a place where only a fill could have taken it away.
 ///
@@ -600,12 +602,14 @@ final class MarkFillTests: XCTestCase {
     /// A fill's own interior, in each of the marks allowed one. Every point is
     /// far enough from every stroke that only a fill can have inked it.
     ///
-    /// The stamp's head is still in the air on the frame this renders, so its
-    /// die's jewel is given at both ends of the fall — where the head has got
-    /// to is a motion state, and this is asking about a shape.
+    /// The stamp's head is still in the air on the frame this renders, so the
+    /// point inside its word — the middle of the R's stem — is given at both
+    /// ends of the fall: at rest, and lifted (scaled 1.08 about the centre and
+    /// raised 6). Where the head has got to is a motion state, and this is
+    /// asking about a shape.
     func testTheMarksAllowedAFillHaveOne() throws {
         let filled: [(String, AnyView, [CGPoint])] = [
-            ("stamp", AnyView(RewatchMark.stamp()), [CGPoint(x: 60, y: 60), CGPoint(x: 60, y: 42)]),
+            ("stamp", AnyView(RewatchMark.stamp()), [CGPoint(x: 34.26, y: 60.44), CGPoint(x: 32.2, y: 54.48)]),
             ("waxSeal", AnyView(RewatchMark.waxSeal()), [CGPoint(x: 60, y: 26)]),
             ("loupe", AnyView(RewatchMark.loupe()), [CGPoint(x: 60, y: 60)]),
             ("box", AnyView(RewatchMark.box()), [CGPoint(x: 40, y: 85)]),

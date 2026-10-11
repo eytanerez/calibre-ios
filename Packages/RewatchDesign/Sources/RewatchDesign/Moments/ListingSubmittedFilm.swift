@@ -104,11 +104,7 @@ struct ListingSubmittedFilm: View {
                 with: .color(Color.rewatch.waxHighlight),
                 style: MarkGrid.style
             )
-            context.stroke(
-                WaxSealMark.impression,
-                with: .color(WaxSealMark.struck),
-                style: MarkGrid.style
-            )
+            context.pressWordmark(in: WaxSealMark.word, ink: WaxSealMark.struck)
         }
         .frame(width: sealSide, height: sealSide)
         .scaleEffect(Self.sealScale.value(at: progress))
