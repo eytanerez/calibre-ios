@@ -190,16 +190,17 @@ struct ListingWizardScreen: View {
         .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 8)))
     }
 
-    /// Back / Continue. The Review step owns its own submit button.
+    /// Back a third, Continue two thirds. The Review step owns its own
+    /// submit button.
     @ViewBuilder
     private func stepBar(_ model: WizardModel) -> some View {
         if model.step < 3 {
-            HStack(spacing: Space.m) {
+            StepButtonRow {
                 if model.step > 0 {
                     Button("Back") {
                         advance(model, to: model.step - 1)
                     }
-                    .buttonStyle(.rewatchGhost)
+                    .buttonStyle(.rewatch(.secondary, fullWidth: true))
                 }
                 // Always tappable: pressing it on an incomplete step is how a
                 // seller asks what's missing, and the answer belongs beside

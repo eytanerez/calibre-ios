@@ -100,10 +100,11 @@ struct ListingBuilderScreen: View {
             .disabled(closing || model.isSubmitting)
             .accessibilityLabel(model.listingID != nil ? "Close. Your draft is saved." : "Close")
 
-            if model.step != .watch, !model.isSubmitting {
+            // The questions keep Back beside Continue at the bottom; the
+            // review has no Continue, so its way back stays up here.
+            if model.step == .review, !model.isSubmitting {
                 Button {
-                    Haptics.shared.play(.selection)
-                    withAnimation(transition) { model.back() }
+                    back()
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
@@ -138,7 +139,7 @@ struct ListingBuilderScreen: View {
         .padding(.leading, Space.margin - 12)
         .padding(.trailing, Space.margin)
         .padding(.top, Space.xs)
-        .animation(Motion.easeFast, value: model.step == .watch)
+        .animation(Motion.easeFast, value: model.step == .review)
     }
 
     /// A copper hairline across the top, filling as the questions go.
@@ -293,25 +294,46 @@ struct ListingBuilderScreen: View {
         return "Uploading your photos in the background, \(progress.done) of \(progress.total) done."
     }
 
+    /// No Back on the first question, and none while an answer is being
+    /// changed from the review: Continue reads "Back to review" then, and
+    /// "Back" beside it would be two ways back that go to different places.
+    private var showsBack: Bool {
+        model.step != .watch && model.returnTo != .review
+    }
+
     private var continueBar: some View {
         let ready = model.canContinueHere
         return VStack(spacing: 0) {
             Rectangle().fill(Color.rewatch.border).frame(height: 1)
-            Button {
-                advance()
-            } label: {
-                Text(model.returnTo == .review ? "Back to review" : "Continue")
-                    .frame(maxWidth: .infinity)
+            StepButtonRow {
+                if showsBack {
+                    Button("Back") { back() }
+                        .buttonStyle(.rewatch(.secondary, fullWidth: true))
+                        .accessibilityLabel("Back to \(model.step.previous.label)")
+                        .accessibilityIdentifier("builder.back")
+                        .transition(.opacity)
+                }
+                Button {
+                    advance()
+                } label: {
+                    Text(model.returnTo == .review ? "Back to review" : "Continue")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.rewatch(.primary, fullWidth: true))
+                .disabled(!ready)
+                .opacity(ready ? 1 : 0.55)
+                .animation(Motion.easeFast, value: ready)
+                .accessibilityIdentifier("builder.continue")
             }
-            .buttonStyle(.rewatch(.primary, fullWidth: true))
-            .disabled(!ready)
-            .opacity(ready ? 1 : 0.55)
-            .animation(Motion.easeFast, value: ready)
             .padding(.horizontal, Space.margin)
             .padding(.vertical, Space.m)
-            .accessibilityIdentifier("builder.continue")
         }
         .background(Color.rewatch.background)
+    }
+
+    private func back() {
+        Haptics.shared.play(.selection)
+        withAnimation(transition) { model.back() }
     }
 
     private func advance() {
