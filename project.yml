@@ -58,6 +58,26 @@ targets:
         products:
           - PostHog
       - package: Sentry
+    # Sends this build's debug symbols (dSYMs) to Sentry, so a crash report
+    # names our functions and lines instead of `<redacted>` addresses. Only
+    # when archiving (ACTION=install): a debug build has no dSYM worth
+    # sending. Never fails the build: without sentry-cli or a token in
+    # ~/.sentryclirc it warns and moves on. Symbols only; no source is sent.
+    postBuildScripts:
+      - name: Upload dSYMs to Sentry
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}
+        script: |
+          [ "$ACTION" = "install" ] || exit 0
+          export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          if ! command -v sentry-cli >/dev/null; then
+            echo "warning: sentry-cli is not installed; this build's dSYMs did not reach Sentry"
+            exit 0
+          fi
+          if ! sentry-cli debug-files upload --org calibre-q0 --project calibre-ios "$DWARF_DSYM_FOLDER_PATH"; then
+            echo "warning: sentry-cli could not upload this build's dSYMs to Sentry"
+          fi
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.shoprewatch.rewatch
@@ -66,7 +86,9 @@ targets:
         TARGETED_DEVICE_FAMILY: 1
         SWIFT_VERSION: 6.0
         CODE_SIGN_ENTITLEMENTS: Rewatch/Config/Rewatch.entitlements
-        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        # Off so the dSYM upload in postBuildScripts can read ~/.sentryclirc;
+        # it is the target's only script.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
     info:
       path: Rewatch/Config/Info.plist
       properties:

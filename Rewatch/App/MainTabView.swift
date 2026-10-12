@@ -85,6 +85,13 @@ struct MainTabView: View {
             .tag(AppTab.you)
         }
         .tint(Color.rewatch.primary)
+        // The last two steps of a launch and every tab change after it, for
+        // the trail a `WatchdogTermination` report carries instead of a
+        // stack; see `Observability.breadcrumb`.
+        .onAppear { Observability.breadcrumb("tab shell on screen", category: "launch") }
+        .onChange(of: router.selectedTab) { _, tab in
+            Observability.breadcrumb("tab: \(tab.title)", category: "navigation")
+        }
         .task(id: notificationRefresh) {
             guard session.isAuthenticated, scenePhase == .active else { return }
             try? await services.serverAlerts.load()

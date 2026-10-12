@@ -31,20 +31,44 @@ final class VaultLock {
 
     /// A device with neither biometrics nor a passcode can't be asked — the
     /// lock would just strand the owner outside their own vault.
-    var isAvailable: Bool {
-        LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
-    }
+    ///
+    /// Stored, not asked for on each read. `LAContext()` is a synchronous
+    /// round trip to the system's authentication daemon, and SwiftUI reads
+    /// `isLocked` on every redraw of the Vault tab's gate: Sentry caught the
+    /// main thread parked in that call for over two seconds (issue
+    /// 7750159367). True until the device answers — a lock that has not
+    /// heard back yet stays shut rather than open.
+    private(set) var isAvailable = true
 
     /// "Face ID" / "Touch ID" / "your passcode", for buttons and copy.
-    var methodLabel: String {
-        let context = LAContext()
-        _ = context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
-        switch context.biometryType {
-        case .faceID: return "Face ID"
-        case .touchID: return "Touch ID"
-        case .opticID: return "Optic ID"
-        default: return "your passcode"
+    private(set) var methodLabel = "Face ID"
+
+    @ObservationIgnored private var capabilityCheck: Task<Void, Never>?
+
+    /// Asks the device, off the main thread. First when the gate wants to
+    /// unlock (not in `init`: `@State` builds and throws away an instance on
+    /// every rebuild of the tab view), then each time the app comes back,
+    /// since Face ID or a passcode can be set up in Settings in between.
+    func refreshCapability() {
+        capabilityCheck = Task { [weak self] in
+            let found = await Task.detached(priority: .userInitiated) {
+                VaultLock.askDevice()
+            }.value
+            self?.isAvailable = found.available
+            self?.methodLabel = found.label
         }
+    }
+
+    nonisolated private static func askDevice() -> (available: Bool, label: String) {
+        let context = LAContext()
+        let available = context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
+        let label = switch context.biometryType {
+        case .faceID: "Face ID"
+        case .touchID: "Touch ID"
+        case .opticID: "Optic ID"
+        default: "your passcode"
+        }
+        return (available, label)
     }
 
     var isLocked: Bool {
@@ -52,6 +76,10 @@ final class VaultLock {
     }
 
     func unlockIfNeeded() async {
+        // Not before the device has answered: a phone with no passcode
+        // would otherwise get a prompt that can only fail.
+        if capabilityCheck == nil { refreshCapability() }
+        await capabilityCheck?.value
         guard isEnabled, isAvailable else {
             unlocked = true
             return
@@ -65,15 +93,20 @@ final class VaultLock {
         authenticating = true
         defer { authenticating = false }
 
-        let context = LAContext()
-        context.localizedFallbackTitle = "Use passcode"
         do {
-            // `.deviceOwnerAuthentication` (rather than …WithBiometrics) means
-            // the passcode fallback is handled by the system prompt itself.
-            let success = try await context.evaluatePolicy(
-                .deviceOwnerAuthentication,
-                localizedReason: "Unlock your vault"
-            )
+            // The context is made off the main thread for the same reason
+            // as `askDevice()`: creating one blocks on the daemon.
+            let success = try await Task.detached(priority: .userInitiated) {
+                let context = LAContext()
+                context.localizedFallbackTitle = "Use passcode"
+                // `.deviceOwnerAuthentication` (rather than …WithBiometrics)
+                // means the passcode fallback is handled by the system
+                // prompt itself.
+                return try await context.evaluatePolicy(
+                    .deviceOwnerAuthentication,
+                    localizedReason: "Unlock your vault"
+                )
+            }.value
             unlocked = success
             lastError = success ? nil : "We couldn't verify it was you."
         } catch let error as LAError where error.code == .userCancel || error.code == .appCancel {
@@ -130,7 +163,11 @@ private struct VaultGateModifier: ViewModifier {
             .onChange(of: scenePhase) { _, phase in
                 // Re-lock the moment the app leaves the screen, so handing
                 // over an unlocked phone doesn't hand over the vault.
-                if phase != .active { lock.lock() }
+                if phase != .active {
+                    lock.lock()
+                } else {
+                    lock.refreshCapability()
+                }
             }
     }
 }

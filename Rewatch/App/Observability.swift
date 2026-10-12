@@ -109,6 +109,18 @@ enum Observability {
         #endif
     }
 
+    /// One step on Sentry's breadcrumb trail. Sentry records network calls
+    /// and UIKit screens by itself, but not SwiftUI's, and a report that the
+    /// system killed the app (`WatchdogTermination`) has no stack trace, only
+    /// this trail. Without these steps every such report ended at the last
+    /// network call and said nothing about what the app was doing. A no-op
+    /// when Sentry is not started.
+    static func breadcrumb(_ message: String, category: String = "app") {
+        let crumb = Breadcrumb(level: .info, category: category)
+        crumb.message = message
+        SentrySDK.addBreadcrumb(crumb)
+    }
+
     // MARK: - Sentry
 
     private static func startSentry() {

@@ -173,7 +173,10 @@ struct RootView: View {
 
             switch phase {
             case .booting:
-                BootSplash { openingPlayed = true }
+                BootSplash {
+                    openingPlayed = true
+                    Observability.breadcrumb("opening finished", category: "launch")
+                }
                     .transition(.opacity)
                     // Above whatever comes in, so leaving is a cross-fade
                     // over the app rather than the app fading in over it.
@@ -200,7 +203,10 @@ struct RootView: View {
             }
         }
         .animation(settledPhase == .booting ? Self.openingHandOff : Motion.easeSlow, value: phase)
-        .onChange(of: phase) { _, newPhase in settledPhase = newPhase }
+        .onChange(of: phase) { _, newPhase in
+            settledPhase = newPhase
+            Observability.breadcrumb("showing \(newPhase)", category: "launch")
+        }
         .animation(Motion.easeMedium, value: showsProfileGate)
         // One window-level recogniser covers every screen and sheet: tapping
         // off a field closes the keyboard and drops focus.
@@ -293,7 +299,12 @@ struct RootView: View {
             // that cannot be fetched means "no beta", and a tester on a flaky
             // connection gets the app rather than a stalled launch.
             Task { await services.beta.load() }
+            Observability.breadcrumb("restoring session", category: "launch")
             await services.auth.bootstrap()
+            Observability.breadcrumb(
+                services.auth.isAuthenticated ? "session restored: signed in" : "session restored: guest",
+                category: "launch"
+            )
             bootstrapped = true
             #if DEBUG
             // Screenshot hook: open the sign-in sheet as a guest would meet it.
