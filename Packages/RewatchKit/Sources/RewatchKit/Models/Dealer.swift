@@ -35,7 +35,7 @@ public struct DealerApplication: Codable, Sendable {
     public let revokedReason: String?
     /// The private-seller rate, e.g. "6.00".
     public let memberFeePercent: APIDecimal?
-    /// The verified-dealer rate, e.g. "4.00".
+    /// The verified-dealer rate, e.g. "5.00".
     public let dealerFeePercent: APIDecimal?
     /// The rate this seller is actually quoted, resolved the way checkout
     /// resolves it — a negotiated override included. Always prefer this to

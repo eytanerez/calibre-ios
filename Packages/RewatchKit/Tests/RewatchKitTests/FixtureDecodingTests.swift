@@ -364,7 +364,7 @@ final class FixtureDecodingTests: XCTestCase {
           "dealer_application": {
             "status": "verified", "company_name": "Meridian Watch Co.", "country": "US",
             "applied_at": "2026-06-02T14:10:00+00:00", "verified_at": "2026-06-03T09:41:00+00:00",
-            "revoked_reason": null, "member_fee_percent": "6.00", "dealer_fee_percent": "4.00"
+            "revoked_reason": null, "member_fee_percent": "6.00", "dealer_fee_percent": "5.00"
           },
           "stats": {"orders": 3, "listings": 14, "live_listings": 12, "cart": 1, "watchlist": 6, "addresses": 2}
         }
@@ -375,7 +375,7 @@ final class FixtureDecodingTests: XCTestCase {
         XCTAssertEqual(profile.sellerProfile?.isVerifiedDealer, true)
         XCTAssertEqual(profile.dealerApplication?.status, .verified)
         XCTAssertEqual(profile.dealerApplication?.memberFeePercent?.value, Decimal(string: "6.00"))
-        XCTAssertEqual(profile.dealerApplication?.dealerFeePercent?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(profile.dealerApplication?.dealerFeePercent?.value, Decimal(string: "5.00"))
         XCTAssertEqual(profile.dealerApplication?.companyName, "Meridian Watch Co.")
 
         let readinessJSON = """
@@ -449,7 +449,7 @@ final class FixtureDecodingTests: XCTestCase {
         let application = try XCTUnwrap(profile.dealerApplication)
         XCTAssertEqual(application.status, .verified)
         XCTAssertEqual(application.memberFeePercent?.value, Decimal(string: "6.00"))
-        XCTAssertEqual(application.dealerFeePercent?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(application.dealerFeePercent?.value, Decimal(string: "5.00"))
         XCTAssertEqual(profile.sellerProfile?.isVerifiedDealer, true)
     }
 
@@ -463,7 +463,7 @@ final class FixtureDecodingTests: XCTestCase {
         // `Optional.none` and silently asserts nil instead of the case.
         XCTAssertEqual(dashboard.dealerApplication?.status, DealerApplicationStatus.none)
         XCTAssertEqual(dashboard.dealerApplication?.hasApplied, false)
-        XCTAssertEqual(dashboard.dealerApplication?.dealerFeePercent?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(dashboard.dealerApplication?.dealerFeePercent?.value, Decimal(string: "5.00"))
         XCTAssertEqual(dashboard.metrics.activeListings, 0)
         XCTAssertEqual(dashboard.whatToList.count, 5)
     }
@@ -944,7 +944,7 @@ final class FixtureDecodingTests: XCTestCase {
             from: fixtureData("marketplace-config")
         ).data
         XCTAssertEqual(config.sellerFeePercentMember?.value, Decimal(string: "6.00"))
-        XCTAssertEqual(config.sellerFeePercentDealer?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(config.sellerFeePercentDealer?.value, Decimal(string: "5.00"))
         XCTAssertEqual(config.sellerFeeMinimum?.value, Decimal(string: "250.00"))
         XCTAssertEqual(config.cardFee?.percent?.value, Decimal(string: "2.90"))
         XCTAssertEqual(config.cardFee?.fixed?.value, Decimal(string: "0.30"))

@@ -12,7 +12,7 @@ Watch buyers, collectors, and sellers using ReWatch on iPhone to discover, evalu
 
 ReWatch is a native marketplace and collecting companion for authenticated luxury watches. It brings discovery, shopping, saved watches, editorial education, offers, checkout, selling, and post-purchase activity into one coherent mobile product. Success means users can confidently find the right watch, understand the costs and authentication process, and complete a transaction without ambiguity.
 
-Current seller rates are a 6% fee for private/member sellers and a 4% fee for verified dealers. Historical orders continue to display the rate recorded when the transaction was placed.
+Current seller rates are a 6% fee for private/member sellers and a 5% fee for verified dealers. Historical orders continue to display the rate recorded when the transaction was placed.
 
 ## Brand Personality
 

@@ -188,7 +188,7 @@ struct SellGateScreen: View {
     private var keepClaim: String {
         let config = services.config.config
         let member = config?.sellerFeePercentMember.map { keepPercentText($0.value) } ?? "94"
-        let dealer = config?.sellerFeePercentDealer.map { keepPercentText($0.value) } ?? "96"
+        let dealer = config?.sellerFeePercentDealer.map { keepPercentText($0.value) } ?? "95"
         return "Private sellers keep \(member)%. Verified dealers keep \(dealer)%."
     }
 

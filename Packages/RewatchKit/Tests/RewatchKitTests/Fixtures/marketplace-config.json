@@ -2,7 +2,7 @@
  "ok": true,
  "data": {
   "seller_fee_percent_member": "6.00",
-  "seller_fee_percent_dealer": "4.00",
+  "seller_fee_percent_dealer": "5.00",
   "seller_fee_minimum": "250.00",
   "card_fee": {
    "percent": "2.90",

@@ -907,12 +907,12 @@ private enum PolicyCopy {
     }
 
     static func sellerRate(_ config: MarketplaceConfig?, dealer: Bool) -> String {
-        percentText(rawRate(config, dealer: dealer)) ?? (dealer ? "4%" : "6%")
+        percentText(rawRate(config, dealer: dealer)) ?? (dealer ? "5%" : "6%")
     }
 
     static func sellerKeep(_ config: MarketplaceConfig?, dealer: Bool) -> String {
         guard let rate = rawRate(config, dealer: dealer) else {
-            return dealer ? "96%" : "94%"
+            return dealer ? "95%" : "94%"
         }
         return decimalText(100 - rate.value) + "%"
     }

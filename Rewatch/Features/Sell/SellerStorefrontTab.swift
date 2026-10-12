@@ -292,7 +292,7 @@ struct SellerStorefrontTab: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// "The 4% dealer rate, instead of 6%" — both figures from the payload,
+    /// "The 5% dealer rate, instead of 6%" — both figures from the payload,
     /// and the sentence still works when neither has arrived.
     private func dealerRateLine(_ application: DealerApplication) -> String {
         switch (application.dealerFeePercent?.value, application.memberFeePercent?.value) {

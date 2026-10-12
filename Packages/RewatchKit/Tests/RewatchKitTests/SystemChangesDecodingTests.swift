@@ -301,10 +301,10 @@ final class SystemChangesDecodingTests: XCTestCase {
 
     func testDealerApplicationFallsBackToTheTierRate() throws {
         let json = """
-        {"status": "verified", "member_fee_percent": "6.00", "dealer_fee_percent": "4.00"}
+        {"status": "verified", "member_fee_percent": "6.00", "dealer_fee_percent": "5.00"}
         """
         let application = try apiDecoder().decode(DealerApplication.self, from: Data(json.utf8))
-        XCTAssertEqual(application.effectiveFeePercent?.value, Decimal(string: "4.00"))
+        XCTAssertEqual(application.effectiveFeePercent?.value, Decimal(string: "5.00"))
     }
 
     // MARK: - Support attachments

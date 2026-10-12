@@ -68,9 +68,8 @@ final class DiscoverAndInfoUITests: XCTestCase {
         fees.tap()
         XCTAssertTrue(app.navigationBars["Fees and payments"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["6% seller fee"].exists)
-        XCTAssertTrue(app.staticTexts["4% seller fee"].exists)
+        XCTAssertTrue(app.staticTexts["5% seller fee"].exists)
         XCTAssertFalse(app.staticTexts["8% seller fee"].exists)
-        XCTAssertFalse(app.staticTexts["5% seller fee"].exists)
         snap("fees-breakdown")
     }
 }
